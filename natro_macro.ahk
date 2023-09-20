@@ -7356,14 +7356,14 @@ nm_ContributorsImage(page:=1){
 
 		for k,v in devs
 		{
-			pBrush := Gdip_CreateLinearGrBrushFromRect(0, 65+(k-1)*13, 242, 12, 0xff000000 + (Min(Round(Gdip_RFromARGB(v[2])*1.2), 255) << 16) + (Min(Round(Gdip_GFromARGB(v[2])*1.2), 255) << 8) + Min(Round(Gdip_BFromARGB(v[2])*1,2), 255), 0xff000000 + (Min(Round(Gdip_RFromARGB(v[2])*0.9), 255) << 16) + (Min(Round(Gdip_GFromARGB(v[2])*0.9), 255) << 8) + Min(Round(Gdip_BFromARGB(v[2])*0.9), 255)), pPen := Gdip_CreatePenFromBrush(pBrush,1)
-			Gdip_DrawOrientedString(G, v[1], "Tahoma", 11, 0, 5, 64+(k-1)*13, 130, 10, 0, pBrush, pPen)
+			pBrush := Gdip_CreateLinearGrBrushFromRect(0, 64+(k-1)*12, 242, 12, 0xff000000 + (Min(Round(Gdip_RFromARGB(v[2])*1.2), 255) << 16) + (Min(Round(Gdip_GFromARGB(v[2])*1.2), 255) << 8) + Min(Round(Gdip_BFromARGB(v[2])*1,2), 255), 0xff000000 + (Min(Round(Gdip_RFromARGB(v[2])*0.9), 255) << 16) + (Min(Round(Gdip_GFromARGB(v[2])*0.9), 255) << 8) + Min(Round(Gdip_BFromARGB(v[2])*0.9), 255)), pPen := Gdip_CreatePenFromBrush(pBrush,1)
+			Gdip_DrawOrientedString(G, v[1], "Tahoma", 11, 0, 5, 63+(k-1)*12, 130, 10, 0, pBrush, pPen)
 			Gdip_DeletePen(pPen), Gdip_DeleteBrush(pBrush)
 		}
 		for k,v in testers
 		{
-			pBrush := Gdip_CreateLinearGrBrushFromRect(0, 65+(k-1)*13, 242, 12, 0xff000000 + (Min(Round(Gdip_RFromARGB(v[2])*1.2), 255) << 16) + (Min(Round(Gdip_GFromARGB(v[2])*1.2), 255) << 8) + Min(Round(Gdip_BFromARGB(v[2])*1.2), 255), 0xff000000 + (Min(Round(Gdip_RFromARGB(v[2])*0.9), 255) << 16) + (Min(Round(Gdip_GFromARGB(v[2])*0.9), 255) << 8) + Min(Round(Gdip_BFromARGB(v[2])*0.9), 255)), pPen := Gdip_CreatePenFromBrush(pBrush,1)
-			Gdip_DrawOrientedString(G, v[1], "Tahoma", 11, 0, 114, 64+(k-1)*12, 130, 10, 0, pBrush, pPen)
+			pBrush := Gdip_CreateLinearGrBrushFromRect(0, 64+(k-1)*12, 242, 12, 0xff000000 + (Min(Round(Gdip_RFromARGB(v[2])*1.2), 255) << 16) + (Min(Round(Gdip_GFromARGB(v[2])*1.2), 255) << 8) + Min(Round(Gdip_BFromARGB(v[2])*1.2), 255), 0xff000000 + (Min(Round(Gdip_RFromARGB(v[2])*0.9), 255) << 16) + (Min(Round(Gdip_GFromARGB(v[2])*0.9), 255) << 8) + Min(Round(Gdip_BFromARGB(v[2])*0.9), 255)), pPen := Gdip_CreatePenFromBrush(pBrush,1)
+			Gdip_DrawOrientedString(G, v[1], "Tahoma", 11, 0, 114, 63+(k-1)*12, 130, 10, 0, pBrush, pPen)
 			Gdip_DeletePen(pPen), Gdip_DeleteBrush(pBrush)
 		}
 
@@ -7438,26 +7438,26 @@ nm_ContributorsImage(page:=1){
 	return ((hBM%i% = "") ? 1 : 0)
 }
 nm_ContributorsDiscordLink(){
-	static id_list := {"779430642043191307": [4,43,62,53] ;DEV TEAM
-		, "253742141124116481": [4,57,53,67]
-		, "245481556355973121": [4,68,72,80]
-		, "747945550888042537": [4,82,78,92]
-		, "240431161191432193": [4,95,50,105]
-		, "278608676296589313": [4,109,98,119]
-		, "323507959957028874": [4,123,80,133]
-		, "259441167068954624": [4,135,75,145]
-		, "334634052361650177": [113,41,176,50] ;TESTERS || 134 HERE <====================================
-		, "227604929806729217": [113,55,186,63] ;x, y, w, h
-		, "700353887512690759": [113,64,176,73]
-		, "725444258835726407": [113,74,169,85]
-		, "244504077579452417": [113,86,190,97]
-		, "744072472890179665": [113,99,233,110]
-		, "720088699475591180": [113,111,224,123]
-		, "529089693749608468": [113,124,174,134]
-		, "710486399744475136": [113,135,188,144]
-		, "217700684835979265": [113,146,202,158]
-		, "350433227380621322": [113,159,176,169]
-		, "487989990937198602": [113,170,180,183]}
+	static id_list := {"779430642043191307": [4,39,68,49] ;DEV TEAM
+		, "253742141124116481": [4,51,27,61]
+		, "245481556355973121": [4,63,72,73]
+		, "747945550888042537": [4,75,44,85]
+		, "240431161191432193": [4,87,27,97]
+		, "278608676296589313": [4,99,98,109]
+		, "323507959957028874": [4,111,48,121]
+		, "259441167068954624": [4,123,51,133]
+		, "334634052361650177": [113,39,137,49] ;TESTERS || 134 HERE <====================================
+		, "227604929806729217": [113,51,152,61] ;x, y, w, h
+		, "700353887512690759": [113,63,139,73]
+		, "725444258835726407": [113,75,151,85]
+		, "244504077579452417": [113,87,157,97]
+		, "744072472890179665": [113,99,195,109]
+		, "720088699475591180": [113,111,197,121]
+		, "529089693749608468": [113,123,142,133]
+		, "710486399744475136": [113,135,188,145]
+		, "217700684835979265": [113,147,170,157]
+		, "350433227380621322": [113,159,138,169]
+		, "487989990937198602": [113,171,144,181]}
 	MouseGetPos, mouse_x, mouse_y, , hCtrl, 2
 	ControlGetPos, ctrl_x, ctrl_y, , , , ahk_id %hCtrl% ;gets the location of the natro window
 	x := mouse_x - ctrl_x, y := mouse_y - ctrl_y
