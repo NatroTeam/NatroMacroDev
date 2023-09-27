@@ -103,7 +103,7 @@ Gui, ptimers:Add, Button, xp+86 y76 wp h15 hwndhReady3 gba_resetPlanterTimer, Re
 Gui, ptimers:Add, Button, x43 y76 wp h15 hwndhClear1 gba_setPlanterData, Add
 Gui, ptimers:Add, Button, xp+86 y76 wp h15 hwndhClear2 gba_setPlanterData, Add
 Gui, ptimers:Add, Button, xp+86 y76 wp h15 hwndhClear3 gba_setPlanterData, Add
-Gui, ptimers:Add, Button, x2 y92 wp h15 hwndhSubHour1 gba_setPlanterTimer, -1HR
+Gui, ptimers:Add, Button, x1 y92 wp h15 hwndhSubHour1 gba_setPlanterTimer, -1HR
 Gui, ptimers:Add, Button, xp+86 y92 wp h15 hwndhSubHour2 gba_setPlanterTimer, -1HR
 Gui, ptimers:Add, Button, xp+86 y92 wp h15 hwndhSubHour3 gba_setPlanterTimer, -1HR
 Gui, ptimers:Add, Button, x43 y92 wp h15 hwndhAddHour1 gba_setPlanterTimer, +1HR
