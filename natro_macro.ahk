@@ -2216,33 +2216,33 @@ Gui, Add, Picture, +BackgroundTrans vBabyLovePicture2 xp yp+21 w18 h18 Hidden, H
 DllCall("DeleteObject", "ptr", hBM)
 Gdip_DisposeImage(bitmaps["babylovegui"])
 Gui, Add, Checkbox, x370 y123 w13 h13 +BackgroundTrans vKingBeetleAmuletMode gnm_saveAmulet Checked%KingBeetleAmuletMode% Disabled Hidden
-Gui, Add, Checkbox, x231 y186 w13 h13 +BackgroundTrans vShellAmuletMode gnm_saveAmulet Checked%ShellAmuletMode% Disabled Hidden
+Gui, Add, Checkbox, x229 y186 w13 h13 +BackgroundTrans vShellAmuletMode gnm_saveAmulet Checked%ShellAmuletMode% Disabled Hidden
 hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["kingbeetleamu"])
 Gui, Add, Picture, +BackgroundTrans vKingBeetleAmuPicture x386 y119 w20 h20 Hidden, HBITMAP:*%hBM%
 DllCall("DeleteObject", "ptr", hBM)
 Gdip_DisposeImage(bitmaps["kingbeetleamu"])
 hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["supremeshellamu"])
-Gui, Add, Picture, +BackgroundTrans vShellAmuPicture x247 y182 w20 h20 Hidden, HBITMAP:*%hBM%
+Gui, Add, Picture, +BackgroundTrans vShellAmuPicture x245 y182 w20 h20 Hidden, HBITMAP:*%hBM%
 DllCall("DeleteObject", "ptr", hBM)
 Gdip_DisposeImage(bitmaps["supremeshellamu"])
 Gui, Add, Text, x410 y123 w56 vKingBeetleAmuletModeText Hidden, % (KingBeetleAmuletMode = 1) ? " Keep Old" : "Do Nothing"
-Gui, Add, Text, x271 y186 w56 vShellAmuletModeText Hidden, % (ShellAmuletMode = 1) ? " Keep Old" : "Do Nothing"
+Gui, Add, Text, x269 y186 w56 vShellAmuletModeText Hidden, % (ShellAmuletMode = 1) ? " Keep Old" : "Do Nothing"
 Gui, Add, Text, x246 y207 vChickLevelTextLabel Hidden, Level:
 Gui, Add, Text, x276 y207 w30 vChickLevelText +Center Hidden, ?
 Gui, Add, UpDown, w10 h16 vChickLevel gnm_setChickHealth Range3-25 Hidden, 10
 GuiControl, , ChickLevelText, ? ; no point in storing this value, have it undefined on start
-Gui, Add, Text, x329 y186 vSnailHPText Hidden, HP:
+Gui, Add, Text, x325 y186 vSnailHPText Hidden, HP:
 Gui, Add, Text, xp yp+21 vChickHPText Hidden, HP:
-Gui, Add, Edit, x347 y184 w60 h18 +BackgroundTrans Number Limit8 gnm_setSnailHealth vSnailHealthEdit Hidden, % Round(30000000*InputSnailHealth/100)
+Gui, Add, Edit, x343 y184 w60 h18 +BackgroundTrans Number Limit8 gnm_setSnailHealth vSnailHealthEdit Hidden, % Round(30000000*InputSnailHealth/100)
 Gui, Add, Edit, xp yp+21 w60 h18 +BackgroundTrans Number Limit8 gnm_setChickHealth vChickHealthEdit Hidden
 Gui, Font, s7
-Gui, Add, Text, % "x409 y188 w40 vSnailHealthText Hidden c" Format("0x{1:02x}{2:02x}{3:02x}", Round(Min(3*(100-InputSnailHealth), 150)), Round(Min(3*InputSnailHealth, 150)), 0), % InputSnailHealth "%"
+Gui, Add, Text, % "x405 y188 w40 vSnailHealthText Hidden c" Format("0x{1:02x}{2:02x}{3:02x}", Round(Min(3*(100-InputSnailHealth), 150)), Round(Min(3*InputSnailHealth, 150)), 0), % InputSnailHealth "%"
 Gui, Add, Text, % "xp yp+21 w40 vChickHealthText Hidden c" Format("0x{1:02x}{2:02x}{3:02x}", Round(Min(3*(100-InputChickHealth), 150)), Round(Min(3*InputChickHealth, 150)), 0), % InputChickHealth "%"
 Gui, Font, s8
-Gui, Add, Text, x447 y186 w20 vSnailTimeText +Center Hidden, % (SnailTime = "Kill") ? SnailTime : SnailTime "m"
-Gui, Add, UpDown, xp+20 yp-1 w10 h16 -16 Range1-4 vSnailTimeUpDown gnm_SnailTime Hidden, % (SnailTime = "Kill") ? 4 : SnailTime//5
-Gui, Add, Text, x447 y207 w20 vChickTimeText +Center Hidden, % (ChickTime = "Kill") ? ChickTime : ChickTime "m"
-Gui, Add, UpDown, xp+20 yp-1 w10 h16 -16 Range1-4 vChickTimeUpDown gnm_ChickTime Hidden, % (ChickTime = "Kill") ? 4 : ChickTime//5
+Gui, Add, Text, x448 y186 w22 vSnailTimeText +Center Hidden, % (SnailTime = "Kill") ? SnailTime : SnailTime "m"
+Gui, Add, UpDown, xp+22 yp-1 w10 h16 -16 Range1-4 vSnailTimeUpDown gnm_SnailTime Hidden, % (SnailTime = "Kill") ? 4 : SnailTime//5
+Gui, Add, Text, x448 y207 w22 vChickTimeText +Center Hidden, % (ChickTime = "Kill") ? ChickTime : ChickTime "m"
+Gui, Add, UpDown, xp+22 yp-1 w10 h16 -16 Range1-4 vChickTimeUpDown gnm_ChickTime Hidden, % (ChickTime = "Kill") ? 4 : ChickTime//5
 
 
 nm_saveCollect()
