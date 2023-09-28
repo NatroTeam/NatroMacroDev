@@ -1629,9 +1629,9 @@ class discord
 		if FileExist(filepath)
 		{
 			FileGetSize, size, % filepath
-			if (size > 8388284)
+			if (size > 26214076)
 			{
-				this.SendEmbed("'" StrReplace(StrReplace(filepath, "\", "\\"), """", "\""") "' is above the Discord file size limit of 8MiB!", 16711731, , , , replyID)
+				this.SendEmbed("'" StrReplace(StrReplace(filepath, "\", "\\"), """", "\""") "' is above the Discord file size limit of 25MiB!", 16711731, , , , replyID)
 				return -1
 			}
 		}
