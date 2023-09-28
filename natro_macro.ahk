@@ -50,7 +50,6 @@ Reload(ahkpath) {
 	static cmd := DllCall("GetCommandLine", "Str"), params := DllCall("shlwapi\PathGetArgs","Str",cmd,"Str")
 	Run % """" ahkpath """ /r " params
 }
-global exe_path := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
 
 ; close any remnant running natro scripts and start heartbeat
 DetectHiddenWindows, On
@@ -60,7 +59,7 @@ WinGet, script_list, List, % A_ScriptDir " ahk_class AutoHotkey"
 		if (((script_hwnd := script_list%A_Index%) != A_ScriptHwnd) && (script_hwnd != A_Args[2]))
 			WinClose, ahk_id %script_hwnd%
 if !WinExist("Heartbeat.ahk ahk_class AutoHotkey")
-	run, "%exe_path%" /script "submacros\Heartbeat.ahk" "%VersionID%"
+	run, "%A_AhkPath%" /script "submacros\Heartbeat.ahk" "%VersionID%"
 DetectHiddenWindows, Off
 SetTitleMatchMode, 1
 
@@ -219,7 +218,7 @@ nm_import() ; at every start of macro, import patterns
 		}
 		)"
 
-		exec := ComObjCreate("WScript.Shell").Exec(exe_path " /script /ErrorStdOut *"), exec.StdIn.Write(script), exec.StdIn.Close()
+		exec := ComObjCreate("WScript.Shell").Exec(A_AhkPath " /script /ErrorStdOut *"), exec.StdIn.Write(script), exec.StdIn.Close()
 		if (stdout := exec.StdErr.ReadAll())
 			msgbox, 0x40010, Unable to Import Pattern!, % "Unable to import '" StrReplace(A_LoopFileName, ".ahk") "' pattern! Click 'OK' to continue loading the macro without this pattern installed, otherwise fix the error and reload the macro.`r`n`r`nThe error found on loading is stated below:`r`n" stdout, 60
 		else
@@ -240,7 +239,7 @@ nm_import() ; at every start of macro, import patterns
 	if init
 	{
 		WinClose, ahk_pid %lp_PID% ahk_class AutoHotkey
-		Reload(exe_path)
+		Reload(A_AhkPath)
 		Sleep, 10000
 	}
 
@@ -252,7 +251,7 @@ nm_import() ; at every start of macro, import patterns
 		else
 		{
 			WinClose, ahk_pid %lp_PID% ahk_class AutoHotkey
-			Reload(exe_path)
+			Reload(A_AhkPath)
 			Sleep, 10000
 		}
 	}
@@ -1665,7 +1664,7 @@ PostMessage, 0x5555, 10, 0, , ahk_pid %lp_PID%
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; STATUS HANDLER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-run, "%exe_path%" /script "submacros\Status.ahk" "%discordMode%" "%discordCheck%" "%webhook%" "%bottoken%" "%MainChannelCheck%" "%MainChannelID%" "%ReportChannelCheck%" "%ReportChannelID%" "%WebhookEasterEgg%" "%ssCheck%" "%ssDebugging%" "%CriticalSSCheck%" "%AmuletSSCheck%" "%MachineSSCheck%" "%BalloonSSCheck%" "%ViciousSSCheck%" "%DeathSSCheck%" "%PlanterSSCheck%" "%HoneySSCheck%" "%criticalCheck%" "%discordUID%" "%CriticalErrorPingCheck%" "%DisconnectPingCheck%" "%GameFrozenPingCheck%" "%PhantomPingCheck%" "%UnexpectedDeathPingCheck%" "%EmergencyBalloonPingCheck%" "%commandPrefix%" "%NightAnnouncementCheck%" "%NightAnnouncementName%" "%NightAnnouncementPingID%" "%NightAnnouncementWebhook%" "%PrivServer%" "%DebugLogEnabled%"
+run, "%A_AhkPath%" /script "submacros\Status.ahk" "%discordMode%" "%discordCheck%" "%webhook%" "%bottoken%" "%MainChannelCheck%" "%MainChannelID%" "%ReportChannelCheck%" "%ReportChannelID%" "%WebhookEasterEgg%" "%ssCheck%" "%ssDebugging%" "%CriticalSSCheck%" "%AmuletSSCheck%" "%MachineSSCheck%" "%BalloonSSCheck%" "%ViciousSSCheck%" "%DeathSSCheck%" "%PlanterSSCheck%" "%HoneySSCheck%" "%criticalCheck%" "%discordUID%" "%CriticalErrorPingCheck%" "%DisconnectPingCheck%" "%GameFrozenPingCheck%" "%PhantomPingCheck%" "%UnexpectedDeathPingCheck%" "%EmergencyBalloonPingCheck%" "%commandPrefix%" "%NightAnnouncementCheck%" "%NightAnnouncementName%" "%NightAnnouncementPingID%" "%NightAnnouncementWebhook%" "%PrivServer%" "%DebugLogEnabled%"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; GDIP BITMAPS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3128,7 +3127,7 @@ nm_TabSettingsUnLock()
 nm_setStatus()
 
 if(TimersOpen && (PlanterMode != 0))
-    run, "%exe_path%" /script "submacros\PlanterTimers.ahk" "%hwndstate%"
+    run, "%A_AhkPath%" /script "submacros\PlanterTimers.ahk" "%hwndstate%"
 
 settimer, Background, 2000
 if (A_Args[1] = 1)
@@ -3220,7 +3219,7 @@ nm_LoadingProgress(){
 	)"
 
 	shell := ComObjCreate("WScript.Shell")
-    exec := shell.Exec(exe_path " /script /f *")
+    exec := shell.Exec(A_AhkPath " /script /f *")
     exec.StdIn.Write(script), exec.StdIn.Close()
 
 	return exec.ProcessID
@@ -3644,7 +3643,7 @@ nm_testButton(){ ;~~ lines 3464 and 3465 have the same change as 14156
 	`)""
 
 	shell := ComObjCreate(""WScript.Shell"")
-    exec := shell.Exec(""" exe_path " /script /f *"")
+    exec := shell.Exec(""" A_AhkPath " /script /f *"")
     exec.StdIn.Write(script), exec.StdIn.Close()
 	ExitApp
 
@@ -3660,7 +3659,7 @@ nm_testButton(){ ;~~ lines 3464 and 3465 have the same change as 14156
 	)"
 
 	shell := ComObjCreate("WScript.Shell")
-    exec := shell.Exec(exe_path " /script /f *")
+    exec := shell.Exec(A_AhkPath " /script /f *")
     exec.StdIn.Write(script), exec.StdIn.Close()
 }
 nm_setState(newState){
@@ -6812,7 +6811,7 @@ nm_WebhookGUI(){
 	)"
 
 	shell := ComObjCreate("WScript.Shell")
-    exec := shell.Exec(exe_path " /script /f *")
+    exec := shell.Exec(A_AhkPath " /script /f *")
     exec.StdIn.Write(script), exec.StdIn.Close()
 
 	return (WGUIPID := exec.ProcessID)
@@ -7095,7 +7094,7 @@ nm_AutoStartManager(){
 	)"
 
 	file := FileOpen(path := A_ScriptDir "\submacros\AutoStartManager.ahk", "w-d", "UTF-8"), file.Write(script), file.Close()
-	Run, "%exe_path%" /script "%path%" "%hGUI%"
+	Run, "%A_AhkPath%" /script "%path%" "%hGUI%"
 
 	return
 }
@@ -13256,7 +13255,7 @@ nm_BitterberryFeeder()
 	)"
 
 	shell := ComObjCreate("WScript.Shell")
-    exec := shell.Exec(exe_path " /script /f *")
+    exec := shell.Exec(A_AhkPath " /script /f *")
     exec.StdIn.Write(script), exec.StdIn.Close()
 }
 nm_BasicEggHatcher()
@@ -13397,7 +13396,7 @@ nm_BasicEggHatcher()
 	)"
 
 	shell := ComObjCreate("WScript.Shell")
-    exec := shell.Exec(exe_path " /script /f *")
+    exec := shell.Exec(A_AhkPath " /script /f *")
     exec.StdIn.Write(script), exec.StdIn.Close()
 }
 nm_GenerateBeeList()
@@ -14120,7 +14119,7 @@ nm_createWalk(movement, name:="") ; this function generates the 'walk' code and 
 	}
 
 	shell := ComObjCreate("WScript.Shell")
-    exec := shell.Exec(exe_path " /script /f *")
+    exec := shell.Exec(A_AhkPath " /script /f *")
     exec.StdIn.Write(script), exec.StdIn.Close()
 
 	WinWait, % "ahk_class AutoHotkey ahk_pid " exec.ProcessID, , 2
@@ -19503,7 +19502,7 @@ ba_showPlanterTimers(){
 	DetectHiddenWindows, On
 	SetTitleMatchMode, 2
 	if !WinExist("PlanterTimers.ahk ahk_class AutoHotkey")
-		run, "%exe_path%" /script "submacros\PlanterTimers.ahk" "%hwndstate%"
+		run, "%A_AhkPath%" /script "submacros\PlanterTimers.ahk" "%hwndstate%"
 	else
 		WinClose
 	DetectHiddenWindows, %Prev_DetectHiddenWindows%
@@ -19749,10 +19748,10 @@ if(AutoFieldBoostActive){
 	}
 }
 ;start ancillary macros
-run, "%exe_path%" /script "submacros\background.ahk" "%NightLastDetected%" "%VBLastKilled%" "%StingerCheck%" "%StingerDailyBonusCheck%" "%AnnounceGuidingStar%" "%ReconnectInterval%" "%ReconnectHour%" "%ReconnectMin%" "%EmergencyBalloonPingCheck%" "%ConvertBalloon%"
+run, "%A_AhkPath%" /script "submacros\background.ahk" "%NightLastDetected%" "%VBLastKilled%" "%StingerCheck%" "%StingerDailyBonusCheck%" "%AnnounceGuidingStar%" "%ReconnectInterval%" "%ReconnectHour%" "%ReconnectMin%" "%EmergencyBalloonPingCheck%" "%ConvertBalloon%"
 ;(re)start stat monitor
 if (discordCheck && (((discordMode = 0) && RegExMatch(webhook, "i)^https:\/\/(canary\.|ptb\.)?(discord|discordapp)\.com\/api\/webhooks\/([\d]+)\/([a-z0-9_-]+)$")) || ((discordMode = 1) && (ReportChannelCheck = 1) && (ReportChannelID || MainChannelID))))
-	run, "%exe_path%" /script "submacros\StatMonitor.ahk" "%VersionID%"
+	run, "%A_AhkPath%" /script "submacros\StatMonitor.ahk" "%VersionID%"
 ;start main loop
 nm_setStatus(0, "Main Loop")
 nm_Start()
