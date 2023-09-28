@@ -3128,7 +3128,7 @@ nm_TabSettingsUnLock()
 nm_setStatus()
 
 if(TimersOpen && (PlanterMode != 0))
-    run, "%exe_path%" "submacros\PlanterTimers.ahk" "%hwndstate%"
+    run, "%exe_path%" /script "submacros\PlanterTimers.ahk" "%hwndstate%"
 
 settimer, Background, 2000
 if (A_Args[1] = 1)
