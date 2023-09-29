@@ -77,7 +77,7 @@ WinGet, script_list, List, % A_ScriptDir " ahk_class AutoHotkey"
 		if (((script_hwnd := script_list%A_Index%) != A_ScriptHwnd) && (script_hwnd != A_Args[2]))
 			WinClose, ahk_id %script_hwnd%
 if !WinExist("Heartbeat.ahk ahk_class AutoHotkey")
-	run, "%exe_path32%" /script "submacros\Heartbeat.ahk" "%VersionID%"
+	run, "%exe_path32%" /script "submacros\Heartbeat.ahk"
 DetectHiddenWindows, Off
 SetTitleMatchMode, 1
 
