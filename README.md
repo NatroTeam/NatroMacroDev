@@ -65,7 +65,7 @@ For discussion, please join us on our [Discord server][discord-link] instead.
 <details><summary><h4>📝 License</h4></summary>
 
 Copyright © 2022-2023 [Natro Team][github-profile-link]<br>
-This project is licensed under [GNU GPL v3.0](./LICENSE.md).
+This project is licensed under [GNU GPL v3.0](./LICENSE.md)
 
 </details>
 
