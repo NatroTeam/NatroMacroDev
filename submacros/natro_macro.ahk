@@ -23,11 +23,12 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #SingleInstance Force
 #Requires AutoHotkey v1.1.36.01+
 
-#Include %A_ScriptDir%\lib\Gdip_All.ahk
-#Include %A_ScriptDir%\lib\Gdip_ImageSearch.ahk
+#Include %A_ScriptDir%\..\lib
+#Include Gdip_All.ahk
+#Include Gdip_ImageSearch.ahk
 
 SetBatchLines -1
-SetWorkingDir %A_ScriptDir%
+SetWorkingDir %A_ScriptDir%\..
 CoordMode, Mouse, Screen
 CoordMode, Pixel, Screen
 
@@ -67,12 +68,12 @@ if (h = -1)
 
 ; declare executable paths
 global exe_path32 := A_AhkPath
-global exe_path64 := (A_Is64bitOS && FileExist("submacros\AutoHotkeyU64.exe")) ? (A_ScriptDir "\submacros\AutoHotkeyU64.exe") : A_AhkPath
+global exe_path64 := (A_Is64bitOS && FileExist("submacros\AutoHotkeyU64.exe")) ? (A_WorkingDir "\submacros\AutoHotkeyU64.exe") : A_AhkPath
 
 ; close any remnant running natro scripts and start heartbeat
 DetectHiddenWindows, On
 SetTitleMatchMode, 2
-WinGet, script_list, List, % A_ScriptDir " ahk_class AutoHotkey"
+WinGet, script_list, List, % A_WorkingDir " ahk_class AutoHotkey"
 	Loop %script_list%
 		if (((script_hwnd := script_list%A_Index%) != A_ScriptHwnd) && (script_hwnd != A_Args[2]))
 			WinClose, ahk_id %script_hwnd%
@@ -167,7 +168,7 @@ nm_import() ; at every start of macro, import patterns
 	import := ""
 	patternlist := "|"
 
-	Loop, Files, %A_ScriptDir%\patterns\*.ahk
+	Loop, Files, %A_WorkingDir%\patterns\*.ahk
 	{
 		file := FileOpen(A_LoopFilePath, "r"), pattern := file.Read(), file.Close()
 		script := "
@@ -246,11 +247,11 @@ nm_import() ; at every start of macro, import patterns
 		}
 	}
 
-	init := (!FileExist(A_ScriptDir "\settings\imported\patterns.ahk") && import) ? 1 : 0
-	file := FileOpen(A_ScriptDir "\settings\imported\patterns.ahk", "r-d"), oldimport := file.Read(), file.Close()
+	init := (!FileExist(A_WorkingDir "\settings\imported\patterns.ahk") && import) ? 1 : 0
+	file := FileOpen(A_WorkingDir "\settings\imported\patterns.ahk", "r-d"), oldimport := file.Read(), file.Close()
 	if (import != oldimport)
 	{
-		file := FileOpen(A_ScriptDir "\settings\imported\patterns.ahk", "w-d"), file.Write(import), file.Close()
+		file := FileOpen(A_WorkingDir "\settings\imported\patterns.ahk", "w-d"), file.Write(import), file.Close()
 		new_patterns := import ? 1 : 0
 	}
 
@@ -698,8 +699,8 @@ for k,v in config ; load the default values as globals, will be overwritten if a
 	for i,j in v
 		%i% := j
 
-if FileExist(A_ScriptDir "\settings\nm_config.ini") ; update default values with new ones read from any existing .ini
-	nm_ReadIni(A_ScriptDir "\settings\nm_config.ini")
+if FileExist(A_WorkingDir "\settings\nm_config.ini") ; update default values with new ones read from any existing .ini
+	nm_ReadIni(A_WorkingDir "\settings\nm_config.ini")
 
 ini := ""
 for k,v in config ; overwrite any existing .ini with updated one with all new keys and old values
@@ -709,8 +710,8 @@ for k,v in config ; overwrite any existing .ini with updated one with all new ke
 		ini .= i "=" %i% "`r`n"
 	ini .= "`r`n"
 }
-FileDelete, %A_ScriptDir%\settings\nm_config.ini
-FileAppend, %ini%, %A_ScriptDir%\settings\nm_config.ini
+FileDelete, %A_WorkingDir%\settings\nm_config.ini
+FileAppend, %ini%, %A_WorkingDir%\settings\nm_config.ini
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; NATRO ENHANCEMENT STUFF
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1479,7 +1480,7 @@ ObjFullyClone(obj)
 	return nobj
 }
 
-if FileExist(A_ScriptDir "\settings\field_config.ini") ; update default values with new ones read from any existing .ini
+if FileExist(A_WorkingDir "\settings\field_config.ini") ; update default values with new ones read from any existing .ini
 	nm_LoadFieldDefaults()
 
 loop 3 {
@@ -1495,8 +1496,8 @@ for k,v in FieldDefault ; overwrite any existing .ini with updated one with all 
 		ini .= i "=" j "`r`n"
 	ini .= "`r`n"
 }
-FileDelete, %A_ScriptDir%\settings\field_config.ini
-FileAppend, %ini%, %A_ScriptDir%\settings\field_config.ini
+FileDelete, %A_WorkingDir%\settings\field_config.ini
+FileAppend, %ini%, %A_WorkingDir%\settings\field_config.ini
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; MANUAL PLANTERS
@@ -1620,8 +1621,8 @@ for k,v in ManualPlanters ; load the default values as globals, will be overwrit
 	for i,j in v
 		%i% := j
 
-if FileExist(A_ScriptDir "\settings\manual_planters.ini") ; update default values with new ones read from any existing .ini
-	nm_ReadIni(A_ScriptDir "\settings\manual_planters.ini")
+if FileExist(A_WorkingDir "\settings\manual_planters.ini") ; update default values with new ones read from any existing .ini
+	nm_ReadIni(A_WorkingDir "\settings\manual_planters.ini")
 
 ini := ""
 for k,v in ManualPlanters ; overwrite any existing .ini with updated one with all new keys and old values
@@ -1631,8 +1632,8 @@ for k,v in ManualPlanters ; overwrite any existing .ini with updated one with al
 		ini .= i "=" %i% "`r`n"
 	ini .= "`r`n"
 }
-FileDelete, %A_ScriptDir%\settings\manual_planters.ini
-FileAppend, %ini%, %A_ScriptDir%\settings\manual_planters.ini
+FileDelete, %A_WorkingDir%\settings\manual_planters.ini
+FileAppend, %ini%, %A_WorkingDir%\settings\manual_planters.ini
 
 Hotkey, %StopHotkey%, stop, UseErrorLevel On
 global resetTime:=nowUnix()
@@ -1657,7 +1658,7 @@ objective:="UI"
 DailyReconnect:=0
 for k,v in ["PWindShrine","PWindShrineDonate","PWindShrineDonateNum","PWindShrineBooster","PWindShineBoostedField","PMondoGuid","PFieldDriftSteps","PFieldBoosted","PFieldGuidExtend","PFieldGuidExtendMins","PFieldBoostExtend","PFieldBoostBypass","PPopStarExtend"]
 	%v%:=0
-#include *i %A_ScriptDir%\settings\personal.ahk
+#include *i %A_ScriptDir%\..\settings\personal.ahk
 
 ;ensure Gui will be visible
 if (GuiX && GuiY)
@@ -1816,7 +1817,7 @@ PostMessage, 0x5555, 12, 0, , ahk_pid %lp_PID%
 ; CREATE GUI
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;https://www.autohotkey.com/boards/viewtopic.php?f=6&t=5841&hilit=gui+skin
-SkinForm(Apply, A_ScriptDir . "\nm_image_assets\Styles\USkin.dll", A_ScriptDir . "\nm_image_assets\styles\" . GuiTheme . ".msstyles")
+SkinForm(Apply, A_WorkingDir . "\nm_image_assets\Styles\USkin.dll", A_WorkingDir . "\nm_image_assets\styles\" . GuiTheme . ".msstyles")
 OnExit("GetOut")
 if (AlwaysOnTop)
 	gui +AlwaysOnTop
@@ -3227,7 +3228,7 @@ nm_LoadingProgress(){
 	#NoEnv
 	#NoTrayIcon
 	#Requires AutoHotkey v1.1.36.01+
-	#Include %A_ScriptDir%\lib\Gdip_All.ahk
+	#Include %A_WorkingDir%\lib\Gdip_All.ahk
 	CoordMode, Mouse, Screen
 
 	pToken := Gdip_Startup()
@@ -3369,12 +3370,12 @@ nm_selectTestPath(hCtrl){
 		if (hCtrl = hBrowse%A_Index%)
 		{
 			Gui, +OwnDialogs
-			FileSelectFile, path, , %A_ScriptDir%\paths, Select Path/Pattern, AHK Files (*.ahk)
+			FileSelectFile, path, , %A_WorkingDir%\paths, Select Path/Pattern, AHK Files (*.ahk)
 			if (SubStr(path, -3) = ".ahk")
 			{
 				Test%A_Index%Path := path
 				hFont := DllCall("SendMessage", "Ptr", hTest%A_Index%Text, "UInt", 0x31, "Ptr", 0, "Ptr", 0, "Ptr")
-				Loop, Parse, % (str := StrReplace(path, A_ScriptDir "\")), "\"
+				Loop, Parse, % (str := StrReplace(path, A_WorkingDir "\")), "\"
 				{
 					hDC := DllCall("GetDC", "UInt", hTest%A_Index%Text)
 					hFold := DllCall("SelectObject", "UInt", hDC, "UInt", hFont)
@@ -3512,7 +3513,7 @@ nm_testButton(){ ;~~ lines 3464 and 3465 have the same change as 14156
 	OnExit(""""ExitFunc"""")
 	CoordMode, Mouse, Screen
 
-	#Include %A_ScriptDir%\lib
+	#Include %A_WorkingDir%\lib
 	#Include Gdip_All.ahk
 	#Include Gdip_ImageSearch.ahk
 	#Include HyperSleep.ahk
@@ -4955,7 +4956,7 @@ nm_HotbarWhile(hCtrl:=0){
 nm_importStyles() {
 	global StylesList, GuiTheme
 	StylesList := ""
-	Loop, Files, %A_ScriptDir%\nm_image_assets\Styles\*.msstyles
+	Loop, Files, %A_WorkingDir%\nm_image_assets\Styles\*.msstyles
 		StylesList .= "|" A_LoopFileName
 
 	StylesList .= "|", StylesList := StrReplace(StylesList, ".msstyles")
@@ -6014,7 +6015,7 @@ nm_ResetConfig(){
 	msgbox, 0x40034, Reset Settings, Are you sure you want to reset ALL Natro settings? This will set all settings (Gather, Planters, Boost, Quests, etc.) to the default AND reset all timers (Collect/Kill, Planters, etc.), as if you freshly started the macro.`n`nIf you want to proceed, click 'Yes'. Backup your 'settings' folder if you're unsure.
 	IfMsgBox, Yes
 	{
-		FileRemoveDir, %A_ScriptDir%\settings, 1
+		FileRemoveDir, %A_WorkingDir%\settings, 1
 		GoSub, stop
 	}
 }
@@ -6108,7 +6109,7 @@ nm_ResetAllFieldDefaults(hCtrl){
 				ini .= "`r`n"
 			}
 
-			file := FileOpen(A_ScriptDir "\settings\field_config.ini", "w-d"), file.Write(ini), file.Close()
+			file := FileOpen(A_WorkingDir "\settings\field_config.ini", "w-d"), file.Write(ini), file.Close()
 
 			msgbox, 0x40040, Reset Field Defaults, Changed all field defaults back to their standard settings!
 		}
@@ -6142,7 +6143,7 @@ nm_testReconnect(){
 		msgbox success
 }
 nm_GotoDebugLogButton(){
-	Run, % "explorer.exe /e`, /n`, /select`," A_ScriptDir "\settings\debug_log.txt"
+	Run, % "explorer.exe /e`, /n`, /select`," A_WorkingDir "\settings\debug_log.txt"
 }
 nm_HotkeyGUI(){
 	global
@@ -6397,10 +6398,10 @@ nm_WebhookGUI(){
 	#SingleInstance Force
 	#Requires AutoHotkey v1.1.36.01+
 	#MaxThreads 255
-	#Include %A_ScriptDir%\lib\Gdip_All.ahk
-	#Include %A_ScriptDir%\lib\Gdip_ImageSearch.ahk
+	#Include %A_WorkingDir%
+	#Include lib\Gdip_All.ahk
+	#Include lib\Gdip_ImageSearch.ahk
 
-	SetWorkingDir %A_ScriptDir%
 	SetBatchLines -1
 	DetectHiddenWindows, On
 	SetTitleMatchMode, 2
@@ -6409,7 +6410,7 @@ nm_WebhookGUI(){
 
 	bitmaps := {}
 
-	#Include %A_ScriptDir%\nm_image_assets\webhook_gui\bitmaps.ahk
+	#Include nm_image_assets\webhook_gui\bitmaps.ahk
 
 	; config
 	discordMode := """ discordMode """
@@ -6889,7 +6890,7 @@ nm_AutoStartManager(){
 	}
 	DetectHiddenWindows %Prev_DetectHiddenWindows%
 	SetTitleMatchMode %Prev_TitleMatchMode%
-	FileDelete, %A_ScriptDir%\submacros\AutoStartManager.ahk
+	FileDelete, %A_WorkingDir%\submacros\AutoStartManager.ahk
 
 	script := "
 	(Join`r`n C
@@ -6929,8 +6930,8 @@ nm_AutoStartManager(){
 		}
 	}
 
-	DllCall(""LoadLibrary"", ""Str"", """ A_ScriptDir "\nm_image_assets\Styles\USkin.dll"")
-	DllCall(""" A_ScriptDir "\nm_image_assets\Styles\USkin.dll\USkinInit"", ""Int"", 0, ""Int"", 0, ""AStr"", """ A_ScriptDir "\nm_image_assets\Styles\" GuiTheme ".msstyles"")
+	DllCall(""LoadLibrary"", ""Str"", """ A_WorkingDir "\nm_image_assets\Styles\USkin.dll"")
+	DllCall(""" A_WorkingDir "\nm_image_assets\Styles\USkin.dll\USkinInit"", ""Int"", 0, ""Int"", 0, ""AStr"", """ A_WorkingDir "\nm_image_assets\Styles\" GuiTheme ".msstyles"")
 
 	w := 250, h := 250
 	hGUI := A_Args[1]
@@ -7139,7 +7140,7 @@ nm_AutoStartManager(){
 	}
 	)"
 
-	file := FileOpen(path := A_ScriptDir "\submacros\AutoStartManager.ahk", "w-d", "UTF-8"), file.Write(script), file.Close()
+	file := FileOpen(path := A_WorkingDir "\submacros\AutoStartManager.ahk", "w-d", "UTF-8"), file.Write(script), file.Close()
 	Run, "%A_AhkPath%" /script "%path%" "%hGUI%"
 
 	return
@@ -7191,8 +7192,7 @@ nm_ContributorsImage(page:=1){
 	static hCtrl, hBM1, hBM2, hBM3, hBM4, hBM5, hBM6, hBM7, hBM8, hBM9 ; 9 pages max
 		, colorArr := {"blue": [0xff83c6e2, 0xff2779d8, 0xff83c6e2]
 			, "gold": [0xfff0ca8f, 0xffd48d22, 0xfff0ca8f]
-			, "error-red": [0xffa82428, 0xffa82428, 0xffa82428]
-			, "pink": [0xffad32c3, 0xfff47fff, 0xffad32c3]}
+			, "red": [0xffA82428, 0xffA82428, 0xffA82428]}
 
 	if (hBM1 = "")
 	{
@@ -7229,7 +7229,7 @@ nm_ContributorsImage(page:=1){
 			contributors := StrSplit(wr.ResponseText, "`n", " `t")
 		}
 		catch
-			contributors := ["Error while loading,error-red", "contributors!,error-red", "", "Make sure you have,error-red", "a working internet,error-red", "connection and then,error-red", "reload the macro.,error-red"]
+			contributors := ["Error while loading,red", "contributors!,red", "", "Make sure you have,red", "a working internet,red", "connection and then,red", "reload the macro.,red"]
 
 		pBM := Gdip_CreateBitmap(244,212)
 		G := Gdip_GraphicsFromImage(pBM)
@@ -8084,20 +8084,20 @@ nm_imgSearch(fileName,v,aim := "full", trans:="none"){
 	yi:=(aim="low") ? windowHeight/2 : (aim="actionbar") ? (windowHeight/4)*3 : (aim="center") ? yi:=windowHeight/4 : (aim="lowright") ? windowHeight/2 : (aim="quest") ? 150 : 0
 	ww:=(aim="actionbar") ? xi*3 : (aim="highleft") ? windowWidth/2 : (aim="left") ? windowWidth/2 : (aim="center") ? xi*3 : (aim="quest") ? 310 : windowWidth
 	wh:=(aim="high") ? windowHeight/2 : (aim="highright") ? windowHeight/2 : (aim="highleft") ? windowHeight/2 : (aim="buff") ? 150 : (aim="abovebuff") ? 30 : (aim="center") ? yi*3 : (aim="quest") ? Max(560, windowHeight-100) : windowHeight
-	IfExist, %A_ScriptDir%\nm_image_assets\
+	IfExist, %A_WorkingDir%\nm_image_assets\
 	{
 		if(trans!="none")
-			ImageSearch, FoundX, FoundY, windowX + xi, windowY + yi, windowX + ww, windowY + wh, *%v% *Trans%trans% %A_ScriptDir%\nm_image_assets\%fileName%
+			ImageSearch, FoundX, FoundY, windowX + xi, windowY + yi, windowX + ww, windowY + wh, *%v% *Trans%trans% %A_WorkingDir%\nm_image_assets\%fileName%
 		else
-			ImageSearch, FoundX, FoundY, windowX + xi, windowY + yi, windowX + ww, windowY + wh, *%v% %A_ScriptDir%\nm_image_assets\%fileName%
+			ImageSearch, FoundX, FoundY, windowX + xi, windowY + yi, windowX + ww, windowY + wh, *%v% %A_WorkingDir%\nm_image_assets\%fileName%
 		if (ErrorLevel = 2) {
-			nm_setStatus("Error", "Image file " filename " was not found in:`n" A_ScriptDir "\nm_image_assets\" fileName)
+			nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
 			Sleep, 5000
 			Process, Close, % DllCall("GetCurrentProcessId")
 		}
 		return [ErrorLevel,FoundX-windowX,FoundY-windowY]
 	} else {
-		MsgBox Folder location cannot be found:`n%A_ScriptDir%\nm_image_assets\
+		MsgBox Folder location cannot be found:`n%A_WorkingDir%\nm_image_assets\
 		return 3, 0, 0
 	}
 }
@@ -8538,23 +8538,24 @@ nm_walkTo(location){
 
 	if ((paths.Count() = 0) || (SetHiveSlot != HiveSlot) || (SetHiveBees != HiveBees))
 	{
-		#Include %A_ScriptDir%\paths\wt-bamboo.ahk
-		#Include %A_ScriptDir%\paths\wt-blueflower.ahk
-		#Include %A_ScriptDir%\paths\wt-cactus.ahk
-		#Include %A_ScriptDir%\paths\wt-clover.ahk
-		#Include %A_ScriptDir%\paths\wt-coconut.ahk
-		#Include %A_ScriptDir%\paths\wt-dandelion.ahk
-		#Include %A_ScriptDir%\paths\wt-mountaintop.ahk
-		#Include %A_ScriptDir%\paths\wt-mushroom.ahk
-		#Include %A_ScriptDir%\paths\wt-pepper.ahk
-		#Include %A_ScriptDir%\paths\wt-pinetree.ahk
-		#Include %A_ScriptDir%\paths\wt-pineapple.ahk
-		#Include %A_ScriptDir%\paths\wt-pumpkin.ahk
-		#Include %A_ScriptDir%\paths\wt-rose.ahk
-		#Include %A_ScriptDir%\paths\wt-spider.ahk
-		#Include %A_ScriptDir%\paths\wt-strawberry.ahk
-		#Include %A_ScriptDir%\paths\wt-stump.ahk
-		#Include %A_ScriptDir%\paths\wt-sunflower.ahk
+		#Include %A_ScriptDir%\..\paths
+		#Include wt-bamboo.ahk
+		#Include wt-blueflower.ahk
+		#Include wt-cactus.ahk
+		#Include wt-clover.ahk
+		#Include wt-coconut.ahk
+		#Include wt-dandelion.ahk
+		#Include wt-mountaintop.ahk
+		#Include wt-mushroom.ahk
+		#Include wt-pepper.ahk
+		#Include wt-pinetree.ahk
+		#Include wt-pineapple.ahk
+		#Include wt-pumpkin.ahk
+		#Include wt-rose.ahk
+		#Include wt-spider.ahk
+		#Include wt-strawberry.ahk
+		#Include wt-stump.ahk
+		#Include wt-sunflower.ahk
 		SetHiveSlot := HiveSlot, SetHiveBees := HiveBees
 	}
 
@@ -8576,9 +8577,9 @@ nm_gotoBooster(booster){
 
 	if ((paths.Count() = 0) || (SetMoveMethod != MoveMethod) || (SetHiveSlot != HiveSlot) || (SetHiveBees != HiveBees))
 	{
-		#Include %A_ScriptDir%\paths\gtb-red.ahk
-		#Include %A_ScriptDir%\paths\gtb-blue.ahk
-		#Include %A_ScriptDir%\paths\gtb-mountain.ahk
+		#Include gtb-red.ahk
+		#Include gtb-blue.ahk
+		#Include gtb-mountain.ahk
 		SetMoveMethod := MoveMethod, SetHiveSlot := HiveSlot, SetHiveBees := HiveBees
 	}
 
@@ -9509,30 +9510,30 @@ nm_gotoCollect(location, waitEnd := 1){
 
 	if ((paths.Count() = 0) || (SetMoveMethod != MoveMethod) || (SetHiveSlot != HiveSlot) || (SetHiveBees != HiveBees))
 	{
-		#Include %A_ScriptDir%\paths\gtc-clock.ahk
-		#Include %A_ScriptDir%\paths\gtc-antpass.ahk
-		#Include %A_ScriptDir%\paths\gtc-robopass.ahk
-		#Include %A_ScriptDir%\paths\gtc-honeydis.ahk
-		#Include %A_ScriptDir%\paths\gtc-treatdis.ahk
-		#Include %A_ScriptDir%\paths\gtc-blueberrydis.ahk
-		#Include %A_ScriptDir%\paths\gtc-strawberrydis.ahk
-		#Include %A_ScriptDir%\paths\gtc-coconutdis.ahk
-		#Include %A_ScriptDir%\paths\gtc-gluedis.ahk
-		#Include %A_ScriptDir%\paths\gtc-royaljellydis.ahk
+		#Include gtc-clock.ahk
+		#Include gtc-antpass.ahk
+		#Include gtc-robopass.ahk
+		#Include gtc-honeydis.ahk
+		#Include gtc-treatdis.ahk
+		#Include gtc-blueberrydis.ahk
+		#Include gtc-strawberrydis.ahk
+		#Include gtc-coconutdis.ahk
+		#Include gtc-gluedis.ahk
+		#Include gtc-royaljellydis.ahk
 		;beesmas
-		#Include %A_ScriptDir%\paths\gtc-stockings.ahk
-		#Include %A_ScriptDir%\paths\gtc-wreath.ahk
-		#Include %A_ScriptDir%\paths\gtc-feast.ahk
-		#Include %A_ScriptDir%\paths\gtc-gingerbread.ahk
-		#Include %A_ScriptDir%\paths\gtc-snowmachine.ahk
-		#Include %A_ScriptDir%\paths\gtc-candles.ahk
-		#Include %A_ScriptDir%\paths\gtc-samovar.ahk
-		#Include %A_ScriptDir%\paths\gtc-lidart.ahk
-		#Include %A_ScriptDir%\paths\gtc-gummybeacon.ahk
-		#Include %A_ScriptDir%\paths\gtc-rbpdelevel.ahk
+		#Include gtc-stockings.ahk
+		#Include gtc-wreath.ahk
+		#Include gtc-feast.ahk
+		#Include gtc-gingerbread.ahk
+		#Include gtc-snowmachine.ahk
+		#Include gtc-candles.ahk
+		#Include gtc-samovar.ahk
+		#Include gtc-lidart.ahk
+		#Include gtc-gummybeacon.ahk
+		#Include gtc-rbpdelevel.ahk
 		;other
-		#Include %A_ScriptDir%\paths\gtc-honeystorm.ahk
-		#Include %A_ScriptDir%\paths\gtc-honeylb.ahk
+		#Include gtc-honeystorm.ahk
+		#Include gtc-honeylb.ahk
 		SetMoveMethod := MoveMethod, SetHiveSlot := HiveSlot, SetHiveBees := HiveBees
 	}
 
@@ -12109,23 +12110,23 @@ nm_cannonTo(location){
 
 	if ((paths.Count() = 0) || (SetHiveSlot != HiveSlot) || (SetHiveBees != HiveBees))
 	{
-		#Include %A_ScriptDir%\paths\ct-bamboo.ahk
-		#Include %A_ScriptDir%\paths\ct-blueflower.ahk
-		#Include %A_ScriptDir%\paths\ct-cactus.ahk
-		#Include %A_ScriptDir%\paths\ct-clover.ahk
-		#Include %A_ScriptDir%\paths\ct-coconut.ahk
-		#Include %A_ScriptDir%\paths\ct-dandelion.ahk
-		#Include %A_ScriptDir%\paths\ct-mountaintop.ahk
-		#Include %A_ScriptDir%\paths\ct-mushroom.ahk
-		#Include %A_ScriptDir%\paths\ct-pepper.ahk
-		#Include %A_ScriptDir%\paths\ct-pinetree.ahk
-		#Include %A_ScriptDir%\paths\ct-pineapple.ahk
-		#Include %A_ScriptDir%\paths\ct-pumpkin.ahk
-		#Include %A_ScriptDir%\paths\ct-rose.ahk
-		#Include %A_ScriptDir%\paths\ct-spider.ahk
-		#Include %A_ScriptDir%\paths\ct-strawberry.ahk
-		#Include %A_ScriptDir%\paths\ct-stump.ahk
-		#Include %A_ScriptDir%\paths\ct-sunflower.ahk
+		#Include ct-bamboo.ahk
+		#Include ct-blueflower.ahk
+		#Include ct-cactus.ahk
+		#Include ct-clover.ahk
+		#Include ct-coconut.ahk
+		#Include ct-dandelion.ahk
+		#Include ct-mountaintop.ahk
+		#Include ct-mushroom.ahk
+		#Include ct-pepper.ahk
+		#Include ct-pinetree.ahk
+		#Include ct-pineapple.ahk
+		#Include ct-pumpkin.ahk
+		#Include ct-rose.ahk
+		#Include ct-spider.ahk
+		#Include ct-strawberry.ahk
+		#Include ct-stump.ahk
+		#Include ct-sunflower.ahk
 		SetHiveSlot := HiveSlot, SetHiveBees := HiveBees
 	}
 
@@ -12147,23 +12148,23 @@ nm_gotoPlanter(location, waitEnd := 1){
 
 	if ((paths.Count() = 0) || (SetHiveSlot != HiveSlot) || (SetHiveBees != HiveBees))
 	{
-		#Include %A_ScriptDir%\paths\gtp-bamboo.ahk
-		#Include %A_ScriptDir%\paths\gtp-blueflower.ahk
-		#Include %A_ScriptDir%\paths\gtp-cactus.ahk
-		#Include %A_ScriptDir%\paths\gtp-clover.ahk
-		#Include %A_ScriptDir%\paths\gtp-coconut.ahk
-		#Include %A_ScriptDir%\paths\gtp-dandelion.ahk
-		#Include %A_ScriptDir%\paths\gtp-mountaintop.ahk
-		#Include %A_ScriptDir%\paths\gtp-mushroom.ahk
-		#Include %A_ScriptDir%\paths\gtp-pepper.ahk
-		#Include %A_ScriptDir%\paths\gtp-pinetree.ahk
-		#Include %A_ScriptDir%\paths\gtp-pineapple.ahk
-		#Include %A_ScriptDir%\paths\gtp-pumpkin.ahk
-		#Include %A_ScriptDir%\paths\gtp-rose.ahk
-		#Include %A_ScriptDir%\paths\gtp-spider.ahk
-		#Include %A_ScriptDir%\paths\gtp-strawberry.ahk
-		#Include %A_ScriptDir%\paths\gtp-stump.ahk
-		#Include %A_ScriptDir%\paths\gtp-sunflower.ahk
+		#Include gtp-bamboo.ahk
+		#Include gtp-blueflower.ahk
+		#Include gtp-cactus.ahk
+		#Include gtp-clover.ahk
+		#Include gtp-coconut.ahk
+		#Include gtp-dandelion.ahk
+		#Include gtp-mountaintop.ahk
+		#Include gtp-mushroom.ahk
+		#Include gtp-pepper.ahk
+		#Include gtp-pinetree.ahk
+		#Include gtp-pineapple.ahk
+		#Include gtp-pumpkin.ahk
+		#Include gtp-rose.ahk
+		#Include gtp-spider.ahk
+		#Include gtp-strawberry.ahk
+		#Include gtp-stump.ahk
+		#Include gtp-sunflower.ahk
 		SetHiveSlot := HiveSlot, SetHiveBees := HiveBees
 	}
 
@@ -12189,23 +12190,23 @@ nm_walkFrom(field:="none")
 
 	if ((paths.Count() = 0) || (SetHiveSlot != HiveSlot) || (SetHiveBees != HiveBees))
 	{
-		#Include %A_ScriptDir%\paths\wf-bamboo.ahk
-		#Include %A_ScriptDir%\paths\wf-blueflower.ahk
-		#Include %A_ScriptDir%\paths\wf-cactus.ahk
-		#Include %A_ScriptDir%\paths\wf-clover.ahk
-		#Include %A_ScriptDir%\paths\wf-coconut.ahk
-		#Include %A_ScriptDir%\paths\wf-dandelion.ahk
-		#Include %A_ScriptDir%\paths\wf-mountaintop.ahk
-		#Include %A_ScriptDir%\paths\wf-mushroom.ahk
-		#Include %A_ScriptDir%\paths\wf-pepper.ahk
-		#Include %A_ScriptDir%\paths\wf-pinetree.ahk
-		#Include %A_ScriptDir%\paths\wf-pineapple.ahk
-		#Include %A_ScriptDir%\paths\wf-pumpkin.ahk
-		#Include %A_ScriptDir%\paths\wf-rose.ahk
-		#Include %A_ScriptDir%\paths\wf-spider.ahk
-		#Include %A_ScriptDir%\paths\wf-strawberry.ahk
-		#Include %A_ScriptDir%\paths\wf-stump.ahk
-		#Include %A_ScriptDir%\paths\wf-sunflower.ahk
+		#Include wf-bamboo.ahk
+		#Include wf-blueflower.ahk
+		#Include wf-cactus.ahk
+		#Include wf-clover.ahk
+		#Include wf-coconut.ahk
+		#Include wf-dandelion.ahk
+		#Include wf-mountaintop.ahk
+		#Include wf-mushroom.ahk
+		#Include wf-pepper.ahk
+		#Include wf-pinetree.ahk
+		#Include wf-pineapple.ahk
+		#Include wf-pumpkin.ahk
+		#Include wf-rose.ahk
+		#Include wf-spider.ahk
+		#Include wf-strawberry.ahk
+		#Include wf-stump.ahk
+		#Include wf-sunflower.ahk
 		SetHiveSlot := HiveSlot, SetHiveBees := HiveBees
 	}
 
@@ -13182,9 +13183,10 @@ nm_BitterberryFeeder()
 	#NoTrayIcon
 	#SingleInstance Force
 	#Requires AutoHotkey v1.1.36.01+
-	#Include %A_ScriptDir%\lib\Gdip_All.ahk
-	#Include %A_ScriptDir%\lib\Gdip_ImageSearch.ahk
-	#Include %A_ScriptDir%\submacros\shared\nm_misc.ahk
+	#Include %A_WorkingDir%\lib
+	#Include Gdip_All.ahk
+	#Include Gdip_ImageSearch.ahk
+	#Include %A_WorkingDir%\submacros\shared\nm_misc.ahk
 
 	CoordMode, Mouse, Screen
 	SetBatchLines -1
@@ -13330,9 +13332,10 @@ nm_BasicEggHatcher()
 	#NoTrayIcon
 	#SingleInstance Force
 	#Requires AutoHotkey v1.1.36.01+
-	#Include %A_ScriptDir%\lib\Gdip_All.ahk
-	#Include %A_ScriptDir%\lib\Gdip_ImageSearch.ahk
-	#Include %A_ScriptDir%\submacros\shared\nm_misc.ahk
+	#Include %A_WorkingDir%\lib
+	#Include Gdip_All.ahk
+	#Include Gdip_ImageSearch.ahk
+	#Include %A_WorkingDir%\submacros\shared\nm_misc.ahk
 
 	CoordMode, Mouse, Screen
 	SetBatchLines -1
@@ -14017,7 +14020,7 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 		}
 		)"
 
-		#Include *i %A_ScriptDir%\settings\imported\patterns.ahk ; override with any custom paths
+		#Include *i %A_ScriptDir%\..\settings\imported\patterns.ahk ; override with any custom paths
 	}
 
 	identifier := pattern . patternsize . reps . TCFBKey . AFCFBKey . TCLRKey . AFCLRKey
@@ -14076,7 +14079,7 @@ nm_createWalk(movement, name:="") ; this function generates the 'walk' code and 
 		ListLines, Off
 		OnExit(""ExitFunc"")
 
-		#Include %A_ScriptDir%\lib
+		#Include %A_WorkingDir%\lib
 		#Include Gdip_All.ahk
 		#Include Gdip_ImageSearch.ahk
 		#Include HyperSleep.ahk
@@ -14137,7 +14140,7 @@ nm_createWalk(movement, name:="") ; this function generates the 'walk' code and 
 		ListLines, Off
 		OnExit(""ExitFunc"")
 
-		#Include %A_ScriptDir%\lib
+		#Include %A_WorkingDir%\lib
 		#Include Gdip_All.ahk
 		#Include Gdip_ImageSearch.ahk
 		#Include HyperSleep.ahk
@@ -15885,16 +15888,16 @@ nm_HoneyQuest(){
 		ww := windowX+306
 		wh := windowY+windowHeight
 		fileName:="questbargap.png"
-		IfExist, %A_ScriptDir%\nm_image_assets\
+		IfExist, %A_WorkingDir%\nm_image_assets\
 		{
-			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_ScriptDir%\nm_image_assets\%fileName%
+			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_WorkingDir%\nm_image_assets\%fileName%
 			if (ErrorLevel = 2) {
-				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_ScriptDir "\nm_image_assets\" fileName)
+				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
 				Sleep, 5000
 				Process, Close, % DllCall("GetCurrentProcessId")
 			}
 		} else {
-			MsgBox Folder location cannot be found:`n%A_ScriptDir%\nm_image_assets\
+			MsgBox Folder location cannot be found:`n%A_WorkingDir%\nm_image_assets\
 		}
 		HoneyStart:=[ErrorLevel, FoundX-windowX, FoundY-windowY]
 		;determine quest bar sizes and spacing
@@ -16053,16 +16056,16 @@ nm_PolarQuestProg(){
 		ww := windowX+306
 		wh := windowY+windowHeight
 		fileName:="questbargap.png"
-		IfExist, %A_ScriptDir%\nm_image_assets\
+		IfExist, %A_WorkingDir%\nm_image_assets\
 		{
-			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_ScriptDir%\nm_image_assets\%fileName%
+			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_WorkingDir%\nm_image_assets\%fileName%
 			if (ErrorLevel = 2) {
-				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_ScriptDir "\nm_image_assets\" fileName)
+				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
 				Sleep, 5000
 				Process, Close, % DllCall("GetCurrentProcessId")
 			}
 		} else {
-			MsgBox Folder location cannot be found:`n%A_ScriptDir%\nm_image_assets\
+			MsgBox Folder location cannot be found:`n%A_WorkingDir%\nm_image_assets\
 		}
 		PolarStart:=[ErrorLevel, FoundX-windowX, FoundY-windowY]
 		;determine quest bar sizes and spacing
@@ -16438,16 +16441,16 @@ nm_RileyQuestProg(){
 		ww := windowX+306
 		wh := windowY+windowHeight
 		fileName:="questbargap.png"
-		IfExist, %A_ScriptDir%\nm_image_assets\
+		IfExist, %A_WorkingDir%\nm_image_assets\
 		{
-			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_ScriptDir%\nm_image_assets\%fileName%
+			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_WorkingDir%\nm_image_assets\%fileName%
 			if (ErrorLevel = 2) {
-				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_ScriptDir "\nm_image_assets\" fileName)
+				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
 				Sleep, 5000
 				Process, Close, % DllCall("GetCurrentProcessId")
 			}
 		} else {
-			MsgBox Folder location cannot be found:`n%A_ScriptDir%\nm_image_assets\
+			MsgBox Folder location cannot be found:`n%A_WorkingDir%\nm_image_assets\
 		}
 		RileyStart:=[ErrorLevel, FoundX-windowX, FoundY-windowY]
 		;determine quest bar sizes and spacing
@@ -16773,16 +16776,16 @@ nm_BuckoQuestProg(){
 		ww := windowX+306
 		wh := windowY+windowHeight
 		fileName:="questbargap.png"
-		IfExist, %A_ScriptDir%\nm_image_assets\
+		IfExist, %A_WorkingDir%\nm_image_assets\
 		{
-			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_ScriptDir%\nm_image_assets\%fileName%
+			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_WorkingDir%\nm_image_assets\%fileName%
 			if (ErrorLevel = 2) {
-				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_ScriptDir "\nm_image_assets\" fileName)
+				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
 				Sleep, 5000
 				Process, Close, % DllCall("GetCurrentProcessId")
 			}
 		} else {
-			MsgBox Folder location cannot be found:`n%A_ScriptDir%\nm_image_assets\
+			MsgBox Folder location cannot be found:`n%A_WorkingDir%\nm_image_assets\
 		}
 		BuckoStart:=[ErrorLevel, FoundX-windowX, FoundY-windowY]
 		;determine quest bar sizes and spacing
@@ -17118,16 +17121,16 @@ nm_BlackQuestProg(){
 		ww := windowX+306
 		wh := windowY+windowHeight
 		fileName:="questbargap.png"
-		IfExist, %A_ScriptDir%\nm_image_assets\
+		IfExist, %A_WorkingDir%\nm_image_assets\
 		{
-			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_ScriptDir%\nm_image_assets\%fileName%
+			ImageSearch, FoundX, FoundY, xi, yi, ww, wh, *5 %A_WorkingDir%\nm_image_assets\%fileName%
 			if (ErrorLevel = 2) {
-				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_ScriptDir "\nm_image_assets\" fileName)
+				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
 				Sleep, 5000
 				Process, Close, % DllCall("GetCurrentProcessId")
 			}
 		} else {
-			MsgBox Folder location cannot be found:`n%A_ScriptDir%\nm_image_assets\
+			MsgBox Folder location cannot be found:`n%A_WorkingDir%\nm_image_assets\
 		}
 		BlackStart:=[ErrorLevel, FoundX-windowX, FoundY-windowY]
 		;determine quest bar sizes and spacing
@@ -17329,11 +17332,11 @@ nm_gotoQuestgiver(giver){
 
 	if ((paths.Count() = 0) || (SetMoveMethod != MoveMethod) || (SetHiveSlot != HiveSlot) || (SetHiveBees != HiveBees))
 	{
-		#Include %A_ScriptDir%\paths\gtq-polar.ahk
-		#Include %A_ScriptDir%\paths\gtq-honey.ahk
-		#Include %A_ScriptDir%\paths\gtq-black.ahk
-		#Include %A_ScriptDir%\paths\gtq-riley.ahk
-		#Include %A_ScriptDir%\paths\gtq-bucko.ahk
+		#Include gtq-polar.ahk
+		#Include gtq-honey.ahk
+		#Include gtq-black.ahk
+		#Include gtq-riley.ahk
+		#Include gtq-bucko.ahk
 		SetMoveMethod := MoveMethod, SetHiveSlot := HiveSlot, SetHiveBees := HiveBees
 	}
 
@@ -17624,7 +17627,7 @@ nm_LoadFieldDefaults()
 {
 	global FieldDefault
 
-	ini := FileOpen(A_ScriptDir "\settings\field_config.ini", "r"), str := ini.Read(), ini.Close()
+	ini := FileOpen(A_WorkingDir "\settings\field_config.ini", "r"), str := ini.Read(), ini.Close()
 	Loop, Parse, str, `r`n, %A_Space%%A_Tab%
 	{
 		switch (c := SubStr(A_LoopField, 1, 1))
@@ -19590,7 +19593,7 @@ nm_endWalk()
 WinClose, StatMonitor.ahk ahk_class AutoHotkey
 WinClose, background.ahk ahk_class AutoHotkey
 WinClose, Status.ahk ahk_class AutoHotkey
-WinGet, script_list, List, % A_ScriptDir " ahk_class AutoHotkey"
+WinGet, script_list, List, % A_WorkingDir " ahk_class AutoHotkey"
 	Loop %script_list%
 		if ((script_hwnd := script_list%A_Index%) != A_ScriptHwnd)
 			WinClose, ahk_id %script_hwnd%
@@ -20058,7 +20061,7 @@ nm_setGlobalStr(wParam, lParam)
 	Critical
 	local var
 	; enumeration
-	#Include %A_ScriptDir%\submacros\shared\EnumStr.ahk
+	#Include %A_ScriptDir%\shared\EnumStr.ahk
 	static sections := ["Boost","Collect","Gather","Gui","Planters","Quests","Settings","Status"]
 
 	var := arr[wParam], section := sections[lParam]
@@ -20072,7 +20075,7 @@ nm_setGlobalInt(wParam, lParam)
 	Critical
 	local var
 	; enumeration
-	#Include %A_ScriptDir%\submacros\shared\EnumInt.ahk
+	#Include %A_ScriptDir%\shared\EnumInt.ahk
 
 	var := arr[wParam], %var% := lParam
 	nm_UpdateGUIVar(var)
