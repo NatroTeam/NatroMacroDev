@@ -1,13 +1,22 @@
-<!--
+﻿<!--
+  /\ \ \__ _| |_ _ __ ___     /\/\   __ _  ___ _ __ ___  
+ /  \/ / _` | __| '__/ _ \   /    \ / _` |/ __| '__/ _ \ 
+/ /\  / (_| | |_| | | (_) | / /\/\ \ (_| | (__| | | (_) |
+\_\ \/ \__,_|\__|_|  \___/  \/    \/\__,_|\___|_|  \___/                                                    
+
 Thanks for downloading Natro Macro!
 
-To run the macro, just extract the folder and open 'NATRO_MACRO.exe'!
+To start the macro, just open 'START.bat'!
 
-If you need help or just want to discuss, join our Discord at .gg/natromacro!
+If you need help or just want to discuss, join our Discord server!
 
-IMPORTANT: Make sure you are only downloading from an official source!
-The only official sources are our GitHub page (https://github.com/NatroTeam/NatroMacro)
-and our Discord server (https://discord.gg/natromacro)
+Give us a Star on GitHub!
+
+IMPORTANT:
+Make sure you are only downloading from an official source!
+The only official sources are:
+ - our GitHub page (https://github.com/NatroTeam/NatroMacro)
+ - our Discord server (https://discord.gg/natromacro)
 
 >>> IGNORE BELOW THIS LINE <<<
 -->
@@ -35,7 +44,7 @@ An open-source Bee Swarm Simulator macro written in AutoHotkey!
 
 1. Download the latest version from [here][latest-release-link]
 2. Right click Natro_Macro_vX.X.X.zip and click 'Extract All...'
-3. Open the extracted folder and run 'NATRO_MACRO.exe'
+3. Open the extracted folder and run 'START.bat'
 
 
 ## 🫂 Community
