@@ -23,6 +23,8 @@ set reset=%\e%[0m
 for %%a in (".\..") do set "grandparent=%%~nxa"
 if defined grandparent (
 	for /f "tokens=1,* delims=_" %%a in ("%grandparent%") do set "zip=%%b"
+	call set str=%%zip:*.zip=%%
+	call set zip=%%zip:!str!=%%
 	if defined zip (
 		echo %cyan%Looking for !zip!...%reset%
 		cd %USERPROFILE%
