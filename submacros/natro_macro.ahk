@@ -1652,11 +1652,13 @@ global HasPopStar:=0
 global PopStarActive:=0
 global PreviousAction:="None"
 global CurrentAction:="Startup"
+sprinklerImages := ["saturator"]
 state:="Startup"
 objective:="UI"
 DailyReconnect:=0
-for k,v in ["PWindShrine","PWindShrineDonate","PWindShrineDonateNum","PWindShrineBooster","PWindShineBoostedField","PMondoGuid","PFieldDriftSteps","PFieldBoosted","PFieldGuidExtend","PFieldGuidExtendMins","PFieldBoostExtend","PFieldBoostBypass","PPopStarExtend"]
+for k,v in ["PWindShrine","PWindShrineDonate","PWindShrineDonateNum","PWindShrineBooster","PWindShineBoostedField","PMondoGuid","PFieldBoosted","PFieldGuidExtend","PFieldGuidExtendMins","PFieldBoostExtend","PFieldBoostBypass","PPopStarExtend"]
 	%v%:=0
+PFieldDriftSteps:=15
 #include *i %A_ScriptDir%\..\settings\personal.ahk
 
 ;ensure Gui will be visible
@@ -1701,6 +1703,8 @@ bitmaps["no"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAB4AAAAQAQMAAAA7
 bitmaps["keep"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEIAAAAcAQMAAADvHvssAAAABlBMVEUAAAD3//lCqWtQAAAAAXRSTlMAQObYZgAAAIBJREFUeNqVzjEOwjAQRNGxLHmbyLmAJa6RY6WkQitxMR9lIwpKWgrLy8pgkyJNfvW6GUjCL1mGrkPrkHRtuevBsOgGPNm/XSE1gYqvpIwX4kSB7gzFFIInl6GcQmzavoIpX+qsJogcaE2I2MmZlr/6hqS5kO3C1B5UU2yv0DuhDxaLPafi+H0cAAAAAElFTkSuQmCC")
 bitmaps["emptyhealth"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAABQAAAABCAAAAAD7+dH5AAAADElEQVR42mNczoAJAA02AKmWDxinAAAAAElFTkSuQmCC")
 bitmaps["disconnected"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAoAAAAUAgMAAADJgETFAAAACVBMVEU5Oz3+/v7///+uecUjAAAAF3RFWHRTb2Z0d2FyZQBQaG90b0RlbW9uIDkuMM0c2DEAAAMoaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49J++7vycgaWQ9J1c1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCc/Pgo8eDp4bXBtZXRhIHhtbG5zOng9J2Fkb2JlOm5zOm1ldGEvJyB4OnhtcHRrPSdJbWFnZTo6RXhpZlRvb2wgMTIuNDQnPgo8cmRmOlJERiB4bWxuczpyZGY9J2h0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMnPgoKIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PScnCiAgeG1sbnM6ZXhpZj0naHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8nPgogIDxleGlmOlBpeGVsWERpbWVuc2lvbj4xMDwvZXhpZjpQaXhlbFhEaW1lbnNpb24+CiAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjIwPC9leGlmOlBpeGVsWURpbWVuc2lvbj4KIDwvcmRmOkRlc2NyaXB0aW9uPgoKIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PScnCiAgeG1sbnM6dGlmZj0naHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8nPgogIDx0aWZmOkltYWdlTGVuZ3RoPjIwPC90aWZmOkltYWdlTGVuZ3RoPgogIDx0aWZmOkltYWdlV2lkdGg+MTA8L3RpZmY6SW1hZ2VXaWR0aD4KICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogIDx0aWZmOlJlc29sdXRpb25Vbml0PjI8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgPHRpZmY6WFJlc29sdXRpb24+OTYvMTwvdGlmZjpYUmVzb2x1dGlvbj4KICA8dGlmZjpZUmVzb2x1dGlvbj45Ni8xPC90aWZmOllSZXNvbHV0aW9uPgogPC9yZGY6RGVzY3JpcHRpb24+CjwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9J3InPz5QDHWDAAAAEklEQVR42mMgFmStWsCwijAGAH2jE0nFh8hRAAAAAElFTkSuQmCC")
+bitmaps["saturator"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAsAAAANCAYAAAB/9ZQ7AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZSURBVChTY2C88f8/sXhUMTIeVYzA//8DAD1Dlimzf8yLAAAAAElFTkSuQmCC")
+bitmaps["saturatorWS"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAsAAAANCAIAAADwlwNsAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABWSURBVChTfY5RDsAgDEJx99+Z6zMujXYoXy2lQHsjmjzgQ3q+7QBEQ4HwAu/Ba0YPRelR1ppSzuDWdKpNSmJ6Hz3ybeuxmkGalL+UwaTApgEwKetZUgfv4wyvgpuHgQAAAABJRU5ErkJggg==")
 
 ;gui
 bitmaps["beesmas"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAC1lBMVEUAAABkuTNitTJfqTPSdVGQakFhqjJkpDRgpjP+5l3211ZdqjBgpzNcnzJhrjNdqi5jpTVhtC5epDM9wCNenzNhojf84mBayjForTVbrzL30RmZb07z4F/+XV/y0k9fuzH91y9dnTRkrDRkojNXnyZeuTCeclKBsz1SwC6SaUOYi0FjtTJWqTD+4m3y3mTsYVhiqDT+42NWuy6gdFSrviRitzPcaVRiqDT01FKVa0RPviz72EVfsjH7WVljtzGWdU9gtTJ+ljpYlTObblBkuDJ/pDhGrC5fpTT1zyWOnD1nrzf311b63l6wf0mQYkVTqy9hsC/Uvw7+Om2LakH+4mcr0iEajBpitTJitjJhpjNfpDBjsjJnvzT/V19gpjJWqzBesy1boyv/T2L/U2D4XVxpqz1jozRjrDNhpTNgtS9YsSTP5cH/UWH+W13oZVhpuTtmrjdqxDZntDVnvDRjsDNhuDFhsTFcujBUrDBTqDBYvC9cpC9UvS3////7/v2y1Jyn1Yz/72j/aWKGxWHlaFfhalTBe02Zeky9eku4ekqbikGNcUGGpT6MnD18njtqszp8pDlqmDZrsTVvqzVkoDRcmjRfqDJVtDFdrzFaqTFPoDFXmTFatjBatDBYozBXuS5bsyhbqyZXoSZNqCVUoCPc7dG/2q2936mw2Zms0JSazYOWxHiPwG+NyWv/6WiJvmaLw2X/YmL7312rhln/UVl7tVXv11Scm1Oef1PW1VLWclLXcVLQcFF3s1DJbVD42E/TzU9tuU/Jc0+tjkuReEtyrkm1fkmvgEite0hwvEWbs0Scq0SjmUSfiUOciUP+1kKyyEL/5kGOh0GKsz6Qnj6Kkz6Kkj7/4D2AujyFlTx4lDptujm30TdrwjdqozdynjdkuTZftzVvrjVnojRgqDNXnTNXvTFYrzFTrTFMojBmwy9eoS9Uui5ivi1RtC1jsSxaridTpCZajVxKAAAAV3RSTlMA/s8a/vLizsmpmpN+em5DOy8iDwv9/Pv6+Pj29fXs7Ojn5ubg393b0MvBu7i1tLGvrq2soZ+ckpCQjYSEf395eGhnXlpZVlJQSklAPTMrKikjIh4aFggjtvGzAAACC0lEQVQ4y2JAA1zeDPiBmAU+WWtO3XVyXJw+OBV4KFzcv6nRMAS3EYFS5xv18Nlhcv3ANhkB3PJudy48n7xTPQyXfKh88dyy6nnvuXEp0L88PyI6KnV9Pz92edemvPDy6EWrazeoiGBVYHUqaXf5nKjUNanpQlgVMGucSdoVHR+1KJ0Hhxs4pp9Lyrv18qmoE3Z57rsz3vWmJJ+Y8kLSH5s8f0wEY0TN5EM5Kcd62LHIC6vGJCzNXjA3/uae2OQmW0wFAJndmJ+womFBWUZ8/P2uNhZfdHnPjS1FVVlZEdEZkZEfF1eEs6MHhdHpnJZHNeFABXGJ9fWJcUXoUcYnfiU2pbemHKQgOzsxnY0Z3Q62ZxPyktomvZkZGRcVFVXAiy7PW5BWmdaZk3t84qxZs2dPnaqIZoIgY0RZyYzpfSzJsfsuTZxXWflQB1UB09usCCCoqprQkZKc29px9mqPI7I8YDavmhvCQSBiTkXatc7W3NgtsbJBCPmA4qzldfkJIAUfqqfFV8x83Le967AWkgUxmfknM8FGNB+NioyMW7Kq7uDiB+5wBcWM4ZkJIOmE/NplSyIjIxO3rkyNuo1IFg4xhYWFMTGlpZmla/dWP5mWXlCysKhfSQjJly52ptpMEpNKohe+TptyT5nDwJzPSxgjQu0372g/0t3dzhqMK907G6tJs2pa+iGLAQCiD78p46afzQAAAABJRU5ErkJggg==")
@@ -2387,6 +2391,8 @@ catch
 }
 if (beesmasActive = 0)
 	BeesmasGatherInterruptCheck := StockingsCheck := WreathCheck := FeastCheck := RBPDeLevelChck := GingerbreadCheck := SnowMachineCheck := CandlesCheck := SamovarCheck := LidArtCheck := GummyBeaconCheck := 0
+else
+	sprinklerImages.Push("saturatorWS")
 GuiControl, , BeesmasGroupBox, % "Beesmas" (beesmasActive ? " (Active)" : " (Inactive)")
 Gui, Font, s8 cDefault Norm, Tahoma
 hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["beesmas"]) 
@@ -14418,56 +14424,122 @@ nm_setSprinkler(field, loc, dist){
 	}
 }
 nm_fieldDriftCompensation(){
-	global FwdKey
-	global LeftKey
-	global BackKey
-	global RightKey
-	global KeyDelay
-	global MoveSpeedNum
-	global CurrentFieldNum
-	global FieldSprinklerLoc1
-	global FieldSprinklerLoc2
-	global FieldSprinklerLoc3
-	global DisableToolUse, PFieldDriftSteps
-	if (!PFieldDriftSteps) {
-		PFieldDriftSteps:=10
-	}
+	global FwdKey, LeftKey, BackKey, RightKey, DisableToolUse, PFieldDriftSteps
+
 	WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " GetRobloxHWND())
-	winUp := windowHeight / 2.14
-	winDown := windowHeight / 1.88
-	winLeft := windowWidth / 2.14
-	winRight := windowWidth / 1.88
-	saturatorFinder := nm_imgSearch("saturator.png",50)
-	;search for winterstorm saturator
-	If (saturatorFinder[1] = 1){
-		saturatorFinder := nm_imgSearch("saturatorWS.png",50)
-	}
-	If (saturatorFinder[1] = 0){
-		while (saturatorFinder[1] = 0 && A_Index<=PFieldDriftSteps) {
-			if(saturatorFinder[2] >= winleft && saturatorFinder[2] <= winRight && saturatorFinder[3] >= winUp && saturatorFinder[3] <= winDown) {
-				click up
+	winUp := windowHeight // 2.14, winDown := windowHeight // 1.88
+	winLeft := windowWidth // 2.14, winRight := windowWidth // 1.88
+
+	if (nm_LocateSprinkler(x, y) = 1) {
+		if (!DisableToolUse)
+			click down
+		while (nm_LocateSprinkler(x, y) = 1 && A_Index <= PFieldDriftSteps) {
+			if (x >= winLeft && x <= winRight && y >= winUp && y <= winDown)
 				break
-			}
-			if(!DisableToolUse)
-				click down
-			if (saturatorFinder[2] < winleft){
+			if (x < winleft)
 				sendinput {%LeftKey% down}
-			} else if (saturatorFinder[2] > winRight){
+			else if (x > winRight)
 				sendinput {%RightKey% down}
-			}
-			if (saturatorFinder[3] < winUp){
+			if (y < winUp)
 				sendinput {%FwdKey% down}
-			} else if (saturatorFinder[3] > winDown){
+			else if (y > winDown)
 				sendinput {%BackKey% down}
-			}
-			sleep, 200*round(18/MoveSpeedNum, 2)
+			sleep, 100*round(18/MoveSpeedNum, 2)
 			sendinput {%LeftKey% up}{%RightKey% up}{%FwdKey% up}{%BackKey% up}
-			click up
-			saturatorFinder := nm_imgSearch("saturator.png",50)
 		}
-	} ;else if(not (saturatorFinder[2] >= winleft && saturatorFinder[2] <= winRight && saturatorFinder[3] >= winUp && saturatorFinder[3] <= winDown)){
-		;ba_fieldDriftCompensation()
-	;}
+		click up
+	}
+}
+nm_LocateSprinkler(ByRef X:="", ByRef Y:=""){ ; find client coordinates of approximately closest saturator to player/center
+	global bitmaps, sprinklerImages
+	n := sprinklerImages.Length()
+
+	WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " GetRobloxHWND())
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight "|")
+
+	Gdip_LockBits(pBMScreen, 0, 0, windowWidth, windowHeight, hStride, hScan, hBitmapData, 1)
+	hWidth := NumGet(hBitmapData,0,"UInt"), hHeight := NumGet(hBitmapData,4,"UInt")
+
+	for i,k in sprinklerImages
+	{
+		Gdip_GetImageDimensions(bitmaps[k], n%i%Width, n%i%Height)
+		Gdip_LockBits(bitmaps[k], 0, 0, n%i%Width, n%i%Height, n%i%Stride, n%i%Scan, n%i%BitmapData)
+		n%i%Width := NumGet(n%i%BitmapData, 0, "UInt"), n%i%Height := NumGet(n%i%BitmapData, 4, "UInt")
+	}
+
+	d := 11 ; divisions (odd positive integer such that w,h > n%i%Width,n%i%Height for all i<=n)
+	m := d//2 ; midpoint of d (along with m + 1), used frequently in calculations
+	v := 20 ; variation
+	w := windowWidth//d, h := windowHeight//d
+
+	; to search from centre (approximately), we will split the rectangle like a pinwheel configuration and search outwards (notice SearchDirection)
+	Loop % m + 1
+	{
+		if (A_Index = 1)
+		{
+			; initial rectangle (center)
+			d1 := m, d2 := m + 1
+			OuterX1 := d1 * w, OuterX2 := d2 * w
+			OuterY1 := d1 * h, OuterY2 := d2 * h
+			Loop % n
+				if (Gdip_MultiLockedBitsSearch(hStride, hScan, hWidth, hHeight, n%A_Index%Stride, n%A_Index%Scan, n%A_Index%Width, n%A_Index%Height, pos, OuterX1, OuterY1, OuterX2-n%A_Index%Width+1, OuterY2-n%A_Index%Height+1, v, 1, 1) > 0)
+					break 2
+		}
+		else
+		{
+			; upper-right
+			dx1 := m + 2 - A_Index, dx2 := m + A_Index
+			OuterX1 := dx1 * w, OuterX2 := dx2 * w
+			dy1 := m + 1 - A_Index, dy2 := m + 2 - A_Index
+			OuterY1 := dy1 * h, OuterY2 := dy2 * h
+			Loop % n
+				if (Gdip_MultiLockedBitsSearch(hStride, hScan, hWidth, hHeight, n%A_Index%Stride, n%A_Index%Scan, n%A_Index%Width, n%A_Index%Height, pos, OuterX1, OuterY1, OuterX2-n%A_Index%Width+1, OuterY2-n%A_Index%Height+1, v, 2, 1) > 0)
+					break 2
+
+			; lower-right
+			dx1 := m - 1 + A_Index, dx2 := m + A_Index
+			OuterX1 := dx1 * w, OuterX2 := dx2 * w
+			dy1 := m + 2 - A_Index, dy2 := m + A_Index
+			OuterY1 := dy1 * h, OuterY2 := dy2 * h
+			Loop % n
+				if (Gdip_MultiLockedBitsSearch(hStride, hScan, hWidth, hHeight, n%A_Index%Stride, n%A_Index%Scan, n%A_Index%Width, n%A_Index%Height, pos, OuterX1, OuterY1, OuterX2-n%A_Index%Width+1, OuterY2-n%A_Index%Height+1, v, 5, 1) > 0)
+					break 2
+
+			; lower-left
+			dx1 := m + 1 - A_Index, dx2 := m - 1 + A_Index
+			OuterX1 := dx1 * w, OuterX2 := dx2 * w
+			dy1 := m - 1 + A_Index, dy2 := m + A_Index
+			OuterY1 := dy1 * h, OuterY2 := dy2 * h
+			Loop % n
+				if (Gdip_MultiLockedBitsSearch(hStride, hScan, hWidth, hHeight, n%A_Index%Stride, n%A_Index%Scan, n%A_Index%Width, n%A_Index%Height, pos, OuterX1, OuterY1, OuterX2-n%A_Index%Width+1, OuterY2-n%A_Index%Height+1, v, 4, 1) > 0)
+					break 2
+
+			; upper-left
+			dx1 := m + 1 - A_Index, dx2 := m + 2 - A_Index
+			OuterX1 := dx1 * w, OuterX2 := dx2 * w
+			dy1 := m + 1 - A_Index, dy2 := m - 1 + A_Index
+			OuterY1 := dy1 * h, OuterY2 := dy2 * h
+			Loop % n
+				if (Gdip_MultiLockedBitsSearch(hStride, hScan, hWidth, hHeight, n%A_Index%Stride, n%A_Index%Scan, n%A_Index%Width, n%A_Index%Height, pos, OuterX1, OuterY1, OuterX2-n%A_Index%Width+1, OuterY2-n%A_Index%Height+1, v, 7, 1) > 0)
+					break 2
+		}
+	}
+
+	Gdip_UnlockBits(pBMScreen,hBitmapData)
+	for i,k in sprinklerImages
+		Gdip_UnlockBits(bitmaps[k],n%i%BitmapData)
+	Gdip_DisposeImage(pBMScreen)
+
+	if pos
+	{
+		x := SubStr(pos, 1, InStr(pos, ",") - 1), y := SubStr(pos, InStr(pos, ",") + 1)
+		return 1
+	}
+	else
+	{
+		x := "", y := ""
+		return 0
+	}
 }
 ;move function
 nm_Move(MoveTime, MoveKey1, MoveKey2:="None"){
@@ -19792,6 +19864,15 @@ return
 ;TIMERS
 timers:
 ba_showPlanterTimers()
+return
+
+f7::
+Loop
+{
+	nm_LocateSprinkler(x, y)
+	tooltip % x " " y
+	Sleep, 250
+}
 return
 
 nm_WM_COPYDATA(wParam, lParam){
