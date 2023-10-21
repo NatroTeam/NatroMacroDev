@@ -6668,7 +6668,10 @@ nm_ServerLink(hEdit){
 	{
         GuiControl, , %hEdit%, % %k%
         SendMessage, 0xB1, % p-2, % p-2, , ahk_id %hEdit%
-		nm_ShowErrorBalloonTip(hEdit, "Invalid Private Server Link", "Make sure your link is:`r`n- copied correctly and completely`r`n- for Bee Swarm Simulator by Onett")
+		if InStr(str, "/share?code")
+			nm_ShowErrorBalloonTip(hEdit, "Unresolved Private Server Link", "You entered a 'share?code' link!`r`nTo fix this:`r`n 1. Paste this link into your browser`r`n 2. Wait for Bee Swarm Simulator to load`r`n 3. Copy the link at the top of your browser.")
+		else
+			nm_ShowErrorBalloonTip(hEdit, "Invalid Private Server Link", "Make sure your link is:`r`n- copied correctly and completely`r`n- for Bee Swarm Simulator by Onett")
     }
     else
 	{
