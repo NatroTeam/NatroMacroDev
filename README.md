@@ -41,7 +41,7 @@ An open-source Bee Swarm Simulator macro written in AutoHotkey!
 </div>
 
 
-<a name="installation"><h2>⚙️ Installation</h2></a>
+<a name="installation"><h2>🛠️ Installation</h2></a>
 
 1. Download `Natro_Macro_v#.#.#.zip` from the [latest release][latest-release-link]
 2. Open `Natro_Macro_v#.#.#` and double-click the folder inside
@@ -60,7 +60,7 @@ Join our [Discord server][discord-link]! This is where you can connect with the 
 </a></p>
 
 
-<a name="contributing"><h2>💻 Contributing</h2></a>
+<a name="contributing"><h2>⌨️ Contributing</h2></a>
 
 Natro Macro is an open-source project. We greatly appreciate all contributions, whether you are helping us fix bugs or suggesting new features. If you want to get started, give our [Contributing Guidelines][contributing-link] a read.
 
@@ -70,7 +70,7 @@ Natro Macro is an open-source project. We greatly appreciate all contributions, 
 For discussions, please join us on our [Discord server][discord-link] instead!
 
 
-<a name="credits"><h2>💜 Credits</h2></a>
+<a name="credits"><h2>💝 Credits</h2></a>
 
 Natro Macro wouldn't be possible without the help and inspiration from many extraordinary individuals.<br>
 We want to show our gratitude to all of you, so please check out our [list of credits][credits-link]!<br>
@@ -78,7 +78,7 @@ We want to show our gratitude to all of you, so please check out our [list of cr
 Thank you all for your hard work and support!
 
 
-<a name="stars"><h2>⭐ Stars</h2></a>
+<a name="stars"><h2>🌠 Stars</h2></a>
 
 If Natro Macro helped you, let us know by giving it a ⭐ $\color{yellow}{\textsf{Star}}$ on GitHub!<br>
 You can do this by scrolling up and clicking the Star button at the top of the page!
