@@ -2201,7 +2201,7 @@ Gui, Add, Button, x175 y184 w150 h42 gnm_autoclickerbutton, AutoClicker`nSetting
 ;macro tools
 Gui, Add, Button, x340 y40 w150 h20 gnm_HotkeyGUI, Change Hotkeys
 Gui, Add, Button, x340 y62 w150 h20 gnm_DebugLogGUI, Debug Log Options
-Gui, Add, Button, x340 y84 w150 h20 gnm_testReconnect, Test Reconnect
+Gui, Add, Button, x340 y84 w150 h20 gnm_AutoStartManager, Auto-Start Manager
 ;discord tools
 Gui, Add, Button, x340 y124 w150 h40 gnm_NightAnnouncementGUI, Night Detection`nAnnouncement
 ;reporting
@@ -2278,8 +2278,9 @@ Gui, Add, Edit, x276 y38 w47 h18 limit4 number vKeyDelayEdit gnm_saveKeyDelay
 Gui, Add, UpDown, Range0-9999 vKeyDelay gnm_saveKeyDelay Disabled, % KeyDelay
 
 ;reconnect settings
-Gui, Add, Text, x180 y82 w80 +Left +BackgroundTrans,Server Link:
-Gui, Add, Edit, x240 y81 w82 h16 +BackgroundTrans vPrivServer gnm_ServerLink Disabled, %PrivServer%
+Gui, Add, Button, x248 y64 w40 h16 gnm_testReconnect, Test
+Gui, Add, Text, x180 y83 w80 +Left +BackgroundTrans,Server Link:
+Gui, Add, Edit, x240 y82 w82 h16 +BackgroundTrans vPrivServer gnm_ServerLink Disabled, %PrivServer%
 Gui, Add, Text, x180 y101 +BackgroundTrans, Reconnect every
 Gui, Add, Edit, x265 y100 w18 h16 Number Limit2 vReconnectInterval gnm_setReconnectInterval, %ReconnectInterval%
 Gui, Add, Text, x287 y101 +BackgroundTrans, hours
@@ -3498,7 +3499,6 @@ nm_AdvancedGUI(init:=0){
 	Gui, Font, s8 cDefault Norm, Tahoma
 	Gui, Font, w700
 	Gui, Add, GroupBox, x5 y24 w240 h90, Fallback Private Servers
-	Gui, Add, GroupBox, x5 y114 w240 h46, Advanced Tools
 	Gui, Add, GroupBox, x255 y24 w240 h38, Debugging
 	Gui, Add, GroupBox, x255 y62 w240 h168, Test Paths/Patterns
 	Gui, Font, s8 cDefault Norm, Tahoma
@@ -3511,8 +3511,6 @@ nm_AdvancedGUI(init:=0){
 	Gui, Add, Edit, x55 y86 w180 h18 +BackgroundTrans vFallbackServer3 gnm_ServerLink, %FallbackServer3%
 	;debugging
 	Gui, Add, Checkbox, x265 y42 +BackgroundTrans vssDebugging gnm_saveAdvanced Checked%ssDebugging%, Enable Discord Debugging Screenshots
-	;advanced tools
-	Gui, Add, Button, x20 y130 w210 h24 gnm_AutoStartManager, Auto-Start Manager
 	;test
 	Gui, Add, Checkbox, x265 y89 w14 h14 Checked vTest1Check
 	Gui, Add, Checkbox, x265 y121 w14 h14 vTest2Check
@@ -7222,286 +7220,155 @@ nm_WebhookGUI(){
 	return (WGUIPID := exec.ProcessID)
 }
 nm_AutoStartManager(){
-	global
-	local script, file, path, Prev_DetectHiddenWindows, Prev_TitleMatchMode
+	global hTaskName, hDelay, hStatusLabel, hStatusVal, hStatusText, hNTLabel, hNTVal, hASLabel, hASVal, hRLLabel, hRLVal, hAutoStartCheck, hDelayDuration, hDelayText
 
 	Gui, +OwnDialogs
-	Prev_DetectHiddenWindows := A_DetectHiddenWindows
-	Prev_TitleMatchMode := A_TitleMatchMode
-	DetectHiddenWindows On
-	SetTitleMatchMode 2
-	WinGet, ASMGUIPID, PID, AutoStartManager.ahk ahk_class AutoHotkey
-	if ASMGUIPID
-	{
-		Process, Close, %ASMGUIPID%
-		if (ErrorLevel = 0)
-		{
-			Process, Exist, %ASMGUIPID%
-			if (ErrorLevel != 0)
-			{
-				msgbox, 0x40030, Auto-Start Manager, There is already an Auto-Start Manager window!
-				DetectHiddenWindows %Prev_DetectHiddenWindows%
-				SetTitleMatchMode %Prev_TitleMatchMode%
-				return
-			}
-		}
-	}
-	DetectHiddenWindows %Prev_DetectHiddenWindows%
-	SetTitleMatchMode %Prev_TitleMatchMode%
-	FileDelete, %A_WorkingDir%\submacros\AutoStartManager.ahk
+	if A_IsAdmin
+		msgbox, 0x40030, Auto-Start Manager, % "Natro Macro has been run as administrator!`n"
+			. "Auto-Start Manager can only launch Natro Macro on logon without admin privileges.`n`n"
+			. "If you need to run Natro Macro as admin, either:`n"
+			. " - fix the reason why admin is required (reinstall Roblox unelevated, move Natro Macro folder)`n"
+			. " - manually set up a Scheduled Task in Task Scheduler with 'Run with highest privileges' checked`n"
+			. " - disable UAC (not recommended at all!)", 120
 
-	script := "
-	(Join`r`n C
+	RegRead, task, HKCU\Software\Microsoft\Windows\CurrentVersion\Run, NatroMacro
 
-	#NoEnv
-	#NoTrayIcon
-	#SingleInstance Force
-	#Requires AutoHotkey v1.1.36.01+
-
-	if (!A_IsAdmin || !(DllCall(""GetCommandLine"",""Str"") ~= "" /restart(?!\S)""))
-		Try RunWait, *RunAs ""%A_AhkPath%"" /script /restart ""%A_ScriptFullPath%""
-	if !A_IsAdmin {
-		msgbox You must allow Auto-Start Manager to run as admin, otherwise it will not be able to get and create tasks!
-		ExitApp
-	}
-
-	ts := ComObjCreate(""Schedule.Service""), ts.Connect(), tasks := GetNatroTasks(), count := tasks.Count()
-	taskName := ""None"", validAhk := 0, validScript := 0, autostart := 0, delay := ""None"", level := 0
-
-	if (count = 0)
-		status := 1
-	else if (count > 1)
-		status := 2
+	if (ErrorLevel = 1)
+		validScript := 0, autostart := 0, delay := "None", status := 1
 	else
 	{
-		for k,v in tasks
-		{
-			taskName := k
-			SplitPath, % v.args[1], ahkExe, ahkDir
-			SplitPath, A_AhkPath, , validAhkDir
-			validAhk := (ahkdir = validAhkDir)
-			validScript := ((v.args[2] = """ A_ScriptFullPath """) || (" (A_IsCompiled ? 1 : 0) " && (v.args[1] = """ A_ScriptFullPath """)))
-			autostart := ((v.args[3] = 1) || (" (A_IsCompiled ? 1 : 0) " && (v.args[2] = 1)))
-			delay := v.delay ? v.delay : ""None""
-			level := v.level
-			status := (validAhk && validScript) ? 0 : 3
-		}
-	}
-
-	DllCall(""LoadLibrary"", ""Str"", """ A_WorkingDir "\nm_image_assets\Styles\USkin.dll"")
-	DllCall(""" A_WorkingDir "\nm_image_assets\Styles\USkin.dll\USkinInit"", ""Int"", 0, ""Int"", 0, ""AStr"", """ A_WorkingDir "\nm_image_assets\Styles\" GuiTheme ".msstyles"")
-
-	w := 250, h := 250
-	hGUI := A_Args[1]
-	Gui, +AlwaysOnTop -MinimizeBox +Owner%hGUI%
-	Gui, Font, s11 cDefault Bold, Tahoma
-	Gui, Add, Text, x0 y4 hwndhStatusLabel, Current Status:%A_Space%
-	Gui, Add, Text, % ""x0 y4 hwndhStatusVal c"" ((status > 0) ? ""Red"" : ""Green""), % (status > 0) ? ""Inactive"" : ""Active""
-	CenterText(hStatusLabel, hStatusVal, hStatusLabel)
-	Gui, Font, s9 cDefault Bold, Tahoma
-	Gui, Add, Text, % ""x0 y24 w"" w "" h36 vStatusText +Center c"" ((status > 0) ? ""Red"" : ""Green"")
-		, % ((status = 0) ? ""Natro Macro will automatically start with Windows using the settings below:""
-		: (status = 1) ? ""No Natro Macro startup tasks found! Use the 'Add' button below.""
-		: (status = 2) ? ""Multiple Natro Macro startup tasks set!``nUse 'Remove' to clear them.""
-		: ""Your startup task needs updating!``nUse 'Add' to create a new startup task."")
-
-	Gui, Add, Text, x0 y58 w%w% +Center hwndhTaskName, % ""Task Name: "" (taskName ? taskName : ""No Task"")
-	Gui, Add, Text, x0 y74 hwndhAHKLabel, AutoHotkey Path:%A_Space%
-	Gui, Add, Text, % ""x0 y74  hwndhAHKVal c"" ((validAhk) ? ""Green"" : ""Red""), % (status = 1) ? ""No Task"" : (validAhk) ? ""Valid"" : ""Invalid""
-	CenterText(hAHKLabel, hAHKVal, hTaskName)
-	Gui, Add, Text, x0 y90 hwndhNTLabel, Natro File Path:%A_Space%
-	Gui, Add, Text, % ""x0 y90 hwndhNTVal c"" ((validScript) ? ""Green"" : ""Red""), % (status = 1) ? ""No Task"" : (validScript) ? ""Valid"" : ""Invalid""
-	CenterText(hNTLabel, hNTVal, hTaskName)
-	Gui, Add, Text, x0 y106 hwndhASLabel, Start Macro On Run:%A_Space%
-	Gui, Add, Text, % ""x0 y106 hwndhASVal c"" ((autostart) ? ""Green"" : ""Red""), % (status = 1) ? ""No Task"" : (autostart) ? ""Enabled"" : ""Disabled""
-	CenterText(hASLabel, hASVal, hTaskName)
-	Gui, Add, Text, x0 y122 hwndhRLLabel, Run With Privileges:%A_Space%
-	Gui, Add, Text, % ""x0 y122 hwndhRLVal c"" ((status = 1) ? ""Red"" : (level) ? ""Green"" : ""Yellow""), % (status = 1) ? ""No Task"" : (level) ? ""Highest"" : ""Least""
-	CenterText(hRLLabel, hRLVal, hTaskName)
-	Gui, Add, Text, x0 y138 w%w% hwndhDelay +Center, % ""Delay Duration: "" delay
-
-	Gui, Add, Button, x10 y160 w110 h24 gRemoveButton, Remove
-	Gui, Add, Button, x130 y160 w110 h24 gAddButton, Add
-
-	Gui, Add, GroupBox, x5 y190 w240 h54, New Task Settings
-	Gui, Font, s8 cDefault Norm, Tahoma
-	Gui, Add, CheckBox, x15 y208 Checked vAutoStartCheck, Start Macro On Run
-	Gui, Add, CheckBox, x15 y224 Checked vAdminCheck, Run Macro As Admin
-	Gui, Add, Text, x140 y205 w100 +Center, Delay Before Start:
-	Gui, Add, Text, x146 y222 w68 vDelayText +Center, 0s
-	Gui, Add, UpDown, x216 y221 w10 h16 -16 Range0-86400 vDelayDuration gChangeDelay, 0
-
-	GuiControl, Focus, % """"
-	Gui, Show, w%w% h%h%, Auto-Start Manager
-	return
-
-	GuiClose:
-	FileDelete, %A_ScriptFullPath%
-	ExitApp
-
-	ChangeDelay()
-	{
-		GuiControlGet, secs, , DelayDuration
-		VarSetCapacity(dur,128), DllCall(""GetDurationFormatEx"",""Ptr"",0,""UInt"",0,""Ptr"",0,""Int64"",secs*10000000,""WStr"",((secs >= 3600) ? ""h'h' m"" : """") ((secs >= 60) ? ""m'm' s"" : """") ""s's'"",""WStr"",dur,""Int"",128)
-		GuiControl, , DelayText, % dur
-	}
-
-	AddButton()
-	{
-		global
-		local def, tr, action, name, delay, secs
-		if (GetNatroTasks().Count() > 0)
-		{
-			Gui, +OwnDialogs
-			MsgBox, 0x40024, Overwrite Existing Task, Are you sure?``nThis will overwrite your existing Natro Macro Auto-Start tasks!, 30
-			IfMsgBox Yes
-				RemoveButton()
-			else
-				return
-		}
-
-		GuiControlGet, autostart, , AutoStartCheck
-		GuiControlGet, runlevel, , AdminCheck
-		GuiControlGet, secs, , DelayDuration
-		VarSetCapacity(delay,128), DllCall(""GetDurationFormatEx"",""Ptr"",0,""UInt"",0,""Ptr"",0,""Int64"",secs*10000000,""WStr"",""'PT'"" ((secs >= 3600) ? ""h'H'"" : """") ((secs >= 60) ? ""m'M'"" : """") ""s'S'"",""WStr"",delay,""Int"",128)
-
-		def := ts.NewTask(0)
-
-		def.RegistrationInfo.Author := ""Natro Macro""
-		def.RegistrationInfo.Description := ""Automatically starts Natro Macro v" VersionID " on logon.""
-
-		def.Principal.RunLevel := runlevel
-
-		tr := def.Triggers.Create(8)
-		tr.Delay := delay
-
-		action := def.Actions.Create(0)
-		action.ID := ""Run Natro Macro""
-		action.Path := """"""" A_AhkPath """""""
-		action.Arguments := " (A_IsCompiled ? "" : ("""""""" A_ScriptFullPath """"" """)) " ((autostart = 1) ?  """"""1"""""" : """")
-
-		def.Settings.Enabled := 1
-		def.Settings.Hidden := 0
-		def.Settings.StartWhenAvailable := 1
-		def.Settings.IdleSettings.StopOnIdleEnd := 0
-		def.Settings.DisallowStartIfOnBatteries := 0
-		def.Settings.StopIfGoingOnBatteries := 0
-		def.Settings.ExecutionTimeLimit := ""PT0S""
-
-		ts.GetFolder(""\"").RegisterTaskDefinition(name := ""Natro v" VersionID """, def, 0x6, """", """", 0)
-
-
-		GuiControl, , % hTaskName, Task Name: %name%
-		GuiControl, , % hDelay, % ""Delay Duration: "" ((delay = ""PT0S"") ? ""None"" : delay)
-		Gui, Font, s11 cGreen Bold, Tahoma
-		GuiControl, Font, % hStatusVal
-		GuiControl, , % hStatusVal, Active
-		CenterText(hStatusLabel, hStatusVal, hStatusLabel)
-		Gui, Font, s9
-		GuiControl, Font, StatusText
-		GuiControl, , StatusText, Natro Macro will automatically start with Windows using the settings below:
-		GuiControl, Font, % hAHKVal
-		GuiControl, , % hAHKVal, Valid
-		CenterText(hAHKLabel, hAHKVal, hTaskName)
-		GuiControl, Font, % hNTVal
-		GuiControl, , % hNTVal, Valid
-		CenterText(hNTLabel, hNTVal, hTaskName)
-		Gui, Font, % (autostart = 1) ? ""cGreen"" : ""cRed""
-		GuiControl, Font, % hASVal
-		GuiControl, , % hASVal, % (autostart = 1) ? ""Enabled"" : ""Disabled""
-		CenterText(hASLabel, hASVal, hTaskName)
-		Gui, Font, % (runlevel = 1) ? ""cGreen"" : ""cYellow""
-		GuiControl, Font, % hRLVal
-		GuiControl, , % hRLVal, % (runlevel = 1) ? ""Highest"" : ""Least""
-		CenterText(hRLLabel, hRLVal, hTaskName)
-	}
-
-	RemoveButton(hButton:=0)
-	{
-		global
-		local root, k
-		root := ts.GetFolder(""\"")
-			for k in GetNatroTasks()
-				root.DeleteTask(k, 0)
-
-		if hButton
-		{
-			GuiControl, , % hTaskName, Task Name: None
-			GuiControl, , % hDelay, Delay Duration: None
-			Gui, Font, s11 cRed Bold, Tahoma
-			GuiControl, Font, % hStatusVal
-			GuiControl, , % hStatusVal, Inactive
-			CenterText(hStatusLabel, hStatusVal, hStatusLabel)
-			Gui, Font, s9
-			GuiControl, Font, StatusText
-			GuiControl, , StatusText, No Natro Macro startup tasks found! Use the 'Add' button below.
-			GuiControl, Font, % hAHKVal
-			GuiControl, , % hAHKVal, No Task
-			CenterText(hAHKLabel, hAHKVal, hTaskName)
-			GuiControl, Font, % hNTVal
-			GuiControl, , % hNTVal, No Task
-			CenterText(hNTLabel, hNTVal, hTaskName)
-			GuiControl, Font, % hASVal
-			GuiControl, , % hASVal, No Task
-			CenterText(hASLabel, hASVal, hTaskName)
-			GuiControl, Font, % hRLVal
-			GuiControl, , % hRLVal, No Task
-			CenterText(hRLLabel, hRLVal, hTaskName)
-		}
-	}
-
-	GetNatroTasks()
-	{
-		global ts
-		tasks := {}
-		for t in ts.GetFolder(""\"").GetTasks(1)
-			for tr in t.Definition.Triggers
-				if ((tr.Type = 8) || (tr.Type = 9)) ; boot/logon
-					for a in t.Definition.Actions
-						if (a.Type = 0) ; exec
-							for i,arg in (args := Args(a.Path "" "" a.Arguments))
-								if ((SubStr(arg, -14, 11) = ""natro_macro"") && (tasks[t.Name] := {""args"":args,""delay"":tr.Delay,""level"":t.Definition.Principal.RunLevel}))
-									continue 4
-		return tasks
-	}
-
-	CenterText(hText1, hText2, hFont)
-	{
-		global w
-		GuiControlGet, t1, , % hText1
-		GuiControlGet, t2, , % hText2
-		w1 := TextExtent(t1, hFont), w2 := TextExtent(t2, hFont)
-		GuiControl, MoveDraw, % hText1, % ""x"" (x1 := (w - w1 - w2)//2) "" w"" w1
-		GuiControl, MoveDraw, % hText2, % ""x"" x1 + w1 "" w"" w2
-	}
-
-	TextExtent(text, hCtrl)
-	{
-		hFont := DllCall(""SendMessage"", ""Ptr"", hCtrl, ""UInt"", 0x31, ""Ptr"", 0, ""Ptr"", 0, ""Ptr"")
-		hDC := DllCall(""GetDC"", ""UInt"", hCtrl)
-		hFold := DllCall(""SelectObject"", ""UInt"", hDC, ""UInt"", hFont)
-		DllCall(""GetTextExtentPoint32"", ""UInt"", hDC, ""Str"", text, ""Int"", StrLen(text), ""Int64P"", nSize)
-		DllCall(""SelectObject"", ""UInt"", hDC, ""UInt"", hFold)
-		DllCall(""ReleaseDC"", ""UInt"", hCtrl, ""UInt"", hDC)
-		return nSize & 0xffffffff
-	}
-
-	Args(CmdLine := """") { ; modified from Args() By SKAN,  http://goo.gl/JfMNpN,  CD:23/Aug/2014 | MD:24/Aug/2014
-		Local pArgs := 0, nArgs := 0, A := []
-
-		pArgs := DllCall(""Shell32\CommandLineToArgvW"", ""WStr"",CmdLine, ""PtrP"",nArgs, ""Ptr"")
-
+		; modified from Args() By SKAN,  http://goo.gl/JfMNpN,  CD:23/Aug/2014 | MD:24/Aug/2014
+		A := [], pArgs := DllCall("Shell32\CommandLineToArgvW", "WStr",task, "PtrP",nArgs, "Ptr")
 		Loop % nArgs
-			A[A_Index] := StrGet(NumGet((A_Index - 1) * A_PtrSize + pArgs), ""UTF-16"")
-
-		Return A, A[0] := nArgs, DllCall(""LocalFree"", ""Ptr"", pArgs)
+			A[A_Index] := StrGet(NumGet((A_Index - 1) * A_PtrSize + pArgs), "UTF-16")
+		DllCall("LocalFree", "Ptr", pArgs)
+		
+		validScript := (A[1] = A_WorkingDir "\START.bat")
+		autostart := (A[2] = 1)
+		delay := (A[4] > 0) ? nm_DurationFromSeconds(A[4]) : "None"
+		status := validScript ? 0 : 2
 	}
-	)"
 
-	file := FileOpen(path := A_WorkingDir "\submacros\AutoStartManager.ahk", "w-d", "UTF-8"), file.Write(script), file.Close()
-	Run, "%A_AhkPath%" /script "%path%" "%hGUI%"
+	w := 260, h := 200
+	Gui, ASM:Destroy
+	Gui, ASM:+AlwaysOnTop -MinimizeBox
+	Gui, ASM:Font, s11 cDefault Bold, Tahoma
+	Gui, ASM:Add, Text, x0 y4 hwndhStatusLabel, Current Status:%A_Space%
+	Gui, ASM:Add, Text, % "x0 y4 hwndhStatusVal c" ((status > 0) ? "Red" : "Green"), % (status > 0) ? "Inactive" : "Active"
+	CenterText(hStatusLabel, hStatusVal, hStatusLabel)
+	Gui, ASM:Font, s9 cDefault Bold, Tahoma
+	Gui, ASM:Add, Text, % "x0 y24 w" w " h36 hwndhStatusText +Center c" ((status > 0) ? "Red" : "Green")
+		, % ((status = 0) ? "Natro Macro will automatically start on user login using the settings below:"
+		: (status = 1) ? "No Natro Macro auto-start found!`nUse the 'Add' button below."
+		: "Your auto-start needs updating!`nUse 'Add' to create a new auto-start.")
 
-	return
+	Gui, ASM:Add, Text, x0 yp+34 hwndhNTLabel, Natro Macro Path:%A_Space%
+	Gui, ASM:Add, Text, % "x0 yp hwndhNTVal c" ((validScript) ? "Green" : "Red"), % (status = 1) ? "None" : (validScript) ? "Valid" : "Invalid"
+	CenterText(hNTLabel, hNTVal, hStatusText)
+	Gui, ASM:Add, Text, x0 yp+16 hwndhASLabel, Start Macro On Run:%A_Space%
+	Gui, ASM:Add, Text, % "x0 yp hwndhASVal c" ((autostart) ? "Green" : "Red"), % (status = 1) ? "None" : (autostart) ? "Enabled" : "Disabled"
+	CenterText(hASLabel, hASVal, hStatusText)
+	Gui, ASM:Add, Text, x0 yp+16 w%w% hwndhDelay +Center, % "Delay Duration: " delay
+
+	Gui, ASM:Add, Button, x10 yp+22 w115 h24 gRemoveButton, Remove
+	Gui, ASM:Add, Button, x135 yp w115 h24 gAddButton, Add
+
+	Gui, ASM:Add, GroupBox, x5 yp+30 w250 h54 Section, New Task Settings
+	Gui, ASM:Font, s8 cDefault Norm, Tahoma
+	Gui, ASM:Add, CheckBox, hwndhAutoStartCheck x12 ys+18 Checked, Start Macro on Run
+	Gui, ASM:Add, Text, x13 yp+16, Delay Before Run:
+	Gui, ASM:Add, Text, hwndhDelayText x+0 yp w50 +Center, 0s
+	Gui, ASM:Add, UpDown, hwndhDelayDuration x+0 yp-1 w10 h16 -16 Range0-3599 gChangeDelay, 0
+
+	GuiControl, Focus, % ""
+	Gui, ASM:Show, w%w% h%h%, Auto-Start Manager
+}
+CenterText(hText1, hText2, hFont, w:=260)
+{
+	GuiControlGet, t1, , % hText1
+	GuiControlGet, t2, , % hText2
+	w1 := TextExtent(t1, hFont), w2 := TextExtent(t2, hFont)
+	GuiControl, MoveDraw, % hText1, % "x" (x1 := (w - w1 - w2)//2) " w" w1
+	GuiControl, MoveDraw, % hText2, % "x" x1 + w1 " w" w2
+}
+TextExtent(text, hCtrl)
+{
+	hFont := DllCall("SendMessage", "Ptr", hCtrl, "UInt", 0x31, "Ptr", 0, "Ptr", 0, "Ptr")
+	hDC := DllCall("GetDC", "UInt", hCtrl)
+	hFold := DllCall("SelectObject", "UInt", hDC, "UInt", hFont)
+	DllCall("GetTextExtentPoint32", "UInt", hDC, "Str", text, "Int", StrLen(text), "Int64P", nSize)
+	DllCall("SelectObject", "UInt", hDC, "UInt", hFold)
+	DllCall("ReleaseDC", "UInt", hCtrl, "UInt", hDC)
+	return nSize & 0xffffffff
+}
+ChangeDelay()
+{
+	local dur, secs
+	GuiControlGet, secs, , % hDelayDuration
+	VarSetCapacity(dur,128), DllCall("GetDurationFormatEx","Ptr",0,"UInt",0,"Ptr",0,"Int64",secs*10000000,"WStr",((secs >= 3600) ? "h'h' m" : "") ((secs >= 60) ? "m'm' s" : "") "s's'","WStr",dur,"Int",128)
+	GuiControl, , % hDelayText, % dur
+}
+AddButton()
+{
+	local task, autostart, secs
+
+	RegRead, task, HKCU\Software\Microsoft\Windows\CurrentVersion\Run, NatroMacro
+	if task
+	{
+		Gui, ASM:+OwnDialogs
+		MsgBox, 0x40024, Overwrite Existing Entry, Are you sure?`nThis will overwrite the existing Natro Macro auto-start!, 30
+		IfMsgBox Yes
+		{}
+		else
+			return
+	}
+
+	GuiControlGet, autostart, , % hAutoStartCheck
+	GuiControlGet, secs, , % hDelayDuration
+
+	RegWrite, REG_SZ, HKCU\Software\Microsoft\Windows\CurrentVersion\Run, NatroMacro, % """" A_WorkingDir "\START.bat"""
+		. ((autostart = 1) ?  " ""1""" : " """"")		; autostart parameter
+		. " """""										; existing heartbeat PID
+		. ((secs > 0) ?  " """ secs """" : " """"")		; delay before run (.bat)
+
+	GuiControl, , % hDelay, % "Delay Duration: " ((secs > 0) ? nm_DurationFromSeconds(secs) : "None")
+	Gui, ASM:Font, s11 cGreen Bold, Tahoma
+	GuiControl, Font, % hStatusVal
+	GuiControl, , % hStatusVal, Active
+	CenterText(hStatusLabel, hStatusVal, hStatusLabel)
+	Gui, ASM:Font, s9
+	GuiControl, Font, % hStatusText
+	GuiControl, , % hStatusText, Natro Macro will automatically start on user login using the settings below:
+	GuiControl, Font, % hNTVal
+	GuiControl, , % hNTVal,Valid
+	CenterText(hNTLabel, hNTVal, hStatusText)
+	Gui, ASM:Font, % (autostart = 1) ? "cGreen" : "cRed"
+	GuiControl, Font, % hASVal
+	GuiControl, , % hASVal, % (autostart = 1) ? "Enabled" : "Disabled"
+	CenterText(hASLabel, hASVal, hStatusText)
+}
+RemoveButton()
+{
+	global
+
+	RegDelete, HKCU\Software\Microsoft\Windows\CurrentVersion\Run, NatroMacro
+	if (ErrorLevel = 0)
+	{
+		GuiControl, , % hDelay, Delay Duration: None
+		Gui, ASM:Font, s11 cRed Bold, Tahoma
+		GuiControl, Font, % hStatusVal
+		GuiControl, , % hStatusVal, Inactive
+		CenterText(hStatusLabel, hStatusVal, hStatusLabel)
+		Gui, ASM:Font, s9
+		GuiControl, Font, % hStatusText
+		GuiControl, , % hStatusText, No Natro Macro auto-start found!`nUse the 'Add' button below.
+		GuiControl, Font, % hNTVal
+		GuiControl, , % hNTVal, None
+		CenterText(hNTLabel, hNTVal, hStatusText)
+		GuiControl, Font, % hASVal
+		GuiControl, , % hASVal, None
+		CenterText(hASLabel, hASVal, hStatusText)
+	}
 }
 nm_NewWalkHelp(){ ; movespeed correction information
 	msgbox, 0x40000, MoveSpeed Correction, DESCRIPTION:`nWhen this option is enabled, the macro will detect your Haste, Bear Morph, Coconut Haste, Haste+, Oil and Super Smoothie values real-time. Using this information, it will calculate the distance you have moved and use that for more accurate movements. If working as intended, this option will dramatically reduce drift and make Traveling anywhere in game much more accurate.`n`nIMPORTANT:`nIf you have this option enabled, make sure your 'Movement Speed' value is EXACTLY as shown in BSS Settings menu without haste or other temporary buffs (e.g. write 33.6 as 33.6 without any rounding). Also, it is ESSENTIAL that your Display Scale is 100`%, otherwise the buffs will not be detected properly.

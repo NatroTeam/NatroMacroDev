@@ -6,7 +6,13 @@ cd %~dp0
 :: IF script and executable exist, run the macro
 if exist "submacros\AutoHotkeyU32.exe" (
 	if exist "submacros\natro_macro.ahk" (
-		start "" "%~dp0submacros\AutoHotkeyU32.exe" "%~dp0submacros\natro_macro.ahk"
+		if not [%~3]==[] (
+			set /a "delay=%~3" 2>nul
+			echo Starting Natro Macro in !delay! seconds.
+			<nul set /p =Press any key to skip . . . 
+			timeout /t !delay! >nul
+		)
+		start "" "%~dp0submacros\AutoHotkeyU32.exe" "%~dp0submacros\natro_macro.ahk" %*
 		exit
 	)
 )

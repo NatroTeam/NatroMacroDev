@@ -3,14 +3,6 @@
 setlocal EnableDelayedExpansion
 cd %temp%
 
-:: check existence of command line parameters
-if [%1]==[] (
-    echo %red%This script must be run from Natro Macro^^!%reset%
-    <nul set /p "=%red%Press any key to exit . . . %reset%"
-    pause >nul
-    exit
-)
-
 :: ANSI color codes
 for /f "delims=#" %%E in ('"prompt #$E# & for %%E in (1) do rem"') do set "\e=%%E"
 set cyan=%\e%[96m
@@ -20,6 +12,14 @@ set blue=%\e%[94m
 set red=%\e%[91m
 set yellow=%\e%[93m
 set reset=%\e%[0m
+
+:: check existence of command line parameters
+if [%1]==[] (
+    echo %red%This script must be run from Natro Macro^^!%reset%
+    <nul set /p "=%red%Press any key to exit . . . %reset%"
+    pause >nul
+    exit
+)
 
 :: download latest .zip to %temp%
 echo %cyan%Downloading %~nx1...%reset%
@@ -70,10 +70,26 @@ echo:
         echo %blue%Deleted successfully^^!%reset%
         echo:
     )
+    :: update autostart
+    for /f "usebackq tokens=2,* skip=2" %%l in (`reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "NatroMacro"`) do set "cmdline=%%m"
+    if %ERRORLEVEL% equ 0 (
+        call set strtest=%%cmdline:%~2=%%
+        if not "!strtest!"=="!cmdline!" (
+            call set cmdline=%%cmdline:%~2=!folder!%%
+            call set regcmd=%%cmdline:"=\"%%
+            reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "NatroMacro" /d "!regcmd!" /f > nul
+            echo %blue%Updated auto-start entry^^!%reset%
+            echo %blue%New command: !cmdline!%reset%
+            echo:
+        ) else (
+            echo %red%Auto-start entry is not for previous version, left unchanged^^!%reset%
+            echo:
+        )
+    )
 ) else (
     echo %red%Error: Previous Natro Macro folder not found^^!%reset%
     echo %red%Make sure to manually copy over settings, patterns, and paths.%reset%
-    echo %red%Updated version: %folder%%reset%
+    echo %red%Updated version: !folder!%reset%
     <nul set /p "=%red%Press any key to exit . . . %reset%"
     pause >nul
     exit
