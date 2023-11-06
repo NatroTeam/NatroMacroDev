@@ -2163,17 +2163,18 @@ SetLoadingProgress(26)
 ;Contributors TAB
 ;------------------------
 Gui, Tab, Contributors
-;GuiControl,focus, Tab
-page_end := nm_ContributorsImage()
-SetLoadingProgress(29)
+Gui, Add, Picture, +BackgroundTrans hwndhContributorsDevImage gnm_ContributorsDiscordLink x5 y24 AltSubmit
+Gui, Add, Picture, +BackgroundTrans hwndhContributorsImage x253 y24 AltSubmit
 Gui, Font, w700
 Gui, Add, Text, x15 y28 w225 +wrap +backgroundtrans cWhite, Development
-Gui, Add, Text, x261 y28 w225 +wrap +backgroundtrans cWhite, Contributors
+Gui, Add, Text, x261 y28 w225 +wrap +backgroundtrans cWhite, Supporters
 Gui, Font, s8 cDefault Norm, Tahoma
 Gui, Add, Text, x18 y43 w225 +wrap +backgroundtrans cWhite, Special Thanks to the developers and testers!
 Gui, Add, Text, x264 y43 w180 +wrap +backgroundtrans cWhite, Thank you for your donations and contributions to this project!
 Gui, Add, Button, x440 y46 w18 h18 hwndhcleft gnm_ContributorsPageButton Disabled, <
-Gui, Add, Button, % "x464 y46 w18 h18 hwndhcright gnm_ContributorsPageButton Disabled" page_end, >
+Gui, Add, Button, x464 y46 w18 h18 hwndhcright gnm_ContributorsPageButton Disabled, >
+try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/contributors.txt", "nm_ContributorsHandler", {"accept": "application/vnd.github.v3.raw"})
+SetLoadingProgress(27)
 
 ;MISC TAB
 ;------------------------
@@ -2230,8 +2231,8 @@ Gui, Add, Text, x255 y55 w119 h120 -Wrap vTotalStats
 Gui, Add, Text, x375 y55 w119 h120 -Wrap vSessionStats
 Gui, Add, Button, x290 y39 w50 h15 vResetTotalStats gnm_ResetTotalStats, Reset
 Gui, Add, Button, x265 y202 w215 h24 gnm_WebhookGUI, Change Discord Settings
-
 nm_setStats()
+SetLoadingProgress(28)
 
 ;SETTINGS TAB
 ;------------------------
@@ -2254,6 +2255,7 @@ Gui, Add, DropDownList, x75 y34 w72 h100 vGuiTheme gnm_guiThemeSelect Disabled, 
 Gui, Add, Text, x10 y57 w100 +left +BackgroundTrans,GUI Transparency:
 Gui, Add, Text, x104 y57 w20 +Center +BackgroundTrans vGuiTransparency, %GuiTransparency%
 Gui, Add, UpDown, xp+22 yp-1 h16 -16 Range0-14 vGuiTransparencyUpDown gnm_guiTransparencySet, % GuiTransparency//5
+SetLoadingProgress(29)
 
 ;hive settings
 Gui, Add, Text, x10 y110 w60 +left +BackgroundTrans,Hive Slot:
@@ -7451,11 +7453,21 @@ nm_HiveBeesHelp(){
 nm_FDCHelp(){
 	msgbox, 0x40000, Field Drift Compensation, DESCRIPTION:`nField Drift Compensation is a way to stop what we call field drift (AKA falling/running out of the field.) Enabling this checkbox will re-align you to your saturator every so often by searching for the neon blue pixel and moving towards it. `n`nNote that this feature requires The Supreme Saturator, otherwise you will drift more. If you would like more info, join our Discord.
 }
-nm_ContributorsImage(page:=1){
-	static hCtrl, hBM1, hBM2, hBM3, hBM4, hBM5, hBM6, hBM7, hBM8, hBM9 ; 9 pages max
+nm_ContributorsHandler(req)
+{
+	if (req.readyState != 4)
+        return
+
+	nm_ContributorsImage(1, (req.status = 200) ? StrSplit(req.responseText, "`n", " `t")
+		: ["Error while loading,red", "contributors!,red", "", "Make sure you have,red", "a working internet,red", "connection and then,red", "reload the macro.,red"])
+}
+nm_ContributorsImage(page:=1, contributors:=""){
+	static hBM1, hBM2, hBM3, hBM4, hBM5, hBM6, hBM7, hBM8, hBM9, hBM10
+		, hBM11, hBM12, hBM13, hBM14, hBM15, hBM16, hBM17, hBM18, hBM19, hBM20 ; 20 pages max
 		, colorArr := {"blue": [0xff83c6e2, 0xff2779d8, 0xff83c6e2]
 			, "gold": [0xfff0ca8f, 0xffd48d22, 0xfff0ca8f]
 			, "red": [0xffA82428, 0xffA82428, 0xffA82428]}
+	global hContributorsDevImage, hContributorsImage, hcleft, hcright
 
 	if (hBM1 = "")
 	{
@@ -7481,18 +7493,6 @@ nm_ContributorsImage(page:=1){
 			, ["idote",0xfff47fff]
 			, ["axetar",0xffec8fd0]
 			, ["mahirishere",0xffa3bded]]
-
-		try
-		{
-			wr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-			wr.Open("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/profile/data/contributors.txt", 1)
-			wr.SetRequestHeader("accept", "application/vnd.github.v3.raw")
-			wr.Send()
-			wr.WaitForResponse()
-			contributors := StrSplit(wr.ResponseText, "`n", " `t")
-		}
-		catch
-			contributors := ["Error while loading,red", "contributors!,red", "", "Make sure you have,red", "a working internet,red", "connection and then,red", "reload the macro.,red"]
 
 		pBM := Gdip_CreateBitmap(244,212)
 		G := Gdip_GraphicsFromImage(pBM)
@@ -7534,7 +7534,7 @@ nm_ContributorsImage(page:=1){
 
 		hBM := Gdip_CreateHBITMAPFromBitmap(pBM)
 		Gdip_DisposeImage(pBM)
-		Gui, Add, Picture, +BackgroundTrans gnm_ContributorsDiscordLink x5 y24, HBITMAP:*%hBM%
+		GuiControl, , % hContributorsDevImage, HBITMAP:*%hBM%
 		DllCall("DeleteObject", "ptr", hBM)
 
 		i := 0
@@ -7573,13 +7573,13 @@ nm_ContributorsImage(page:=1){
 		hBM%i% := Gdip_CreateHBITMAPFromBitmap(pBM%i%)
 		Gdip_DisposeImage(pBM%i%)
 
-		Gui, Add, Picture, +BackgroundTrans hwndhCtrl x253 y24 AltSubmit, % "HBITMAP:*" hBM1
+		GuiControl, , % hContributorsImage, HBITMAP:*%hBM1%
 	}
 	else
 	{
 		;GDI_SetImageX() by SKAN
 		hdcSrc  := DllCall( "CreateCompatibleDC", UInt,0 )
-		hdcDst  := DllCall( "GetDC", UInt,hCtrl )
+		hdcDst  := DllCall( "GetDC", UInt,hContributorsImage )
 		VarSetCapacity( bm,24,0 ) ; BITMAP Structure
 		DllCall( "GetObject", UInt,hBM%page%, UInt,24, UInt,&bm )
 		w := Numget( bm,4 ), h := Numget( bm,8 )
@@ -7590,15 +7590,16 @@ nm_ContributorsImage(page:=1){
 		DllCall( "BitBlt", UInt,hdcDst, Int,3, Int,48, Int,w-6, Int,h-50
 						, UInt,hdcSrc, Int,3, Int,48, UInt,0x00CC0020 )
 		DllCall( "SelectObject", UInt,hdcSrc, UInt,hbmOld )
-		DllCall( "DeleteDC",  UInt,hdcSrc ),   DllCall( "ReleaseDC", UInt,hCtrl, UInt,hdcDst )
-		DllCall( "SendMessage", UInt,hCtrl, UInt,0x0B, UInt,0, UInt,0 )        ; WM_SETREDRAW OFF
-		oBM := DllCall( "SendMessage", UInt,hCtrl, UInt,0x172, UInt,0, UInt,hBM%page% ) ; STM_SETIMAGE
-		DllCall( "SendMessage", UInt,hCtrl, UInt,0x0B, UInt,1, UInt,0 )        ; WM_SETREDRAW ON
+		DllCall( "DeleteDC",  UInt,hdcSrc ),   DllCall( "ReleaseDC", UInt,hContributorsImage, UInt,hdcDst )
+		DllCall( "SendMessage", UInt,hContributorsImage, UInt,0x0B, UInt,0, UInt,0 )        ; WM_SETREDRAW OFF
+		oBM := DllCall( "SendMessage", UInt,hContributorsImage, UInt,0x172, UInt,0, UInt,hBM%page% ) ; STM_SETIMAGE
+		DllCall( "SendMessage", UInt,hContributorsImage, UInt,0x0B, UInt,1, UInt,0 )        ; WM_SETREDRAW ON
 		DllCall( "DeleteObject", UInt,oBM )
 	}
 
 	i := page + 1
-	return ((hBM%i% = "") ? 1 : 0)
+	GuiControl, % ((page=1) ? "Disable" : "Enable"), % hcleft
+	GuiControl, % ((hBM%i% = "") ? "Disable" : "Enable"), % hcright
 }
 nm_ContributorsDiscordLink(hCtrl){
 	static id_list := {"779430642043191307": [6,52,70,62] ;DEV TEAM
@@ -7637,11 +7638,7 @@ nm_ContributorsDiscordLink(hCtrl){
 nm_ContributorsPageButton(hwnd){
 	global
 	static p := 1
-
-	p += (hwnd = hcleft) ? -1 : 1
-
-	GuiControl, % ((p=1) ? "Disable" : "Enable"), % hcleft
-	GuiControl, % ((nm_ContributorsImage(p)=1) ? "Disable" : "Enable"), % hcright
+	nm_ContributorsImage(p += (hwnd = hcleft) ? -1 : 1)
 }
 nm_CollectKillButton(hCtrl){
 	global
