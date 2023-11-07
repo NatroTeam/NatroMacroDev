@@ -180,9 +180,9 @@ settings["MoveSpeedNum"] := {"enum": 41, "type": "str", "section": "Settings", "
 settings["ReconnectInterval"] := {"enum": 42, "type": "str", "section": "Settings", "regex": "i)^(1|2|3|4|6|8|12|24)?$"}
 settings["ReconnectHour"] := {"enum": 43, "type": "str", "section": "Settings", "regex": "i)^([0-1]?[0-9]|2[0-3])$"}
 settings["ReconnectMin"] := {"enum": 44, "type": "str", "section": "Settings", "regex": "i)^([0-5]?[0-9])?$"}
-settings["FallbackServer1"] := {"enum": 45, "type": "str", "section": "Settings", "regex": "i)^((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/games\/(1537690962|4189852503)\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*$"}
-settings["FallbackServer2"] := {"enum": 46, "type": "str", "section": "Settings", "regex": "i)^((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/games\/(1537690962|4189852503)\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*$"}
-settings["FallbackServer3"] := {"enum": 47, "type": "str", "section": "Settings", "regex": "i)^((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/games\/(1537690962|4189852503)\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*$"}
+settings["FallbackServer1"] := {"enum": 45, "type": "str", "section": "Settings", "regex": "i)^((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/games\/1537690962\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*$"}
+settings["FallbackServer2"] := {"enum": 46, "type": "str", "section": "Settings", "regex": "i)^((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/games\/1537690962\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*$"}
+settings["FallbackServer3"] := {"enum": 47, "type": "str", "section": "Settings", "regex": "i)^((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/games\/1537690962\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*$"}
 settings["NightAnnouncementName"] := {"enum": 48, "type": "str", "section": "Status", "regex": "i)^[^\\]$"}
 settings["NightAnnouncementPingID"] := {"enum": 49, "type": "str", "section": "Status", "regex": "i)^&?[0-9]*$"}
 settings["NightAnnouncementWebhook"] := {"enum": 50, "type": "str", "section": "Status", "regex": "i)^https:\/\/(canary\.|ptb\.)?(discord|discordapp)\.com\/api\/webhooks\/([\d]+)\/([a-z0-9_-]+)$"}
@@ -511,7 +511,7 @@ nm_status(status)
 		buffer.RemoveAt(1)
 		
 	; extra: night detection announcement
-	if ((NightAnnouncementCheck = 1) && (PublicJoined = 0) && (stateString  = "Detected: Night") && !InStr(PrivServer, "/4189852503?") && (StrLen(NightAnnouncementWebhook) > 0))
+	if ((NightAnnouncementCheck = 1) && (PublicJoined = 0) && (stateString  = "Detected: Night") && (StrLen(NightAnnouncementWebhook) > 0))
 	{
 		FormatTime, timestamp, %A_NowUTC%, yyyy-MM-ddTHH:mm:ssZ
 		payload_json := "
