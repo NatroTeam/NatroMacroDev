@@ -358,6 +358,7 @@ config["Settings"] := {"GuiTheme":"MacLion3"
 	, "FallbackServer1":""
 	, "FallbackServer2":""
 	, "FallbackServer3":""
+	, "ReconnectMethod":"Deeplink"
 	, "ReconnectInterval":""
 	, "ReconnectHour":""
 	, "ReconnectMin":""
@@ -2161,7 +2162,7 @@ Gui, Add, GroupBox, x5 y25 w160 h65, Gui
 Gui, Add, GroupBox, x5 y95 w160 h65, Hive
 Gui, Add, GroupBox, x5 y165 w160 h70, Reset
 Gui, Add, GroupBox, x170 y25 w160 h35, Input
-Gui, Add, GroupBox, x170 y65 w160 h112, Reconnect
+Gui, Add, GroupBox, x170 y65 w160 h170, Reconnect
 Gui, Add, GroupBox, x335 y25 w160 h210, Character
 Gui, Font, s8 cDefault Norm, Tahoma
 
@@ -2200,30 +2201,35 @@ Gui, Add, Edit, x276 y38 w47 h18 limit4 number vKeyDelayEdit gnm_saveKeyDelay
 Gui, Add, UpDown, Range0-9999 vKeyDelay gnm_saveKeyDelay Disabled, % KeyDelay
 
 ;reconnect settings
-Gui, Add, Button, x248 y64 w40 h16 gnm_testReconnect, Test
-Gui, Add, Text, x180 y83 w80 +Left +BackgroundTrans,Server Link:
-Gui, Add, Edit, x240 y82 w82 h16 +BackgroundTrans vPrivServer gnm_ServerLink Disabled, %PrivServer%
-Gui, Add, Text, x180 y101 +BackgroundTrans, Reconnect every
-Gui, Add, Edit, x265 y100 w18 h16 Number Limit2 vReconnectInterval gnm_setReconnectInterval, %ReconnectInterval%
-Gui, Add, Text, x287 y101 +BackgroundTrans, hours
-Gui, Add, Text, x196 y119 +BackgroundTrans, starting at
-Gui, Add, Edit, x250 y118 w18 h16 Number Limit2 vReconnectHour gnm_setReconnectHour, %ReconnectHour%
+Gui, Add, Button, x248 y64 w40 h16 vTestReconnectButton gnm_testReconnect, Test
+Gui, Add, Text, x178 y82 +BackgroundTrans,Private Server Link:
+Gui, Add, Edit, x176 yp+15 w148 h16 +BackgroundTrans vPrivServer gnm_ServerLink Disabled, %PrivServer%
+Gui, Add, Text, x178 yp+21 +BackgroundTrans, Join Method:
+Gui, Add, Text, x254 yp w48 vReconnectMethod +Center +BackgroundTrans, %ReconnectMethod%
+Gui, Add, Button, xp-12 yp-1 w12 h15 gnm_ReconnectMethod hwndhRMLeft, <
+Gui, Add, Button, xp+59 yp w12 h15 gnm_ReconnectMethod hwndhRMRight, >
+Gui, Add, Button, x315 yp w10 h15 gnm_ReconnectMethodHelp, ?
+Gui, Add, Text, x178 yp+21 +BackgroundTrans,Daily Reconnect (optional):
+Gui, Add, Text, x178 yp+18 +BackgroundTrans, Reconnect every
+Gui, Add, Edit, x264 yp-1 w18 h16 Number Limit2 vReconnectInterval gnm_setReconnectInterval, %ReconnectInterval%
+Gui, Add, Text, x287 yp+1 +BackgroundTrans, hours
+Gui, Add, Text, x196 yp+18 +BackgroundTrans, starting at
+Gui, Add, Edit, x250 yp-1 w18 h16 Number Limit2 vReconnectHour gnm_setReconnectHour, %ReconnectHour%
+Gui, Add, Edit, x275 yp w18 h16 Number Limit2 vReconnectMin gnm_setReconnectMin, %ReconnectMin%
 Gui, font, w1000 s11
-Gui, Add, Text, x269 y115 +BackgroundTrans, :
-Gui, Font, s8 cDefault Norm, Tahoma
-Gui, Add, Edit, x275 y118 w18 h16 Number Limit2 vReconnectMin gnm_setReconnectMin, %ReconnectMin%
+Gui, Add, Text, x269 yp-3 +BackgroundTrans, :
 Gui, font, s6 w700
-Gui, Add, Text, x295 y121 +BackgroundTrans, UTC
+Gui, Add, Text, x295 yp+6 +BackgroundTrans, UTC
 Gui, Font, s8 cDefault Norm, Tahoma
-Gui, Add, Button, x315 y118 w10 h15 gnm_ReconnectTimeHelp, ?
-Gui, Add, CheckBox, x180 y137 w88 h15 vReconnectMessage gnm_saveConfig +BackgroundTrans Checked%ReconnectMessage%, Natro so broke
+Gui, Add, Button, x315 yp-3 w10 h15 gnm_ReconnectTimeHelp, ?
+Gui, Add, CheckBox, x176 yp+24 w88 h15 vReconnectMessage gnm_saveConfig +BackgroundTrans Checked%ReconnectMessage%, Natro so broke
 hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["weary"])
-Gui, Add, Picture, +BackgroundTrans x269 y135 w20 h20, HBITMAP:*%hBM%
+Gui, Add, Picture, +BackgroundTrans x269 yp-2 w20 h20, HBITMAP:*%hBM%
 DllCall("DeleteObject", "ptr", hBM)
 Gdip_DisposeImage(bitmaps["weary"])
-Gui, Add, Button, x315 y136 w10 h15 gnm_NatroSoBrokeHelp, ?
-Gui, Add, CheckBox, x180 y154 w132 h15 vPublicFallback gnm_saveConfig +BackgroundTrans Checked%PublicFallback%, Fallback to Public Server
-Gui, Add, Button, x315 y154 w10 h15 gnm_PublicFallbackHelp, ?
+Gui, Add, Button, x315 yp+2 w10 h15 gnm_NatroSoBrokeHelp, ?
+Gui, Add, CheckBox, x176 yp+18 w132 h15 vPublicFallback gnm_saveConfig +BackgroundTrans Checked%PublicFallback%, Fallback to Public Server
+Gui, Add, Button, x315 yp w10 h15 gnm_PublicFallbackHelp, ?
 
 ;character settings
 Gui, Add, Text, x345 y40 w110 +left +BackgroundTrans,Movement Speed:
@@ -6042,7 +6048,7 @@ nm_DebugLogCheck(){
 nm_testReconnect(){
 	CloseRoblox()
 	if (DisconnectCheck(1) = 1)
-		msgbox success
+		msgbox, 0x1000, Reconnect Test, Success!
 }
 nm_GotoDebugLogButton(){
 	Run, % "explorer.exe /e`, /n`, /select`," A_WorkingDir "\settings\debug_log.txt"
@@ -6263,6 +6269,27 @@ nm_FieldSprinklerLoc(hCtrl){
 	
 	GuiControl, , FieldSprinklerLoc%index%, % (FieldSprinklerLoc%index% := val[(hCtrl = hFSL%index%Right) ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)])
 	IniWrite, % FieldSprinklerLoc%index%, settings\nm_config.ini, Gather, FieldSprinklerLoc%index%
+}
+nm_ReconnectMethod(hCtrl){
+	global ReconnectMethod, hRMLeft, hRMRight
+	static val := ["Deeplink", "Browser"], l := val.Length()
+	
+	if (ReconnectMethod = "Deeplink")
+	{
+		Gui, +OwnDialogs
+		msgbox, 0x1034, Join Method, % "Setting Join Method to 'Browser' is not recommended!`n`nEven if you have a problem with the 'Deeplink' method, fixing it is a much better option than using the 'Browser' method.`nRead [?] for more information!`n`nAre you sure you want to change this?", 60
+		IfMsgBox Yes
+			i := 1
+		else
+			return
+	}
+	else
+		i := 2
+
+	i := (ReconnectMethod = "Deeplink") ? 1 : 2
+	
+	GuiControl, , ReconnectMethod, % (ReconnectMethod := val[(hCtrl = hRMRight) ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)])
+	IniWrite, %ReconnectMethod%, settings\nm_config.ini, Settings, ReconnectMethod
 }
 nm_MoveMethod(hCtrl){
 	global MoveMethod, hMMLeft, hMMRight
@@ -7330,6 +7357,9 @@ RemoveButton()
 nm_NewWalkHelp(){ ; movespeed correction information
 	msgbox, 0x40000, MoveSpeed Correction, DESCRIPTION:`nWhen this option is enabled, the macro will detect your Haste, Bear Morph, Coconut Haste, Haste+, Oil and Super Smoothie values real-time. Using this information, it will calculate the distance you have moved and use that for more accurate movements. If working as intended, this option will dramatically reduce drift and make Traveling anywhere in game much more accurate.`n`nIMPORTANT:`nIf you have this option enabled, make sure your 'Movement Speed' value is EXACTLY as shown in BSS Settings menu without haste or other temporary buffs (e.g. write 33.6 as 33.6 without any rounding). Also, it is ESSENTIAL that your Display Scale is 100`%, otherwise the buffs will not be detected properly.
 }
+nm_ReconnectMethodHelp(){ ; join method information
+	msgbox, 0x40000, Join Method, DESCRIPTION:`nThis option lets you choose between 'Deeplink' and 'Browser' reconnect methods.`n`n'Deeplink' is the recommended method: it's faster (skips the browser step completely) and works with the Roblox Store app. It can also join BSS directly without the need for a redirecting game like BSS Rejoin. You can search `"Roblox Developer Deeplinking`" online for more info.`n`n'Browser' should only be used when 'Deeplink' does not work. This is the old/legacy method of reconnecting: it can have inconsistencies between browsers (e.g. failure to close tabs, Roblox not logged in) and you will not be able to join a public server directly (forces 'Deeplink' when joining public servers).
+}
 nm_PublicFallbackHelp(){ ; public fallback information
 	msgbox, 0x40000, Public Server Fallback, DESCRIPTION:`nWhen this option is enabled, the macro will revert to attempting to join a Public Server if your Server Link failed three times. Otherwise, it will keep trying the Server Link you entered above until it succeeds.
 }
@@ -7800,6 +7830,8 @@ nm_TabSettingsLock(){
 	GuiControl, disable, KeyDelay
 	GuiControl, disable, KeyDelayEdit
 	GuiControl, disable, MoveSpeedNum
+	GuiControl, disable, % hRMLeft
+	GuiControl, disable, % hRMRight
 	GuiControl, disable, % hMMLeft
 	GuiControl, disable, % hMMRight
 	GuiControl, disable, % hSTLeft
@@ -14416,8 +14448,8 @@ CloseRoblox()
 }
 DisconnectCheck(testCheck := 0)
 {
-	global LastClock, LastGingerbread, KeyDelay, HiveSlot, CurrentAction, PreviousAction, PrivServer, TotalDisconnects, SessionDisconnects, DailyReconnect, PublicFallback, resetTime, SC_Esc, SC_R, SC_Enter, SC_E, bitmaps, PlanterName1, PlanterName2, PlanterName3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3, MacroState, ReconnectDelay, FallbackServer1, FallbackServer2, FallbackServer3, beesmasActive
-	static ServerLabels := {0: "Public Server", 1: "Private Server", 2: "Fallback Server 1", 3: "Fallback Server 2", 4: "Fallback Server 3"}, LegacyOverride := 0
+	global LastClock, LastGingerbread, KeyDelay, HiveSlot, CurrentAction, PreviousAction, PrivServer, TotalDisconnects, SessionDisconnects, ReconnectMethod, DailyReconnect, PublicFallback, resetTime, SC_Esc, SC_R, SC_Enter, SC_E, bitmaps, PlanterName1, PlanterName2, PlanterName3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3, MacroState, ReconnectDelay, FallbackServer1, FallbackServer2, FallbackServer3, beesmasActive
+	static ServerLabels := {0: "Public Server", 1: "Private Server", 2: "Fallback Server 1", 3: "Fallback Server 2", 4: "Fallback Server 3"}
 	
 	; return if not disconnected or crashed
 	WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " GetRobloxHWND())
@@ -14494,7 +14526,7 @@ DisconnectCheck(testCheck := 0)
 		i := A_Index, success := 0
 		Loop, 5 {
 			;START
-			switch % LegacyOverride ? 0 : Mod(i, 5) {
+			switch % (ReconnectMethod = "Browser") ? 0 : Mod(i, 5) {
 				case 1,2:
 				;Close Roblox
 				CloseRoblox()
@@ -14513,9 +14545,11 @@ DisconnectCheck(testCheck := 0)
 					CloseRoblox()
 					;Run Server Link (legacy method w/ browser)
 					nm_setStatus("Attempting", ServerLabels[server] " (Browser)")
-					if (success := LegacyReconnect(linkCodes[server], i) = 1) {
-						LegacyOverride := 1
-						nm_setStatus("Warning", "Deeplink reconnect failed, switched to legacy reconnect (browser) for this session!")
+					if ((success := LegacyReconnect(linkCodes[server], i)) = 1) {
+						if (ReconnectMethod != "Browser") {
+							ReconnectMethod := "Browser"
+							nm_setStatus("Warning", "Deeplink reconnect failed, switched to legacy reconnect (browser) for this session!")
+						}
 						break
 					}
 					else
