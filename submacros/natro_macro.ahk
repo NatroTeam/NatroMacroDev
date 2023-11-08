@@ -1,4 +1,4 @@
-﻿/*
+/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © 2022-2023 Natro Team (https://github.com/NatroTeam)
 
@@ -1981,12 +1981,19 @@ DllCall("DeleteObject", "ptr", hBM)
 hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps[(FieldName3 = "None") ? "savefielddisabled" : "savefield"])
 Gui, Add, Picture, xp yp+60 wp hp gnm_SaveFieldDefault hwndhSaveFieldDefault3, HBITMAP:*%hBM%
 DllCall("DeleteObject", "ptr", hBM)
-Gui, Add, Checkbox, x26 y83 w86 +BackgroundTrans +Center vFieldDriftCheck1 gnm_SaveGather Checked%FieldDriftCheck1% Disabled,Field Drift`nCompensation
-Gui, Add, Checkbox, xp yp+60 wp +BackgroundTrans +Center vFieldDriftCheck2 gnm_SaveGather Checked%FieldDriftCheck2% Disabled,Field Drift`nCompensation
-Gui, Add, Checkbox, xp yp+60 wp +BackgroundTrans +Center vFieldDriftCheck3 gnm_SaveGather Checked%FieldDriftCheck3% Disabled,Field Drift`nCompensation
+Gui, Add, Checkbox, x65 y83 w50 +BackgroundTrans +Center vFieldDriftCheck1 gnm_SaveGather Checked%FieldDriftCheck1% Disabled,Drift`nComp
+Gui, Add, Checkbox, xp yp+60 wp +BackgroundTrans +Center vFieldDriftCheck2 gnm_SaveGather Checked%FieldDriftCheck2% Disabled,Drift`nComp
+Gui, Add, Checkbox, xp yp+60 wp +BackgroundTrans +Center vFieldDriftCheck3 gnm_SaveGather Checked%FieldDriftCheck3% Disabled,Drift`nComp
 Gui, Add, Button, x115 y89 w9 h14 gnm_FDCHelp, ?
 Gui, Add, Button, xp yp+60 w9 h14 gnm_FDCHelp, ?
 Gui, Add, Button, xp yp+60 w9 h14 gnm_FDCHelp, ?
+Gui, Add, Button, x22 y82 h14 w40 Disabled vCopyGather1 gnm_CopyGatherSettings, copy
+Gui, Add, Button, xp yp+15 hp wp Disabled vPasteGather1 gnm_PasteGatherSettings, paste
+Gui, Add, Button, xp yp+45 hp wp Disabled vCopyGather2 gnm_CopyGatherSettings, copy
+Gui, Add, Button, xp yp+15 hp wp Disabled vPasteGather2 gnm_PasteGatherSettings, paste
+Gui, Add, Button, xp yp+45 hp wp Disabled vCopyGather3 gnm_CopyGatherSettings, copy
+Gui, Add, Button, xp yp+15 hp wp Disabled vPasteGather3 gnm_PasteGatherSettings, paste
+
 Gui, Add, DropDownList, x129 y57 w112 vFieldPattern1 gnm_SaveGather Disabled, % LTrim(StrReplace(patternlist "Stationary|", "|" FieldPattern1 "|", "|" FieldPattern1 "||"), "|")
 SetLoadingProgress(12)
 Gui, Add, DropDownList, xp yp+60 wp vFieldPattern2 gnm_SaveGather Disabled, % LTrim(StrReplace(patternlist "Stationary|", "|" FieldPattern2 "|", "|" FieldPattern2 "||"), "|")
@@ -2078,7 +2085,6 @@ Gui, Add, UpDown, Range1-10 vFieldSprinklerDist2 gnm_SaveGatherVar Disabled, %Fi
 Gui, Add, Text, xp yp+60 wp h16 0x201 +Center
 Gui, Add, UpDown, Range1-10 vFieldSprinklerDist3 gnm_SaveGatherVar Disabled, %FieldSprinklerDist3%
 SetLoadingProgress(26)
-
 ;Contributors TAB
 ;------------------------
 Gui, Tab, Credits
@@ -3397,6 +3403,53 @@ SetLoadingProgress(percent)
 {
 	Gui, Show, NA, % "Natro Macro (Loading " Round(percent) "%)"
 }
+nm_CopyGatherSettings(id){
+	global
+	GuiControlGet, copyControlName, name, %id%
+	i := SubStr(copyControlName, StrLen(copyControlName))
+	gatherobj := {"Field":FieldName%i%, "Pattern":FieldPattern%i%, "FieldDrift":FieldDriftCheck%i%, "InvertFB":FieldPatternInvertFB%i%, "InvertLR":FieldPatternInvertLR%i%, "Reps":FieldPatternReps%i%, "Shift":FieldPatternShift%i%, "Size":FieldPatternSize%i%, "Return":FieldReturnType%i%, "RotateDir":FieldRotateDirection%i%, "RotateTimes":FieldRotateTimes%i%, "SprinklerDistance":FieldSprinklerDist%i%, "SprinklerLocation":FieldSprinklerLoc%i%, "TimeLimit":FieldUntilMins%i%, "PackLimit":FieldUntilPack%i%}
+	Clipboard := json.stringify(gatherobj)
+}
+nm_PasteGatherSettings(id){
+	global
+	GuiControlGet, pasteControlName, name, %id%
+	i := SubStr(pasteControlName, StrLen(pasteControlName))
+	if !(json.test(clipboard)){
+		msgbox, 0x1030, WARNING!!, % "Your String Format is incorrect!`nMake sure you also copy the " Chr(34) "{" Chr(34) " and the " Chr(34) "}" Chr(34), 60
+		Return
+	}
+	obj := json.parse(Clipboard)
+	for k,v in {"Field":"FieldName", "Pattern":"FieldPattern", "FieldDrift":"FieldDriftCheck", "InvertFB":"FieldPatternInvertFB", "InvertLR":"FieldPatternInvertLR", "Reps":"FieldPatternReps", "Shift":"FieldPatternShift", "Size":"FieldPatternSize", "Return":"FieldReturnType", "RotateDir":"FieldRotateDirection", "RotateTimes":"FieldRotateTimes", "SprinklerDistance":"FieldSprinklerDist", "SprinklerLocation":"FieldSprinklerLoc", "TimeLimit":"FieldUntilMins", "PackLimit":"FieldUntilPack"}
+		{
+			value := v . i
+			if (v = "FieldName" || v="FieldPattern"){
+				if (InStr(patternlist,obj[k])){
+					GuiControl,,%value%, % StrReplace(patternlist . "Stationary|", "|" obj[k] "|", "|" obj[k] "||")
+				}
+				else if (InStr(MFieldListText, obj[k])){
+					GuiControl,,%value%, % StrReplace("|None" MFieldListText . "Stationary|", "|" obj[k] "|", "|" obj[k] "||")
+				}
+				else {
+					msgbox, 0x1030, WARNING!!, % "The item you tried to import is NOT found!`nMake sure you copied the string correctly.`nSpecific: " obj[k], 60
+				}
+				
+			}
+			Else
+				GuiControl,,%value%, % obj[k]
+		}
+	For k,v in ["FieldName","FieldPattern","FieldDriftCheck","FieldPatternInvertFB","FieldPatternInvertLR","FieldPatternReps","FieldPatternShift","FieldPatternSize","FieldReturnType","FieldRotateDirection","FieldRotateTimes","FieldSprinklerDist","FieldSprinklerLoc","FieldUntilMins","FieldUntilPack", "CopyGather"]
+	{
+		value := v . i
+		GuiControl, enable, % value
+	}
+	If (i = 2){
+		GuiControl, enable, PasteGather3
+	}
+	hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefield"])
+	GuiControl, , % hSaveFieldDefault%i%, HBITMAP:*%hBM%
+	DllCall("DeleteObject", "ptr", hBM)
+	nm_WebhookEasterEgg()
+}
 nm_WebhookEasterEgg(){
 	global WebhookEasterEgg
 	Gui +OwnDialogs
@@ -4039,6 +4092,9 @@ nm_FieldUnlock(){
 	GuiControl, Enable, % hFRT1Right
 	GuiControl, Enable, % hFSL1Left
 	GuiControl, Enable, % hFSL1Right
+	GuiControl, Enable, CopyGather1
+	GuiControl, Enable, PasteGather1
+	GuiControl, Enable, PasteGather2
 	if(FieldName2!="none"){
 		GuiControl, Enable, FieldName3
 		GuiControl, Enable, FieldPattern2
@@ -4058,6 +4114,8 @@ nm_FieldUnlock(){
 		GuiControl, Enable, % hFRT2Right
 		GuiControl, Enable, % hFSL2Left
 		GuiControl, Enable, % hFSL2Right
+		GuiControl, Enable, CopyGather2
+		GuiControl, Enable, PasteGather3
 	}
 	if(FieldName3!="none"){
 		GuiControl, Enable, FieldPattern3
@@ -4077,6 +4135,7 @@ nm_FieldUnlock(){
 		GuiControl, Enable, % hFRT3Right
 		GuiControl, Enable, % hFSL3Left
 		GuiControl, Enable, % hFSL3Right
+		GuiControl, Enable, CopyGather3
 	}
 }
 nm_FieldSelect2(){
@@ -4102,6 +4161,8 @@ nm_FieldSelect2(){
 		GuiControl, Enable, % hFRT2Right
 		GuiControl, Enable, % hFSL2Left
 		GuiControl, Enable, % hFSL2Right
+		GuiControl, Enable, CopyGather2
+		GuiControl, Enable, PasteGather3
 		hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefield"])
 		GuiControl, , % hSaveFieldDefault2, HBITMAP:*%hBM%
 		DllCall("DeleteObject", "ptr", hBM)
@@ -4128,6 +4189,8 @@ nm_FieldSelect2(){
 		GuiControl, Disable, % hFRT2Right
 		GuiControl, Disable, % hFSL2Left
 		GuiControl, Disable, % hFSL2Right
+		GuiControl, Disable, CopyGather2
+		GuiControl, Disable, PasteGather3
 		hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefielddisabled"])
 		GuiControl, , % hSaveFieldDefault2, HBITMAP:*%hBM%
 		DllCall("DeleteObject", "ptr", hBM)
@@ -4161,6 +4224,7 @@ nm_FieldSelect3(){
 		GuiControl, Enable, % hFRT3Right
 		GuiControl, Enable, % hFSL3Left
 		GuiControl, Enable, % hFSL3Right
+		GuiControl, Enable, CopyGather3
 		hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefield"])
 		GuiControl, , % hSaveFieldDefault3, HBITMAP:*%hBM%
 		DllCall("DeleteObject", "ptr", hBM)
@@ -4187,6 +4251,7 @@ nm_FieldSelect3(){
 		GuiControl, Disable, % hFRT3Right
 		GuiControl, Disable, % hFSL3Left
 		GuiControl, Disable, % hFSL3Right
+		GuiControl, Disable, CopyGather3
 		hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefielddisabled"])
 		GuiControl, , % hSaveFieldDefault3, HBITMAP:*%hBM%
 		DllCall("DeleteObject", "ptr", hBM)
@@ -12319,7 +12384,6 @@ nm_GoGather(){
 	}
 	;set FDC switch
 	FDCEnabled := (FieldDriftCheck && (FieldPattern != "Stationary"))
-
 	;gather loop
 	WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " GetRobloxHWND())
 	MouseMove, windowX+350, windowY+100
