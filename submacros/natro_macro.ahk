@@ -1987,12 +1987,12 @@ Gui, Add, Checkbox, xp yp+60 wp +BackgroundTrans +Center vFieldDriftCheck3 gnm_S
 Gui, Add, Button, x115 y89 w9 h14 gnm_FDCHelp, ?
 Gui, Add, Button, xp yp+60 w9 h14 gnm_FDCHelp, ?
 Gui, Add, Button, xp yp+60 w9 h14 gnm_FDCHelp, ?
-Gui, Add, Button, x22 y82 h14 w40 Disabled vCopyGather1 gnm_CopyGatherSettings, copy
-Gui, Add, Button, xp yp+15 hp wp Disabled vPasteGather1 gnm_PasteGatherSettings, paste
-Gui, Add, Button, xp yp+45 hp wp Disabled vCopyGather2 gnm_CopyGatherSettings, copy
-Gui, Add, Button, xp yp+15 hp wp Disabled vPasteGather2 gnm_PasteGatherSettings, paste
-Gui, Add, Button, xp yp+45 hp wp Disabled vCopyGather3 gnm_CopyGatherSettings, copy
-Gui, Add, Button, xp yp+15 hp wp Disabled vPasteGather3 gnm_PasteGatherSettings, paste
+Gui, Add, Button, x22 y82 h14 w40 Disabled vCopyGather1 gnm_CopyGatherSettings, Copy
+Gui, Add, Button, xp yp+15 hp wp Disabled vPasteGather1 gnm_PasteGatherSettings, Paste
+Gui, Add, Button, xp yp+45 hp wp Disabled vCopyGather2 gnm_CopyGatherSettings, Copy
+Gui, Add, Button, xp yp+15 hp wp Disabled vPasteGather2 gnm_PasteGatherSettings, Paste
+Gui, Add, Button, xp yp+45 hp wp Disabled vCopyGather3 gnm_CopyGatherSettings, Copy
+Gui, Add, Button, xp yp+15 hp wp Disabled vPasteGather3 gnm_PasteGatherSettings, Paste
 
 Gui, Add, DropDownList, x129 y57 w112 vFieldPattern1 gnm_SaveGather Disabled, % LTrim(StrReplace(patternlist "Stationary|", "|" FieldPattern1 "|", "|" FieldPattern1 "||"), "|")
 SetLoadingProgress(12)
@@ -2085,6 +2085,7 @@ Gui, Add, UpDown, Range1-10 vFieldSprinklerDist2 gnm_SaveGatherVar Disabled, %Fi
 Gui, Add, Text, xp yp+60 wp h16 0x201 +Center
 Gui, Add, UpDown, Range1-10 vFieldSprinklerDist3 gnm_SaveGatherVar Disabled, %FieldSprinklerDist3%
 SetLoadingProgress(26)
+
 ;Contributors TAB
 ;------------------------
 Gui, Tab, Credits
@@ -3404,46 +3405,72 @@ SetLoadingProgress(percent)
 	Gui, Show, NA, % "Natro Macro (Loading " Round(percent) "%)"
 }
 nm_CopyGatherSettings(){
-	global
-	local q := Chr(34), local i := SubStr(A_GuiControl, 0)
-	Clipboard := Chr(123) . q "FieldName" q ":" q FieldName%i% q "," q "FieldPattern" q ":" q FieldPattern%i% q "," q "FieldDriftCheck" q ":" FieldDriftCheck%i% "," q "FieldPatternInvertFB" q ":" FieldPatternInvertFB%i% "," q "FieldPatternInvertLR" q ":" FieldPatternInvertLR%i% "," q "FieldPatternReps" q ":" FieldPatternReps%i% "," q "FieldPatternShift" q ":" FieldPatternShift%i% "," q "FieldPatternSize" q ":" q FieldPatternSize%i% q "," q "FieldReturnType" q ":" q FieldReturnType%i% q "," q "FieldRotateDirection" q ":" q FieldRotateDirection%i% q "," q "FieldRotateTimes" q ":" FieldRotateTimes%i% "," q "FieldSprinklerDist" q ":" FieldSprinklerDist%i% "," q "FieldSprinklerLoc" q ":" q FieldSprinklerLoc%i% q "," q "FieldUntilMins" q ":" FieldUntilMins%i% "," q "FieldUntilPack" q ":" FieldUntilPack%i% Chr(125)
-}
-nm_PasteGatherSettings(id){
-	global
+	static q := Chr(34), ob := Chr(123), cb := Chr(125)
 	local i := SubStr(A_GuiControl, 0)
+	Clipboard := ob q "Name" q ":" q FieldName%i% q "," 
+		. q "Pattern" q ":" q FieldPattern%i% q ","
+		. q "DriftCheck" q ":" FieldDriftCheck%i% ","
+		. q "PatternInvertFB" q ":" FieldPatternInvertFB%i% ","
+		. q "PatternInvertLR" q ":" FieldPatternInvertLR%i% ","
+		. q "PatternReps" q ":" FieldPatternReps%i% ","
+		. q "PatternShift" q ":" FieldPatternShift%i% ","
+		. q "PatternSize" q ":" q FieldPatternSize%i% q ","
+		. q "ReturnType" q ":" q FieldReturnType%i% q ","
+		. q "RotateDirection" q ":" q FieldRotateDirection%i% q ","
+		. q "RotateTimes" q ":" FieldRotateTimes%i% ","
+		. q "SprinklerDist" q ":" FieldSprinklerDist%i% ","
+		. q "SprinklerLoc" q ":" q FieldSprinklerLoc%i% q ","
+		. q "UntilMins" q ":" FieldUntilMins%i% ","
+		. q "UntilPack" q ":" FieldUntilPack%i% cb
+}
+nm_PasteGatherSettings(){
+	static validation := {"DriftCheck": "^(0|1)$"
+		, "PatternInvertFB": "^(0|1)$"
+		, "PatternInvertLR": "^(0|1)$"
+		, "PatternReps": "^[1-9]$"
+		, "PatternShift": "^(0|1)$"
+		, "PatternSize": "i)^(XS|S|M|L|XL)$"
+		, "ReturnType": "i)^(Walk|Reset)$"
+		, "RotateDirection": "i)^(None|Left|Right)$"
+		, "RotateTimes": "^[1-4]$"
+		, "SprinklerDist": "^([1-9]|10)$"
+		, "SprinklerLoc": "i)^(Center|Upper Left|Upper|Upper Right|Right|Lower Right|Lower|Lower Left|Left)$"
+		, "UntilMins": "^\d{1,4}$"
+		, "UntilPack": "^(5|10|15|20|25|30|35|40|45|50|55|60|65|70|75|80|85|90|95|100)$"}, q := Chr(34)
+	local i := SubStr(A_GuiControl, 0)
+
 	If (!RegExMatch(Clipboard, "^\s*\{.*\}\s*$")){
-		msgbox, 0x1030, WARNING!!, % "Your String Format is incorrect!`nMake sure you also copy the " Chr(34) "{" Chr(34) " and the " Chr(34) "}" Chr(34), 60
+		msgbox, 0x1030, WARNING!!, % "Your String Format is incorrect!`nMake sure you also copy the " q "{" q " and the " q "}" q, 60
 		Return
 	}
 	obj := json.parse(Clipboard)
-	for k,v in ["FieldName", "FieldPattern", "FieldDriftCheck", "FieldPatternInvertFB", "FieldPatternInvertLR", "FieldPatternReps", "FieldPatternShift", "FieldPatternSize", "FieldReturnType", "FieldRotateDirection", "FieldRotateTimes", "FieldSprinklerDist", "FieldSprinklerLoc", "FieldUntilMins", "FieldUntilPack"]
-		{
-			value := v . i
-			if (v = "FieldName" || v="FieldPattern"){
-				if (InStr(patternlist,obj[v])){
-					GuiControl,,%value%, % StrReplace(patternlist . "Stationary|", "|" obj[v] "|", "|" obj[v] "||")
-				}
-				else if (InStr(MFieldListText, obj[v])){
-					GuiControl,,%value%, % StrReplace(((i = 1) ? "" : "|None") . MFieldListText . "Stationary|", "|" obj[v] "|", "|" obj[v] "||")
-				}
-				else {
-					msgbox, 0x1030, WARNING!!, % "The item you tried to import is NOT found!`nMake sure you copied the string correctly.`nSpecific: " obj[v], 60
-					return
-				}
-				
-			}
-			Else
-				GuiControl,,%value%, % obj[v]
-			GuiControl, enable, % value
-			IniWrite,% %value%, settings/nm_config.ini, Gather, %value%
-		}
-	If (i = 2){
-		GuiControl, enable, PasteGather3
+	if obj.HasKey("Name") {
+		if InStr(fieldnamelist, "|" obj["Name"] "|") {
+			FieldName%i% := obj["Name"]
+			IniWrite, % obj["Name"], settings\nm_config.ini, Gather, FieldName%i%
+			GuiControl, , FieldName%i%, % StrReplace(((i = 1) ? "" : "|None") fieldnamelist, "|" FieldName%i% "|", "|" FieldName%i% "||")
+		} else
+			msgbox, 0x1030, WARNING!!, % "The Field Name you tried to import is NOT valid!`nMake sure you copied the string correctly.`nSpecific: " obj["Name"], 60
 	}
-	hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefield"])
-	GuiControl, , % hSaveFieldDefault%i%, HBITMAP:*%hBM%
-	DllCall("DeleteObject", "ptr", hBM)
-	nm_WebhookEasterEgg()
+	if obj.HasKey("Pattern") {
+		if InStr(patternlist "Stationary|", "|" obj["Pattern"] "|") {
+			FieldPattern%i% := obj["Pattern"]
+			IniWrite, % obj["Pattern"], settings\nm_config.ini, Gather, FieldPattern%i%
+			GuiControl, , FieldPattern%i%, % StrReplace(patternlist "Stationary|", "|" FieldPattern%i% "|", "|" FieldPattern%i% "||")
+		} else
+			msgbox, 0x1030, WARNING!!, % "The Pattern you tried to import is NOT valid!`nMake sure you copied the string correctly and have the pattern installed.`nSpecific: " obj["Name"], 60
+	}
+	for k,v in validation {
+		if obj.HasKey(k) {
+			if (obj[k] ~= v) {
+				Field%k%%i% := obj[k]
+				IniWrite, % obj[k], settings\nm_config.ini, Gather, Field%k%%i%
+				GuiControl, , Field%k%%i%, % obj[k]
+			} else
+				msgbox, 0x1030, WARNING!!, % "The item you tried to import is NOT valid!`nMake sure you copied the string correctly.`nSpecific: " k ":" obj[k], 60
+		}
+	}
+	nm_FieldSelect%i%()
 }
 nm_WebhookEasterEgg(){
 	global WebhookEasterEgg
@@ -3997,16 +4024,15 @@ nm_StatusLogReverseCheck(){
 	}
 	GuiControl, Enable, StatusLogReverse
 }
-nm_FieldSelect1(){
-	global FieldName1, CurrentFieldNum
-	global CurrentField
+nm_FieldSelect1(hCtrl:=0){
+	global FieldName1, CurrentFieldNum, CurrentField
 	GuiControlGet, FieldName1
 	IniWrite, %FieldName1%, settings\nm_config.ini, Gather, FieldName1
 	CurrentFieldNum:=1
 	IniWrite, %CurrentFieldNum%, settings\nm_config.ini, Gather, CurrentFieldNum
 	GuiControl,,CurrentField, %FieldName1%
 	CurrentField:=FieldName1
-	nm_FieldDefaults(1)
+	hCtrl ? nm_FieldDefaults(1)
 	nm_WebhookEasterEgg()
 }
 nm_TabGatherLock(){
@@ -4133,7 +4159,7 @@ nm_FieldUnlock(){
 		GuiControl, Enable, CopyGather3
 	}
 }
-nm_FieldSelect2(){
+nm_FieldSelect2(hCtrl:=0){
 	global
 	local hBM
 	GuiControlGet, FieldName2
@@ -4191,13 +4217,13 @@ nm_FieldSelect2(){
 		DllCall("DeleteObject", "ptr", hBM)
 		GuiControl, ChooseString, FieldName3, None
 		GuiControl, Disable, FieldName3
-		nm_fieldSelect3()
+		nm_fieldSelect3(1)
 	}
-	nm_FieldDefaults(2)
+	hCtrl ? nm_FieldDefaults(2)
 	IniWrite, %FieldName2%, settings\nm_config.ini, Gather, FieldName2
 	nm_WebhookEasterEgg()
 }
-nm_FieldSelect3(){
+nm_FieldSelect3(hCtrl:=0){
 	global
 	local hBM
 	GuiControlGet, FieldName3
@@ -4251,7 +4277,7 @@ nm_FieldSelect3(){
 		GuiControl, , % hSaveFieldDefault3, HBITMAP:*%hBM%
 		DllCall("DeleteObject", "ptr", hBM)
 	}
-	nm_FieldDefaults(3)
+	hCtrl ? nm_FieldDefaults(3)
 	IniWrite, %FieldName3%, settings\nm_config.ini, Gather, FieldName3
 	nm_WebhookEasterEgg()
 }
@@ -12379,6 +12405,7 @@ nm_GoGather(){
 	}
 	;set FDC switch
 	FDCEnabled := (FieldDriftCheck && (FieldPattern != "Stationary"))
+
 	;gather loop
 	WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " GetRobloxHWND())
 	MouseMove, windowX+350, windowY+100
