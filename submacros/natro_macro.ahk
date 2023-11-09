@@ -4026,13 +4026,15 @@ nm_StatusLogReverseCheck(){
 }
 nm_FieldSelect1(hCtrl:=0){
 	global FieldName1, CurrentFieldNum, CurrentField
-	GuiControlGet, FieldName1
-	IniWrite, %FieldName1%, settings\nm_config.ini, Gather, FieldName1
+	if hCtrl {
+		GuiControlGet, FieldName1
+		nm_FieldDefaults(1)
+		IniWrite, %FieldName1%, settings\nm_config.ini, Gather, FieldName1
+	}
 	CurrentFieldNum:=1
 	IniWrite, %CurrentFieldNum%, settings\nm_config.ini, Gather, CurrentFieldNum
 	GuiControl,,CurrentField, %FieldName1%
 	CurrentField:=FieldName1
-	hCtrl ? nm_FieldDefaults(1)
 	nm_WebhookEasterEgg()
 }
 nm_TabGatherLock(){
@@ -4162,7 +4164,8 @@ nm_FieldUnlock(){
 nm_FieldSelect2(hCtrl:=0){
 	global
 	local hBM
-	GuiControlGet, FieldName2
+	if hCtrl
+		GuiControlGet, FieldName2
 	if(FieldName2!="none"){
 		GuiControl, Enable, FieldName3
 		GuiControl, Enable, FieldPattern2
@@ -4219,14 +4222,17 @@ nm_FieldSelect2(hCtrl:=0){
 		GuiControl, Disable, FieldName3
 		nm_fieldSelect3(1)
 	}
-	hCtrl ? nm_FieldDefaults(2)
-	IniWrite, %FieldName2%, settings\nm_config.ini, Gather, FieldName2
+	if hCtrl {
+		nm_FieldDefaults(2)
+		IniWrite, %FieldName2%, settings\nm_config.ini, Gather, FieldName2
+	}
 	nm_WebhookEasterEgg()
 }
 nm_FieldSelect3(hCtrl:=0){
 	global
 	local hBM
-	GuiControlGet, FieldName3
+	if hCtrl
+		GuiControlGet, FieldName3
 	if(FieldName3!="none"){
 		GuiControl, Enable, FieldPattern3
 		GuiControl, Enable, FieldPatternSize3UpDown
@@ -4277,8 +4283,10 @@ nm_FieldSelect3(hCtrl:=0){
 		GuiControl, , % hSaveFieldDefault3, HBITMAP:*%hBM%
 		DllCall("DeleteObject", "ptr", hBM)
 	}
-	hCtrl ? nm_FieldDefaults(3)
-	IniWrite, %FieldName3%, settings\nm_config.ini, Gather, FieldName3
+	if hCtrl {
+		nm_FieldDefaults(3)
+		IniWrite, %FieldName3%, settings\nm_config.ini, Gather, FieldName3
+	}
 	nm_WebhookEasterEgg()
 }
 nm_FieldDefaults(num){
