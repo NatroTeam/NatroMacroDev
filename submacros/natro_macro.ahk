@@ -4733,6 +4733,7 @@ nm_TabCollectLock(){
 	GuiControl, disable, ChickLevel
 	GuiControl, disable, ChickHealthEdit
 	GuiControl, disable, ChickTimeUpDown
+	GuiControl, disable, BossConfigHelp
 }
 nm_TabCollectUnLock(){
 	global
@@ -4809,6 +4810,7 @@ nm_TabCollectUnLock(){
 	GuiControl, enable, ChickLevel
 	GuiControl, enable, ChickHealthEdit
 	GuiControl, enable, ChickTimeUpDown
+	GuiControl, enable, BossConfigHelp
 }
 nm_saveBoost(){
 	global
