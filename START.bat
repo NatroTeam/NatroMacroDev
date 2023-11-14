@@ -29,7 +29,7 @@ set reset=%\e%[0m
 if "%exe_missing%" == "1" (
 	echo %red%Could not find submacros\AutoHotkeyU32.exe^^!%reset%
 	echo %red%This is most likely due to a third-party antivirus deleting the file:%reset%
-	echo %red% 1. Disable any third-party antivirus software ^(or add the Natro Macro as an exception^)%reset%
+	echo %red% 1. Disable any third-party antivirus software ^(or add the Natro Macro folder as an exception^)%reset%
 	echo %red% 2. Re-extract the macro and check that AutoHotkeyU32.exe exists in 'submacros' folder%reset%
 	echo %red% 3. Run START.bat%reset%
 	echo:
