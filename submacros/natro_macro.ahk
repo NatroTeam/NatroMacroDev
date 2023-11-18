@@ -1229,20 +1229,20 @@ FieldDefault["Sunflower"] := {"pattern":"CornerXSnake"
 	, "invertFB":0
 	, "invertLR":1}
 
-FieldDefault["Dandelion"] := {"pattern":"Lines"
+FieldDefault["Dandelion"] := {"pattern":"CornerXSnake"
 	, "size":"M"
-	, "width":2
+	, "width":6
 	, "camera":"None"
 	, "turns":1
-	, "sprinkler":"Upper Right"
-	, "distance":9
+	, "sprinkler":"Upper Left"
+	, "distance":10
 	, "percent":95
 	, "gathertime":10
 	, "convert":"Walk"
-	, "drift":1
+	, "drift":0
 	, "shiftlock":0
 	, "invertFB":0
-	, "invertLR":0}
+	, "invertLR":1}
 
 FieldDefault["Mushroom"] := {"pattern":"CornerXSnake"
 	, "size":"M"
@@ -1274,20 +1274,20 @@ FieldDefault["Blue Flower"] := {"pattern":"CornerXSnake"
 	, "invertFB":0
 	, "invertLR":0}
 
-FieldDefault["Clover"] := {"pattern":"Lines"
-	, "size":"M"
-	, "width":2
+FieldDefault["Clover"] := {"pattern":"Stationary"
+	, "size":"S"
+	, "width":1
 	, "camera":"None"
 	, "turns":1
-	, "sprinkler":"Left"
-	, "distance":4
+	, "sprinkler":"Center"
+	, "distance":1
 	, "percent":95
 	, "gathertime":10
 	, "convert":"Walk"
 	, "drift":0
 	, "shiftlock":0
 	, "invertFB":0
-	, "invertLR":1}
+	, "invertLR":0}
 
 FieldDefault["Spider"] := {"pattern":"CornerXSnake"
 	, "size":"M"
@@ -1364,17 +1364,17 @@ FieldDefault["Stump"] := {"pattern":"Stationary"
 	, "invertFB":0
 	, "invertLR":0}
 
-FieldDefault["Cactus"] := {"pattern":"Squares"
+FieldDefault["Cactus"] := {"pattern":"Stationary"
 	, "size":"S"
 	, "width":1
 	, "camera":"None"
 	, "turns":1
-	, "sprinkler":"Lower"
-	, "distance":5
+	, "sprinkler":"Center"
+	, "distance":1
 	, "percent":95
 	, "gathertime":10
 	, "convert":"Walk"
-	, "drift":1
+	, "drift":0
 	, "shiftlock":0
 	, "invertFB":0
 	, "invertLR":0}
@@ -1424,17 +1424,17 @@ FieldDefault["Rose"] := {"pattern":"CornerXSnake"
 	, "invertFB":0
 	, "invertLR":1}
 
-FieldDefault["Mountain Top"] := {"pattern":"Snake"
-	, "size":"S"
-	, "width":2
-	, "camera":"Right"
-	, "turns":2
-	, "sprinkler":"Right"
+FieldDefault["Mountain Top"] := {"pattern":"CornerXSnake"
+	, "size":"M"
+	, "width":3
+	, "camera":"Left"
+	, "turns":4
+	, "sprinkler":"Lower Left"
 	, "distance":5
 	, "percent":95
 	, "gathertime":10
 	, "convert":"Walk"
-	, "drift":1
+	, "drift":0
 	, "shiftlock":0
 	, "invertFB":0
 	, "invertLR":0}
