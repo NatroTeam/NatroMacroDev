@@ -8216,6 +8216,9 @@ nm_TabMiscUnLock(){
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; FUNCTIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#Include %A_ScriptDir%\..\lib
+#Include nm_OpenMenu.ahk
+#Include nm_InventorySearch.ahk
 nm_PlanterDetection()
 {
 	static pBMProgressStart, pBMProgressEnd, pBMRemain
@@ -13121,196 +13124,6 @@ nm_loot(length, reps, direction, tokenlink:=0){ ; length in tiles instead of ms 
 	}
 	nm_endWalk()
 }
-nm_OpenMenu(menu:="", refresh:=0){
-	global bitmaps
-	static x := {"itemmenu":30, "questlog":85, "beemenu":140}, open:=""
-
-	if (hwnd := GetRobloxHWND())
-		WinActivate, Roblox
-	else
-		return 0
-	offsetY := GetYOffset(hwnd)
-
-	if ((menu = "") || (refresh = 1)) ; close
-	{
-		if open ; close the open menu
-		{
-			Loop, 10
-			{
-				WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " hwnd)
-				pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+72 "|350|80")
-				if (Gdip_ImageSearch(pBMScreen, bitmaps[open], , , , , , 2) != 1) {
-					Gdip_DisposeImage(pBMScreen)
-					open := ""
-					break
-				}
-				Gdip_DisposeImage(pBMScreen)
-				MouseMove, windowX+x[open], windowY+offsetY+120
-				Click
-				MouseMove, windowX+350, windowY+offsetY+100
-				sleep, 500
-			}
-		}
-		else ; close any open menu
-		{
-			for k,v in x
-			{
-				Loop, 10
-				{
-					WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " hwnd)
-					pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+72 "|350|80")
-					if (Gdip_ImageSearch(pBMScreen, bitmaps[k], , , , , , 2) != 1) {
-						Gdip_DisposeImage(pBMScreen)
-						break
-					}
-					Gdip_DisposeImage(pBMScreen)
-					MouseMove, windowX+v, windowY+offsetY+120
-					Click
-					MouseMove, windowX+350, windowY+offsetY+100
-					sleep, 500
-				}
-			}
-			open := ""
-		}
-	}
-	else
-	{
-		if ((menu != open) && open) ; close the open menu
-		{
-			Loop, 10
-			{
-				WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " hwnd)
-				pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+72 "|350|80")
-				if (Gdip_ImageSearch(pBMScreen, bitmaps[open], , , , , , 2) != 1) {
-					Gdip_DisposeImage(pBMScreen)
-					open := ""
-					break
-				}
-				Gdip_DisposeImage(pBMScreen)
-				MouseMove, windowX+x[open], windowY+offsetY+120
-				Click
-				MouseMove, windowX+350, windowY+offsetY+100
-				sleep, 500
-			}
-		}
-		; open the desired menu
-		Loop, 10
-		{
-			WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " hwnd)
-			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+72 "|350|80")
-			if (Gdip_ImageSearch(pBMScreen, bitmaps[menu], , , , , , 2) = 1) {
-				Gdip_DisposeImage(pBMScreen)
-				open := menu
-				break
-			}
-			Gdip_DisposeImage(pBMScreen)
-			MouseMove, windowX+x[menu], windowY+offsetY+120
-			Click
-			MouseMove, windowX+350, windowY+offsetY+100
-			sleep, 500
-		}
-	}
-}
-nm_InventorySearch(item, direction:="down", prescroll:=0, prescrolldir:="", scrolltoend:=1, max:=70){ ;~ item: string of item; direction: down or up; prescroll: number of scrolls before direction switch; prescrolldir: direction to prescroll, set blank for same as direction; scrolltoend: set 0 to omit scrolling to top/bottom after prescrolls; max: number of scrolls in total
-	global bitmaps
-	static hRoblox, l:=0
-
-	nm_OpenMenu("itemmenu")
-
-	; detect inventory end for current hwnd
-	if (hwnd := GetRobloxHWND())
-	{
-		if (hwnd != hRoblox)
-		{
-			WinActivate, Roblox
-			offsetY := GetYOffset(hwnd)
-			WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " GetRobloxHWND())
-			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+150 "|306|" windowHeight-offsetY-150)
-
-			Loop, 40
-			{
-				if (Gdip_ImageSearch(pBMScreen, bitmaps["item"], lpos, , , 6, , 2, , 2) = 1)
-				{
-					l := SubStr(lpos, InStr(lpos, ",")+1)-60 ; image 20px, item 80px => y+20-80 = y-60
-					hRoblox := hwnd
-					break
-				}
-				else
-				{
-					if (A_Index = 40)
-					{
-						Gdip_DisposeImage(pBMScreen)
-						return 0
-					}
-					else
-					{
-						Sleep, 50
-						Gdip_DisposeImage(pBMScreen)
-						pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+150 "|306|" windowHeight-offsetY-150)
-					}
-				}
-			}
-		}
-	}
-	else
-		return 0 ; no roblox
-	offsetY := GetYOffset(hwnd)
-
-	; search inventory
-	Loop %max%
-	{
-		WinActivate, Roblox
-		WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " hwnd)
-		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+150 "|306|" l)
-
-		; wait for red vignette effect to disappear
-		Loop, 40
-		{
-			if (Gdip_ImageSearch(pBMScreen, bitmaps["item"], , , , 6, , 2) = 1)
-				break
-			else
-			{
-				if (A_Index = 40)
-				{
-					Gdip_DisposeImage(pBMScreen)
-					return 0
-				}
-				else
-				{
-					Sleep, 50
-					Gdip_DisposeImage(pBMScreen)
-					pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+150 "|306|" l)
-				}
-			}
-		}
-
-		if (Gdip_ImageSearch(pBMScreen, bitmaps[item], pos, , , , , 10, , 5) = 1) {
-			Gdip_DisposeImage(pBMScreen)
-			break ; item found
-		}
-		Gdip_DisposeImage(pBMScreen)
-
-		switch A_Index
-		{
-			case (prescroll+1): ; scroll entire inventory on (prescroll+1)th search
-			if (scrolltoend = 1)
-			{
-				Loop, 100
-				{
-					MouseMove, windowX+30, windowY+offsetY+200, 5
-					sendinput % "{Wheel" ((direction = "down") ? "Up" : "Down") "}"
-					Sleep, 50
-				}
-			}
-			default: ; scroll once
-			MouseMove, windowX+30, windowY+offsetY+200, 5
-			sendinput % "{Wheel" ((A_Index <= prescroll) ? (prescrolldir ? ((prescrolldir = "Down") ? "Down" : "Up") : ((direction = "down") ? "Down" : "Up")) : ((direction = "down") ? "Down" : "Up")) "}"
-			Sleep, 50
-		}
-		Sleep, 500 ; wait for scroll to finish
-	}
-	return (pos ? [30, SubStr(pos, InStr(pos, ",")+1)+190] : 0) ; return list of coordinates for dragging
-}
 nm_BitterberryFeeder()
 {
 	if !GetRobloxHWND()
@@ -13328,7 +13141,11 @@ nm_BitterberryFeeder()
 	#Include %A_ScriptDir%\lib
 	#Include Gdip_All.ahk
 	#Include Gdip_ImageSearch.ahk
-	#Include %A_ScriptDir%\submacros\shared\nm_misc.ahk
+	#Include WinGetClientPos.ahk
+	#Include GetYOffset.ahk
+	#Include GetRobloxHWND.ahk
+	#Include nm_OpenMenu.ahk
+	#Include nm_InventorySearch.ahk
 
 	CoordMode, Mouse, Screen
 	SetBatchLines -1
@@ -13480,7 +13297,11 @@ nm_BasicEggHatcher()
 	#Include %A_ScriptDir%\lib
 	#Include Gdip_All.ahk
 	#Include Gdip_ImageSearch.ahk
-	#Include %A_ScriptDir%\submacros\shared\nm_misc.ahk
+	#Include WinGetClientPos.ahk
+	#Include GetYOffset.ahk
+	#Include GetRobloxHWND.ahk
+	#Include nm_OpenMenu.ahk
+	#Include nm_InventorySearch.ahk
 
 	CoordMode, Mouse, Screen
 	SetBatchLines -1
