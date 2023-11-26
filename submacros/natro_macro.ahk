@@ -3100,7 +3100,7 @@ mp_UseGlitter(PlanterIndex, atField:=0) {
 			}
 		}
 
-		if ((Gdip_ImageSearch(pBMScreen, bitmaps["glitter"], glitterPos, 0, 0, 306, Max(480, windowHeight-120), 10, , 5) = 0)) {
+		if ((Gdip_ImageSearch(pBMScreen, bitmaps["glitter"], glitterPos, , , 306, , 10, , 5) = 0)) {
 			Gdip_DisposeImage(pBMScreen)
 			break
 		}
@@ -16588,7 +16588,7 @@ nm_Feed(food){
 			}
 		}
 
-		if ((Gdip_ImageSearch(pBMScreen, bitmaps[food], pos, 0, 0, 306, Max(480, windowHeight-120), 10, , 5) = 0) || (nm_imgSearch("feeder.png",30)[1] = 0)) {
+		if ((Gdip_ImageSearch(pBMScreen, bitmaps[food], pos, , , 306, , 10, , 5) = 0) || (nm_imgSearch("feeder.png",30)[1] = 0)) {
 			Gdip_DisposeImage(pBMScreen)
 			break
 		}
