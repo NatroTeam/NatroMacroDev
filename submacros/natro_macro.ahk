@@ -95,7 +95,6 @@ OnMessage(0x5555, "nm_backgroundEvent", 255)
 OnMessage(0x5556, "nm_sendHeartbeat")
 OnMessage(0x5557, "nm_ForceReconnect")
 OnMessage(0x5558, "nm_AmuletPrompt")
-OnMessage(0x5559, "nm_UpdateGUI")
 
 ;run, test.ahk
 pToken := Gdip_Startup()
@@ -595,8 +594,8 @@ config["Shrine"] := {"ShrineCheck":0
 	, "ShrineAmount2":1
 	, "ShrineItem1":"None"
 	, "ShrineItem2":"None"
-	, "ShrineIndex1":"Infinite"
-	, "ShrineIndex2":"Infinite"
+	, "ShrineIndex1":1
+	, "ShrineIndex2":1
 	, "ShrineRot":1}
 
 config["Blender"] := {"BlenderRot":1
@@ -2369,7 +2368,7 @@ loop 3 {
 	Gui, add, picture, x%xCoords% y78 h40 w40 hwndhBlenderItem%A_index%Picture vBlenderItem%A_index%Picture +BackgroundTrans +0xE
 	if (BlenderItem%A_index% != "None")
 		GuiControl, , % hBlenderItem%A_Index%Picture, % hBitmapsSB[BlenderItem%A_index%] ? ("HBITMAP:*" hBitmapsSB[BlenderItem%A_index%]) : ""
-	xCoords := 247 + (62 * A_index), Width := 6*StrLen(BlenderAmount%A_index%)
+	xCoords := 247 + (62 * A_index)
 	Gui, Add, Text, x%xCoords% y58 w60 +Center vBlenderData%A_index%, % "(" BlenderAmount%A_Index% ") [" ((BlenderIndex%A_index% = "Infinite") ? "∞" : BlenderIndex%A_index%) "]"
 }
 BlenderAdd := 0 ;setup BlenderAdd for later use in the GUI
@@ -2382,7 +2381,7 @@ Gui, Font, w700 underline
 Gui, Add, Text, x332 y58 w80 vblendertitle1 Hidden, Add Item
 Gui, Font, s8 cDefault Norm, Tahoma
 Gui, Add, Text, x307 y74 w103 h1 vblenderline1 Hidden 0x7
-Gui, Add, Text, x409 y50 w1 h100 vblenderline2 Hidden 0x7
+Gui, Add, Text, x409 y49 w1 h97 vblenderline2 Hidden 0x7
 Gui, Add, Text, x410 y64 w83 h1 vblenderline3 Hidden 0x7
 Gui, Add, Text, x410 y121 w83 h1 vblenderline4 Hidden 0x7
 Gui, Add, Text, x431 y86 w41 h16 +Center +0x200 vBlenderIndexNum Hidden
@@ -2495,7 +2494,7 @@ Gui, Tab, Boost
 ;boosters
 Gui, Font, W700
 Gui, Add, GroupBox, x10 y25 w480 h70, Field Boost
-Gui, Add, GroupBox, x10 y97 w260 h138, Hotbar Slots
+Gui, Add, GroupBox, x10 y97 w285 h138, Hotbar Slots
 Gui, Font, s8 cDefault Norm, Tahoma
 ;field booster
 Gui, Add, Text, x20 y41 +BackgroundTrans, Free Booster Order:
@@ -2518,46 +2517,37 @@ Gui, Add, Text, xp+20 yp+1 w100 left +BackgroundTrans, Mins
 Gui, Add, CheckBox, x20 y62 +center vBoostChaserCheck gnm_BoostChaserCheck Checked%BoostChaserCheck% Disabled, Gather in`nBoosted Field
 Gui, Font, w700
 ;shrine
-Gui, Add, GroupBox, x305 y125 w190 h109, Shrine
+Gui, Add, GroupBox, x300 y97 w190 h138, Shrine
 Gui, Font, s8 cDefault Norm, Tahoma
 loop 2 {
-	xCoords := 230 + (100 * A_Index)
-	Gui, add, picture, x%xcoords% y163 h50 w50 hwndhShrineItem%A_Index%Picture vShrineItem%A_Index%Picture +BackgroundTrans +0xE
-	Gui, Add, Button, x%xCoords% y213 w35 h13 vShrineAdd%A_Index% hwndhShrineClear%A_Index% gba_setShrineData, % (ShrineItem%A_Index% = "None") ? "Add" : "Clear"
-	if (ShrineItem%A_index% != "None")
-		SetImage(hShrineItem%A_Index%Picture, hBitmapsSB[ShrineItem%A_index%])
-	xCoords := 240 + (98 * A_index), Width := 6*StrLen(ShrineAmount%A_index%)
-	Gui, Add, Text, x%xCoords% y143 w%Width% vShrineAmount%A_index% +Center, % ShrineAmount%A_index%
-	GuiControlGet, pos, Pos, ShrineAmount%A_index%
-
-	xCoords := PosW + PosX + 12, LeftCurlS := PosX - 5, RightCurlS := PosX + PosW + 1
-	Gui, Add, Text, x%xCoords% y143 vShrineIndex%A_index%, % (ShrineIndex%A_index% := (ShrineIndex%A_index% = "Infinite") ? "∞" : ShrineIndex%A_index%)
-	Gui, Add, Text, x%LeftCurlS% y143 vLeftCurlS%A_index%, % "("
-	Gui, Add, Text, x%RightCurlS% y143 vRightCurlS%A_index%, % ")"
-	GuiControlGet, pos, Pos, ShrineIndex%A_index%
-    
-	LeftBracketS := PosX - 5, RightBracketS := PosX + PosW + 1
-	Gui, Add, Text, x%LeftBracketS% y143 vLeftBracketS%A_index%, % "["
-	Gui, Add, Text, x%RightBracketS% y143 vRightBracketS%A_index%, % "]"
+	xCoords := 246 + (86 * A_Index)
+	Gui, add, picture, x%xcoords% y153 h40 w40 hwndhShrineItem%A_Index%Picture vShrineItem%A_Index%Picture +BackgroundTrans +0xE
+	Gui, Add, Button, x%xCoords% y203 w40 h13 vShrineAdd%A_Index% hwndhShrineClear%A_Index% gba_setShrineData Disabled, % (ShrineItem%A_Index% = "None") ? "Add" : "Clear"
+	if (ShrineItem%A_Index% != "None")
+		GuiControl, , % hShrineItem%A_Index%Picture, % hBitmapsSB[ShrineItem%A_index%] ? ("HBITMAP:*" hBitmapsSB[ShrineItem%A_index%]) : ""
+	xCoords := 237 + (86 * A_index)
+	Gui, Add, Text, x%xCoords% y130 w60 +Center vShrineData%A_index%, % "(" ShrineAmount%A_Index% ") [" ((ShrineIndex%A_index% = "Infinite") ? "∞" : ShrineIndex%A_index%) "]"
 }
-ShrineAdd := 1
+ShrineAdd := 0
 
-Gui, Add, edit, x427 y208 w50 vShrineAmount Hidden Number limit3, 0
-Gui, Add, Text, x435 y189 vShrineAmountText Hidden, Amount
-Gui, Add, Text, x435 y133 vShrineRepeatText Hidden, Repeat
+Gui, Add, Text, x426 y197 w41 h16 +Center +0x200 vShrineAmountNum Hidden
+Gui, Add, UpDown, vShrineAmount Range1-999 Hidden, 1
+Gui, Add, Text, x430 y178 vShrineAmountText Hidden, Amount
+Gui, Add, Text, x430 y122 vShrineRepeatText Hidden, Repeat
 Gui, Font, w700 underline
-Gui, Add, Text, x332 y141 w80 vshrinetitle1 Hidden, Add Item
+Gui, Add, Text, x327 y130 w80 vshrinetitle1 Hidden, Add Item
 Gui, Font, s8 cDefault Norm, Tahoma
-Gui, Add, Text, x307 y157 w103 h1 vShrineline1 Hidden 0x7
-Gui, Add, Text, x409 y133 w1 h100 vShrineline2 Hidden 0x7
-Gui, Add, Text, x410 y147 w83 h1 vShrineline3 Hidden 0x7
-Gui, Add, Text, x410 y204 w83 h1 vShrineline4 Hidden 0x7
-Gui, Add, edit, x427 y167 w51  vShrineIndex Hidden Disabled Number, 0
-Gui, Add, Checkbox, x427 y152 w60 vShrineIndexOption gnm_ShrineIndexOption Hidden, Infinite
-Gui, Add, Picture, x336 y163 w40 h40 hwndhAddShrineItem vShrineItem Hidden +0xE
-Gui, Add, Button, x312 y178 w18 h18 vShrineLeft hwndhfShrineleft gba_AddShrineItemButton Hidden, <
-Gui, Add, Button, x385 y178 w18 h18 vShrineRight hwndhfShrineright gba_AddShrineItemButton Hidden, >
-Gui, Add, Button, x318 y208 w80 h16 +Center gba_AddShrineItem vShrineAddSlot Hidden
+Gui, Add, Text, x302 y146 w103 h1 vShrineline1 Hidden 0x7
+Gui, Add, Text, x404 y108 w1 h130 vShrineline2 Hidden 0x7
+Gui, Add, Text, x405 y136 w83 h1 vShrineline3 Hidden 0x7
+Gui, Add, Text, x405 y193 w83 h1 vShrineline4 Hidden 0x7
+Gui, Add, Text, x426 y158 w41 h16 +Center +0x200 vShrineIndexNum Hidden
+Gui, Add, UpDown, vShrineIndex Range1-999 Hidden, 1
+Gui, Add, Checkbox, x422 y141 w60 vShrineIndexOption gnm_ShrineIndexOption Hidden, Infinite
+Gui, Add, Picture, x331 y152 w40 h40 hwndhAddShrineItem vShrineItem Hidden +0xE
+Gui, Add, Button, x307 y167 w18 h18 vShrineLeft hwndhfShrineleft gba_AddShrineItemButton Hidden, <
+Gui, Add, Button, x380 y167 w18 h18 vShrineRight hwndhfShrineright gba_AddShrineItemButton Hidden, >
+Gui, Add, Button, x313 y197 w80 h16 +Center gba_AddShrineItem vShrineAddSlot Hidden
 
 ;hotbar
 Loop, 6
@@ -3565,121 +3555,80 @@ nm_ShrineIndexOption() {
 	global ShrineIndexOption, ShrineIndex
 	GuiControlGet, ShrineIndexOption
 	if(ShrineIndexOption)
-		GuiControl, hide, ShrineIndex
+		GuiControl, disable, ShrineIndex
 	else
-		GuiControl, show, ShrineIndex
+		GuiControl, enable, ShrineIndex
 }
 ba_setShrineData(hCtrl){
     global
     Loop, 2 {
         if (hCtrl = hShrineClear%A_Index%) {
             if (ShrineItem%A_Index% = "None") {
-				ShrineaddIndex := A_Index, AddShrineItem := "RedExtract", ShrineAdd := Mod(ShrineAdd, 2) + 1
+				ShrineaddIndex := A_Index, ShrineAdd := A_Index
 				loop 2 {
-					i := A_Index
-					For x, Item in ["ShrineAdd", "LeftBracketS", "RightBracketS", "ShrineAmount", "ShrineIndex", "RightCurlS", "LeftCurlS"]
-						GuiControl, Hide, %Item%%i%
-					GuiControl, Hide, ShrineItem%i%Picture
+					GuiControl, Hide, ShrineAdd%A_Index%
+					GuiControl, Hide, ShrineData%A_Index%
+					GuiControl, Hide, ShrineItem%A_Index%Picture
 				}
 				
 				GuiControl,, ShrineAmount, % ShrineAmount%A_Index%
-				GuiControl,, ShrineIndex, % ((ShrineIndex%A_Index% != "Infinite" && ShrineIndex%A_Index% != "∞") ? ShrineIndex%A_Index% : 0) 
-				SetImage(hAddShrineItem, hBitmapsSB["RedExtract"])
-				GuiControl, ChooseString, ShrineIndexOption, Infinite
+				GuiControl,, ShrineIndex, % ((ShrineIndex%A_Index% != "Infinite" && ShrineIndex%A_Index% != "∞") ? ShrineIndex%A_Index% : 1) 
+				ba_AddShrineItemButton()
+				GuiControl,, ShrineIndexOption, 0
 				GuiControl,, ShrineAddSlot, Add to Slot %shrineaddIndex%
-				GuiControl,, ShrineIndexOption, 1
 
-				For z, ui in ["ShrineItem", "ShrineLeft", "ShrineRight", "ShrineAddSlot", "ShrineAmountText", "ShrineAmount", "ShrineRepeatText", "ShrineIndex", "ShrineIndexOption","shrineline1","shrinetitle1","shrineline2","shrineline3","shrineline4","shrineline5"]
+				For z, ui in ["ShrineItem", "ShrineLeft", "ShrineRight", "ShrineAddSlot", "ShrineAmountText", "ShrineAmount", "ShrineAmountNum", "ShrineRepeatText", "ShrineIndexOption", "ShrineIndexNum", "ShrineIndex","shrineline1","shrinetitle1","shrineline2","shrineline3","shrineline4","shrineline5"]
 					GuiControl, Show, %ui%
 			} else {
-				ShrineItem%A_Index% := "None", ShrineAmount%A_Index% := 0, ShrineIndex%A_Index% := "Infinite"
+				ShrineItem%A_Index% := "None", ShrineAmount%A_Index% := 0, ShrineIndex%A_Index% := 1, ShrineTime%A_Index% := 0
 
-                IniWrite, None, settings\nm_config.ini, Shrine, ShrineItem%A_Index%
+				IniWrite, None, settings\nm_config.ini, Shrine, ShrineItem%A_Index%
                 IniWrite, 0, settings\nm_config.ini, Shrine, ShrineAmount%A_Index%
-                Iniwrite, Infinite, settings\nm_config.ini, Shrine, ShrineIndex%A_Index%
+                Iniwrite, 1, settings\nm_config.ini, Shrine, ShrineIndex%A_Index%
                 Iniwrite, 0, settings\nm_config.ini, Shrine, ShrineTime%A_Index%
 
-				GuiControl, -Redraw, % hShrineClear%A_Index%
 				GuiControl,, % hShrineClear%A_Index%, % ((ShrineItem%A_Index% = "None" || ShrineItem%A_Index% = "") ? "Add" : "Clear")
-				GuiControl, +Redraw, % hShrineClear%A_Index%
+				GuiControl,, ShrineData%A_Index%, % "(" ShrineAmount%A_Index% ") [" ((ShrineIndex%A_Index% = "Infinite") ? "∞" : ShrineIndex%A_Index%) "]"
 
-				GuiControl, Move, shrineAmount%A_Index%, w6
-				GuiControl,, shrineAmount%A_Index%, 0
-				GuiControlGet, pos, Pos, shrineAmount%A_Index%
-				coord := PosW + PosX + 12, leftCurlS := PosX - 5, RightCurlS := PosX + PosW + 1
-
-				GuiControl, Move, leftCurlS%A_Index%, x%leftCurlS%
-				GuiControl, Move, RightCurlS%A_Index%, x%RightCurlS%
-				
-				GuiControl, Move, ShrineIndex%A_Index%, w10 x%coord%
-				GuiControl,, ShrineIndex%A_Index%, % "∞"
-		
-				GuiControlGet, pos, Pos, ShrineIndex%A_Index%
-				LeftBracketS := PosX - 5, RightBracketS := PosX + PosW + 1
-
-				GuiControl, move, LeftBracketS%A_Index%, x%LeftBracketS%
-				GuiControl, move, RightBracketS%A_Index%, x%RightBracketS%
-
-				SetImage(hShrineItem%A_Index%Picture, hBitmapsSB["None"])
+				GuiControl,, % hShrineItem%A_Index%Picture, % ""
             }
             break
         }
     }
 }
-ba_AddShrineItemButton(hCtrl){
+ba_AddShrineItemButton(hCtrl:=0){
     global hfShrineleft, hfShrineright, hAddShrineItem, AddShrineItem, ShrineAdd, hBitmapsSB
     static items := ["RedExtract", "BlueExtract", "BlueBerry", "Pineapple", "StrawBerry", "Sunflower", "Enzymes", "Oil", "Glue", "TropicalDrink", "Gumdrops", "MoonCharms", "Glitter", "StarJelly", "PurplePotion", "SoftWax", "HardWax", "SwirledWax", "CausticWax", "FieldDice", "SmoothDice", "LoadedDice", "SuperSmoothie", "Turpentine"], i := 0, h := 0
     if (h != ShrineAdd)
         i := 0, h := ShrineAdd
-    i := Mod(items.Length() + i + ((hCtrl = hfShrineleft) ? -1 : 1), items.Length()), AddShrineItem := items[i+1]
+	i := Mod(items.Length() + i + ((hCtrl = hfShrineleft) ? -1 : (hCtrl = hfShrineright) ? 1 : 0), items.Length()), AddShrineItem := items[i+1]
     SetImage(hAddShrineItem, hBitmapsSB[AddShrineItem])
 }
 ba_AddShrineItem(){
     global
+	local ShrineIndex, ShrineAmount, ShrineIndexOption, ShrineIndex
 	GuiControlGet, ShrineIndex
 	GuiControlGet, ShrineAmount
 	GuiControlGet, ShrineIndexOption
-	ShrineIndex := % ((ShrineIndexOption) ? "Infinite" : ShrineIndex)
+	ShrineIndex := ((ShrineIndexOption) ? "Infinite" : ShrineIndex)
 
-	ShrineItem%ShrineaddIndex% := AddShrineItem, ShrineIndex%ShrineaddIndex% := ShrineIndex, ShrineAmount%ShrineaddIndex% := ShrineAmount
-
-    IniWrite, %AddShrineItem%, settings\nm_config.ini, Shrine, ShrineItem%ShrineaddIndex%
-    IniWrite, %ShrineIndex%, settings\nm_config.ini, Shrine, ShrineIndex%ShrineaddIndex%
-	IniWrite, %ShrineAmount%, settings\nm_config.ini, Shrine, ShrineAmount%ShrineaddIndex%
+    IniWrite, % ShrineItem%ShrineaddIndex% := AddShrineItem, settings\nm_config.ini, Shrine, ShrineItem%ShrineaddIndex%
+    IniWrite, % ShrineIndex%ShrineaddIndex% := ShrineIndex, settings\nm_config.ini, Shrine, ShrineIndex%ShrineaddIndex%
+	IniWrite, % ShrineAmount%ShrineaddIndex% := ShrineAmount, settings\nm_config.ini, Shrine, ShrineAmount%ShrineaddIndex%
 	
-	SetImage(hShrineItem%ShrineaddIndex%Picture, hBitmapsSB[ShrineItem%ShrineaddIndex%])
+	GuiControl, , % hShrineItem%ShrineaddIndex%Picture, % hBitmapsSB[ShrineItem%ShrineaddIndex%] ? ("HBITMAP:*" hBitmapsSB[ShrineItem%ShrineaddIndex%]) : ""
 	
-	SWitdh := Strlen(ShrineAmount%ShrineAddIndex%) * 6
-	GuiControl, Move, ShrineAmount%ShrineAddIndex%, w%SWitdh%
-	GuiControl,, ShrineAmount%ShrineAddIndex%, % ShrineAmount%ShrineAddIndex%
+	GuiControl,, ShrineData%ShrineaddIndex%, % "(" ShrineAmount%ShrineaddIndex% ") [" ((ShrineIndex%ShrineaddIndex% = "Infinite") ? "∞" : ShrineIndex%ShrineaddIndex%) "]"
+	GuiControl,, % hShrineClear%ShrineaddIndex%, % ((AddShrineItem = "None" || AddShrineItem = "") ? "Add" : "Clear")
 
-	GuiControlGet, pos, Pos, ShrineAmount%ShrineAddIndex% 
-	GuiControl,, shrineIndex%ShrineAddIndex%, % (shrineIndex%ShrineAddIndex% := (shrineIndex%ShrineAddIndex% = "Infinite") ? "∞" : shrineIndex%ShrineAddIndex%)
-	
-	coord := PosW + PosX + 12, LeftCurlS := PosX - 5, RightCurlS := PosX + PosW + 1
-	SWitdh := Strlen(shrineIndex%ShrineAddIndex%) * ((shrineIndex%ShrineAddIndex% = "∞") ? 10 : 6)
-
-	GuiControl, Move, shrineIndex%ShrineAddIndex%, w%SWitdh% x%coord%
-	GuiControl, Move, LeftCurlS%ShrineAddIndex%, x%LeftCurlS%
-	GuiControl, Move, RightCurlS%ShrineAddIndex%, x%RightCurlS%
-
-	GuiControlGet, pos, Pos, shrineIndex%ShrineAddIndex%
-	LeftBracketS := PosX - 5, RightBracketS := PosX + PosW + 1
-	GuiControl, move, LeftBracketS%ShrineAddIndex%, x%LeftBracketS%
-	GuiControl, move, RightBracketS%ShrineAddIndex%, x%RightBracketS%
-
-	loop 2 {
-		i := A_Index
-		For x, Item in ["ShrineAdd", "LeftBracketS", "RightBracketS", "ShrineAmount", "ShrineIndex", "RightCurlS", "LeftCurlS"]
-			GuiControl, Show, %Item%%i%
-		GuiControl, Show, ShrineItem%i%Picture
-	}
-	For z, ui in ["ShrineItem", "ShrineLeft", "ShrineRight", "ShrineAddSlot", "ShrineAmountText", "ShrineAmount", "ShrineRepeatText", "ShrineIndex", "ShrineIndexOption","shrineline1","shrinetitle1","shrineline2","shrineline3","shrineline4","shrineline5"]
+	For z, ui in ["ShrineItem", "ShrineLeft", "ShrineRight", "ShrineAddSlot", "ShrineAmountText", "ShrineAmount",, "ShrineAmountNum", "ShrineRepeatText", "ShrineIndex", "ShrineIndexOption", "ShrineIndexNum", "ShrineIndex","shrineline1","shrinetitle1","shrineline2","shrineline3","shrineline4","shrineline5"]
 		GuiControl, Hide, %ui%
-
-	GuiControl, -Redraw, % hShrineClear%ShrineaddIndex%
-    GuiControl,, % hShrineClear%ShrineaddIndex%, % ((AddShrineItem = "None" || AddShrineItem = "") ? "Add" : "Clear")
-    GuiControl, +Redraw, % hShrineClear%ShrineaddIndex%
+	loop 2 {
+		GuiControl, Show, ShrineAdd%A_Index%
+		GuiControl, Show, ShrineData%A_Index%
+		GuiControl, Show, ShrineItem%A_Index%Picture
+	}
+	ShrineAdd := 0
 }
 nm_BlenderIndexOption() {
 	global BlenderIndexOption, BlenderIndex
@@ -3711,7 +3660,7 @@ nm_setBlenderData(hCtrl){
 				For z, ui in ["BlenderItem", "BlenderLeft", "BlenderRight", "BlenderAddSlot", "BlenderAmountText", "BlenderAmount", "BlenderAmountNum", "BlenderRepeatText", "BlenderIndexOption", "BlenderIndexNum", "BlenderIndex","blenderline1","blendertitle1","blenderline2","blenderline3","blenderline4","blenderline5"]
 					GuiControl, Show, %ui%
 			} else {
-				BlenderItem%A_Index% := "None", BlenderAmount%A_Index% := 0, BlenderIndex%A_Index% := 1
+				BlenderItem%A_Index% := "None", BlenderAmount%A_Index% := 0, BlenderIndex%A_Index% := 1, BlenderTime%A_Index% := 0
 
                 IniWrite, None, settings\nm_config.ini, Blender, BlenderItem%A_Index%
                 IniWrite, 0, settings\nm_config.ini, Blender, BlenderAmount%A_Index%
@@ -3761,18 +3710,6 @@ ba_AddBlenderItem(){
 		GuiControl, Show, BlenderItem%i%Picture
 	}
 	BlenderAdd := 0
-}
-nm_UpdateGui(wParam, lParam) {
-	global
-	local Enum := Mod(wParam, 100), i := lParam
-	static BlenderItems := ["BlueExtract", "RedExtract", "Enzymes", "Oil", "Glue", "TropicalDrink", "Gumdrops", "MoonCharms", "Glitter", "StarJelly", "PurplePotion", "SoftWax", "HardWax", "SwirledWax", "CausticWax", "FieldDice", "SmoothDice", "LoadedDice", "SuperSmoothie", "Turpentine", "None"]
-	switch % wParam // 100
-	{
-		Case 2:
-		ShrineItem%i% := BlenderItems[Enum]
-		SetImage(hShrineItem%i%Picture, hBitmapsSB[BlenderItems[Enum]])
-		GuiControl, , ShrineAdd%i%, % (ShrineItem%i% = "None") ? "Add" : "Clear"
-	}
 }
 AsyncHttpRequest(method, url, func:="", headers:="")
 {
@@ -5318,8 +5255,9 @@ nm_TabBoostUnLock(){
 	GuiControl, enable, ShrineAdd1
 	GuiControl, enable, ShrineAdd2
 	GuiControl, enable, ShrineAmount
-	GuiControl, enable, ShrineIndex
 	GuiControl, enable, ShrineIndexOption
+	if (ShrineIndexOption = 0)
+		GuiControl, enable, ShrineIndex
 	GuiControl, enable, ShrineLeft
 	GuiControl, enable, ShrineRight
 	GuiControl, enable, % hFB1Left
@@ -9546,21 +9484,8 @@ nm_shrine(){
 					
 					if (ShrineIndex%ShrineRot% != "Infinite")  {
                     	ShrineIndex%shrineRot%-- ;subtract from shrineindex for looping only if its a number
-						GuiControl,, ShrineIndex%ShrineRot%, % ShrineIndex%ShrineRot%
-
-						GuiControlGet, pos, Pos, ShrineAmount%ShrineRot% 
-						
-						BWitdh := Strlen(ShrineIndex%ShrineRot%) * 6
-						coord := PosW + PosX + 12, LeftCurlS := PosX - 5, RightCurlS := PosX + PosW + 1
-
-						GuiControl, Move, ShrineIndex%ShrineRot%, w%BWitdh% x%coord%
-						GuiControl, Move, LeftCurlS%ShrineRot%, x%LeftCurl%
-						GuiControl, Move, RightCurlS%ShrineRot%, x%RightCurlS%
-
-						GuiControlGet, pos, Pos, ShrineIndex%ShrineRot%
-						LeftBracketS := PosX - 5, RightBracketS := PosX + PosW + 1
-						GuiControl, move, LeftBracketS%ShrineRot%, x%LeftBracketS%
-						GuiControl, move, RightBracketS%ShrineRot%, x%RightBracketS%
+						GuiControl,, ShrineData%ShrineRot%, % "(" ShrineAmount%ShrineRot% ") [" ((ShrineIndex%ShrineRot% = "Infinite") ? "∞" : ShrineIndex%ShrineRot%) "]"
+						IniWrite, % ShrineIndex%ShrineRot%, settings\nm_config.ini, Shrine, ShrineIndex%ShrineRot%
 					}
                     ShrineRot := Mod(ShrineRot, 2) + 1 ; determine Shrinerot
                     nm_ShrineRotation()
@@ -20960,39 +20885,6 @@ nm_UpdateGUIVar(var)
 		GuiControl, % "+c" Format("0x{1:02x}{2:02x}{3:02x}", Round(Min(3*(100-InputChickHealth), 150)), Round(Min(3*InputChickHealth, 150)), 0) " +Redraw", ChickHealthText
 		GuiControl, , ChickHealthText, % InputChickHealth "%"
 
-		Case "ShrineItem1Picture", "ShrineItem2Picture":
-		SetImage(h%k%, hBitmapsSB[%k%])
-        	GuiControl, , ShrineAdd%z%, % (ShrineItem%z%Picture = "None") ? "Add" : "Clear"
-
-		case "ShrineIndex1", "ShrineIndex2":
-		Num := SubStr(k, 0)
-		GuiControlGet, pos, Pos, ShrineAmount%Num%
-		xCoord := PosW + PosX + 12, StrLen := Strlen(ShrineIndex%Num%) * ((ShrineIndex%Num% = "Infinite") ? 10 : 6)
-		GuiControl, Move, %k%, w%StrLen% x%xCoord%
-		GuiControl, , %k%, % (%k% = "Infinite") ? "∞" : %k%
-
-		GuiControlGet, pos, Pos, ShrineIndex%Num%
-		GuiControl, move, LeftBracketS%Num%, x%PosX%-5
-		GuiControl, move, RightBracketS%Num%, x%PosX%+%PosW%+1
-
-		case "ShrineAmount1", "ShrineAmount2":
-		StrLen := 6*StrLen(%k%)
-		GuiControl, Move, %k%, w%StrLen%
-		GuiControl, , %k%, % %k%
-
-		Num := SubStr(k, 0)
-		GuiControlGet, pos, Pos, %k% ;most likely gonna be changing X
-		RightCurlS := PosX + PosW + 1, LeftCurlS := PosX - 5, Xcoord := PosW + PosX + 12
-
-		GuiControl, Move, LeftCurlS%Num%, x%LeftCurlS%
-		GuiControl, Move, RightCurlS%Num%, x%RightCurlS%
-		GuiControl, Move, ShrineIndex%Num%, x%Xcoord%
-
-		GuiControlGet, pos, Pos, ShrineIndex%Num%
-		LeftBracS := PosX - 5, RightBracS := PosX + PosW + 1 ; 5 and below is funky but 6 is fine?
-		GuiControl, move, LeftBracketS%Num%, x%LeftBracS%
-		GuiControl, move, RightBracketS%Num%, x%RightBracS%
-
 		case "":
 		k := var
 		switch % k
@@ -21013,6 +20905,23 @@ nm_UpdateGUIVar(var)
 			local BlenderData1, BlenderData2, BlenderData3, pos
 			GuiControlGet, BlenderData%Num%
 			GuiControl,, BlenderData%Num%, % StrReplace(BlenderData%Num%, SubStr(BlenderData%Num%, 1, InStr(BlenderData%Num%, " ") - 1), "(" %k% ")")
+
+			case "ShrineItem1", "ShrineItem2":
+			GuiControl, , % h%k%Picture, % hBitmapsSB[%k%] ? ("HBITMAP:*" hBitmapsSB[%k%]) : ""
+			z := SubStr(k, 0)
+			GuiControl, , ShrineAdd%z%, % (ShrineItem%z% = "None") ? "Add" : "Clear"
+
+			case "ShrineIndex1", "ShrineIndex2":
+			Num := SubStr(k, 0)
+			local ShrineData1, ShrineData2, ShrineData3, pos
+			GuiControlGet, ShrineData%Num%
+			GuiControl,, ShrineData%Num%, % StrReplace(ShrineData%Num%, SubStr(ShrineData%Num%, InStr(ShrineData%Num%, " ") + 1), "[" ((%k% = "Infinite") ? "∞" : %k%) "]")
+
+			case "ShrineAmount1", "ShrineAmount2":
+			Num := SubStr(k, 0)
+			local ShrineData1, ShrineData2, ShrineData3, pos
+			GuiControlGet, ShrineData%Num%
+			GuiControl,, ShrineData%Num%, % StrReplace(ShrineData%Num%, SubStr(ShrineData%Num%, 1, InStr(ShrineData%Num%, " ") - 1), "(" %k% ")")
 		}
 
 		default:

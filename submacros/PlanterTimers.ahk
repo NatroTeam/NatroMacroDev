@@ -289,18 +289,8 @@ Loop {
 
         if (ShrineItem%i% != LastShrineItem%i%)
         {
-            if WinExist("natro_macro.ahk ahk_class AutoHotkey")
-                 PostMessage, 0x5559, 2 * 100 + BlenderShineItems[ShrineItem%i%], i ; 0x5553 is for UpdateStr but it has iniRead
             SetImage(hShrineItem%i%Picture, hBitmapsSB[ShrineItem%i%])
             LastShrineItem%i% := ShrineItem%i%
-        }
-
-        if (ShrineAmount%i% != LastShrineAmount%i%)
-        {  
-            Var := % "ShrineAmount" i
-            if WinExist("natro_macro.ahk ahk_class AutoHotkey")
-                PostMessage, 0x5552, BlenderShrineEnum[Var], BlenderAmount%i%
-            LastShrineAmount%i% := ShrineAmount%i%
         }
 
         GuiControl, -Redraw, % hShrineClear%i%
@@ -653,9 +643,11 @@ ba_setShrineAmount(hCtrl){
         for k,v in ["Sub","Add"] {
             if (hCtrl = h%v%ShrineAmount%i%) {
                 if (ShrineItem%i% != "None") {
-                    (k = 1 && ShrineAmount%i% > 0) ? ShrineAmount%i%-- : (k = 2) ? ShrineAmount%i%++ : ShrineAmount%i%
+                    (k = 1 && ShrineAmount%i% > 1) ? ShrineAmount%i%-- : (k = 2) ? ShrineAmount%i%++ : ShrineAmount%i%
                     GuiControl, pTimers:, ShrineTextAmount%i%, % "(" ShrineAmount%i% ") [" ((ShrineIndex%i% = "Infinite") ? "∞" : ShrineIndex%i%) "]"
                     IniWrite, % ShrineAmount%i%, settings\nm_config.ini, Shrine, ShrineAmount%i%
+                    if WinExist("natro_macro ahk_class AutoHotkey")
+                        PostMessage, 0x5552, 230+i, % ShrineAmount%i% ; ShrineAmount
                 }
                 break
             }
@@ -682,13 +674,16 @@ ba_setShrineData(hCtrl){
             if (ShrineItem%A_Index% = "None") 
                 ba_addShrineData(A_Index)
             else {
+                SetImage(hShrineItem%A_Index%Picture, hBitmapsSB["None"])
                 IniWrite, None, settings\nm_config.ini, Shrine, ShrineItem%A_Index%
                 IniWrite, 0, settings\nm_config.ini, Shrine, ShrineAmount%A_Index%
-                Iniwrite, Infinite, settings\nm_config.ini, Shrine, ShrineIndex%A_Index%
+                Iniwrite, 1, settings\nm_config.ini, Shrine, ShrineIndex%A_Index%
                 Iniwrite, 0, settings\nm_config.ini, Shrine, LastShrine
-
-                ShrineAmount%A_Index% := 0, ShrineIndex%A_Index% := "∞"
-                GuiControl, pTimers:, ShrineTextAmount%A_Index%, % "(" ShrineAmount%A_Index% ") [" ShrineIndex%A_Index% "]"
+                if WinExist("natro_macro ahk_class AutoHotkey") {
+                    PostMessage, 0x5552, 230+A_Index, 0 ; ShrineAmount
+                    PostMessage, 0x5553, 56+A_Index, 10 ; ShrineIndex
+                    PostMessage, 0x5553, 54+A_Index, 10 ; ShrineItem
+                }
             }
             break
         }
@@ -701,18 +696,30 @@ ba_addShrineData(GShrineIndex){
     Gui addp:Destroy
     Gui addp:+AlwaysOnTop +Border -Resize +hwndhAdd
     Gui addp:Font, s8 cDefault Norm, Tahoma
-    Gui addp:Add, Picture, x40 y4 w50 h50 hwndhAddShrineItem +0xE
+    Gui addp:Add, Picture, x15 y10 w40 h40 hwndhAddShrineItem +0xE
     SetImage(hAddShrineItem, hBitmapsSB["RedExtract"])
-    Gui addp:Add, Button, x42 y58 w18 h18 hwndhfleft gba_AddShrineItemButton, <
-    Gui addp:Add, Button, x70 y58 w18 h18 hwndhfright gba_AddShrineItemButton, >
-    Gui addp:Add, Text, x25 y80, Repeat:
-    Gui addp:Add, edit, x65 y80 vSAddindex Limit10 w50 h16, % ShrineIndex%ShrineaddIndex%
+    Gui addp:Add, Button, x15 y56 w16 h16 hwndhfleft gba_AddShrineItemButton, <
+    Gui addp:Add, Button, x39 y56 w16 h16 hwndhfright gba_AddShrineItemButton, >
+    Gui addp:Add, Text, x94 y4, Repeat:
+    Gui addp:Add, checkbox, x85 yp+16 vSAddindexOption gba_ShrineIndexOption, Infinite
+    Gui addp:Add, Text, x87 yp+16 w41 h16 +Center +0x200
+    Gui addp:Add, UpDown, vSAddindex Range1-999, 1
+    Gui addp:Add, Text, x72 y60, Amount:
+    Gui addp:Add, Text, x+0 yp-1 w41 h16 +Center +0x200
+    Gui addp:Add, UpDown, vSAddamount Range1-999, 1
     Gui addp:Font, w1000
-    Gui addp:Add, Button, x30 y100 w80 h16 +Center gba_AddShrineItem, Add to Slot %ShrineaddIndex%
+    Gui addp:Add, Button, x40 y80 w80 h16 +Center gba_AddShrineItem, Add to Slot %ShrineaddIndex%
     VarSetCapacity(wp, 44), NumPut(44, wp)
     DllCall("GetWindowPlacement", "uint", hGUI, "uint", &wp)
     x := NumGet(wp, 28, "int"), y := NumGet(wp, 32, "int")
-    Gui addp:Show, % "x" (x + 175 + ShrineaddIndex * 87) " y" (y + 244) " w141", Add Item
+    Gui addp:Show, % "x" (x + 175 + ShrineaddIndex * 86) " y" (y + 244) " w160", Add Item
+}
+ba_ShrineIndexOption(){
+    GuiControlGet, SAddindexOption, addp:
+    if (SAddindexOption)
+		GuiControl, addp:disable, SAddindex
+	else
+		GuiControl, addp:enable, SAddindex
 }
 ba_AddShrineItemButton(hCtrl){
     global hAdd, hfleft, hfright, hAddShrineItem, AddShrineItem, hBitmapsSB
@@ -723,13 +730,17 @@ ba_AddShrineItemButton(hCtrl){
     SetImage(hAddShrineItem, hBitmapsSB[AddShrineItem])
 }
 ba_AddShrineItem(){
-    global ShrineaddIndex, AddShrineItem, SAddindex
+    global ShrineaddIndex, AddShrineItem, SAddindex, SAddindexOption, SAddamount
     Gui addp:Submit
     Gui addp:Destroy
-	PostMessage, 0x5553, 59, 10 ;change this PostMessage params
-
+    IniWrite, %SAddamount%, settings\nm_config.ini, Shrine, ShrineAmount%ShrineaddIndex%
     IniWrite, %AddShrineItem%, settings\nm_config.ini, Shrine, ShrineItem%ShrineaddIndex%
-    IniWrite, %SAddindex%, settings\nm_config.ini, Shrine, ShrineIndex%ShrineaddIndex%
+    IniWrite, % (SAddindexOption = 1) ? "Infinite" : SAddindex, settings\nm_config.ini, Shrine, ShrineIndex%ShrineaddIndex%
+    if WinExist("natro_macro ahk_class AutoHotkey") {
+        PostMessage, 0x5552, 230+ShrineaddIndex, SAddamount ; ShrineAmount
+        PostMessage, 0x5553, 56+ShrineaddIndex, 10 ; ShrineIndex
+        PostMessage, 0x5553, 54+ShrineaddIndex, 10 ; ShrineItem
+    }
 }
 
 ba_saveTimerGui(){
