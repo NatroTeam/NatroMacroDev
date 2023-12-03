@@ -1674,8 +1674,25 @@ for k,v in ManualPlanters ; load the default values as globals, will be overwrit
 	for i,j in v
 		%i% := j
 
-if FileExist(A_WorkingDir "\settings\manual_planters.ini") ; update default values with new ones read from any existing .ini
+if FileExist(A_WorkingDir "\settings\manual_planters.ini") { ; update default values with new ones read from any existing .ini
 	nm_ReadIni(A_WorkingDir "\settings\manual_planters.ini")
+	; replace if imported settings from previous version
+	; Every 30 Minutes|Every Hour|Every 2 Hours|Every 3 Hours|Every 4 Hours|Every 5 Hours|Every 6 Hours
+	if (MHarvestInterval = "Every 30 Minutes") 
+		MHarvestInterval := "30 mins"
+	if (MHarvestInterval = "Every Hour") 
+		MHarvestInterval := "1 hour"
+	if (MHarvestInterval = "Every 2 Hours") 
+		MHarvestInterval := "2 hours"
+	if (MHarvestInterval = "Every 3 Hours" )
+		MHarvestInterval := "3 hours"
+	if (MHarvestInterval = "Every 4 Hours") 
+		MHarvestInterval := "4 hours"
+	if (MHarvestInterval = "Every 5 Hours") 
+		MHarvestInterval := "5 hours"
+	if (MHarvestInterval = "Every 6 Hours") 
+		MHarvestInterval := "6 hours"
+	}
 
 ini := ""
 for k,v in ManualPlanters ; overwrite any existing .ini with updated one with all new keys and old values
