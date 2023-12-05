@@ -15,7 +15,6 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #SingleInstance force
 #NoTrayIcon
 #Include %A_ScriptDir%\..\lib\Gdip_All.ahk
-;Menu, Tray, Icon, nm_image_assets\ptimers\bonk.ico
 global TimerGuiTransparency:=0
 global TimerX:=150
 global TimerY:=150
