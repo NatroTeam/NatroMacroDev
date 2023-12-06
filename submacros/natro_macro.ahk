@@ -9516,9 +9516,7 @@ nm_shrine(){
 							sleep, 200
 							Click
 						}
-						sleep 200
-						send {raw}{..} ; change to rot right
-						sleep 800
+						sleep, 500
 						gatherloot := "
 						    (LTrim Join`r`n
 						    " nm_Walk(7, RightKey, FwdKey) "
@@ -9548,7 +9546,7 @@ nm_shrine(){
 						        " nm_Walk(5, LeftKey)"
 						    }
 						)"
-						nm_createWalk(gatherloot) ; maybe improve gather pattern ?
+						nm_createWalk(gatherloot)
 						KeyWait, F14, D T5 L
 						KeyWait, F14, T60 L
 						nm_endWalk()
