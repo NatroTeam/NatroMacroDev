@@ -19314,12 +19314,14 @@ ba_planter(){
 	IniRead, PlanterNectar%A_Index%, settings\nm_config.ini, Planters, PlanterNectar%A_Index%
 	IniRead, PlanterEstPercent%A_Index%, settings\nm_config.ini, Planters, PlanterEstPercent%A_Index%
 	;reset manual planter disable auto harvest variables to 0
+	if (PlanterMode = 2) {
 	MPlanterRelease%A_Index% := 0
 	IniWrite, % MPlanterRelease%A_Index%, settings\nm_config.ini, Planters, MPlanterRelease%A_Index%
 	MPlanterHold%A_Index% := 0
 	IniWrite, % MPlanterHold%A_Index%, settings\nm_config.ini, Planters, MPlanterHold%A_Index%
 	MPlanterSmoking%A_Index% := 0
 	IniWrite, % MPlanterSmoking%A_Index%, settings\nm_config.ini, Planters, MPlanterSmoking%A_Index%
+	}
 	}
 	;skip over planters in this critical timeframe if AFB is active.  It helps avoid the loss of 4x field boost.
 	global AFBrollingDice, AFBuseGlitter, AFBuseBooster, AutoFieldBoostActive, FieldLastBoosted, FieldLastBoostedBy, FieldBoostStacks, AutoFieldBoostRefresh, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable
