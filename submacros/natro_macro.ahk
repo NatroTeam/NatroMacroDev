@@ -3031,7 +3031,12 @@ mp_Planter() {
 			IniRead, PlanterField%A_Index%, settings\nm_config.ini, planters, PlanterField%A_Index%
 			IniRead, MPlanterRelease%A_Index%, settings\nm_config.ini, planters, MPlanterRelease%A_Index%
 			IniRead, MPlanterSmoking%A_Index%, settings\nm_config.ini, planters, MPlanterSmoking%A_Index%
-			; reset Hold and Smoking variables to 0 if disable auto harvest no longer selected, planter field empty, or user has set to Release with remote control
+			; reset Release variable to 0 if planter slot empty
+			If (PlanterField%A_Index% = "None") {
+				MPlanterRelease%A_Index% := 0
+				IniWrite, % MPlanterRelease%A_Index%, settings\nm_config.ini, Planters, MPlanterRelease%A_Index%
+			}
+			; reset Hold and Smoking variables to 0 if planter slot empty, disable auto harvest no longer selected, or user has set to Release with remote control
 			If ((!MPuffModeA) || (!MPuffMode%A_Index%) || (PlanterField%A_Index% = "None")  || (MPlanterRelease%A_Index%)) {
 				MPlanterHold%A_Index% := 0
 				IniWrite, % MPlanterHold%A_Index%, settings\nm_config.ini, Planters, MPlanterHold%A_Index%
@@ -3365,6 +3370,12 @@ mp_HarvestPlanter(PlanterIndex) {
 
 		if (planterPos != 0) { ; found planter in inventory planter is a phantom
 			nm_setStatus("Found", MPlanterName . ". Clearing Data.")
+
+			;reset disable auto harvest values if phantom planter
+			MPlanterRelease%PlanterIndex% := 0
+			IniWrite, % MPlanterRelease%PlanterIndex%, settings\nm_config.ini, Planters, MPlanterRelease%PlanterIndex%
+			MPlanterSmoking%PlanterIndex% := 0
+			IniWrite, % MPlanterSmoking%PlanterIndex%, settings\nm_config.ini, Planters, MPlanterSmoking%PlanterIndex%
 
 			;reset values
 			CycleIndex := PlanterManualCycle%PlanterIndex%
@@ -8067,7 +8078,7 @@ nm_MPlanterGatherHelp(){ ; gather in planter field information for manual plante
 	msgbox, 0x40000, Gather in planter field, DESCRIPTION:`n`nGather in planter field will enable you to gather only in the fields where planters are placed, instead of the fields selected in your gather tab. You can choose which planter slots you wish to gather in. If you choose more than one planter slot to gather in, the macro will rotate between each selected slot. If there are no slots available for planter gather (none selected, none with planters, or all 'holding' if 'disable auto harvest' mode is also selected), the macro will revert to gathering in the fields specified in the gather tab.
 }
 nm_MPuffModeHelp(){ ; disable auto harvest information for manual planters
-	msgbox, 0x40000, Disable auto harvest, DESCRIPTION:`n`nThis option is designed for users trying to grow smoking planters for puffshroom runs. Enabling it for a planter slot will cause the macro NOT to harvest the planter. Instead, it will 'hold' the planter until you harvest and clear it either manually or through remote control. This allows you to check whether it is smoking before harvesting.`n`nTo use this feature:`n- Choose which slots to disable auto harvest for. You can choose one, two, or all, depending on how many of your planters you wish to use for puffshrooms versus loot or nectar. `n- If you want to receive a ping and screenshot of the planter when full grown, select the 'planter progress' option in your Natro status tab > discord integration pop up options.`n- When pinged, users can a) harvest manually in game, clear the planter slot in the F5 pop-up, and move to next cycle by pressing + in the planter tab, b) instruct the macro to harvest the planter and move to next cycle by sending ?set MPlanterRelease1/2/3 via remote control, or c) do nothing if the planter is smoking and you wish to keep holding it. If the planter is smoking, you can also set this status by sending ?set MPlanterSmoking1/2/3 via remote control. `n`nNote: `nIf you have enabled both 'gather in planter field' and 'disable auto harvest', the macro will stop gathering in a planter field once that planter is full grown. It will still gather in any other available 'gather in planter fields' you have enabled, or if none return to the field/s in gather tab.
+	msgbox, 0x40000, Disable auto harvest, DESCRIPTION:`n`nThis option is designed for users trying to grow smoking planters for puffshrooms. Enabling it for a planter slot will cause the macro NOT to harvest the planter. Instead, it will 'hold' the planter until you harvest and clear it either manually or through remote control. This allows you to check whether it is smoking before harvesting.`n`nTo use this feature:`n- Choose which slots to disable auto harvest for, depending on how many planters you wish to use for puffshrooms versus loot or nectar. `n- If you have set up a Discord webhook and would like a ping and screenshot of the planter when full grown, select Planter Progress in Natro Status tab > Change Discord Settings.`n- When ready, either: harvest manually in game, clear the planter in the Planter Timers pop-up (F5), and move to next cycle by pressing + in the planter tab, or do nothing if the planter is smoking and you wish to keep holding it.`n- If you turn off 'Disable Auto Harvest' or switch to Planters Plus mode, the macro will harvest any planters marked holding or smoking.`n`nAdvanced options:`nIf you have set up remote control, after receiving a ping you can also optionally set your planter to smoking to help you keep track, or release from hold and plant next using these commands:`n`MPlanterSmoking[1][2][3] 1`n`MPlanterRelease[1][2][3] 1`n`nSee our Discord server for more details on how to set up and use webhook or remote control!
 }
 nm_ReconnectTimeHelp(){
 	global ReconnectHour, ReconnectMin, ReconnectInterval
@@ -8706,7 +8717,7 @@ nm_PlanterDetection()
 	else
 		return 0
 }
-nm_PlanterTimeUpdate(FieldName)
+nm_PlanterTimeUpdate(FieldName, SetStatus := 1)
 {
 	global
 	local i, field, k, v, r, PlanterGrowTime, PlanterBarProgress
@@ -8734,7 +8745,7 @@ nm_PlanterTimeUpdate(FieldName)
 				{
 					PlanterHarvestTime%i% := nowUnix() + Round((1 - PlanterBarProgress) * PlanterGrowTime * 3600)
 					IniWrite, % PlanterHarvestTime%i%, settings\nm_config.ini, Planters, PlanterHarvestTime%i%
-					nm_setStatus("Detected", PlanterName%i% "`nField: " FieldName " - Est. Progress: " Round(PlanterBarProgress*100) "%")
+					SetStatus ? nm_setStatus("Detected", PlanterName%i% "`nField: " FieldName " - Est. Progress: " Round(PlanterBarProgress*100) "%")
 					break
 				}
 				Sleep, 100
@@ -13126,7 +13137,7 @@ nm_GoGather(){
 	global FieldName2, FieldPattern2, FieldPatternSize2, FieldPatternReps2, FieldPatternShift2, FieldPatternInvertFB2, FieldPatternInvertLR2, FieldUntilMins2, FieldUntilPack2, FieldReturnType2, FieldSprinklerLoc2, FieldSprinklerDist2, FieldRotateDirection2, FieldRotateTimes2, FieldDriftCheck2
 	global FieldName3, FieldPattern3, FieldPatternSize3, FieldPatternReps3, FieldPatternShift3, FieldPatternInvertFB3, FieldPatternInvertLR3, FieldUntilMins3, FieldUntilPack3, FieldReturnType3, FieldSprinklerLoc3, FieldSprinklerDist3, FieldRotateDirection3, FieldRotateTimes3, FieldDriftCheck3
 	global MondoBuffCheck, MondoAction, LastMondoBuff
-	global PlanterMode, gotoPlanterField, MPlanterGatherA, MPlanterGather1, MPlanterGather2, MPlanterGather3, LastPlanterGatherSlot
+	global PlanterMode, gotoPlanterField, MPlanterGatherA, MPlanterGather1, MPlanterGather2, MPlanterGather3, LastPlanterGatherSlot, MPlanterHold1, MPlanterHold2, MPlanterHold3, PlanterField1, PlanterField2, PlanterField3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3
 	global QuestLadybugs, QuestRhinoBeetles, QuestSpider, QuestMantis, QuestScorpions, QuestWerewolf
 	global PolarQuestGatherInterruptCheck, BuckoQuestGatherInterruptCheck, RileyQuestGatherInterruptCheck, BugrunInterruptCheck, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, BlackQuestCheck, BlackQuestComplete, QuestGatherField, BuckoQuestCheck, BuckoQuestComplete, RileyQuestCheck, RileyQuestComplete, PolarQuestCheck, PolarQuestComplete, RotateQuest, QuestGatherMins, QuestGatherReturnBy, BuckoRhinoBeetles, BuckoMantis, RileyLadybugs, RileyScorpions, RileyAll, GameFrozenCounter, HiveSlot, BugrunLadybugsCheck, BugrunRhinoBeetlesCheck, BugrunSpiderCheck, BugrunMantisCheck, BugrunScorpionsCheck, BugrunWerewolfCheck, MonsterRespawnTime
 	global beesmasActive, BeesmasGatherInterruptCheck, StockingsCheck, LastStockings, FeastCheck, LastFeast, RBPDelevelCheck, LastRBPDelevel, GingerbreadCheck, LastGingerbread, SnowMachineCheck, LastSnowMachine, CandlesCheck, LastCandles, SamovarCheck, LastSamovar, LidArtCheck, LastLidArt, GummyBeaconCheck, LastGummyBeacon
@@ -13146,6 +13157,12 @@ nm_GoGather(){
 			return
 		;VICIOUS BEE
 		if (VBState = 1)
+			return
+		;MANUAL PLANTER HARVEST
+		IniRead, PlanterHarvestTime1, settings\nm_config.ini, Planters, PlanterHarvestTime1
+		IniRead, PlanterHarvestTime2, settings\nm_config.ini, Planters, PlanterHarvestTime2
+		IniRead, PlanterHarvestTime3, settings\nm_config.ini, Planters, PlanterHarvestTime3
+		if ((PlanterMode = 1) && (MPlanterGatherA) && (((MPlanterGather1) && (!MPlanterHold1) && (PlanterField1 != "None") && (nowUnix() >= PlanterHarvestTime1)) || ((MPlanterGather2) && (!MPlanterHold2) && (PlanterField2 != "None") && (nowUnix() >= PlanterHarvestTime2)) || ((MPlanterGather3) && (!MPlanterHold3) && (PlanterField3 != "None") && (nowUnix() >= PlanterHarvestTime3))))
 			return
 	}
 	if(CurrentField="mountain top" && (utc_min>=0 && utc_min<15)) ;mondo dangerzone! skip over this field if possible
@@ -13301,7 +13318,7 @@ nm_GoGather(){
 						}
 
 				; set gather field and settings
-				fieldOverrideReason:="Planter"
+				fieldOverrideReason:="Manual Planter"
 				FieldName:=field
 				FieldPattern:=FieldDefault[FieldName]["pattern"]
 				FieldPatternSize:=FieldDefault[FieldName]["size"]
@@ -13317,11 +13334,12 @@ nm_GoGather(){
 				FieldRotateDirection:=FieldDefault[FieldName]["camera"]
 				FieldRotateTimes:=FieldDefault[FieldName]["turns"]
 				FieldDriftCheck:=FieldDefault[FieldName]["drift"]
+				MPlanterGatherDetectionTime:=0
 
 				; write currentfield to file as LastPlanterGatherSlot, to read on next loop
 				IniWrite, % slot, settings\nm_config.ini, Planters, LastPlanterGatherSlot
 
-			} else  { ; if (!include)
+			} else  {
 				FieldName:=FieldName%CurrentFieldNum%
 				FieldPattern:=FieldPattern%CurrentFieldNum%
 				FieldPatternSize:=FieldPatternSize%CurrentFieldNum%
@@ -13587,6 +13605,23 @@ nm_GoGather(){
 			if (PMondoGuidComplete)
 				PMondoGuidComplete:=0
 			break
+		}
+		;Manual planter gather interrupt
+		if ((fieldOverrideReason="Manual Planter") && (PlanterMode = 1) && (MPlanterGatherA)) {
+			;update current field planter progress every 2 minutes during planter gather
+			If ((nowUnix()-MPlanterGatherDetectionTime)>120) {
+				nm_PlanterTimeUpdate(FieldName, 0)
+				MPlanterGatherDetectionTime := nowUnix()
+			}
+			;check all planter timers
+			IniRead, PlanterHarvestTime1, settings\nm_config.ini, Planters, PlanterHarvestTime1
+			IniRead, PlanterHarvestTime2, settings\nm_config.ini, Planters, PlanterHarvestTime2
+			IniRead, PlanterHarvestTime3, settings\nm_config.ini, Planters, PlanterHarvestTime3
+			;interrupt if
+			if (((nowUnix() >= PlanterHarvestTime1) && (eligible.1)) || ((nowUnix() >= PlanterHarvestTime2) && (eligible.2)) || ((nowUnix() >= PlanterHarvestTime3) && (eligible.3))) {
+				interruptReason := "Planter Harvest"
+				break
+			}
 		}
 		;GatherInterruptCheck
 		if ((((BugrunInterruptCheck && BugrunLadybugsCheck) || (PolarQuestCheck && PolarQuestGatherInterruptCheck && QuestLadybugs) || (RileyQuestCheck && RileyQuestGatherInterruptCheck && (RileyLadybugs || RileyAll))) && ((nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) || (((BugrunInterruptCheck && BugrunRhinoBeetlesCheck) || (PolarQuestCheck && PolarQuestGatherInterruptCheck && QuestRhinoBeetles) || (RileyQuestCheck && RileyQuestGatherInterruptCheck && RileyAll) || (BuckoQuestCheck && BuckoQuestGatherInterruptCheck && BuckoRhinoBeetles)) && ((nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) || (((BugrunInterruptCheck && BugrunSpiderCheck) || (PolarQuestCheck && PolarQuestGatherInterruptCheck && QuestSpider) || (RileyQuestCheck && RileyQuestGatherInterruptCheck && RileyAll)) && ((nowUnix()-LastBugrunSpider)>floor(1830*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) || (((BugrunInterruptCheck && BugrunMantisCheck) || (PolarQuestCheck && PolarQuestGatherInterruptCheck && QuestMantis) || (RileyQuestCheck && RileyQuestGatherInterruptCheck && RileyAll) || (BuckoQuestCheck && BuckoQuestGatherInterruptCheck && BuckoMantis)) && ((nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) || (((BugrunInterruptCheck && BugrunScorpionsCheck) || (PolarQuestCheck && PolarQuestGatherInterruptCheck && QuestScorpions) || (RileyQuestCheck && RileyQuestGatherInterruptCheck && (RileyScorpions || RileyAll))) && ((nowUnix()-LastBugrunScorpions)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) || (((BugrunInterruptCheck && BugrunWerewolfCheck) || (PolarQuestCheck && PolarQuestGatherInterruptCheck && QuestWerewolf) || (RileyQuestCheck && RileyQuestGatherInterruptCheck && RileyAll)) && ((nowUnix()-)>floor(3600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))))){
@@ -19224,12 +19259,24 @@ ba_planter(){
 	global SunflowerFieldCheck
 	global VBState
 	global MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff
+	global MPlanterRelease1, MPlanterRelease2, MPlanterRelease3
+	global MPlanterHold1, MPlanterHold2, MPlanterHold3
+	global MPlanterSmoking1, MPlanterSmoking2, MPlanterSmoking3
 	loop, 3 {
 	IniRead, PlanterName%A_Index%, settings\nm_config.ini, Planters, PlanterName%A_Index%
 	IniRead, PlanterField%A_Index%, settings\nm_config.ini, Planters, PlanterField%A_Index%
 	IniRead, PlanterHarvestTime%A_Index%, settings\nm_config.ini, Planters, PlanterHarvestTime%A_Index%
 	IniRead, PlanterNectar%A_Index%, settings\nm_config.ini, Planters, PlanterNectar%A_Index%
 	IniRead, PlanterEstPercent%A_Index%, settings\nm_config.ini, Planters, PlanterEstPercent%A_Index%
+	;reset manual planter disable auto harvest variables to 0
+	if (PlanterMode = 2) {
+	MPlanterRelease%A_Index% := 0
+	IniWrite, % MPlanterRelease%A_Index%, settings\nm_config.ini, Planters, MPlanterRelease%A_Index%
+	MPlanterHold%A_Index% := 0
+	IniWrite, % MPlanterHold%A_Index%, settings\nm_config.ini, Planters, MPlanterHold%A_Index%
+	MPlanterSmoking%A_Index% := 0
+	IniWrite, % MPlanterSmoking%A_Index%, settings\nm_config.ini, Planters, MPlanterSmoking%A_Index%
+	}
 	}
 	;skip over planters in this critical timeframe if AFB is active.  It helps avoid the loss of 4x field boost.
 	global AFBrollingDice, AFBuseGlitter, AFBuseBooster, AutoFieldBoostActive, FieldLastBoosted, FieldLastBoostedBy, FieldBoostStacks, AutoFieldBoostRefresh, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable
