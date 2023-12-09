@@ -719,7 +719,6 @@ config["Planters"] := {"LastComfortingField":"None"
 	, "MPuffMode2":0
 	, "MPuffMode3":0
 	, "LastPlanterGatherSlot":3
-	, "MPlanterGatherDetectionTime":0
 	, "PlanterName1":"None"
 	, "PlanterName2":"None"
 	, "PlanterName3":"None"
@@ -8718,7 +8717,7 @@ nm_PlanterDetection()
 	else
 		return 0
 }
-nm_PlanterTimeUpdate(FieldName)
+nm_PlanterTimeUpdate(FieldName, SetStatus := 1)
 {
 	global
 	local i, field, k, v, r, PlanterGrowTime, PlanterBarProgress
@@ -8746,50 +8745,7 @@ nm_PlanterTimeUpdate(FieldName)
 				{
 					PlanterHarvestTime%i% := nowUnix() + Round((1 - PlanterBarProgress) * PlanterGrowTime * 3600)
 					IniWrite, % PlanterHarvestTime%i%, settings\nm_config.ini, Planters, PlanterHarvestTime%i%
-					nm_setStatus("Detected", PlanterName%i% "`nField: " FieldName " - Est. Progress: " Round(PlanterBarProgress*100) "%")
-					break
-				}
-				Sleep, 100
-				sendinput {%ZoomOut%}
-				if (A_Index = 10)
-				{
-					sendinput {%RotLeft% 2}
-					r := 1
-				}
-			}
-			sendinput % "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
-			Sleep, 500
-		}
-	}
-}
-mp_PlanterTimeUpdate(FieldName)
-{
-	global
-	local i, field, k, v, r, PlanterGrowTime, PlanterBarProgress
-
-	Loop, 3
-	{
-		i := A_Index
-		if ((((PlanterMode = 2) && HarvestFullGrown) || ((PlanterMode = 1) && (PlanterHarvestFull%i% = "Full"))) && (PlanterField%i% = FieldName))
-		{
-			field := StrReplace(FieldName, " ")
-			for k,v in %field%Planters
-			{
-				if (v[1] = PlanterName%i%)
-				{
-					PlanterGrowTime := v[4]
-					break
-				}
-			}
-
-			sendinput {%RotUp% 4}
-			Sleep, 200
-			Loop, 20
-			{
-				if ((PlanterBarProgress := nm_PlanterDetection()) > 0)
-				{
-					PlanterHarvestTime%i% := nowUnix() + Round((1 - PlanterBarProgress) * PlanterGrowTime * 3600)
-					IniWrite, % PlanterHarvestTime%i%, settings\nm_config.ini, Planters, PlanterHarvestTime%i%
+					SetStatus ? nm_setStatus("Detected", PlanterName%i% "`nField: " FieldName " - Est. Progress: " Round(PlanterBarProgress*100) "%")
 					break
 				}
 				Sleep, 100
@@ -13181,7 +13137,7 @@ nm_GoGather(){
 	global FieldName2, FieldPattern2, FieldPatternSize2, FieldPatternReps2, FieldPatternShift2, FieldPatternInvertFB2, FieldPatternInvertLR2, FieldUntilMins2, FieldUntilPack2, FieldReturnType2, FieldSprinklerLoc2, FieldSprinklerDist2, FieldRotateDirection2, FieldRotateTimes2, FieldDriftCheck2
 	global FieldName3, FieldPattern3, FieldPatternSize3, FieldPatternReps3, FieldPatternShift3, FieldPatternInvertFB3, FieldPatternInvertLR3, FieldUntilMins3, FieldUntilPack3, FieldReturnType3, FieldSprinklerLoc3, FieldSprinklerDist3, FieldRotateDirection3, FieldRotateTimes3, FieldDriftCheck3
 	global MondoBuffCheck, MondoAction, LastMondoBuff
-	global PlanterMode, gotoPlanterField, MPlanterGatherA, MPlanterGather1, MPlanterGather2, MPlanterGather3, LastPlanterGatherSlot, MPlanterHold1, MPlanterHold2, MPlanterHold3, PlanterField1, PlanterField2, PlanterField3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3, MPlanterGatherDetectionTime
+	global PlanterMode, gotoPlanterField, MPlanterGatherA, MPlanterGather1, MPlanterGather2, MPlanterGather3, LastPlanterGatherSlot, MPlanterHold1, MPlanterHold2, MPlanterHold3, PlanterField1, PlanterField2, PlanterField3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3
 	global QuestLadybugs, QuestRhinoBeetles, QuestSpider, QuestMantis, QuestScorpions, QuestWerewolf
 	global PolarQuestGatherInterruptCheck, BuckoQuestGatherInterruptCheck, RileyQuestGatherInterruptCheck, BugrunInterruptCheck, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, BlackQuestCheck, BlackQuestComplete, QuestGatherField, BuckoQuestCheck, BuckoQuestComplete, RileyQuestCheck, RileyQuestComplete, PolarQuestCheck, PolarQuestComplete, RotateQuest, QuestGatherMins, QuestGatherReturnBy, BuckoRhinoBeetles, BuckoMantis, RileyLadybugs, RileyScorpions, RileyAll, GameFrozenCounter, HiveSlot, BugrunLadybugsCheck, BugrunRhinoBeetlesCheck, BugrunSpiderCheck, BugrunMantisCheck, BugrunScorpionsCheck, BugrunWerewolfCheck, MonsterRespawnTime
 	global beesmasActive, BeesmasGatherInterruptCheck, StockingsCheck, LastStockings, FeastCheck, LastFeast, RBPDelevelCheck, LastRBPDelevel, GingerbreadCheck, LastGingerbread, SnowMachineCheck, LastSnowMachine, CandlesCheck, LastCandles, SamovarCheck, LastSamovar, LidArtCheck, LastLidArt, GummyBeaconCheck, LastGummyBeacon
@@ -13378,6 +13334,7 @@ nm_GoGather(){
 				FieldRotateDirection:=FieldDefault[FieldName]["camera"]
 				FieldRotateTimes:=FieldDefault[FieldName]["turns"]
 				FieldDriftCheck:=FieldDefault[FieldName]["drift"]
+				MPlanterGatherDetectionTime:=0
 
 				; write currentfield to file as LastPlanterGatherSlot, to read on next loop
 				IniWrite, % slot, settings\nm_config.ini, Planters, LastPlanterGatherSlot
@@ -13650,13 +13607,11 @@ nm_GoGather(){
 			break
 		}
 		;Manual planter gather interrupt
-		if ((PlanterMode = 1) && (MPlanterGatherA) && (fieldOverrideReason="Manual Planter")) {
+		if ((fieldOverrideReason="Manual Planter") && (PlanterMode = 1) && (MPlanterGatherA)) {
 			;update current field planter progress every 2 minutes during planter gather
-			Iniread, MPlanterGatherDetectionTime, settings\nm_config.ini, Planters, MPlanterGatherDetectionTime
 			If ((nowUnix()-MPlanterGatherDetectionTime)>120) {
-				mp_PlanterTimeUpdate(FieldName) 
+				nm_PlanterTimeUpdate(FieldName, 0)
 				MPlanterGatherDetectionTime := nowUnix()
-				Iniwrite, % MPlanterGatherDetectionTime, settings\nm_config.ini, Planters, MPlanterGatherDetectionTime
 			}
 			;check all planter timers
 			IniRead, PlanterHarvestTime1, settings\nm_config.ini, Planters, PlanterHarvestTime1
