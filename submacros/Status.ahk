@@ -1238,13 +1238,12 @@ nm_command(command)
 			discord.SendMessageAPI(postdata, contentType)
 		}
 		
-		case "FindItem", "Finditem", "findItem", "finditem":
+		case "FindItem":
+		localnm_setShiftLock(0)
 		chosenItem := SubStr(command.content, InStr(command.content, "FindItem ") + StrLen("FindItem ")) ; seperating the content of "FindItem" and etc...
-			if (MacroState = 0) {
+			if (MacroState != 2) {
 				localfindItem(chosenItem)
-			}
-			if (MacroState = 1) {
-				localfindItem(chosenItem)
+
 			}
 			if (MacroState = 2) {
 				discord.SendEmbed("pausing macro and scanning for item after", 16711731, , , , id) ; running/unpaused
@@ -1265,6 +1264,7 @@ nm_command(command)
 				sleep, 1000
 				localfindItem(chosenItem)
 				sleep, 1000
+
 				if (MacroState = 0)
 					discord.SendEmbed("Macro is not running!", 16711731, , , , id)
 				else
@@ -1280,7 +1280,7 @@ nm_command(command)
 						discord.SendEmbed("Error: Macro not found!", 16711731, , , , id)
 				}
 			}
-		
+
 		case "timers","timer","time":
 		IniRead, str, settings\nm_config.ini, Collect
 		Loop, Parse, str, `n, `r%A_Space%%A_Tab%
