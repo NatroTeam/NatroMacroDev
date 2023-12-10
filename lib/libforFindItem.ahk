@@ -13,10 +13,10 @@ if (c = "") {
 	WinActivate, Roblox
 	sleep 100
 	yoffset := localGetYOffset(hwnd)
-	MsgBox, %yoffset%
+	;MsgBox, %yoffset% ; testing
 	WinActivate, Roblox
-	; find where it's actually screenshotting
-	
+	; find where it's actually screenshotting, testing purposes
+	/*
 	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
 
 	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-350)
@@ -35,12 +35,35 @@ if (c = "") {
 	Gdip_SaveBitmapToFile(pBMScreen, FilePath)
 
 	Gdip_DisposeImage(pBMScreen)
-	
+	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
 
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+y+yoffset++150 "|306|97") ; screenshotting, this one might need a y offset
+
+	FilePath := A_ScriptDir "\captured_image3.png"
+
+	Gdip_SaveBitmapToFile(pBMScreen, FilePath)
+
+	Gdip_DisposeImage(pBMScreen)
+	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
+
+	pBMScreen := Gdip_BitmapFromScreen(windowX+5 "|" windowY+windowHeight-54 "|50|50") ; screenshotting, this one might need a y offset
+
+	FilePath := A_ScriptDir "\captured_image4.png"
+
+	Gdip_SaveBitmapToFile(pBMScreen, FilePath)
+
+	Gdip_DisposeImage(pBMScreen)
+	*/
 	localnm_setShiftLock(0)
+	sleep 100
 	localnm_OpenMenu("itemmenu")
+	sleep 100
 	MouseMove 46, 219
 	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
+	;mousemove %windowX%, %windowY% ; testing
+	;sleep, 100 ; for the testing
+	;msgbox, X: %windowX% Y: %windowY% ; testing
+	;sleep, 100 ; for the testing
 	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-150)
 	itemNumbers := {"Cog": 1, "Ticket": 2, "SprinklerBuilder": 3, "BeequipCase": 4, "Gumdrops": 5, "Coconut": 6, "Stinger": 7, "MicroConverter": 8, "Honeysuckle": 9, "Whirligig": 10, "FieldDice": 11, "SmoothDice": 12, "LoadedDice": 13, "JellyBeans": 14, "RedExtract": 15, "BlueExtract": 16, "Glitter": 17, "Glue": 18, "Oil": 19, "Enzymes": 20, "TropicalDrink": 21, "PurplePotion": 22, "SuperSmoothie": 23, "MarshmallowBee": 24, "MagicBean": 25, "FestiveBean": 26, "CloudVial": 27, "NightBell": 28, "BoxOFrogs": 29, "AntPass": 30, "BrokenDrive": 31, "7ProngedCog": 32, "RoboPass": 33, "Translator": 34, "SpiritPetal": 35, "Present": 36, "Treat": 37, "StarTreat": 38, "AtomicTreat": 39, "SunflowerSeed": 40, "Strawberry": 41, "Pineapple": 42, "Blueberry": 43, "Bitterberry": 44, "Neonberry": 45, "MoonCharm": 46, "GingerbreadBear": 47, "AgedGingerbreadBear": 48, "WhiteDrive": 49, "RedDrive": 50, "BlueDrive": 51, "GlitchedDrive": 52, "ComfortingVial": 53, "InvigoratingVial": 54, "MotivatingVial": 55, "RefreshingVial": 56, "SatisfyingVial": 57, "PinkBalloon": 58, "RedBalloon": 59, "WhiteBalloon": 60, "BlackBalloon": 61, "SoftWax": 62, "HardWax": 63, "CausticWax": 64, "SwirledWax": 65, "Turpentine": 66, "PaperPlanter": 67, "TicketPlanter": 68, "FestivePlanter": 69, "PlasticPlanter": 70, "CandyPlanter": 71, "RedClayPlanter": 72, "BlueClayPlanter": 73, "TackyPlanter": 74, "PesticidePlanter": 75, "HeatTreatedPlanter": 76, "HydroponicPlanter": 77, "PetalPlanter": 78, "ThePlanterOfPlenty": 79, "BasicEgg": 80, "SilverEgg": 81, "GoldEgg": 82, "DiamondEgg": 83, "MythicEgg": 84, "StarEgg": 85, "GiftedSilverEgg": 86, "GiftedGoldEgg": 87, "GiftedDiamondEgg": 88, "GiftedMythicEgg": 89, "RoyalJelly": 90, "StarJelly": 91, "BumbleBeeEgg": 92, "BumbleBeeJelly": 93, "RageBeeJelly": 94, "ShockedBeeJelly": 95}
 	Loop, % items.Length()+1 { ; looking for the first item in the menu
@@ -63,7 +86,7 @@ if (c = "") {
 		direction := ""
 	}
 	
-	MsgBox, first detected `nitem: %firstDetectedItem% (num: %itemNumber%) `ncoords: %itemCoords% `ndirection: %direction% ; debugging stuff
+	;MsgBox, first detected `nitem: %firstDetectedItem% (num: %itemNumber%) `ncoords: %itemCoords% `ndirection: %direction% ; debugging stuff
 	
 	foundItem := false ; resetting/naming var, why not lol
 	
@@ -94,14 +117,18 @@ if (c = "") {
 		sleep 300
 	}
 	if (foundItem) { ; if item is found
+		WinActivate, Roblox ; activating roblox
 		localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
 		spritcords := StrSplit(itemCoords, ",")
 		x := spritcords[1]+windowX
-		y := spritcords[2]+windowY+150
+		y := spritcords[2]+150
 		MouseMove, x, y
-		MsgBox, Found item: %itemLookingFor% at coordinates: %itemCoords% `n (%x% %y%)
+		pBitmap := Gdip_BitmapFromScreen(windowX "|" windowY+y+yoffset-10 "|306|97") ; screenshotting, this one might need a y offset
+		discord.SendImage(pBitmap, imgname:="image.png")
+		Gdip_DisposeImage(pBitmap)
+		;MsgBox, Found item: %itemLookingFor% at coordinates: %itemCoords% `n (%x% %y%) ; testing
 	} else {
-		MsgBox, Item %itemLookingFor% not found after %maxAttempts% attempts.
+		;MsgBox, Item %itemLookingFor% not found after %maxAttempts% attempts. ; testing
 	}
 	; making/clearing info on vars
 	firstDetectedItem := "" ; for when looking for the first item in the item menu
@@ -109,7 +136,6 @@ if (c = "") {
 	itemCoords := "" ; getting the coords of the found item
 	itemLookingFor := "" ; the item the person is looking for
 	Gdip_DisposeImage(pBMScreen)
-	mousemove 960, 540
 	}
 }
 localLevenshteinDistance(s1, s2) { ; given by sp (or made)
@@ -188,13 +214,13 @@ localnm_OpenMenu(menu:="", refresh:=0){
 					break
 				}
 				Gdip_DisposeImage(pBMScreen)
-				MouseMove, windowX+x[open], windowY+90
-				mathematics := windowX+x[open]
-				mathematics2 := windowY+120
-				mathematics3 := x[open]
-				MsgBox, x: %mathematics% y: %mathematics2% open offset 2: %mathematics3%
+				MouseMove, windowX+x[open], windowY+110
+				;mathematics := windowX+x[open]
+				;mathematics2 := windowY+120
+				;mathematics3 := x[open]
+				;MsgBox, x: %mathematics% y: %mathematics2% open offset 2: %mathematics3%
 				Click
-				MouseMove, windowX+350, windowY+100
+				MouseMove, windowX+350, windowY+110
 				sleep, 500
 			}
 		}
@@ -211,11 +237,11 @@ localnm_OpenMenu(menu:="", refresh:=0){
 						break
 					}
 					Gdip_DisposeImage(pBMScreen)
-					MouseMove, windowX+v, windowY+90
-					mathematics := windowX+v
-					mathematics2 := windowY+120
-					mathematics3 := v
-					MsgBox, x: %mathematics% y: %mathematics2% v offset: %mathematics3%
+					MouseMove, windowX+v, windowY+110
+					;mathematics := windowX+v
+					;mathematics2 := windowY+120
+					;mathematics3 := v
+					;MsgBox, x: %mathematics% y: %mathematics2% v offset: %mathematics3%
 					Click
 					MouseMove, windowX+350, windowY+100
 					sleep, 500
@@ -238,11 +264,11 @@ localnm_OpenMenu(menu:="", refresh:=0){
 					break
 				}
 				Gdip_DisposeImage(pBMScreen)
-				MouseMove, windowX+x[open], windowY+90
-				mathematics := windowX+x[open]
-				mathematics2 := windowY+120
-				mathematics3 := x[open]
-				MsgBox, x: %mathematics% y: %mathematics2% open offset: %mathematics3%
+				MouseMove, windowX+x[open], windowY+110
+				;mathematics := windowX+x[open]
+				;mathematics2 := windowY+120
+				;mathematics3 := x[open]
+				;MsgBox, x: %mathematics% y: %mathematics2% open offset: %mathematics3%
 				Click
 				MouseMove, windowX+350, windowY+100
 				sleep, 500
@@ -259,11 +285,11 @@ localnm_OpenMenu(menu:="", refresh:=0){
 				break
 			}
 			Gdip_DisposeImage(pBMScreen)
-			MouseMove, windowX+x[menu], windowY+90
-			mathematics := windowX+x[menu]
-			mathematics2 := windowY+120
-			mathematics3 := x[menu]
-			MsgBox, x: %mathematics% y: %mathematics2% menu offset: %mathematics3%
+			MouseMove, windowX+x[menu], windowY+110
+			;mathematics := windowX+x[menu]
+			;mathematics2 := windowY+120
+			;mathematics3 := x[menu]
+			;MsgBox, x: %mathematics% y: %mathematics2% menu offset: %mathematics3%
 			Click
 			MouseMove, windowX+350, windowY+100
 			sleep, 500
@@ -272,8 +298,9 @@ localnm_OpenMenu(menu:="", refresh:=0){
 }
 
 localnm_setShiftLock(state){
+	localSC_LShift:="sc02a" ; LShift
 	global SC_LShift, ShiftLockEnabled
-    shiftlock := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAABkAAAAZAgMAAAC5h23wAAAADFBMVEUAAAAFov4Fov0Gov5PyD1RAAAAAXRSTlMAQObYZgAAAG1JREFUeNp1zrENwlAMhOEvOOmQQsEgGSBSVkjB24dRMgIjeBRGyAZBLhBpKOz/ijvdEcfyhpEZXkQST+yMMHNFvUm3CjZ9L1K6dZzYtbYWh9YekoE7sij/cit/pKny8e379Udiryt92ns5lp0PKyEgGjSX+tcAAAAASUVORK5CYII=")
+    localbmshiftlock := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAABkAAAAZAgMAAAC5h23wAAAADFBMVEUAAAAFov4Fov0Gov5PyD1RAAAAAXRSTlMAQObYZgAAAG1JREFUeNp1zrENwlAMhOEvOOmQQsEgGSBSVkjB24dRMgIjeBRGyAZBLhBpKOz/ijvdEcfyhpEZXkQST+yMMHNFvUm3CjZ9L1K6dZzYtbYWh9YekoE7sij/cit/pKny8e379Udiryt92ns5lp0PKyEgGjSX+tcAAAAASUVORK5CYII=")
 	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "Roblox ahk_exe RobloxPlayerBeta.exe") ; Shift Lock is not supported on UWP app at the moment
 	if (windowWidth = 0)
 		return 2
@@ -282,13 +309,13 @@ localnm_setShiftLock(state){
 
 	pBMScreen := Gdip_BitmapFromScreen(windowX+5 "|" windowY+windowHeight-54 "|50|50")
 
-	switch (v := Gdip_ImageSearch(pBMScreen, shiftlock, , , , , , 2))
+	switch (v := Gdip_ImageSearch(pBMScreen, localbmshiftlock, , , , , , 2))
 	{
 		; shift lock enabled - disable if needed
 		case 1:
 		if (state = 0)
 		{
-			send {%SC_LShift%}
+			send {%localSC_LShift%}
 			result := 0
 		}
 		else
@@ -298,7 +325,7 @@ localnm_setShiftLock(state){
 		case 0:
 		if (state = 1)
 		{
-			send {%SC_LShift%}
+			send {%localSC_LShift%}
 			result := 1
 		}
 		else
