@@ -1280,37 +1280,7 @@ nm_command(command)
 						discord.SendEmbed("Error: Macro not found!", 16711731, , , , id)
 				}
 			}
-		/*
-		case "ss","screenshot":
-		switch % params[2] {
-			case "mode":
-			if ((params[3] = "all") || (params[3] = "window") || (params[3] = "screen")) {
-				ssmode := RegExReplace(params[3], "(?:^|\.|\R)[- 0-9\*\(]*\K(.)([^\.\r\n]*)", "$U1$L2")
-				discord.SendEmbed("Set screenshot mode to " ssmode "!", 5066239, , , , id)
-			}
-			else
-				discord.SendEmbed("Invalid ``Mode``!\nMust be either ``All``, ``Window``, or ``Screen``", 16711731, , , , id)
-			
-			default:
-			switch % ssmode {
-				case "all":
-				pBM := Gdip_BitmapFromScreen()
-				
-				case "window":
-				WinGetClientPos(x, y, w, h, "A")
-				pBM := Gdip_BitmapFromScreen((w > 0) ? (x "|" y "|" w "|" h) : 0)
-
-				case "screen":
-				pBM := Gdip_BitmapFromScreen(1)
-
-				default:
-				discord.SendEmbed("Error: Invalid screenshot mode!", 16711731, , , , id)
-				pBM := Gdip_BitmapFromScreen()
-			}
-			discord.SendImage(pBM, "ss.png", id)
-			Gdip_DisposeImage(pBM)
-		}
-		*/
+		
 		case "timers","timer","time":
 		IniRead, str, settings\nm_config.ini, Collect
 		Loop, Parse, str, `n, `r%A_Space%%A_Tab%
