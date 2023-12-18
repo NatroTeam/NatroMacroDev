@@ -70,7 +70,7 @@ if (c = "") {
 		direction := ""
 	}
 
-	MsgBox, first detected `nitem: %firstDetectedItem% (num: %itemNumber%) `ncoords: %itemCoords% `ndirection: %direction% ; debugging stuff
+	;MsgBox, first detected `nitem: %firstDetectedItem% (num: %itemNumber%) `ncoords: %itemCoords% `ndirection: %direction% ; debugging stuff
 	
 	foundItem := false ; resetting/naming var, why not lol
 	
