@@ -18,40 +18,24 @@ if (c = "") {
 	; find where it's actually screenshotting, testing purposes
 	/*
 	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
-
 	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-350)
-
 	FilePath := A_ScriptDir "\captured_image.png"
-
 	Gdip_SaveBitmapToFile(pBMScreen, FilePath)
-
 	Gdip_DisposeImage(pBMScreen)
 	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
-
 	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+72 "|350|80")
-
 	FilePath := A_ScriptDir "\captured_image2.png"
-
 	Gdip_SaveBitmapToFile(pBMScreen, FilePath)
-
 	Gdip_DisposeImage(pBMScreen)
 	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
-
 	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+y+yoffset++150 "|306|97") ; screenshotting, this one might need a y offset
-
 	FilePath := A_ScriptDir "\captured_image3.png"
-
 	Gdip_SaveBitmapToFile(pBMScreen, FilePath)
-
 	Gdip_DisposeImage(pBMScreen)
 	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
-
 	pBMScreen := Gdip_BitmapFromScreen(windowX+5 "|" windowY+windowHeight-54 "|50|50") ; screenshotting, this one might need a y offset
-
 	FilePath := A_ScriptDir "\captured_image4.png"
-
 	Gdip_SaveBitmapToFile(pBMScreen, FilePath)
-
 	Gdip_DisposeImage(pBMScreen)
 	*/
 	localnm_setShiftLock(0)
@@ -72,25 +56,21 @@ if (c = "") {
 		if (itemCoords != "") {
 			firstDetectedItem := item
 			Gdip_DisposeImage(pBMScreen)
-			itemNumber := itemNumbers[firstDetectedItem] ; giving a number for the found item
 			break
-		}else{
-			
-			itemNumber := 999
-			Gdip_DisposeImage(pBMScreen)
-		}
+		} 
 	}
+	itemNumber := itemNumbers[firstDetectedItem] ; giving a number for the found item
 	askedItemNumber := itemNumbers[itemLookingFor] ; giving the number to the item looking for
-	
+
 	if (itemNumber > askedItemNumber) { ; checking if the macro should scroll up or down
 		direction := 1 ; scroll up
 	} else if (itemNumber < askedItemNumber) {
 		direction := 0 ; scroll down
 	} else {
-		direction := 1 ; just in case lol
+		direction := ""
 	}
-	
-	;MsgBox, first detected `nitem: %firstDetectedItem% (num: %itemNumber%) `ncoords: %itemCoords% `ndirection: %direction% ; debugging stuff
+
+	MsgBox, first detected `nitem: %firstDetectedItem% (num: %itemNumber%) `ncoords: %itemCoords% `ndirection: %direction% ; debugging stuff
 	
 	foundItem := false ; resetting/naming var, why not lol
 	
@@ -163,7 +143,6 @@ localLevenshteinDistance(s1, s2) { ; given by sp (or made)
   
 	return d[len1, len2]
 }
-
 localfindClosestItem(items, needle) {
 	dist := StrLen(needle)
 	for i,v in items
@@ -173,7 +152,6 @@ if (dist<6) {
 	return item
 	}
 }
-
 localWinGetClientPos(ByRef X:="", ByRef Y:="", ByRef Width:="", ByRef Height:="", WinTitle:="", WinText:="", ExcludeTitle:="", ExcludeText:="")
 {
     local hWnd, RECT
@@ -184,8 +162,6 @@ localWinGetClientPos(ByRef X:="", ByRef Y:="", ByRef Width:="", ByRef Height:=""
     X := NumGet(&RECT, 0, "Int"), Y := NumGet(&RECT, 4, "Int")
     Width := NumGet(&RECT, 8, "Int"), Height := NumGet(&RECT, 12, "Int")
 }
-
-
 localGetRobloxHWND() {
 	if (hwnd := WinExist("Roblox ahk_exe RobloxPlayerBeta.exe"))
 		return hwnd
@@ -197,20 +173,17 @@ localGetRobloxHWND() {
 	else
 		return 0
 }
-
 localnm_OpenMenu(menu:="", refresh:=0){
 	WinActivate, Roblox
 	CoordMode, Mouse, Screen
 	global itemBitmaps
 	hwnd := localGetRobloxHWND()
 	static x := {"itemmenu":30, "questlog":85, "beemenu":140}, open:=""
-
 	if (hwnd := localGetRobloxHWND())
 		WinActivate, Roblox
 	else
 		return 0
 	offsetY := localGetYOffset(hwnd)
-
 	if ((menu = "") || (refresh = 1)) ; close
 	{
 		if open ; close the open menu
@@ -230,7 +203,6 @@ localnm_OpenMenu(menu:="", refresh:=0){
 				;posy := windowY+offsetY+120
 				;xoffset := x[open]
 				;msgbox, X: %posx% `nY: %posy% `nX Offset: %xoffset% `nY Offset %offsetY%
-
 				MouseMove, windowX+x[open], windowY+offsetY+120, Screen
 				Click
 				MouseMove, windowX+350, windowY+offsetY+100
@@ -255,7 +227,6 @@ localnm_OpenMenu(menu:="", refresh:=0){
 					;posy := windowY+offsetY+120
 					;xoffset := v
 					;msgbox, X: %posx% `nY: %posy% `nX Offset: %xoffset% `nY Offset %offsetY%
-
 					MouseMove, windowX+v, windowY+offsetY+120, Screen
 					Click
 					MouseMove, windowX+350, windowY+offsetY+100
@@ -284,7 +255,6 @@ localnm_OpenMenu(menu:="", refresh:=0){
 				;posy := windowY+offsetY+120
 				;xoffset := x[open]
 				;msgbox, X: %posx% `nY: %posy% `nX Offset: %xoffset% `nY Offset %offsetY%
-
 				MouseMove, windowX+x[open], windowY+offsetY+120, Screen
 				Click
 				MouseMove, windowX+350, windowY+offsetY+100
@@ -307,7 +277,6 @@ localnm_OpenMenu(menu:="", refresh:=0){
 			;posy := windowY+offsetY+120
 			;xoffset := x[menu]
 			;msgbox, X: %posx% `nY: %posy% `nX Offset: %xoffset% `nY Offset %offsetY%
-
 			MouseMove, windowX+x[menu], windowY+offsetY+120, Screen
 			Click
 			MouseMove, windowX+350, windowY+offsetY+100
@@ -315,7 +284,6 @@ localnm_OpenMenu(menu:="", refresh:=0){
 		}
 	}
 }
-
 localnm_setShiftLock(state){
 	localSC_LShift:="sc02a" ; LShift
 	global SC_LShift, ShiftLockEnabled
@@ -325,9 +293,7 @@ localnm_setShiftLock(state){
 		return 2
 	else
 		WinActivate, Roblox
-
 	pBMScreen := Gdip_BitmapFromScreen(windowX+5 "|" windowY+windowHeight-54 "|50|50")
-
 	switch (v := Gdip_ImageSearch(pBMScreen, localbmshiftlock, , , , , , 2))
 	{
 		; shift lock enabled - disable if needed
@@ -339,7 +305,6 @@ localnm_setShiftLock(state){
 		}
 		else
 			result := 1
-
 		; shift lock disabled - enable if needed
 		case 0:
 		if (state = 1)
@@ -350,16 +315,13 @@ localnm_setShiftLock(state){
 		else
 			result := 0
 	}
-
 	Gdip_DisposeImage(pBMScreen)
 	return (ShiftLockEnabled := result)
 }
-
 localGetYOffset(hwnd, ByRef fail:="")
 {
 	global bitmaps
 	static hRoblox, offset := 0
-
 	if (hwnd = hRoblox)
 		return offset
 	else
@@ -367,7 +329,6 @@ localGetYOffset(hwnd, ByRef fail:="")
 		WinActivate, Roblox
 		WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " hwnd)
 		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2 "|" windowY "|300|100")
-
 		Loop, 20 ; for red vignette effect
 		{ 
 			if ((Gdip_ImageSearch(pBMScreen, localtoppollen, pos, , , , , 16) = 1)
