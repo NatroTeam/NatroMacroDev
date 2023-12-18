@@ -62,12 +62,12 @@ if (c = "") {
 	itemNumber := itemNumbers[firstDetectedItem] ; giving a number for the found item
 	askedItemNumber := itemNumbers[itemLookingFor] ; giving the number to the item looking for
 
-	if (itemNumber > askedItemNumber) { ; checking if the macro should scroll up or down
+	if (itemNumber > askedItemNumber or itemNumber = "") { ; checking if the macro should scroll up or down
 		direction := 1 ; scroll up
 	} else if (itemNumber < askedItemNumber) {
 		direction := 0 ; scroll down
 	} else {
-		direction := ""
+		direction := 1
 	}
 
 	;MsgBox, first detected `nitem: %firstDetectedItem% (num: %itemNumber%) `ncoords: %itemCoords% `ndirection: %direction% ; debugging stuff
