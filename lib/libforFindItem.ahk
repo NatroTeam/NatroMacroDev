@@ -2,20 +2,16 @@ localtoppollen := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAACoAAAALBAMAAAD
 
 
 localfindItem(input) {
-items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
-; c = corrected
-c := localfindClosestItem(items, input)
-if (c = "") {
-	discord.SendEmbed("either you entered nothing or the item doesnt exist, not running script", 12403276, , , , id)
-}else{
-	;msgbox start of the script
-	itemLookingFor := c
 	global itemBitmaps
+	static itemNumbers := {"Cog": 1, "Ticket": 2, "SprinklerBuilder": 3, "BeequipCase": 4, "Gumdrops": 5, "Coconut": 6, "Stinger": 7, "MicroConverter": 8, "Honeysuckle": 9, "Whirligig": 10, "FieldDice": 11, "SmoothDice": 12, "LoadedDice": 13, "JellyBeans": 14, "RedExtract": 15, "BlueExtract": 16, "Glitter": 17, "Glue": 18, "Oil": 19, "Enzymes": 20, "TropicalDrink": 21, "PurplePotion": 22, "SuperSmoothie": 23, "MarshmallowBee": 24, "Sprout": 25, "FestiveBean": 26, "CloudVial": 27, "NightBell": 28, "BoxOFrogs": 29, "AntPass": 30, "BrokenDrive": 31, "7ProngedCog": 32, "RoboPass": 33, "Translator": 34, "SpiritPetal": 35, "Present": 36, "Treat": 37, "StarTreat": 38, "AtomicTreat": 39, "SunflowerSeed": 40, "Strawberry": 41, "Pineapple": 42, "Blueberry": 43, "Bitterberry": 44, "Neonberry": 45, "MoonCharm": 46, "GingerbreadBear": 47, "AgedGingerbreadBear": 48, "WhiteDrive": 49, "RedDrive": 50, "BlueDrive": 51, "GlitchedDrive": 52, "ComfortingVial": 53, "InvigoratingVial": 54, "MotivatingVial": 55, "RefreshingVial": 56, "SatisfyingVial": 57, "PinkBalloon": 58, "RedBalloon": 59, "WhiteBalloon": 60, "BlackBalloon": 61, "SoftWax": 62, "HardWax": 63, "CausticWax": 64, "SwirledWax": 65, "Turpentine": 66, "PaperPlanter": 67, "TicketPlanter": 68, "FestivePlanter": 69, "PlasticPlanter": 70, "CandyPlanter": 71, "RedClayPlanter": 72, "BlueClayPlanter": 73, "TackyPlanter": 74, "PesticidePlanter": 75, "HeatTreatedPlanter": 76, "HydroponicPlanter": 77, "PetalPlanter": 78, "ThePlanterOfPlenty": 79, "BasicEgg": 80, "SilverEgg": 81, "GoldEgg": 82, "DiamondEgg": 83, "MythicEgg": 84, "StarEgg": 85, "GiftedSilverEgg": 86, "GiftedGoldEgg": 87, "GiftedDiamondEgg": 88, "GiftedMythicEgg": 89, "RoyalJelly": 90, "StarJelly": 91, "BumbleBeeEgg": 92, "BumbleBeeJelly": 93, "RageBeeJelly": 94, "ShockedBeeJelly": 95}, items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
+	if ((itemLookingFor := localfindClosestItem(items, input)) = "") {
+		discord.SendEmbed("You entered nothing or the item doesnt exist.", 12403276, , , , id)
+		return
+	}
 	WinActivate, Roblox
+	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
 	sleep 100
 	yoffset := localGetYOffset(hwnd)
-	;MsgBox, %yoffset% ; testing
-	WinActivate, Roblox
 	; find where it's actually screenshotting, testing purposes
 	/*
 	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
@@ -50,7 +46,6 @@ if (c = "") {
 	;msgbox, X: %windowX% Y: %windowY% ; testing
 	;sleep, 100 ; for the testing
 	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-150)
-	itemNumbers := {"Cog": 1, "Ticket": 2, "SprinklerBuilder": 3, "BeequipCase": 4, "Gumdrops": 5, "Coconut": 6, "Stinger": 7, "MicroConverter": 8, "Honeysuckle": 9, "Whirligig": 10, "FieldDice": 11, "SmoothDice": 12, "LoadedDice": 13, "JellyBeans": 14, "RedExtract": 15, "BlueExtract": 16, "Glitter": 17, "Glue": 18, "Oil": 19, "Enzymes": 20, "TropicalDrink": 21, "PurplePotion": 22, "SuperSmoothie": 23, "MarshmallowBee": 24, "Sprout": 25, "FestiveBean": 26, "CloudVial": 27, "NightBell": 28, "BoxOFrogs": 29, "AntPass": 30, "BrokenDrive": 31, "7ProngedCog": 32, "RoboPass": 33, "Translator": 34, "SpiritPetal": 35, "Present": 36, "Treat": 37, "StarTreat": 38, "AtomicTreat": 39, "SunflowerSeed": 40, "Strawberry": 41, "Pineapple": 42, "Blueberry": 43, "Bitterberry": 44, "Neonberry": 45, "MoonCharm": 46, "GingerbreadBear": 47, "AgedGingerbreadBear": 48, "WhiteDrive": 49, "RedDrive": 50, "BlueDrive": 51, "GlitchedDrive": 52, "ComfortingVial": 53, "InvigoratingVial": 54, "MotivatingVial": 55, "RefreshingVial": 56, "SatisfyingVial": 57, "PinkBalloon": 58, "RedBalloon": 59, "WhiteBalloon": 60, "BlackBalloon": 61, "SoftWax": 62, "HardWax": 63, "CausticWax": 64, "SwirledWax": 65, "Turpentine": 66, "PaperPlanter": 67, "TicketPlanter": 68, "FestivePlanter": 69, "PlasticPlanter": 70, "CandyPlanter": 71, "RedClayPlanter": 72, "BlueClayPlanter": 73, "TackyPlanter": 74, "PesticidePlanter": 75, "HeatTreatedPlanter": 76, "HydroponicPlanter": 77, "PetalPlanter": 78, "ThePlanterOfPlenty": 79, "BasicEgg": 80, "SilverEgg": 81, "GoldEgg": 82, "DiamondEgg": 83, "MythicEgg": 84, "StarEgg": 85, "GiftedSilverEgg": 86, "GiftedGoldEgg": 87, "GiftedDiamondEgg": 88, "GiftedMythicEgg": 89, "RoyalJelly": 90, "StarJelly": 91, "BumbleBeeEgg": 92, "BumbleBeeJelly": 93, "RageBeeJelly": 94, "ShockedBeeJelly": 95}
 	Loop, % items.Length() { ; looking for the first item in the menu
 		item := items[A_Index]
 		if (Gdip_ImageSearch(pBMScreen, itemBitmaps[item], itemCoords,,,,,5) > 0) {
@@ -59,14 +54,12 @@ if (c = "") {
 			break
 		} 
 	}	
-	WinActivate, Roblox
-	localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND()) ; don't need to constantly get the coords
-	foundItem := True, ItemNumber := itemNumbers[firstDetectedItem] ;called twice so why not make it a variable
+	ItemNumber := itemNumbers[firstDetectedItem] ;called twice so why not make it a variable
 
 	Loop 55 {
 		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-350)
 		MouseMove windowX+46, windowY+219
-		if (ItemNumber = "" || ItemNumber  >= itemNumbers[itemLookingFor]) {
+		if (ItemNumber = "" || ItemNumber >= itemNumbers[itemLookingFor]) {
 			if (Gdip_ImageSearch(pBMScreen, itemBitmaps[itemLookingFor], itemCoords,,,,,5)) ; scroll up
 				break
 			send {WheelUp 1}
@@ -74,34 +67,24 @@ if (c = "") {
 			if (Gdip_ImageSearch(pBMScreen, itemBitmaps[itemLookingFor], itemCoords,,,,,5)) ; scroll down
 				break
 			send {WheelDown 1}
-				}
+		}
 		Gdip_DisposeImage(pBMScreen)
 		sleep 300
-				if (A_Index = 55)
-				foundItem := False
+		if (A_Index = 55) {
+			discord.SendEmbed("Item was not found.", 12403276, , , , id)
+			return
+		}
+		
 	}
-	; i'll make a better testing script here, just a little of debugging for when i wanna improve it
-	if (foundItem) { ; if item is found
-		WinActivate, Roblox ; activating roblox
-		localWinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " localGetRobloxHWND())
-		spritcords := StrSplit(itemCoords, ",")
-		x := spritcords[1]+windowX
-		y := spritcords[2]+150
-		MouseMove, x, y+windowY
-		pBitmap := Gdip_BitmapFromScreen(windowX "|" windowY+y+yoffset-10 "|306|97") ; screenshotting, this one might need a y offset
-		discord.SendEmbed("Found The item you asked for", 4641849, , pBitmap, id)
-		Gdip_DisposeImage(pBitmap)
-		;MsgBox, Found item: %itemLookingFor% at coordinates: %itemCoords% `n (%x% %y%) ; testing
-	} else {
-		discord.SendEmbed("Item was not found.", 12403276, , , , id)
-	}
-	; making/clearing info on vars
-	firstDetectedItem := "" ; for when looking for the first item in the item menu
-	item := "" ; getting the next item from "itemNumber" later on
-	itemCoords := "" ; getting the coords of the found item
-	itemLookingFor := "" ; the item the person is looking for
 	Gdip_DisposeImage(pBMScreen)
-	}
+
+	spritcords := StrSplit(itemCoords, ",")
+	x := spritcords[1]+windowX, y := spritcords[2]+150
+	MouseMove, x, y+windowY
+	pBitmap := Gdip_BitmapFromScreen(windowX "|" windowY+y+yoffset-10 "|306|97") ; screenshotting, this one might need a y offset
+	discord.SendEmbed("Found The item you asked for", 4641849, , pBitmap, id)
+	Gdip_DisposeImage(pBitmap)
+	;MsgBox, Found item: %itemLookingFor% at coordinates: %itemCoords% `n (%x% %y%) ; testing
 }
 localLevenshteinDistance(s1, s2) { ; given by sp (or made)
 	len1 := StrLen(s1), len2 := StrLen(s2)
