@@ -1,4 +1,4 @@
-﻿/*
+/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © 2022-2023 Natro Team (https://github.com/NatroTeam)
 
@@ -1256,7 +1256,6 @@ nm_command(command)
 					if WinExist("natro_macro ahk_class AutoHotkey")
 					{
 						PostMessage, 0x5550, 2
-						discord.SendEmbed(((MacroState = 2) ? "Pausing" : "Unpausing") " Macro...", 5066239, , , , id)
 					}
 					else
 						discord.SendEmbed("Error: Macro not found!", 16711731, , , , id)
@@ -1274,7 +1273,6 @@ nm_command(command)
 					if WinExist("natro_macro ahk_class AutoHotkey")
 					{
 						PostMessage, 0x5550, 2
-						discord.SendEmbed(((MacroState = 2) ? "Pausing" : "Unpausing") " Macro...", 5066239, , , , id)
 					}
 					else
 						discord.SendEmbed("Error: Macro not found!", 16711731, , , , id)
@@ -2436,12 +2434,3 @@ ExitFunc()
 		nm_status(v)
 	ExitApp
 }
-
-
-
-
-
-
-
-
-
