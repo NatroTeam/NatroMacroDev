@@ -3591,7 +3591,7 @@ nm_StartButton(hButton){
 nm_PauseButton(hButton){
 	MouseGetPos, , , , hCtrl, 2
 	if (hCtrl = hButton)
-		Gosub, pause
+		Pause()
 }
 nm_StopButton(hButton){
 	MouseGetPos, , , , hCtrl, 2
@@ -20896,85 +20896,86 @@ Reload
 Sleep, 10000
 return
 ;PAUSE MACRO
-pause:
-if(state="startup")
-	return
-if(A_IsPaused) {
-	nm_LockTabs()
-	WinActivate, Roblox
-	Prev_DetectHiddenWindows := A_DetectHiddenWindows
-	Prev_TitleMatchMode := A_TitleMatchMode
-	DetectHiddenWindows, On
-	SetTitleMatchMode, 2
-	if WinExist("ahk_class AutoHotkey ahk_pid " currentWalk["pid"])
-		Send {F16}
-	else
-	{
-		if(FwdKeyState)
-			sendinput {%FwdKey% down}
-		if(BackKeyState)
-			sendinput {%BackKey% down}
-		if(LeftKeyState)
-			sendinput {%LeftKey% down}
-		if(RightKeyState)
-			sendinput {%RightKey% down}
-		if(SpaceKeyState)
-			sendinput {%SC_Space% down}
+Pause(Sendmsg:=0) {
+	if(state="startup")
+		return
+	if(A_IsPaused) {
+		nm_LockTabs()
+		WinActivate, Roblox
+		Prev_DetectHiddenWindows := A_DetectHiddenWindows
+		Prev_TitleMatchMode := A_TitleMatchMode
+		DetectHiddenWindows, On
+		SetTitleMatchMode, 2
+		if WinExist("ahk_class AutoHotkey ahk_pid " currentWalk["pid"])
+			Send {F16}
+		else
+		{
+			if(FwdKeyState)
+				sendinput {%FwdKey% down}
+			if(BackKeyState)
+				sendinput {%BackKey% down}
+			if(LeftKeyState)
+				sendinput {%LeftKey% down}
+			if(RightKeyState)
+				sendinput {%RightKey% down}
+			if(SpaceKeyState)
+				sendinput {%SC_Space% down}
+		}
+		nm_setStatus(PauseState, PauseObjective)
+		MacroState:=2
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			PostMessage, 0x5552, 23, MacroState
+		if WinExist("Heartbeat.ahk ahk_class AutoHotkey")
+			PostMessage, 0x5552, 23, MacroState
+		if WinExist("background.ahk ahk_class AutoHotkey")
+			PostMessage, 0x5552, 23, MacroState
+		youDied:=0
+		;manage runtimes
+		MacroStartTime:=nowUnix()
+		GatherStartTime:=nowUnix()
+		DetectHiddenWindows, %Prev_DetectHiddenWindows%
+		SetTitleMatchMode, %Prev_TitleMatchMode%
+	} else {
+		if (ShowOnPause = 1)
+			WinActivate, ahk_id %hGUI%
+		Prev_DetectHiddenWindows := A_DetectHiddenWindows
+		Prev_TitleMatchMode := A_TitleMatchMode
+		DetectHiddenWindows, On
+		SetTitleMatchMode, 2
+		if WinExist("ahk_class AutoHotkey ahk_pid " currentWalk["pid"])
+			Send {F16}
+		else
+		{
+			FwdKeyState:=GetKeyState(FwdKey), BackKeyState:=GetKeyState(BackKey), LeftKeyState:=GetKeyState(LeftKey), RightKeyState:=GetKeyState(RightKey), SpaceKeyState:=GetKeyState(SC_Space)
+			sendinput {%FwdKey% up}{%BackKey% up}{%LeftKey% up}{%RightKey% up}{%SC_Space% up}
+			click, up
+		}
+		MacroState:=1
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			PostMessage, 0x5552, 23, MacroState
+		if WinExist("Heartbeat.ahk ahk_class AutoHotkey")
+			PostMessage, 0x5552, 23, MacroState
+		if WinExist("background.ahk ahk_class AutoHotkey")
+			PostMessage, 0x5552, 23, MacroState
+		PauseState:=state
+		PauseObjective:=objective
+		;manage runtimes
+		TotalRuntime:=TotalRuntime+(nowUnix()-MacroStartTime)
+		PausedRuntime:=PausedRuntime+(nowUnix()-MacroStartTime)
+		SessionRuntime:=SessionRuntime+(nowUnix()-MacroStartTime)
+		if(GatherStartTime) {
+			TotalGatherTime:=TotalGatherTime+(nowUnix()-GatherStartTime)
+			SessionGatherTime:=SessionGatherTime+(nowUnix()-GatherStartTime)
+		}
+		IniWrite, %TotalRuntime%, settings\nm_config.ini, Status, TotalRuntime
+		DetectHiddenWindows, %Prev_DetectHiddenWindows%
+		SetTitleMatchMode, %Prev_TitleMatchMode%
+		if !(Sendmsg)
+			nm_setStatus("Paused", "Press " PauseHotkey " to Continue")
+		nm_LockTabs(0)
 	}
-	nm_setStatus(PauseState, PauseObjective)
-	MacroState:=2
-	if WinExist("Status.ahk ahk_class AutoHotkey")
-		PostMessage, 0x5552, 23, MacroState
-	if WinExist("Heartbeat.ahk ahk_class AutoHotkey")
-		PostMessage, 0x5552, 23, MacroState
-	if WinExist("background.ahk ahk_class AutoHotkey")
-		PostMessage, 0x5552, 23, MacroState
-	youDied:=0
-	;manage runtimes
-	MacroStartTime:=nowUnix()
-	GatherStartTime:=nowUnix()
-	DetectHiddenWindows, %Prev_DetectHiddenWindows%
-	SetTitleMatchMode, %Prev_TitleMatchMode%
-} else {
-	if (ShowOnPause = 1)
-		WinActivate, ahk_id %hGUI%
-	Prev_DetectHiddenWindows := A_DetectHiddenWindows
-	Prev_TitleMatchMode := A_TitleMatchMode
-	DetectHiddenWindows, On
-	SetTitleMatchMode, 2
-	if WinExist("ahk_class AutoHotkey ahk_pid " currentWalk["pid"])
-		Send {F16}
-	else
-	{
-		FwdKeyState:=GetKeyState(FwdKey), BackKeyState:=GetKeyState(BackKey), LeftKeyState:=GetKeyState(LeftKey), RightKeyState:=GetKeyState(RightKey), SpaceKeyState:=GetKeyState(SC_Space)
-		sendinput {%FwdKey% up}{%BackKey% up}{%LeftKey% up}{%RightKey% up}{%SC_Space% up}
-		click, up
-	}
-	MacroState:=1
-	if WinExist("Status.ahk ahk_class AutoHotkey")
-		PostMessage, 0x5552, 23, MacroState
-	if WinExist("Heartbeat.ahk ahk_class AutoHotkey")
-		PostMessage, 0x5552, 23, MacroState
-	if WinExist("background.ahk ahk_class AutoHotkey")
-		PostMessage, 0x5552, 23, MacroState
-	PauseState:=state
-	PauseObjective:=objective
-	;manage runtimes
-	TotalRuntime:=TotalRuntime+(nowUnix()-MacroStartTime)
-	PausedRuntime:=PausedRuntime+(nowUnix()-MacroStartTime)
-	SessionRuntime:=SessionRuntime+(nowUnix()-MacroStartTime)
-	if(GatherStartTime) {
-		TotalGatherTime:=TotalGatherTime+(nowUnix()-GatherStartTime)
-		SessionGatherTime:=SessionGatherTime+(nowUnix()-GatherStartTime)
-	}
-	IniWrite, %TotalRuntime%, settings\nm_config.ini, Status, TotalRuntime
-	DetectHiddenWindows, %Prev_DetectHiddenWindows%
-	SetTitleMatchMode, %Prev_TitleMatchMode%
-	nm_setStatus("Paused", "Press " PauseHotkey " to Continue")
-	nm_LockTabs(0)
+	Pause, Toggle, 1
 }
-Pause, Toggle, 1
-return
 ;AUTOCLICKER
 autoclicker(){
 	global ClickMode, ClickCount, ClickDelay
@@ -21060,10 +21061,13 @@ nm_ForceLabel(wParam){
 		SetTimer, start, -500
 
 		case 2:
-		GoSub, pause
+		Pause()
 
 		case 3:
 		GoSub, stop
+
+		case 4:
+		Pause(1)
 	}
 	return 0
 }

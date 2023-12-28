@@ -19,7 +19,9 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include Gdip_All.ahk
 #Include Gdip_ImageSearch.ahk
 #Include WinGetClientPos.ahk
-#Include libforFindItem.ahk
+#Include GetYOffset.ahk
+#Include nm_OpenMenu.ahk
+#Include GetRobloxHWND.ahk
 
 SetBatchLines -1
 SetWorkingDir %A_ScriptDir%\..
@@ -492,6 +494,8 @@ itemBitmaps := {}
 
 bitmaps := {}
 bitmaps["moon"] := Gdip_BitmapFromBase64("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")
+#Include %A_ScriptDir%\..\nm_image_assets\general\bitmaps.ahk
+#Include %A_ScriptDir%\..\nm_image_assets\offset\bitmaps.ahk
 
 Loop
 {
@@ -610,8 +614,8 @@ nm_status(status)
 
 nm_command(command)
 {
-	global commandPrefix, MacroState, planters, timers, settings, blender, shrine
-	static ssmode := "All"
+	global commandPrefix, MacroState, planters, timers, settings, blender, shrine, bitmaps, itemBitmaps
+	static ssmode := "All", itemNumbers := {"Cog": 1, "Ticket": 2, "SprinklerBuilder": 3, "BeequipCase": 4, "Gumdrops": 5, "Coconut": 6, "Stinger": 7, "MicroConverter": 8, "Honeysuckle": 9, "Whirligig": 10, "FieldDice": 11, "SmoothDice": 12, "LoadedDice": 13, "JellyBeans": 14, "RedExtract": 15, "BlueExtract": 16, "Glitter": 17, "Glue": 18, "Oil": 19, "Enzymes": 20, "TropicalDrink": 21, "PurplePotion": 22, "SuperSmoothie": 23, "MarshmallowBee": 24, "Sprout": 25, "FestiveBean": 26, "CloudVial": 27, "NightBell": 28, "BoxOFrogs": 29, "AntPass": 30, "BrokenDrive": 31, "7ProngedCog": 32, "RoboPass": 33, "Translator": 34, "SpiritPetal": 35, "Present": 36, "Treat": 37, "StarTreat": 38, "AtomicTreat": 39, "SunflowerSeed": 40, "Strawberry": 41, "Pineapple": 42, "Blueberry": 43, "Bitterberry": 44, "Neonberry": 45, "MoonCharm": 46, "GingerbreadBear": 47, "AgedGingerbreadBear": 48, "WhiteDrive": 49, "RedDrive": 50, "BlueDrive": 51, "GlitchedDrive": 52, "ComfortingVial": 53, "InvigoratingVial": 54, "MotivatingVial": 55, "RefreshingVial": 56, "SatisfyingVial": 57, "PinkBalloon": 58, "RedBalloon": 59, "WhiteBalloon": 60, "BlackBalloon": 61, "SoftWax": 62, "HardWax": 63, "CausticWax": 64, "SwirledWax": 65, "Turpentine": 66, "PaperPlanter": 67, "TicketPlanter": 68, "FestivePlanter": 69, "PlasticPlanter": 70, "CandyPlanter": 71, "RedClayPlanter": 72, "BlueClayPlanter": 73, "TackyPlanter": 74, "PesticidePlanter": 75, "HeatTreatedPlanter": 76, "HydroponicPlanter": 77, "PetalPlanter": 78, "ThePlanterOfPlenty": 79, "BasicEgg": 80, "SilverEgg": 81, "GoldEgg": 82, "DiamondEgg": 83, "MythicEgg": 84, "StarEgg": 85, "GiftedSilverEgg": 86, "GiftedGoldEgg": 87, "GiftedDiamondEgg": 88, "GiftedMythicEgg": 89, "RoyalJelly": 90, "StarJelly": 91, "BumbleBeeEgg": 92, "BumbleBeeJelly": 93, "RageBeeJelly": 94, "ShockedBeeJelly": 95}, items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
 	
 	id := command.id, params := []
 	Loop, Parse, % SubStr(command.content, StrLen(commandPrefix)+1), %A_Space%
@@ -1239,45 +1243,105 @@ nm_command(command)
 		}
 		
 		case "FindItem":
-		localnm_setShiftLock(0)
-		chosenItem := SubStr(command.content, InStr(command.content, "FindItem ") + StrLen("FindItem ")) ; seperating the content of "FindItem" and etc...
-			if (MacroState != 2) {
-				localfindItem(chosenItem)
+		loop 1 {
+			dist := StrLen(s1 := SubStr(command.content, InStr(command.content, "FindItem ") + StrLen("FindItem ")))
+			for i, v in items {
+				len1 := StrLen(s1), len2 := StrLen(v)
+				s1split := StrSplit(s1), s2 := StrSplit(v)
 
+				d := [], d[0, 0] := 0
+				Loop % len1
+					d[A_Index, 0] := A_Index
+				Loop % len2
+					d[0, A_Index] := A_Index
+
+				Loop % len1 {
+					i := A_Index
+					Loop % len2 {
+						j := A_Index  
+						cost := s1split[i] != s2[j]
+						d[i, j] := Min(d[i-1, j] + 1, d[i, j-1] + 1, d[i-1, j-1] + cost)
+					}
+				}
+				if ((d := d[len1, len2]) < dist)
+					dist := d, item := v
 			}
+			if !(dist<6 || item = "") {
+				discord.SendEmbed("Item entered was not valid", 5066239, , , , id)
+				break ;return
+			}
+
 			if (MacroState = 2) {
-				discord.SendEmbed("pausing macro and scanning for item after", 16711731, , , , id) ; running/unpaused
-				if (MacroState = 0)
-					discord.SendEmbed("Macro is not running!", 16711731, , , , id)
-				else
-				{
-					DetectHiddenWindows, On
-					SetTitleMatchMode, 2
-					if WinExist("natro_macro ahk_class AutoHotkey")
-					{
-						PostMessage, 0x5550, 2
-					}
-					else
-						discord.SendEmbed("Error: Macro not found!", 16711731, , , , id)
+				DetectHiddenWindows, On
+				SetTitleMatchMode, 2
+				if WinExist("natro_macro ahk_class AutoHotkey")
+					PostMessage, 0x5550, 4
+				else {
+					discord.SendEmbed("Error: Macro not found. Pause manually and rerun the command!", 16711731, , , , id)
+					break ;leave switch case
 				}
-				sleep, 1000
-				localfindItem(chosenItem)
-				sleep, 1000
-
-				if (MacroState = 0)
-					discord.SendEmbed("Macro is not running!", 16711731, , , , id)
-				else
-				{
-					DetectHiddenWindows, On
-					SetTitleMatchMode, 2
-					if WinExist("natro_macro ahk_class AutoHotkey")
-					{
-						PostMessage, 0x5550, 2
-					}
-					else
-						discord.SendEmbed("Error: Macro not found!", 16711731, , , , id)
-				}
+				MacroStateE := 2 ; Used to determine if the macro was already running as to not unpause if someone wanted to keep it paused
 			}
+			sleep, 1000
+
+			hwnd := GetRobloxHWND()
+			loop 1 {
+				WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "Roblox ahk_exe RobloxPlayerBeta.exe") ; Shift Lock is not supported on UWP app at the moment
+				if (windowWidth = 0) {
+					WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " hwnd)
+					break ; skip shiftlock
+				}
+				
+				WinActivate, Roblox
+
+				if (Gdip_ImageSearch((pBMScreen := Gdip_BitmapFromScreen(windowX+5 "|" windowY+windowHeight-54 "|50|50")), bitmaps["shiftlock"], , , , , , 2))
+					send {%SC_LShift%}
+				Gdip_DisposeImage(pBMScreen)
+			}
+
+			if (nm_OpenMenu("itemmenu") = 0) { ;ensure that roblox is open if it is open then open the menu
+				discord.SendEmbed("Roblox must be open", 16711731, , , , id)
+				break ;leave switch case
+			}
+			sleep 100
+			MouseMove, windowX+46, windowY+219
+			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-150)
+			for _, name in items { ; looking for the first item in the menu
+				if (Gdip_ImageSearch(pBMScreen, itemBitmaps[name], itemCoords,,,,,5) > 0) {
+					Gdip_DisposeImage(pBMScreen)
+					Loop 55 {
+						pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-350)
+						if (ItemNumbers[name] >= itemNumbers[item]) {
+							if (Gdip_ImageSearch(pBMScreen, itemBitmaps[item], itemCoords,,,,,5)) ; scroll up
+								break 2
+							send {WheelUp 1}
+						} else {
+							if (Gdip_ImageSearch(pBMScreen, itemBitmaps[item], itemCoords,,,,,5)) ; scroll down
+								break 2 ;break both loops
+							send {WheelDown 1}
+						}
+						Gdip_DisposeImage(pBMScreen)
+						sleep 300
+					}
+					discord.SendEmbed("Item was not found.", 16711731, , , , id)
+					break 2 ;leave switch case
+				} 
+			}
+			Gdip_DisposeImage(pBMScreen)
+
+			discord.SendEmbed("Item Found!", 5066239, , (pBitmap := Gdip_BitmapFromScreen(windowX "|" SubStr(ItemCoords, Instr(ItemCoords, ",")+1)+WindowY+140+GetYOffset(hwnd) "|306|97")), , id)
+			Gdip_DisposeImage(pBitmap)
+			sleep, 1000
+
+			if (MacroStateE = 2) {
+				DetectHiddenWindows, On
+				SetTitleMatchMode, 2
+				if WinExist("natro_macro ahk_class AutoHotkey")
+					PostMessage, 0x5550, 4
+				else
+					discord.SendEmbed("Error: Macro not found! Please manually start natro again!", 16711731, , , , id)
+			}
+		}
 
 		case "timers","timer","time":
 		IniRead, str, settings\nm_config.ini, Collect
