@@ -16120,6 +16120,8 @@ nm_claimHiveSlot(){
 
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["claimhive"], , , , , , 2, , 6) = 1) {
 					Gdip_DisposeImage(pBMScreen)
+					HiveSlot := slots.MinIndex()
+					break
 				}
 				Gdip_DisposeImage(pBMScreen)
 			}
@@ -16142,10 +16144,14 @@ nm_claimHiveSlot(){
 
 					if (Gdip_ImageSearch(pBMScreen, bitmaps["claimhive"], , , , , , 2, , 6) = 1) {
 						Gdip_DisposeImage(pBMScreen)
+						HiveSlot += A_Index
+						break 2
 					}
+					Gdip_DisposeImage(pBMScreen)
 				}
 			}
 		}
+
 		nm_setStatus("Failed", "Claim Hive Slot" ((A_Index > 1) ? (" (Attempt " A_Index ")") : ""))
 		if (A_Index = 5)
 			return 0
