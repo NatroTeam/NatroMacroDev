@@ -14257,18 +14257,18 @@ nm_BitterberryFeeder()
 		Loop, 10
 		{
 			Sleep, 100
-			pBMScreen := Gdip_BitmapFromScreen(windowX+(51*windowWidth)//100-216 ""|"" windowY+offsetY+(58*windowHeight)//100-59 ""|440|100"")
+			pBMScreen := Gdip_BitmapFromScreen(windowX+(54*windowWidth)//100-300 ""|"" windowY+offsetY+(46*windowHeight)//100-59 ""|250|100"")
 			if (Gdip_ImageSearch(pBMScreen, bitmaps[""feed""], pos, , , , , 2, , 2) = 1)
 			{
 				Gdip_DisposeImage(pBMScreen)
-				Click, % windowX+(51*windowWidth)//100-216+SubStr(pos, 1, InStr(pos, "","")-1)+140 "" "" windowY+offsetY+(58*windowHeight)//100-59+SubStr(pos, InStr(pos, "","")+1)+5 ; Click Number
+				Click, % windowX+(54*windowWidth)//100-300+SubStr(pos, 1, InStr(pos, "","")-1)+140 "" "" windowY+offsetY+(46*windowHeight)//100-59+SubStr(pos, InStr(pos, "","")+1)+5 ; Click Number
 				Sleep, 100
 				Loop % StrLen(bitterberrynos)
 				{
 					SendEvent % ""{Text}"" SubStr(bitterberrynos, A_Index, 1)
 					Sleep, 100
 				}
-				Click, % windowX+(51*windowWidth)//100-216+SubStr(pos, 1, InStr(pos, "","")-1) "" "" windowY+offsetY+(58*windowHeight)//100-59+SubStr(pos, InStr(pos, "","")+1) ; Click Feed
+				Click, % windowX+(54*windowWidth)//100-300+SubStr(pos, 1, InStr(pos, "","")-1) "" "" windowY+offsetY+(46*windowHeight)//100-59+SubStr(pos, InStr(pos, "","")+1) ; Click Feed
 				break
 			}
 			Gdip_DisposeImage(pBMScreen)
@@ -17461,7 +17461,7 @@ nm_Feed(food){
 	Loop, 10
 	{
 		WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " hwnd)
-		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+150 "|306|" Max(480, windowHeight-offsetY-150))
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+150 "|" (54*windowWidth)//100-50 "|" Max(480, windowHeight-offsetY-150))
 
 		if (A_Index = 1)
 		{
@@ -17482,42 +17482,48 @@ nm_Feed(food){
 					{
 						Sleep, 50
 						Gdip_DisposeImage(pBMScreen)
-						pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+150 "|306|" Max(480, windowHeight-offsetY-150))
+						pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+150 "|" (54*windowWidth)//100-50 "|" Max(480, windowHeight-offsetY-150))
 					}
 				}
 			}
 		}
 
-		if ((Gdip_ImageSearch(pBMScreen, bitmaps[food], pos, , , 306, , 10, , 5) = 0) || (nm_imgSearch("feeder.png",30)[1] = 0)) {
+		if ((Gdip_ImageSearch(pBMScreen, bitmaps[food], pos, , , 306, , 10, , 5) = 0) || (Gdip_ImageSearch(pBMScreen, bitmaps["feed"], , (54*windowWidth)//100-300, , , , 2, , 2) = 1)) {
 			Gdip_DisposeImage(pBMScreen)
 			break
 		}
 		Gdip_DisposeImage(pBMScreen)
 
-		MouseClickDrag, Left, windowX+30, windowY+SubStr(pos, InStr(pos, ",")+1)+190, windowX+windowWidth//2, windowY+windowHeight//2-10*A_Index, 5
+		MouseClickDrag, Left, windowX+30, windowY+SubStr(pos, InStr(pos, ",")+1)+190, windowX+windowWidth//2, windowY+41*windowHeight//100-10*(A_Index-1), 5
 		sleep, 500
 	}
-	Sleep, 250
-	;check if food is already visible
-	imgPos := nm_imgSearch("feeder.png",30)
-	If (imgPos[1]=0){
-		hwnd := GetRobloxHWND()
-		offsetY := GetYOffset(hwnd)
-		WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " hwnd)
-		MouseMove, windowX+imgPos[2], windowY+imgPos[3]
-		sleep 100
-		Click
-		sleep 100
-		send 100
-		sleep 1000
-		imgPos := nm_imgSearch("feed.png",30)
-		If (imgPos[1]=0){
-			MouseMove, windowX+imgPos[2], windowY+imgPos[3]
+	Loop, 20 {
+		Sleep, 100
+		pBMScreen := Gdip_BitmapFromScreen(windowX+(54*windowWidth)//100-300 "|" windowY+offsetY+(46*windowHeight)//100-59 "|250|100")
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["feed"], pos, , , , , 2, , 2) = 1) {
+			Gdip_DisposeImage(pBMScreen)
+			MouseMove, windowX+(54*windowWidth)//100-300+SubStr(pos, 1, InStr(pos, ",")-1)+140, windowY+offsetY+(46*windowHeight)//100-59+SubStr(pos, InStr(pos, ",")+1)+5 ; Number
+			Sleep, 100
+			Click
+			Sleep, 100
+			Send {Text}100
+			Sleep, 1000
+			MouseMove, windowX+(54*windowWidth)//100-300+SubStr(pos, 1, InStr(pos, ",")-1), windowY+offsetY+(46*windowHeight)//100-59+SubStr(pos, InStr(pos, ",")+1) ; Feed
+			Sleep, 100
 			Click
 			nm_setStatus("Completed", "Feed " food)
+			break
+		} else {
+			Gdip_DisposeImage(pBMScreen)
+			if (A_Index = 20) {
+				MouseMove, windowX+(54*windowWidth)//100-300+SubStr(pos, 1, InStr(pos, ",")-1), windowY+offsetY+(46*windowHeight)//100-59+SubStr(pos, InStr(pos, ",")+1)+64 ; Cancel
+				Sleep, 100
+				Click
+				nm_setStatus("Failed", "Feed " food)
+			}
 		}
-		MouseMove, windowX+350, windowY+offsetY+100
 	}
+	MouseMove, windowX+350, windowY+offsetY+100
 	;close inventory
 	nm_OpenMenu()
 }
