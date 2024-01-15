@@ -9414,7 +9414,7 @@ nm_gotoCannon(){
 				{
 					movement := "
 					(LTrim Join`r`n
-					" nm_Walk(1.5, FwdKey) "
+					" nm_Walk(1.5, LeftKey) "
 					)"
 					nm_createWalk(movement)
 					KeyWait, F14, D T5 L
