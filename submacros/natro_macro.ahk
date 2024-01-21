@@ -9338,6 +9338,14 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			click
 		}
 		Gdip_DisposeImage(BlenderSS)
+		;check to make sure you are not in sticker screen
+		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2 - 275 "|" windowY+4*windowHeight//10-178 "|56|56")
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["CloseGUI"], , , , , , 5) > 0) {
+			MouseMove, windowX+windowWidth//2 - 250, windowY+4*windowHeight//10 - 150
+			sleep, 150 
+			click
+		}
+		Gdip_DisposeImage(pBMScreen)
 		;check to make sure you are not in shop before reset
 		searchRet := nm_imgSearch("e_button.png",30,"high")
 		If (searchRet[1] = 0) {
