@@ -27,6 +27,8 @@ SetBatchLines -1
 SetWorkingDir %A_ScriptDir%\..
 CoordMode, Mouse, Client
 
+localSC_LShift:="sc02a" ; LShift (this is because of shiftlock for FindItem)
+
 if (A_Args.Length() = 0)
 {
 	msgbox, This script needs to be run by Natro Macro! You are not supposed to run it manually.
@@ -1244,6 +1246,8 @@ nm_command(command)
 		
 		case "FindItem":
 		loop 1 {
+			CoordMode, Mouse, Screen
+
 			dist := StrLen(s1 := SubStr(command.content, InStr(command.content, "FindItem ") + StrLen("FindItem ")))
 			for i, v in items {
 				len1 := StrLen(s1), len2 := StrLen(v)
@@ -1293,9 +1297,12 @@ nm_command(command)
 				}
 				
 				WinActivate, Roblox
-
-				if (Gdip_ImageSearch((pBMScreen := Gdip_BitmapFromScreen(windowX+5 "|" windowY+windowHeight-54 "|50|50")), bitmaps["shiftlock"], , , , , , 2))
-					send {%SC_LShift%}
+				WasShiftlockEnabled:=False
+				if (Gdip_ImageSearch((pBMScreen := Gdip_BitmapFromScreen(windowX+5 "|" windowY+windowHeight-54 "|50|50")), bitmaps["shiftlock"], , , , , , 2)) {
+					global localSC_LShift
+					send {%localSC_LShift%}
+					WasShiftlockEnabled:=True
+				}
 				Gdip_DisposeImage(pBMScreen)
 			}
 
@@ -1341,6 +1348,11 @@ nm_command(command)
 				else
 					discord.SendEmbed("Error: Macro not found! Please manually start natro again!", 16711731, , , , id)
 			}
+			nm_OpenMenu("itemmenu", 1)
+			if (WasShiftlockEnabled) {
+				Send {%localSC_LShift%}
+			}
+			CoordMode, Mouse, Client
 		}
 
 		case "timers","timer","time":
