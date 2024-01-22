@@ -20971,6 +20971,7 @@ Pause(Sendmsg:=0) {
 		DetectHiddenWindows, %Prev_DetectHiddenWindows%
 		SetTitleMatchMode, %Prev_TitleMatchMode%
 		if !(Sendmsg)
+			global PauseHotkey
 			nm_setStatus("Paused", "Press " PauseHotkey " to Continue")
 		nm_LockTabs(0)
 	}
