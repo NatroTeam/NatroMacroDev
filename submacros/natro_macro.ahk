@@ -16124,6 +16124,7 @@ DisconnectCheck(testCheck := 0)
 	}
 
 	; end any residual movement and set reconnect start time
+	Click, up
 	nm_endWalk()
 	ReconnectStart := nowUnix()
 	PreviousAction:=CurrentAction
@@ -16277,6 +16278,8 @@ DisconnectCheck(testCheck := 0)
 		if (success = 1)
 		{
 			WinActivate, Roblox
+			WinGetClientPos(windowX, windowY, windowWidth, windowHeight, "ahk_id " GetRobloxHWND())
+			MouseMove, windowX + windowWidth//2, windowY + windowHeight//2
 			VarSetCapacity(duration,256),DllCall("GetDurationFormatEx","str","!x-sys-default-locale","uint",0,"ptr",0,"int64",(ReconnectDuration := (nowUnix() - ReconnectStart))*10000000,"wstr","mm:ss","str",duration,"int",256)
 			nm_setStatus("Completed", "Reconnect`nTime: " duration " - Attempts: " i)
 			Sleep, 500
