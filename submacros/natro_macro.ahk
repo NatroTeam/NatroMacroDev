@@ -1750,7 +1750,6 @@ hotbarwhilelist := "|Never|Always|At Hive|Gathering|Attacking|Microconverter|Whi
 sprinklerImages := ["saturator"]
 state:="Startup"
 objective:="UI"
-DailyReconnect:=0
 
 ;ensure Gui will be visible
 if (GuiX && GuiY)
@@ -16110,7 +16109,7 @@ CloseRoblox()
 }
 DisconnectCheck(testCheck := 0)
 {
-	global LastClock, LastGingerbread, KeyDelay, HiveSlot, CurrentAction, PreviousAction, PrivServer, TotalDisconnects, SessionDisconnects, ReconnectMethod, DailyReconnect, PublicFallback, resetTime, SC_Esc, SC_R, SC_Enter, SC_E, bitmaps, PlanterName1, PlanterName2, PlanterName3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3, MacroState, ReconnectDelay, FallbackServer1, FallbackServer2, FallbackServer3, beesmasActive
+	global LastClock, LastGingerbread, KeyDelay, HiveSlot, CurrentAction, PreviousAction, PrivServer, TotalDisconnects, SessionDisconnects, ReconnectMethod, PublicFallback, resetTime, SC_Esc, SC_R, SC_Enter, SC_E, bitmaps, PlanterName1, PlanterName2, PlanterName3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3, MacroState, ReconnectDelay, FallbackServer1, FallbackServer2, FallbackServer3, beesmasActive
 	static ServerLabels := {0: "Public Server", 1: "Private Server", 2: "Fallback Server 1", 3: "Fallback Server 2", 4: "Fallback Server 3"}
 	
 	; return if not disconnected or crashed
@@ -16135,21 +16134,6 @@ DisconnectCheck(testCheck := 0)
 		nm_setStatus("Waiting", ReconnectDelay " seconds before Reconnect")
 		Sleep, 1000*ReconnectDelay
 		ReconnectDelay := 0
-	}
-	if (DailyReconnect) {
-		staggerDelay:=30000+5000*HiveSlot
-		nm_setStatus("Waiting", staggerDelay//1000 " seconds before Reconnect")
-		sleep, staggerDelay
-		DailyReconnect := 0
-		Prev_DetectHiddenWindows := A_DetectHiddenWindows
-		Prev_TitleMatchMode := A_TitleMatchMode
-		DetectHiddenWindows On
-		SetTitleMatchMode 2
-		if WinExist("background.ahk ahk_class AutoHotkey"){
-			PostMessage, 0x5554, 6, 0
-		}
-		DetectHiddenWindows %Prev_DetectHiddenWindows%
-		SetTitleMatchMode %Prev_TitleMatchMode%
 	}
 	else if (MacroState = 2) {
 		TotalDisconnects:=TotalDisconnects+1
@@ -16645,6 +16629,10 @@ nm_claimHiveSlot(){
 			return 0
 	}
 
+	sendinput {%SC_E% down}
+	Sleep, 100
+	sendinput {%SC_E% up}
+	HiveConfirmed := 1
 	;update hive slot
 	GuiControl, , HiveSlot, %HiveSlot%
 	IniWrite, %HiveSlot%, settings\nm_config.ini, Settings, HiveSlot
@@ -16655,10 +16643,6 @@ nm_claimHiveSlot(){
 		Send {Text} /[%A_Hour%:%A_Min%] Natro so broke :weary:`n
 		sleep 250
 	}
-	sendinput {%SC_E% down}
-	Sleep, 100
-	sendinput {%SC_E% up}
-	HiveConfirmed := 1
 	MouseMove, windowX+350, windowY+offsetY+100
 
 	return 1
@@ -22011,8 +21995,8 @@ nm_sendHeartbeat(){
 }
 nm_backgroundEvent(wParam, lParam){
 	Critical
-	global youDied, NightLastDetected, VBState, BackpackPercent, BackpackPercentFiltered, FieldGuidDetected, HasPopStar, PopStarActive, DailyReconnect
-	static arr:=["youDied", "NightLastDetected", "VBState", "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive", "DailyReconnect"]
+	global youDied, NightLastDetected, VBState, BackpackPercent, BackpackPercentFiltered, FieldGuidDetected, HasPopStar, PopStarActive
+	static arr:=["youDied", "NightLastDetected", "VBState", "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive"]
 
 	var := arr[wParam], %var% := lParam
 	return 0
