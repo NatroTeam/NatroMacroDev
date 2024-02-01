@@ -2787,7 +2787,7 @@ Gui, Add, Checkbox, % "xp yp+14 w100 h13 vPlanterOfPlentyCheck gba_saveConfig_ D
 Gui, Add, Checkbox, % "xp yp+14 vPaperPlanterCheck gba_saveConfig_ Disabled Checked" PaperPlanterCheck ((PlanterMode = 2) ? "" : " Hidden"), Paper
 Gui, Add, Checkbox, % "xp yp+14 vTicketPlanterCheck gba_saveConfig_ Disabled Checked" TicketPlanterCheck ((PlanterMode = 2) ? "" : " Hidden"), Ticket
 Gui, Add, Text, % "x155 y217 w80 h20 +BackgroundTrans vTextMax" ((PlanterMode = 2) ? "" : " Hidden"), Max Planters
-Gui, Add, Edit, % "x219 y215 w34 h18 vMaxAllowedPlantersEdit +BackgroundTrans gnm_saveAutoClicker Number Disabled" ((PlanterMode = 2) ? "" : " Hidden")
+Gui, Add, Edit, % "x219 y215 w34 h18 vMaxAllowedPlantersEdit +BackgroundTrans gba_maxAllowedPlantersSwitch Number Disabled" ((PlanterMode = 2) ? "" : " Hidden")
 Gui, Add, UpDown, % "vMaxAllowedPlanters gba_maxAllowedPlantersSwitch Range0-3 Disabled" ((PlanterMode = 2) ? "" : " Hidden"), %MaxAllowedPlanters%
 Gui, Add, Text, % "x255 y28 w1 h204 0x7 vTextLine6" ((PlanterMode = 2) ? "" : " Hidden")
 Gui, Add, Text, % "x255 y58 w240 h1 0x7 vTextLine7" ((PlanterMode = 2) ? "" : " Hidden")
@@ -8694,16 +8694,19 @@ nm_autoclickerbutton()
 	Gui, clicker:Font, Norm
 	Gui, clicker:Add, Checkbox, x76 y2 +BackgroundTrans vClickMode gnm_saveAutoClicker Checked%ClickMode%, Infinite
 	Gui, clicker:Add, Text, x13 y21, Repeat
-	Gui, clicker:Add, Edit, % "x50 y19 w80 h18 vClickCountEdit +BackgroundTrans gnm_saveAutoClicker Number Limit7 Disabled" ClickMode
+	Gui, clicker:Add, Edit, % "x50 y19 w80 h18 vClickCountEdit +BackgroundTrans Number Limit7 Disabled" ClickMode
 	Gui, clicker:Add, UpDown, % "vClickCount gnm_saveAutoClicker Range0-9999999 Disabled" ClickMode, %ClickCount%
 	Gui, clicker:Add, Text, x133 y21, times
 	Gui, clicker:Add, Text, x10 y41, Click Interval (ms):
-	Gui, clicker:Add, Edit, x100 y39 w61 h18 +BackgroundTrans Number gnm_saveAutoClicker Limit5, %ClickDelay%
+	Gui, clicker:Add, Edit, x100 y39 w61 h18 vClickDelayEdit +BackgroundTrans Number Limit5, %ClickDelay%
 	Gui, clicker:Add, UpDown, vClickDelay gnm_saveAutoClicker Range0-99999, %ClickDelay%
 	Gui, clicker:Add, Text, x10 y61, Click Duration (ms):
-	Gui, clicker:Add, Edit, x104 y59 w57 h18 +BackgroundTrans Number gnm_saveAutoClicker Limit4, %ClickDuration%
+	Gui, clicker:Add, Edit, x104 y59 w57 h18 vClickDurationEdit +BackgroundTrans Number Limit4, %ClickDuration%
 	Gui, clicker:Add, UpDown, vClickDuration gnm_saveAutoClicker Range0-9999, %ClickDuration%
 	Gui, clicker:Add, Button, x45 y88 w80 h20 gnm_StartAutoClicker, Start (%AutoClickerHotkey%)
+	GuiControl, clicker:+gnm_saveAutoClicker, ClickCountEdit
+	GuiControl, clicker:+gnm_saveAutoClicker, ClickDelayEdit
+	GuiControl, clicker:+gnm_saveAutoClicker, ClickDurationEdit
 	Gui, clicker:Show, w170, AutoClicker
 }
 nm_saveAutoClicker(){
@@ -8716,8 +8719,8 @@ nm_saveAutoClicker(){
 	IniWrite, %ClickCount%, settings\nm_config.ini, Settings, ClickCount
 	IniWrite, %ClickMode%, settings\nm_config.ini, Settings, ClickMode
 	IniWrite, %ClickDuration%, settings\nm_config.ini, Settings, ClickDuration
-	GuiControl, % (ClickMode ? "Disable" : "Enable"), ClickCount
-	GuiControl, % (ClickMode ? "Disable" : "Enable"), ClickCountEdit
+	GuiControl, % "clicker:" (ClickMode ? "Disable" : "Enable"), ClickCount
+	GuiControl, % "clicker:" (ClickMode ? "Disable" : "Enable"), ClickCountEdit
 }
 nm_StartAutoClicker(){
 	Gui, clicker:Destroy
