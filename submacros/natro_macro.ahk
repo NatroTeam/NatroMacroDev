@@ -13622,7 +13622,7 @@ nm_Mondo(){
 		CurrentAction:="Mondo"
 		MoveSpeedFactor:=round(18/MoveSpeedNum, 2)
 		while(repeat){
-			nm_Reset()
+			nm_Reset(0, 2000, 0)
 			nm_setStatus("Traveling", ("Mondo (" . MondoAction . ")"))
 			if (MoveMethod="walk") {
 				nm_walkTo("mountain top")
@@ -13714,39 +13714,39 @@ nm_Mondo(){
 			        } else if(MondoAction="Kill"){
 			            repeat:=1
 						success:=count:=0
-			            loop 900 { ;15 mins
-			                nm_autoFieldBoost(CurrentField)
-			                if(youDied || VBState=1 || AFBrollingDice || AFBuseGlitter || AFBuseBooster)
-			                    break
-			                if(utc_min>14) {
-			                    repeat:=0
-			                    break
-			                }
-			                ;check for mondo death here
-							If (nm_imgSearch("mondo3.png",50,"lowright")[1] = 0) {
-								success := 1
-								break
-							}
+			            loop 3600 { ;15 mins
 							mondoDead:=nm_HealthDetection()
 							if ((mondoDead.Length() = 0) || (mondoDead.Length() = 1 && mondoDead[1] = 100.00)) {
-								if (++count >= 15) { ; Changed from 5 seconds to 15 seconds for when mondo goes off screen
+								if (++count >= 60) { ; Changed from 5 seconds to 15 seconds for when mondo goes off screen
 									success := 1
 									break
 								}
 							}
 							else ; one health bar < 100 or multiple health bars (assumed Mondo is one of them)
 								count := 0
-							if(A_Index=900)
-							{
-								repeat:=0
-			                    break
+							if(Mod(A_Index, 4)=0) { ; 1 second
+								nm_autoFieldBoost(CurrentField)
+								if(youDied || VBState=1 || AFBrollingDice || AFBuseGlitter || AFBuseBooster)
+									break
+								FormatTime, utc_min, %A_NowUTC%, m
+								if(utc_min>14) {
+									repeat:=0
+									break
+								}
+								If (nm_imgSearch("mondo3.png",50,"lowright")[1] = 0) { ;check for mondo death here
+									success := 1
+									break
+								}
 							}
-			                if(Mod(A_Index, 10)=0)
+			                if(Mod(A_Index, 40)=0) ; 10 seconds
 			                    nm_OpenMenu()
-			                if(Mod(A_Index, 60)=0)
+			                if(Mod(A_Index, 240)=0) ; 1 minute
 			                    click
-			                sleep, 1000
-			                FormatTime, utc_min, %A_NowUTC%, m
+							if(A_Index=3600) {
+								repeat:=0
+								break
+							}
+			                sleep, 250
 			            }
 						if (success = 1) {
 							repeat := 0
@@ -13776,7 +13776,7 @@ nm_Mondo(){
 							if(!DisableToolUse)
 								click, down
 							DllCall("GetSystemTimeAsFileTime","int64p",s)
-							n := s, f := s+450000000 ; 45 seconds loot timeout
+							n := s, f := s+400000000 ; 45 seconds loot timeout
 							while ((n < f) && (A_Index <= 12)) {
 								nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
 								DllCall("GetSystemTimeAsFileTime","int64p",n)
