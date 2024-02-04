@@ -15824,7 +15824,7 @@ nm_convert(){
 				DetectHiddenWindows On
 				SetTitleMatchMode 2
 				if WinExist("background.ahk ahk_class AutoHotkey"){
-					PostMessage, 0x5554, 7, nowUnix()
+					PostMessage, 0x5554, 6, nowUnix()
 				}
 				DetectHiddenWindows %Prev_DetectHiddenWindows%
 				SetTitleMatchMode %Prev_TitleMatchMode%
@@ -15893,7 +15893,7 @@ nm_convert(){
 				DetectHiddenWindows On
 				SetTitleMatchMode 2
 				if WinExist("background.ahk ahk_class AutoHotkey"){
-					PostMessage, 0x5554, 7, nowUnix()
+					PostMessage, 0x5554, 6, nowUnix()
 				}
 				DetectHiddenWindows %Prev_DetectHiddenWindows%
 				SetTitleMatchMode %Prev_TitleMatchMode%
