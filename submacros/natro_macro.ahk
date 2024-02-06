@@ -745,6 +745,9 @@ config["Planters"] := {"LastComfortingField":"None"
 	, "PlanterHarvestNow1":0
 	, "PlanterHarvestNow2":0
 	, "PlanterHarvestNow3":0
+	, "PlanterSS1":0
+	, "PlanterSS2":0
+	, "PlanterSS3":0
 	, "LastPlanterGatherSlot":3
 	, "PlanterName1":"None"
 	, "PlanterName2":"None"
@@ -3100,6 +3103,10 @@ mp_Planter() {
 	If (VBState == 1 || ((MondoBuffCheck && utc_min>=0 && utc_min<14 && (nowUnix()-LastMondoBuff)>960 && (MondoAction="Buff" || MondoAction="Kill")) || (MondoBuffCheck && utc_min>=0 && utc_min<12 && (nowUnix()-LastGuid)<60 && PMondoGuid && MondoAction="Guid") || (MondoBuffCheck && (utc_min>=0 && utc_min<=8) && (nowUnix()-LastMondoBuff)>960 && PMondoGuid && MondoAction="Tag")) || ((nowUnix()-GatherFieldBoostedStart)<900 || (nowUnix()-LastGlitter)<900 || nm_boostBypassCheck()))
 		Return
 
+	; if enabled, take any/all planter screenshots before further planter actions 
+	If (PlanterSS1 || PlanterSS2 || PlanterSS3)
+		nm_planterSS()
+
 	Loop, 2 {
 		Loop, 3 {
 			If (!MSlot%A_Index%Cycle1Field)
@@ -3140,7 +3147,39 @@ mp_Planter() {
 		}
 	}
 }
+nm_planterSS(){
+	Global
 
+	Loop, 3 {	
+		If (PlanterSS%A_Index%) {
+			nm_setShiftLock(0)
+			nm_Reset(nm_Reset(1, ((PlanterField%A_Index% = "Rose") || (PlanterField%A_Index% = "Pine Tree") || (PlanterField%A_Index% = "Pumpkin") || (PlanterField%A_Index% = "Cactus") || (PlanterField%A_Index% = "Spider")) ? min(20000, (60-HiveBees)*1000) : 0))
+			nm_setStatus("Traveling", PlanterName%A_Index% " (" PlanterField%A_Index% ")")
+			nm_gotoPlanter(PlanterField%A_Index%, 1)
+
+			sendinput {%ZoomIn% 2}
+
+			; fields where the view is initially obstructed
+			If (PlanterField%A_Index% = "Rose") {
+				sleep, 200
+				sendinput {%RotRight% 3}
+			}
+			If (PlanterField%A_Index% = "Bamboo") || (PlanterField%A_Index% = "Rose") || (PlanterField%A_Index% = "Cactus") {
+				loop, 3 {
+					sleep, 200
+					sendinput {%ZoomOut% 2}
+				}
+			}
+
+			Sleep, 2000
+			nm_setStatus("Screenshot", (PlanterName%A_Index% . " (" . PlanterField%A_Index% . ")"))
+			Sleep, 2000
+
+			PlanterSS%A_Index%:=0
+			IniWrite, % 0, settings\nm_config.ini, Planters, PlanterSS%A_Index%
+		}
+	}
+}
 mp_PlantPlanter(PlanterIndex) {
 	Global
 	Local CycleIndex, MFieldName, MPlanterName, planterPos, pBMScreen, imgPos, field, k, v, hwnd, windowX, windowY, windowWidth, windowHeight, offsetY
@@ -20391,6 +20430,11 @@ ba_planter(){
 		return
 	if ((nowUnix()-GatherFieldBoostedStart)<900 || (nowUnix()-LastGlitter)<900 || nm_boostBypassCheck())
 		return
+
+	; if enabled, take any/all planter screenshots before further planter actions 
+	If (PlanterSS1 || PlanterSS2 || PlanterSS3)
+		nm_planterSS()
+
 	nectars:=["n1", "n2", "n3", "n4", "n5"]
 	;get current field nectar
 	currentFieldNectar:="None"
