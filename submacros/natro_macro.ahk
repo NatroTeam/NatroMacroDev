@@ -18621,7 +18621,7 @@ ba_planter(){
 	global StumpFieldCheck
 	global SunflowerFieldCheck
 	global VBState
-	global PlanterSS1, PlanterSS1, PlanterSS1
+	global PlanterSS1, PlanterSS2, PlanterSS3
 	global MPlanterHold1, MPlanterHold2, MPlanterHold3
 	global MPlanterSmoking1, MPlanterSmoking2, MPlanterSmoking3
 	Loop 3 {
