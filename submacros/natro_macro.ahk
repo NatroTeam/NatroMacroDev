@@ -14651,8 +14651,6 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	'
 	)) ; this is just ahk code, it will be executed as a new script
 
-	A_Clipboard := script
-
 	shell := ComObject("WScript.Shell")
 	exec := shell.Exec('"' exe_path64 '" /script /force *')
 	exec.StdIn.Write(script), exec.StdIn.Close()
