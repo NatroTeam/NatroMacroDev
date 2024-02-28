@@ -238,7 +238,7 @@ nm_importPaths()
 		"gtb", ["blue", "mountain", "red"], ; go to (field) booster
 		"gtc", ["clock", "antpass", "robopass", "honeydis", "treatdis", "blueberrydis", "strawberrydis", "coconutdis", "gluedis", "royaljellydis", "blender", "windshrine", ; go to collect (machine)
 				"stockings", "wreath", "feast", "gingerbread", "snowmachine", "candles", "samovar", "lidart", "gummybeacon", "rbpdelevel", ; beesmas
-				"honeylb", "honeystorm", "stickerstack", "stickerprinter"], ; other
+				"honeylb", "honeystorm", "stickerstack", "stickerprinter", "Normalmm", "Megamm", Extrememm"], ; other
 		"gtf", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
 				"rose", "spider", "strawberry", "stump", "sunflower"], ; go to field
 		"gtp", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
