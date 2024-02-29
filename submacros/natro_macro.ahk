@@ -20952,7 +20952,7 @@ nm_MemoryMatchOAC(PriorityItemOAC:=0, MMValue:=0) { ; PriorityItem can be set to
 	}
 
 	Gdip_DisposeImage(pBMScreen)
-MMfound:=1
+
 	Loop Chances { ; Numer of available Chances. 
 
 		if(MMFound=0) 
