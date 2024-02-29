@@ -15978,7 +15978,7 @@ nm_locateVB(){
 	if(VBState=1){
 		nm_setStatus("Confirming", "Night")
 		nm_Reset(0, 2000, 0)
-		sendinput "{" RotRight " 3}{" RotDown " 3}"
+		sendinput "{" RotDown " 5}"
 		loop 10 {
 			SendInput "{" ZoomOut "}"
 			Sleep 100
@@ -15988,7 +15988,7 @@ nm_locateVB(){
 		if(findImg[1]=0){
 			;night confirmed, proceed!
 			nm_setStatus("Starting", "Vicious Bee Cycle")
-			sendinput "{" RotLeft " 3}{" RotUp " 3}"
+			sendinput "{" RotUp " 5}"
 			send "{" ZoomOut " 8}"
 		} else {
 			;false positive, ABORT!
@@ -15997,7 +15997,7 @@ nm_locateVB(){
 			NightLastDetected:=nowUnix()-300-1 ;make NightLastDetected older than 5 minutes
 			IniWrite NightLastDetected, "settings\nm_config.ini", "Collect", "NightLastDetected"
 			nm_setStatus("Aborting", "Vicious Bee - Not Night")
-			sendinput "{" RotLeft " 3}{" RotUp " 3}"
+			sendinput "{" RotUp " 5}"
 			send "{" ZoomOut " 8}"
 			return
 		}
