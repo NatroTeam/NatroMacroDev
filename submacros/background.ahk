@@ -92,7 +92,11 @@ nm_setState(wParam, lParam, *){
 nm_deathCheck(){
 	static LastDeathDetected:=0
 	if (((nowUnix()-resetTime)>20) && ((nowUnix()-LastDeathDetected)>10)) {
-		if (ImageSearch(&FoundX, &FoundY, windowX+windowWidth//2, windowY+windowHeight//2, windowX+windowWidth, windowY+windowHeight, "*50 nm_image_assets\died.png") = 1) {
+		try
+			result := ImageSearch(&FoundX, &FoundY, windowX+windowWidth//2, windowY+windowHeight//2, windowX+windowWidth, windowY+windowHeight, "*50 nm_image_assets\died.png")
+		catch
+			return
+		if (result = 1) {
 			if WinExist("natro_macro ahk_class AutoHotkey") {
 				PostMessage 0x5555, 1, 1
 				Send_WM_COPYDATA("You Died", "natro_macro ahk_class AutoHotkey")
@@ -105,7 +109,11 @@ nm_deathCheck(){
 nm_guidCheck(){
 	global windowX, windowY, windowWidth, windowHeight, offsetY, state
 	static LastFieldGuidDetected:=1, FieldGuidDetected:=0, confirm:=0
-	if (ImageSearch(&FoundX, &FoundY, windowX, windowY+offsetY+30, windowX+windowWidth, windowY+offsetY+90, "*50 nm_image_assets\boostguidingstar.png") = 1) { ;Guid Detected
+	try
+		result := ImageSearch(&FoundX, &FoundY, windowX, windowY+offsetY+30, windowX+windowWidth, windowY+offsetY+90, "*50 nm_image_assets\boostguidingstar.png")
+	catch
+		return
+	if (result = 1) { ;Guid Detected
 		confirm:=0
 		if ((FieldGuidDetected = 0) && (state = 1)) {
 			FieldGuidDetected := 1
@@ -130,7 +138,11 @@ nm_guidCheck(){
 
 nm_popStarCheck(){
 	static HasPopStar:=0, PopStarActive:=0
-	if (ImageSearch(&FoundX, &FoundY, windowX + windowWidth//2 - 275, windowY + 3*windowHeight//4, windowX + windowWidth//2 + 275, windowY + windowHeight, "*30 nm_image_assets\popstar_counter.png") = 1) { ;Has Pop
+	try
+		result := ImageSearch(&FoundX, &FoundY, windowX + windowWidth//2 - 275, windowY + 3*windowHeight//4, windowX + windowWidth//2 + 275, windowY + windowHeight, "*30 nm_image_assets\popstar_counter.png")
+	catch
+		return
+	if (result = 1) { ;Has Pop
 		if (HasPopStar = 0){
 			HasPopStar := 1
 			if WinExist("natro_macro ahk_class AutoHotkey") {
@@ -173,10 +185,18 @@ nm_dayOrNight(){
 			PostMessage 0x5555, 3, 0
 		}
 	}
-	if (ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassD.png") = 1) {
+	try
+		result := ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassD.png")
+	catch
+		return
+	if (result = 1) {
 		dayOrNight:="Day"
 	} else {
-		if (ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassN.png") = 1) {
+		try
+			result := ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassN.png")
+		catch
+			return
+		if (result = 1) {
 			dayOrNight:="Dusk"
 		} else {
 			dayOrNight:="Day"
@@ -369,7 +389,11 @@ nm_guidingStarDetect(){
 
 	GSfound:=0
 	Loop 2 {
-		if (ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*50 nm_image_assets\guiding_star_icon" A_Index ".png") = 1) {
+		try
+			result := ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*50 nm_image_assets\guiding_star_icon" A_Index ".png")
+		catch
+			return
+		if (result = 1) {
 			GSfound:=1
 			break
 		}
@@ -377,7 +401,11 @@ nm_guidingStarDetect(){
 
 	if(GSfound){
 		for value in fieldnames {
-			if (ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*50 nm_image_assets\guiding_star_" value ".png") = 1) {
+			try
+				result := ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*50 nm_image_assets\guiding_star_" value ".png")
+			catch
+				return
+			if (result = 1) {
 				if WinExist("natro_macro ahk_class AutoHotkey") {
 					Send_WM_COPYDATA(value, "natro_macro ahk_class AutoHotkey", 1)
 					LastGuidDetected := nowUnix()
