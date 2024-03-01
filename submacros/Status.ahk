@@ -1151,11 +1151,11 @@ nm_command(command)
 			case "smoking":
 			if ((params[3] = 1) || (params[3] = 2) || (params[3] = 3))
 			{
-				PlanterMode := IniRead("settings\nm_config.ini", "Gui", "PlanterMode")
+				vars["PlanterMode"] := IniRead("settings\nm_config.ini", "Gui", "PlanterMode")
 				n := params[3]
 				if (vars["PlanterName" n] && (vars["PlanterName" n] != "None") && (vars["MPlanterHold" n] = 1) && (vars["PlanterMode"] = 1))
 				{
-					UpdateInt("PlanterSmoking" n, 1, "Planters")
+					UpdateInt("MPlanterSmoking" n, 1, "Planters")
 					discord.SendEmbed("Set held planter in Slot " n " to smoking!", 5066239, , , , id)
 				}
 				else
