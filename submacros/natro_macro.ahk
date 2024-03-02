@@ -10867,11 +10867,24 @@ nm_SolveMemoryMatch(MemoryMatchGame:="", PriorityItemOAC:=0) { ; PriorityItem ca
 			}
 		} ;Close loop 2 Click tile, store item, and compare
 	} ;close Chances Loop
-	nm_setStatus("Collected", (MemoryMatchGame ? (MemoryMatchGame " ") : "") "Memory Match")
 
 	; dispose remnant bitmaps
 	for pBM in StoreitemOAC
 		IsSet(pBM) && IsInteger(pBM) && (pBM > 0) && Gdip_DisposeImage(pBM)
+
+	Sleep 1000
+	nm_setStatus("Collected", (MemoryMatchGame ? (MemoryMatchGame " ") : "") "Memory Match")
+
+	; wait for window to close
+	Loop 50 {
+		pBMScreen := Gdip_BitmapFromScreen(middleX-250 "|" middleY-210 "|500|50")
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitle"], , , , , , 8) = 0) {
+			Gdip_DisposeImage(pBMScreen)
+			break
+		}
+		Gdip_DisposeImage(pBMScreen)
+		Sleep 250
+	}
 }
 nm_Honeystorm(fromSnowMachine:=0){
 	global HoneystormCheck, LastHoneyStorm
