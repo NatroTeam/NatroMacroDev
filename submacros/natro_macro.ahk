@@ -590,7 +590,33 @@ nm_importConfig()
 		, "NightMemoryMatchCheck", 0
 		, "LastNightMemoryMatch", 1
 		, "WinterMemoryMatchCheck", 0
-		, "LastWinterMemoryMatch", 1)
+		, "LastWinterMemoryMatch", 1
+		, "MicroConverterMatchIgnoreCheck", 0
+		, "SunflowerSeedMatchIgnoreCheck", 0
+		, "JellyBeanMatchIgnoreCheck", 0
+		, "RoyalJellyMatchIgnoreCheck", 0
+		, "TicketMatchIgnoreCheck", 0
+		, "CyanTrimMatchIgnoreCheck", 0
+		, "OilMatchIgnoreCheck", 0
+		, "StrawberryMatchIgnoreCheck", 0
+		, "CoconutMatchIgnoreCheck", 0
+		, "TropicalDrinkMatchIgnoreCheck", 0
+		, "RedExtractMatchIgnoreCheck", 0
+		, "MagicBeanMatchIgnoreCheck", 0
+		, "PineappleMatchIgnoreCheck", 0
+		, "StarJellyMatchIgnoreCheck", 0
+		, "EnzymeMatchIgnoreCheck", 0
+		, "BlueExtractMatchIgnoreCheck", 0
+		, "GumdropMatchIgnoreCheck", 0
+		, "FieldDiceMatchIgnoreCheck", 0
+		, "MoonCharmMatchIgnoreCheck", 0
+		, "BlueberryMatchIgnoreCheck", 0
+		, "GlitterMatchIgnoreCheck", 0
+		, "StingerMatchIgnoreCheck", 0
+		, "TreatMatchIgnoreCheck", 0
+		, "GlueMatchIgnoreCheck", 0
+		, "CloudVialMatchIgnoreCheck", 0
+		, "PineappleMatchIgnoreCheck", 0)
 
 	config["Shrine"] := Map("ShrineCheck", 0
 		, "LastShrine", 1
@@ -1403,6 +1429,11 @@ CommandoChickHealth := Map(3, 150
 	, 17, 2500000
 	, 18, 5000000
 	, 19, 7500000)
+
+;Memory Match Items (variable names)
+;for use as %item%MatchIgnoreCheck, change order to reorder loop
+MemoryMatchItems := ["MicroConverter", "SunflowerSeed", "JellyBean", "RoyalJelly", "Ticket", "CyanTrim", "Oil", "Strawberry", "Coconut", "TropicalDrink", "RedExtract", "MagicBean"
+	, "Pineapple", "StarJelly", "Enzyme", "BlueExtract", "Gumdrop", "FieldDice", "MoonCharm", "Blueberry", "Glitter", "Stinger", "Treat", "Glue", "CloudVial", "Pineapple"]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; FIELD DEFAULT OVERRIDES
@@ -2608,9 +2639,11 @@ MainGui.Add("CheckBox", "x+4 yp+5 vAntPassBuyCheck Disabled Checked" AntPassBuyC
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x5 y168 w125 h68 vMemoryMatchGroupBox", "Memory Match")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
-(GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vNormalMemoryMatchCheck Disabled Checked" NormalMemoryMatchCheck, "Normal")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x10 yp+18 vMegaMemoryMatchCheck Disabled Checked" MegaMemoryMatchCheck, "Mega")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "xp+56 yp-18 vExtremeMemoryMatchCheck Disabled Checked" ExtremeMemoryMatchCheck, "Extreme")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 w58 vNormalMemoryMatchCheck Disabled Checked" NormalMemoryMatchCheck, "Normal")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 wp vNightMemoryMatchCheck Disabled Checked" NightMemoryMatchCheck, "Night")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp+58 yp-18 wp vMegaMemoryMatchCheck Disabled Checked" MegaMemoryMatchCheck, "Mega")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 wp vExtremeMemoryMatchCheck Disabled Checked" ExtremeMemoryMatchCheck, "Extreme")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+MainGui.Add("Button", "x43 yp+16 w49 h16 vMemoryMatchOptions Disabled", "Options").OnEvent("Click", nm_MemoryMatchOptions)
 ;dispensers
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x135 y42 w165 h105 vDispensersGroupBox", "Dispensers")
@@ -2632,15 +2665,16 @@ hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["warninggui"])
 MainGui.Add("Picture", "+BackgroundTrans x261 yp w14 h14 vBeesmasFailImage", "HBITMAP:*" hBM).OnEvent("Click", BeesmasActiveFail)
 DllCall("DeleteObject", "ptr", hBM)
 MainGui.Add("Picture", "+BackgroundTrans x247 yp-3 w20 h20 vBeesmasImage")
-(GuiCtrl := MainGui.Add("CheckBox", "x335 yp+4 vBeesmasGatherInterruptCheck Disabled", "Allow Gather Interrupt")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x350 yp+4 vBeesmasGatherInterruptCheck Disabled", "Allow Gather Interrupt")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "x140 yp+14 Section vStockingsCheck Disabled", "Stockings")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vWreathCheck Disabled", "Honey Wreath")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vFeastCheck Disabled", "Feast")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vRBPDelevelCheck Disabled", "Robo Party De-level")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "xp+125 ys+6 vGingerbreadCheck Disabled", "Gingerbread")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp+120 ys vGingerbreadCheck Disabled", "Gingerbread")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vSnowMachineCheck Disabled", "Snow Machine")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vCandlesCheck Disabled", "Candles")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "xp+125 ys+6 vSamovarCheck Disabled", "Samovar")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vWinterMemoryMatchCheck Disabled", "Winter Memory Match")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp+130 ys+6 vSamovarCheck Disabled", "Samovar")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vLidArtCheck Disabled", "Lid Art")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vGummyBeaconCheck Disabled", "Gummy Beacon")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
@@ -3414,12 +3448,14 @@ nm_TabCollectLock(){
 	MainGui["GingerbreadCheck"].Enabled := 0
 	MainGui["SnowMachineCheck"].Enabled := 0
 	MainGui["CandlesCheck"].Enabled := 0
+	MainGui["WinterMemoryMatchCheck"].Enabled := 0
 	MainGui["SamovarCheck"].Enabled := 0
 	MainGui["LidArtCheck"].Enabled := 0
 	MainGui["GummyBeaconCheck"].Enabled := 0
 	MainGui["NormalMemoryMatchCheck"].Enabled := 0
 	MainGui["MegaMemoryMatchCheck"].Enabled := 0
 	MainGui["ExtremeMemoryMatchCheck"].Enabled := 0
+	MainGui["MemoryMatchOptions"].Enabled := 0
 	;kill
 	MainGui["BugRunCheck"].Enabled := 0
 	MainGui["MonsterRespawnTime"].Enabled := 0
@@ -3503,6 +3539,7 @@ nm_TabCollectUnLock(){
 		MainGui["GingerbreadCheck"].Enabled := 1
 		MainGui["SnowMachineCheck"].Enabled := 1
 		MainGui["CandlesCheck"].Enabled := 1
+		MainGui["WinterMemoryMatchCheck"].Enabled := 1
 		MainGui["SamovarCheck"].Enabled := 1
 		MainGui["LidArtCheck"].Enabled := 1
 		MainGui["GummyBeaconCheck"].Enabled := 1
@@ -3510,6 +3547,7 @@ nm_TabCollectUnLock(){
 	MainGui["NormalMemoryMatchCheck"].Enabled := 1
 	MainGui["MegaMemoryMatchCheck"].Enabled := 1
 	MainGui["ExtremeMemoryMatchCheck"].Enabled := 1
+	MainGui["MemoryMatchOptions"].Enabled := 1
 	;kill
 	MainGui["BugRunCheck"].Enabled := 1
 	MainGui["MonsterRespawnTime"].Enabled := 1
@@ -4544,8 +4582,8 @@ nm_CollectKillButton(GuiCtrl, *){
 		,"ClockCheck","MondoBuffCheck","MondoAction","AntPassCheck","AntPassPointText","AntPassBuyCheck","AntPassAction","RoboPassCheck","HoneystormCheck"
 		,"HoneyDisCheck","TreatDisCheck","BlueberryDisCheck","StrawberryDisCheck","CoconutDisCheck","RoyalJellyDisCheck","GlueDisCheck"
 		,"MALeft","MARight","APALeft","APARight"
-		,"BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"
-		,"MemoryMatchGroupBox","NormalMemoryMatchCheck","MegaMemoryMatchCheck","ExtremeMemoryMatchCheck"]
+		,"BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"
+		,"MemoryMatchGroupBox","NormalMemoryMatchCheck","MegaMemoryMatchCheck","NightMemoryMatchCheck","ExtremeMemoryMatchCheck","MemoryMatchOptions"]
 	, KillControls := ["BugRunGroupBox","BugRunCheck","MonsterRespawnTime","TextMonsterRespawnPercent","TextMonsterRespawn","MonsterRespawnTimeHelp"
 		,"BugrunInterruptCheck","TextLoot","TextKill","TextLineBugRun1","TextLineBugRun2"
 		,"BugrunLadybugsLoot","BugrunRhinoBeetlesLoot","BugrunSpiderLoot","BugrunMantisLoot","BugrunScorpionsLoot","BugrunWerewolfLoot"
@@ -4755,7 +4793,7 @@ nm_BeesmasHandler(req)
 			MainGui["BeesmasImage"].Value := "HBITMAP:*" hBM
 			DllCall("DeleteObject", "ptr", hBM)
 
-			for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
+			for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
 				MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
 
 			sprinklerImages.Push("saturatorWS")
@@ -4768,6 +4806,60 @@ nm_BeesmasHandler(req)
 }
 BeesmasActiveFail(*){
 	MsgBox "Could not fetch Beesmas data from GitHub!`r`nTo use Beesmas features, make sure you have a working internet connection and then reload the macro!", "Error", 0x1030 " Owner" MainGui.Hwnd
+}
+nm_MemoryMatchOptions(*){
+	static vars := Map(
+		"MicroConverter", "Micro-Converters",
+		"SunflowerSeed", "Sunflower Seeds",
+		"JellyBean", "Jelly Beans",
+		"RoyalJelly", "Royal Jellies",
+		"Ticket", "Tickets",
+		"CyanTrim", "Cyan Sticker",
+		"Oil", "Oils",
+		"Strawberry", "Strawberries",
+		"Coconut", "Coconuts",
+		"TropicalDrink", "Tropical Drinks",
+		"RedExtract", "Red Extracts",
+		"MagicBean", "Magic Beans",
+		"Pineapple", "Pineapples",
+		"StarJelly", "Star Jellies",
+		"Enzyme", "Enzymes",
+		"BlueExtract", "Blue Extracts",
+		"Gumdrop", "Gumdrops",
+		"FieldDice", "Field Dice",
+		"MoonCharm", "Moon Charms",
+		"Blueberry", "Blueberries",
+		"Glitter", "Glitter",
+		"Stinger", "Stingers",
+		"Treat", "Treats",
+		"Glue", "Glue",
+		"CloudVial", "Cloud Vials",
+		"Pineapple", "Pineapples"
+	)
+
+	global MMGui, MicroConverterMatchIgnoreCheck, SunflowerSeedMatchIgnoreCheck, JellyBeanMatchIgnoreCheck, RoyalJellyMatchIgnoreCheck, TicketMatchIgnoreCheck
+		, CyanTrimMatchIgnoreCheck, OilMatchIgnoreCheck, StrawberryMatchIgnoreCheck, CoconutMatchIgnoreCheck, TropicalDrinkMatchIgnoreCheck, RedExtractMatchIgnoreCheck
+		, MagicBeanMatchIgnoreCheck, PineappleMatchIgnoreCheck, StarJellyMatchIgnoreCheck, EnzymeMatchIgnoreCheck, BlueExtractMatchIgnoreCheck, GumdropMatchIgnoreCheck
+		, FieldDiceMatchIgnoreCheck, MoonCharmMatchIgnoreCheck, BlueberryMatchIgnoreCheck, GlitterMatchIgnoreCheck, StingerMatchIgnoreCheck, TreatMatchIgnoreCheck, GlueMatchIgnoreCheck
+		, CloudVialMatchIgnoreCheck, PineappleMatchIgnoreCheck
+
+	GuiClose(*){
+		if (IsSet(MMGui) && IsObject(MMGui))
+			MMGui.Destroy(), MMGui := ""
+	}
+	GuiClose()
+	MMGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Memory Match Options")
+	MMGui.OnEvent("Close", GuiClose)
+	MMGui.SetFont("s8 cDefault Norm", "Tahoma")
+	MMGui.Add("Text", "x6 y2 w360 Center", "
+	(
+	Pick the items you do NOT want to match in Memory Match games!
+	The macro will IGNORE these items and look for every other item.
+	Rare items like Mythic Egg that aren't on this list will always be looked for.
+	)")
+	for var, item in vars
+		(GuiCtrl := MMGui.Add("CheckBox", "x" 16+(A_Index-1)//10*120 " y" 48+Mod(A_Index-1,10)*15 " v" var "MatchIgnoreCheck Checked" %var%MatchIgnoreCheck, item)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	MMGui.Show("w360 h196")
 }
 ;kill
 nm_BugrunCheck(*){
