@@ -10685,11 +10685,11 @@ nm_SolveMemoryMatch(MemoryMatchGame:="", PriorityItemOAC:=0) { ; PriorityItem ca
 
 	GridOAC:= [] ;Define MM Tile Coordinates
 	Loop 5 {
-		Xcord:=middleX-200+80*A_Index
+		Xcord:=middleX-230+80*A_Index
 		x:=A_index
 		Loop 4 {
 			row := []
-			Ycord:=middleY-200+80*A_Index
+			Ycord:=middleY-230+80*A_Index
 			R:=A_index+(x-1)*4
 			Row.push(Xcord)
 			Row.push(Ycord)
@@ -10821,7 +10821,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="", PriorityItemOAC:=0) { ; PriorityItem ca
 			sleep 500
 
 			Loop 20 {
-				pBMScreen := Gdip_BitmapFromScreen(TileXCordOAC-35 "|" TileYCordOAC-20 "|8|20") ; Detect Clicked Item
+				pBMScreen := Gdip_BitmapFromScreen(TileXCordOAC-5 "|" TileYCordOAC+10 "|8|20") ; Detect Clicked Item
 				;Gdip_SaveBitmapToFile(pBMScreen, "Border.png")
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["MMBorder"], , , , , , 1, , 2) = 1) {
 					Gdip_DisposeImage(pBMScreen)
@@ -10833,7 +10833,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="", PriorityItemOAC:=0) { ; PriorityItem ca
 			sleep 300
 
 			if(PairFoundOAC!=1 && (A_Index=1 || (A_Index=2 &&  MatchFoundOAC!=1))) {
-				StoreItemOAC[Tile] := Gdip_BitmapFromScreen(TileXCordOAC-25 "|" TileYCordOAC-25 "|50|50") ; Detect Clicked Item
+				StoreItemOAC[Tile] := Gdip_BitmapFromScreen(TileXCordOAC+20 "|" TileYCordOAC+25 "|35|30") ; Detect Clicked Item
 				;path:=A_ScriptDir "\..\MMScreenshots\"
 				;Gdip_SaveBitmapToFile(StoreItemOAC[Tile], path "image" Tile ".png")
 
