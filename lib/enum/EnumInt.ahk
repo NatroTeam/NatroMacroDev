@@ -318,4 +318,5 @@
 	, "NightMemoryMatchCheck"
 	, "LastNightMemoryMatch"
 	, "WinterMemoryMatchCheck"
-	, "LastWinterMemoryMatch"]
+	, "LastWinterMemoryMatch"
+	, "CoconutBoosterCheck"]
