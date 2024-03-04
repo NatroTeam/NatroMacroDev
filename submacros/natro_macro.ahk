@@ -502,7 +502,7 @@ nm_importConfig()
 		, "StrawberryDisCheck", 0
 		, "LastStrawberryDis", 1
 		, "CoconutDisCheck", 0
-		, "LastCoconutBoost", 1
+		, "LastCoconutDis", 1
 		, "RoyalJellyDisCheck", 0
 		, "LastRoyalJellyDis", 1
 		, "GlueDisCheck", 0
@@ -10145,8 +10145,8 @@ nm_StrawberryDis(){
 	}
 }
 nm_CoconutDis(){
-	global CoconutDisCheck, LastCoconutBoost, CoconutBoosterCheck, BoostChaserCheck
-	if (CoconutDisCheck && (nowUnix()-LastCoconutBoost)>14400 && !(CoconutBoosterCheck && BoostChaserCheck)) { ;4 hours
+	global CoconutDisCheck, LastCoconutDis, CoconutBoosterCheck, BoostChaserCheck
+	if (CoconutDisCheck && (nowUnix()-LastCoconutDis)>14400 && !(CoconutBoosterCheck && BoostChaserCheck)) { ;4 hours
 		Loop 2 {
 			hwnd := GetRobloxHWND()
 			offsetY := GetYOffset(hwnd)
@@ -10168,8 +10168,8 @@ nm_CoconutDis(){
 				break
 			}
 		}
-		LastCoconutBoost:=nowUnix()
-		IniWrite LastCoconutBoost, "settings\nm_config.ini", "Collect", "LastCoconutBoost"
+		LastCoconutDis:=nowUnix()
+		IniWrite LastCoconutDis, "settings\nm_config.ini", "Collect", "LastCoconutDis"
 	}
 }
 nm_GlueDis(){
@@ -11351,13 +11351,13 @@ nm_ShrineRotation() {
 	}
 }
 nm_toAnyBooster(){
-	global LastBlueBoost, QuestBlueBoost, LastRedBoost, QuestRedBoost, LastMountainBoost, LastCoconutBoost, CoconutBoosterCheck, CoconutDisCheck 
+	global LastBlueBoost, QuestBlueBoost, LastRedBoost, QuestRedBoost, LastMountainBoost, LastCoconutDis, CoconutBoosterCheck, CoconutDisCheck
 		, FieldBooster1, FieldBooster2, FieldBooster3, FieldBoosterMins
 	static blueBoosterFields:=["Pine Tree", "Bamboo", "Blue Flower"], redBoosterFields:=["Rose", "Strawberry", "Mushroom"], mountainBoosterfields:=["Cactus", "Pumpkin", "Pineapple", "Spider", "Clover", "Dandelion", "Sunflower"], coconutBoosterfields:=["Coconut"]
 
 	;Coconut field booster; prioritise every 4 hours if enabled
-	LastBooster:=max(LastBlueBoost, LastRedBoost, LastMountainBoost, LastCoconutBoost)
-	if((CoconutDisCheck && CoconutBoosterCheck && (nowUnix()-LastCoconutBoost)>14400) && (nowUnix()-LastBooster)>(FieldBoosterMins*60)) {
+	LastBooster:=max(LastBlueBoost, LastRedBoost, LastMountainBoost, LastCoconutDis)
+	if((CoconutDisCheck && CoconutBoosterCheck && (nowUnix()-LastCoconutDis)>14400) && (nowUnix()-LastBooster)>(FieldBoosterMins*60)) {
 		nm_updateAction("Booster")
 		nm_toBooster("coconut")
 	}
@@ -11366,7 +11366,7 @@ nm_toAnyBooster(){
 	loop 3 {
 		if(FieldBooster%A_Index%="none" && QuestBlueBoost=0 && QuestRedBoost=0)
 			break
-		LastBooster:=max(LastBlueBoost, LastRedBoost, LastMountainBoost, LastCoconutBoost)
+		LastBooster:=max(LastBlueBoost, LastRedBoost, LastMountainBoost, LastCoconutDis)
 		;Blue Field Booster
 		if((FieldBooster%A_Index%="blue" && (nowUnix()-LastBlueBoost)>3600 && (nowUnix()-LastBooster)>(FieldBoosterMins*60)) || (QuestBlueBoost && (nowUnix()-LastBlueBoost)>3600)){
 			nm_updateAction("Booster")
@@ -11386,7 +11386,7 @@ nm_toAnyBooster(){
 }
 nm_toBooster(location){
 	global FwdKey, LeftKey, BackKey, RightKey, RotLeft, RotRight, KeyDelay, MoveSpeedNum, MoveMethod, SC_E
-	global LastBlueBoost, LastRedBoost, LastMountainBoost, LastCoconutBoost, RecentFBoost, objective
+	global LastBlueBoost, LastRedBoost, LastMountainBoost, LastCoconutDis, RecentFBoost, objective
 	static blueBoosterFields:=["Pine Tree", "Bamboo", "Blue Flower"], redBoosterFields:=["Rose", "Strawberry", "Mushroom"], mountainBoosterfields:=["Cactus", "Pumpkin", "Pineapple", "Spider", "Clover", "Dandelion", "Sunflower"], coconutBoosterfields:=["Coconut"]
 
 	success:=0
@@ -14071,14 +14071,14 @@ nm_GoGather(){
 			coconutBoosterfields	:=Map("CoconutBoosterCheck","Coconut")
 			otherFields				:=["Stump", "Mountain Top", "Pepper"]
 
-			loop 1 {			
+			loop 1 {
 				for i, location in ["blue", "mountain", "red", "coconut"] {
 					for k, v in %location%BoosterFields {
 						if((nm_fieldBoostCheck(v, 1)) && (%k%)) {
 							BoostChaserField:=v
 							break
 						}
-					}					
+					}
 				}
 				if(BoostChaserField!="none")
 					break
