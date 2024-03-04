@@ -5398,7 +5398,7 @@ nm_coconutBoosterCheck(*){
 	if(BoostChaserCheck && CoconutBoosterCheck) {
 		MainGui["CoconutDisCheck"].Value := CoconutDisCheck := 1
 		IniWrite 1, "settings\nm_config.ini", "Collect", "CoconutDisCheck"
-		msgbox "Coconut Dispenser collection has been automatically enabled in the Collect Tab. This will allow the macro to boost and gather in coconut field every four hours.", "Coconut Dispenser Activated!"
+		msgbox "Coconut Dispenser collection has been automatically enabled in the Collect Tab. This will allow the macro to boost and gather in coconut field every four hours.", "Coconut Dispenser Enabled!"
 	}
 }
 nm_autoFieldBoostGui(*){
