@@ -1680,8 +1680,6 @@ nm_command(command)
 				},'
 				)
 			}
-			Loop Mod(3 - Mod(timers.mobs.values.Count, 3), 3)
-				payload_json .= '{"name": "","value": "","inline": true},'
 			payload_json := RTrim(payload_json, ",") "]}"
 
 			for k,v in ["Machines","Beesmas"]
@@ -1722,8 +1720,6 @@ nm_command(command)
 							)
 						}
 					}
-					Loop Mod(3 - Mod(n, 3), 3)
-						payload_json .= '{"name": "","value": "","inline": true},'
 					payload_json := RTrim(payload_json, ",") "]}"
 				}
 			}
