@@ -4430,7 +4430,7 @@ nm_FieldSprinklerLoc(GuiCtrl, *){
 		index := 1
 		case "FSL2Left", "FSL2Right":
 		index := 2
-		case "FSL3Left", "hFSL3Right":
+		case "FSL3Left", "FSL3Right":
 		index := 3
 	}
 
