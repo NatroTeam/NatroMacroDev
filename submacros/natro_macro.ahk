@@ -10920,7 +10920,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 						break
 				}
 			}
-
+			;tile:=1
 			TileXCordOAC:=GridOAC[Tile][1]-Xoffset ; Determine click coordinates
 			TileYCordOAC:=GridOAC[Tile][2]
 			ClickNum++
@@ -10933,9 +10933,8 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 			sendinput "{click up}"
 			sleep 100
 			MouseMove middleX, middleY-190
-			sleep 350
 
-			Loop 20 {
+			Loop 500 {
 				pBMScreen := Gdip_BitmapFromScreen(TileXCordOAC-5 "|" TileYCordOAC+10 "|8|20") ; Detect Clicked Item
 				;Gdip_SaveBitmapToFile(pBMScreen, "Border.png")
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["MMBorder"], , , , , , 1, , 2) = 1) {
@@ -10943,15 +10942,25 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 					break
 				}
 				Gdip_DisposeImage(pBMScreen)
-				sleep 50
+				sleep 10
 			}
+			Loop 500 {
+				pBMScreen := Gdip_BitmapFromScreen(TileXCordOAC+20 "|" TileYCordOAC+20 "|20|20") ; Detect Clicked Item
+				;Gdip_SaveBitmapToFile(pBMScreen, "empty" A_index ".png")
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["MMEmptyTile"], , , , , , 1, , 2) != 1) {
+					Gdip_DisposeImage(pBMScreen)
+					emptytiletemp:=1
+					break
+				}
+				Gdip_DisposeImage(pBMScreen)
+				sleep 10
+			}
+			;msgbox emptytiletemp
 			sleep 300
 
 			if(PairFoundOAC!=1 && (A_Index=1 || (A_Index=2 &&  MatchFoundOAC!=1))) {
 				StoreItemOAC[Tile] := Gdip_BitmapFromScreen(TileXCordOAC+20 "|" TileYCordOAC+25 "|35|30") ; Detect Clicked Item
-				;path:=A_ScriptDir "\..\MMScreenshots\"
-				;Gdip_SaveBitmapToFile(StoreItemOAC[Tile], path "image" Tile ".png")
-
+				nm_CreateFolder(path := A_WorkingDir "\MMScreenshots"), Gdip_SaveBitmapToFile(StoreItemOAC[Tile], path "\image" Tile ".png") ; comment out this line for public release
 				for item in MemoryMatchItems {
   					if %item%MatchIgnoreCheck {
 						loop 2 {
