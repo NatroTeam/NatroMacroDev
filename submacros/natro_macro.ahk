@@ -561,7 +561,18 @@ nm_importConfig()
 		, "TreatMatchIgnoreCheck", 0
 		, "GlueMatchIgnoreCheck", 0
 		, "CloudVialMatchIgnoreCheck", 0
-		, "PineappleMatchIgnoreCheck", 0
+		, "SoftWaxMatchIgnoreCheck", 0
+		, "HardWaxMatchIgnoreCheck", 0
+		, "SwirledWaxMatchIgnoreCheck", 0
+		, "NightBellMatchIgnoreCheck", 0
+		, "HoneysuckleMatchIgnoreCheck", 0
+		, "SuperSmoothieMatchIgnoreCheck", 0
+		, "SmoothDiceMatchIgnoreCheck", 0
+		, "NeonberryMatchIgnoreCheck", 0
+		, "GingerbreadMatchIgnoreCheck", 0
+		, "SilverEggMatchIgnoreCheck", 0
+		, "GoldEggMatchIgnoreCheck", 0
+		, "DiamondEggMatchIgnoreCheck", 0
 		, "MemoryMatchInterruptCheck", 0
 		, "StickerPrinterCheck", 0
 		, "LastStickerPrinter", 1
@@ -1434,7 +1445,8 @@ CommandoChickHealth := Map(3, 150
 ;Memory Match Items (variable names)
 ;for use as %item%MatchIgnoreCheck, change order to reorder loop
 MemoryMatchItems := ["MicroConverter", "SunflowerSeed", "JellyBean", "RoyalJelly", "Ticket", "CyanTrim", "Oil", "Strawberry", "Coconut", "TropicalDrink", "RedExtract", "MagicBean"
-	, "Pineapple", "StarJelly", "Enzyme", "BlueExtract", "Gumdrop", "FieldDice", "MoonCharm", "Blueberry", "Glitter", "Stinger", "Treat", "Glue", "CloudVial", "Pineapple"]
+	, "Pineapple", "StarJelly", "Enzyme", "BlueExtract", "Gumdrop", "FieldDice", "MoonCharm", "Blueberry", "Glitter", "Stinger", "Treat", "Glue", "CloudVial"
+	, "SoftWax", "HardWax", "SwirledWax", "NightBell", "Honeysuckle", "SuperSmoothie", "SmoothDice", "Neonberry", "Gingerbread", "SilverEgg", "GoldEgg", "DiamondEgg"]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; FIELD DEFAULT OVERRIDES
@@ -4843,14 +4855,27 @@ nm_MemoryMatchOptions(*){
 		"Treat", "Treats",
 		"Glue", "Glue",
 		"CloudVial", "Cloud Vials",
-		"Pineapple", "Pineapples"
+		"SoftWax", "Soft Wax",
+		"HardWax", "Hard Wax",
+		"SwirledWax", "Swirled Wax",
+		"NightBell", "Night Bells",
+		"Honeysuckle", "Honeysuckles",
+		"SuperSmoothie", "Super Smoothies",
+		"SmoothDice", "Smooth Dice",
+		"Neonberry", "Neonberries",
+		"Gingerbread", "Gingerbread Bears",
+		"SilverEgg", "Silver Eggs",
+		"GoldEgg", "Gold Eggs",
+		"DiamondEgg", "Diamond Eggs"
 	)
 
 	global MMGui, MicroConverterMatchIgnoreCheck, SunflowerSeedMatchIgnoreCheck, JellyBeanMatchIgnoreCheck, RoyalJellyMatchIgnoreCheck, TicketMatchIgnoreCheck
 		, CyanTrimMatchIgnoreCheck, OilMatchIgnoreCheck, StrawberryMatchIgnoreCheck, CoconutMatchIgnoreCheck, TropicalDrinkMatchIgnoreCheck, RedExtractMatchIgnoreCheck
 		, MagicBeanMatchIgnoreCheck, PineappleMatchIgnoreCheck, StarJellyMatchIgnoreCheck, EnzymeMatchIgnoreCheck, BlueExtractMatchIgnoreCheck, GumdropMatchIgnoreCheck
 		, FieldDiceMatchIgnoreCheck, MoonCharmMatchIgnoreCheck, BlueberryMatchIgnoreCheck, GlitterMatchIgnoreCheck, StingerMatchIgnoreCheck, TreatMatchIgnoreCheck, GlueMatchIgnoreCheck
-		, CloudVialMatchIgnoreCheck, PineappleMatchIgnoreCheck
+		, CloudVialMatchIgnoreCheck, SoftWaxMatchIgnoreCheck, HardWaxMatchIgnoreCheck, SwirledWaxMatchIgnoreCheck, NightBellMatchIgnoreCheck, HoneysuckleMatchIgnoreCheck
+		, SuperSmoothieMatchIgnoreCheck, SmoothDiceMatchIgnoreCheck, NeonberryMatchIgnoreCheck, GingerbreadMatchIgnoreCheck
+		, SilverEggMatchIgnoreCheck, GoldEggMatchIgnoreCheck, DiamondEggMatchIgnoreCheck
 
 	GuiClose(*){
 		if (IsSet(MMGui) && IsObject(MMGui))
@@ -4860,16 +4885,21 @@ nm_MemoryMatchOptions(*){
 	MMGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Memory Match Options")
 	MMGui.OnEvent("Close", GuiClose)
 	MMGui.SetFont("s8 cDefault Norm", "Tahoma")
-	(GuiCtrl := MMGui.Add("CheckBox", "x122 y4 vMemoryMatchInterruptCheck Checked" MemoryMatchInterruptCheck, "Allow Gather Interrupt")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-	MMGui.Add("Text", "x6 y+4 w360 Center Section", "
+	MMGui.Add("Text", "x6 y6 w360 Center Section", "
+	(
+	Enable the option below to stop gathering when a Memory Match is ready.
+	Night Memory Match will always interrupt gathering, even if this option is disabled, so that it jumps on the Moons during nighttime.
+	)")
+	(GuiCtrl := MMGui.Add("CheckBox", "x122 y+3 vMemoryMatchInterruptCheck Checked" MemoryMatchInterruptCheck, "Allow Gather Interrupt")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	MMGui.Add("Text", "x6 y+8 w360 Center Section", "
 	(
 	Pick the items you do NOT want to match in Memory Match games below!
 	The macro will IGNORE these items and look for every other item.
 	Rare items like Mythic Egg that aren't on this list will always be looked for.
 	)")
 	for var, item in vars
-		(GuiCtrl := MMGui.Add("CheckBox", "xs+" 10+(A_Index-1)//10*120 " ys+" 46+Mod(A_Index-1,10)*15 " v" var "MatchIgnoreCheck Checked" %var%MatchIgnoreCheck, item)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-	MMGui.Show("w360 h210")
+		(GuiCtrl := MMGui.Add("CheckBox", "xs+" 10+(A_Index-1)//13*120 " ys+" 43+Mod(A_Index-1,13)*15 " v" var "MatchIgnoreCheck Checked" %var%MatchIgnoreCheck, item)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	MMGui.Show("w360 h302")
 }
 ;kill
 nm_BugrunCheck(*){
