@@ -5358,7 +5358,7 @@ nm_StickerStackTimer(*){
 nm_StickerStackModeText(*){
 	global StickerStackMode, StickerStackTimer
 	if (StickerStackMode = 1) {
-		if IsInteger(time := InputBox("Enter the number of seconds (900-86400) to wait between each use of the Sticker Stack:", "Sticker Stack Timer", "T60"))
+		if IsInteger(time := InputBox("Enter the number of seconds (900-86400) to wait between each use of the Sticker Stack:", "Sticker Stack Timer", "T60").Value)
 		{
 			if ((time >= 900) && (time <= 86400)) {
 				MainGui["StickerStackTimer"].Value := StickerStackTimer := time
