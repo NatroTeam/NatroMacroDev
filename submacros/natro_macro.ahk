@@ -10862,16 +10862,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 	ClickNum:=0
 	Chances:=8
 	LastChance:=0
-/*
-	pBMScreen := Gdip_BitmapFromScreen(middleX-275-Xoffset "|" middleY-146 "|100|100") ; Detect Number of Chances
-	Loop 8 {
-		bitmap:="Chances" . A_Index
-		if (Gdip_ImageSearch(pBMScreen, bitmaps[bitmap], , , , , , 10, , 2) = 1) {
-			Chances:=A_Index
-			Break
-		}
-	}
-*/
+
 	Gdip_DisposeImage(pBMScreen)
 
 	Loop 10 { ; Numer of available Chances.	
