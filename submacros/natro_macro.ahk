@@ -10878,10 +10878,6 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 				sleep 10
 			}
 		}
-		pBMScreen := Gdip_BitmapFromScreen(middleX-275-Xoffset "|" middleY-146 "|100|100") ; Detect Number of Chances
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["Chances1"], , , , , , 10, , 2) = 1) 
-			LastChance:=1
-		Gdip_DisposeImage(pBMScreen)
 		loop 2 { ;Click tile, store item and compare
 			if(A_Index=1) {
 				; Compare Tiles before Click 1
