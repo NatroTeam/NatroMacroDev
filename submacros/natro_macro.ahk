@@ -11005,7 +11005,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 				}
 			}
 
-			if(A_index=2) {
+			if(A_index=1) {
 				pBMScreen := Gdip_BitmapFromScreen(middleX-275-Xoffset "|" middleY-146 "|100|100") ; Detect Number of Chances
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["Chances2"], , , , , , 10, , 2) = 1) 
 				Chances:=2
