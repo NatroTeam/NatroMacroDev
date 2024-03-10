@@ -163,6 +163,8 @@ timers.beesmas.values[8] := {varname: "LidArt", name: "Lid Art", cooldown: 28800
 timers.beesmas.values[9] := {varname: "GummyBeacon", name: "Gummy Beacon", cooldown: 28800, regex: "i)^(gummy)?beacon"}
 timers.beesmas.values[10] := {varname: "WinterMemoryMatch", name: "Winter Memory Match", cooldown: 14400, regex: "i)^winter(mm|memorymatch)?"}
 
+#Include "data\memorymatch.ahk"
+
 hBitmapsSBT := Map()
 #Include "%A_ScriptDir%\..\nm_image_assets\gui\blendershrine_bitmaps.ahk"
 
@@ -594,43 +596,43 @@ settings["LastNightMemoryMatch"] := {enum: 319, type: "int", section: "Collect",
 settings["WinterMemoryMatchCheck"] := {enum: 320, type: "int", section: "Collect", regex: "i)^(0|1)$"}
 settings["LastWinterMemoryMatch"] := {enum: 321, type: "int", section: "Collect", regex: "i)^\d{1,10}$"}
 settings["MemoryMatchInterruptCheck"] := {enum: 322, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["MicroConverterMatchIgnoreCheck"] := {enum: 323, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["SunflowerSeedMatchIgnoreCheck"] := {enum: 324, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["JellyBeanMatchIgnoreCheck"] := {enum: 325, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["RoyalJellyMatchIgnoreCheck"] := {enum: 326, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["TicketMatchIgnoreCheck"] := {enum: 327, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["CyanTrimMatchIgnoreCheck"] := {enum: 328, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["OilMatchIgnoreCheck"] := {enum: 329, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["StrawberryMatchIgnoreCheck"] := {enum: 330, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["CoconutMatchIgnoreCheck"] := {enum: 331, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["TropicalDrinkMatchIgnoreCheck"] := {enum: 332, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["RedExtractMatchIgnoreCheck"] := {enum: 333, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["MagicBeanMatchIgnoreCheck"] := {enum: 334, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["PineappleMatchIgnoreCheck"] := {enum: 335, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["StarJellyMatchIgnoreCheck"] := {enum: 336, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["EnzymeMatchMatchIgnoreCheck"] := {enum: 337, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["BlueExtractMatchIgnoreCheck"] := {enum: 338, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["GumdropMatchIgnoreCheck"] := {enum: 339, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["FieldDiceMatchIgnoreCheck"] := {enum: 340, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["MoonCharmMatchIgnoreCheck"] := {enum: 341, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["BlueberryMatchIgnoreCheck"] := {enum: 342, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["GlitterMatchIgnoreCheck"] := {enum: 343, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["StingerMatchIgnoreCheck"] := {enum: 344, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["TreatMatchIgnoreCheck"] := {enum: 345, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["GlueMatchIgnoreCheck"] := {enum: 346, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["CloudVialMatchIgnoreCheck"] := {enum: 347, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["SoftWaxMatchIgnoreCheck"] := {enum: 348, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["HardWaxMatchIgnoreCheck"] := {enum: 349, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["SwirledWaxMatchIgnoreCheck"] := {enum: 350, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["NightBellMatchIgnoreCheck"] := {enum: 351, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["HoneysuckleMatchIgnoreCheck"] := {enum: 352, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["SuperSmoothieMatchIgnoreCheck"] := {enum: 353, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["SmoothDiceMatchIgnoreCheck"] := {enum: 354, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["NeonberryMatchIgnoreCheck"] := {enum: 355, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["GingerbreadMatchIgnoreCheck"] := {enum: 356, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["SilverEggMatchIgnoreCheck"] := {enum: 357, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["GoldEggMatchIgnoreCheck"] := {enum: 358, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["DiamondEggMatchIgnoreCheck"] := {enum: 359, type: "int", section: "Collect", regex: "i)^(0|1)$"}
+settings["MicroConverterMatchIgnore"] := {enum: 323, type: "int", section: "Collect"}
+settings["SunflowerSeedMatchIgnore"] := {enum: 324, type: "int", section: "Collect"}
+settings["JellyBeanMatchIgnore"] := {enum: 325, type: "int", section: "Collect"}
+settings["RoyalJellyMatchIgnore"] := {enum: 326, type: "int", section: "Collect"}
+settings["TicketMatchIgnore"] := {enum: 327, type: "int", section: "Collect"}
+settings["CyanTrimMatchIgnore"] := {enum: 328, type: "int", section: "Collect"}
+settings["OilMatchIgnore"] := {enum: 329, type: "int", section: "Collect"}
+settings["StrawberryMatchIgnore"] := {enum: 330, type: "int", section: "Collect"}
+settings["CoconutMatchIgnore"] := {enum: 331, type: "int", section: "Collect"}
+settings["TropicalDrinkMatchIgnore"] := {enum: 332, type: "int", section: "Collect"}
+settings["RedExtractMatchIgnore"] := {enum: 333, type: "int", section: "Collect"}
+settings["MagicBeanMatchIgnore"] := {enum: 334, type: "int", section: "Collect"}
+settings["PineappleMatchIgnore"] := {enum: 335, type: "int", section: "Collect"}
+settings["StarJellyMatchIgnore"] := {enum: 336, type: "int", section: "Collect"}
+settings["EnzymeMatchMatchIgnore"] := {enum: 337, type: "int", section: "Collect"}
+settings["BlueExtractMatchIgnore"] := {enum: 338, type: "int", section: "Collect"}
+settings["GumdropMatchIgnore"] := {enum: 339, type: "int", section: "Collect"}
+settings["FieldDiceMatchIgnore"] := {enum: 340, type: "int", section: "Collect"}
+settings["MoonCharmMatchIgnore"] := {enum: 341, type: "int", section: "Collect"}
+settings["BlueberryMatchIgnore"] := {enum: 342, type: "int", section: "Collect"}
+settings["GlitterMatchIgnore"] := {enum: 343, type: "int", section: "Collect"}
+settings["StingerMatchIgnore"] := {enum: 344, type: "int", section: "Collect"}
+settings["TreatMatchIgnore"] := {enum: 345, type: "int", section: "Collect"}
+settings["GlueMatchIgnore"] := {enum: 346, type: "int", section: "Collect"}
+settings["CloudVialMatchIgnore"] := {enum: 347, type: "int", section: "Collect"}
+settings["SoftWaxMatchIgnore"] := {enum: 348, type: "int", section: "Collect"}
+settings["HardWaxMatchIgnore"] := {enum: 349, type: "int", section: "Collect"}
+settings["SwirledWaxMatchIgnore"] := {enum: 350, type: "int", section: "Collect"}
+settings["NightBellMatchIgnore"] := {enum: 351, type: "int", section: "Collect"}
+settings["HoneysuckleMatchIgnore"] := {enum: 352, type: "int", section: "Collect"}
+settings["SuperSmoothieMatchIgnore"] := {enum: 353, type: "int", section: "Collect"}
+settings["SmoothDiceMatchIgnore"] := {enum: 354, type: "int", section: "Collect"}
+settings["NeonberryMatchIgnore"] := {enum: 355, type: "int", section: "Collect"}
+settings["GingerbreadMatchIgnore"] := {enum: 356, type: "int", section: "Collect"}
+settings["SilverEggMatchIgnore"] := {enum: 357, type: "int", section: "Collect"}
+settings["GoldEggMatchIgnore"] := {enum: 358, type: "int", section: "Collect"}
+settings["DiamondEggMatchIgnore"] := {enum: 359, type: "int", section: "Collect"}
 settings["CoconutBoosterCheck"] := {enum: 360, type: "int", section: "Boost", regex: "i)^(0|1)$"}
 
 bitmaps := Map()
@@ -814,7 +816,8 @@ nm_command(command)
 
 			; populate each variable list
 			for k,v in settings
-				sections[v.section] .= "`n" k
+				if HasProp(v, "regex")
+					sections[v.section] .= "`n" k
 
 			; trim all lists to 4096 characters (max embed description)
 			for ,list in sections
@@ -1787,7 +1790,7 @@ nm_command(command)
 			{
 				for k,v in settings
 				{
-					if (k = params[2])
+					if ((k = params[2]) && HasProp(v, "regex"))
 					{
 						value := Trim(SubStr(command.content, InStr(command.content, params[2])+StrLen(params[2])))
 						if (value ~= v.regex)
@@ -2170,6 +2173,131 @@ nm_command(command)
 			objParam.InsertAt(1, Map("name","payload_json","content-type","application/json","content",payload_json))
 			discord.CreateFormData(&postdata, &contentType, objParam)
 			discord.SendMessageAPI(postdata, contentType)
+		}
+
+
+		case "mm","memorymatch":
+		(vars := Map()).CaseSense := 0
+		str := IniRead("settings\nm_config.ini", "Collect")
+		Loop Parse str, "`n", "`r" A_Space A_Tab
+			if (p := InStr(A_LoopField, "="))
+				vars[SubStr(A_LoopField, 1, p-1)] := SubStr(A_LoopField, p+1)
+
+		switch params[2], 0
+		{
+			case "enable","disable":
+			if vars.Has(var := params[3] "MemoryMatchCheck")
+			{
+				if (vars[var] = (params[2] = "enable"))
+					discord.SendEmbed(StrTitle(params[3]) " Memory Match is already " StrLower(params[2]) "d!", 16711731, , , , id)
+				else
+					UpdateInt(var, (params[2] = "enable"), "Collect"), discord.SendEmbed(StrTitle(params[2]) "d " StrTitle(params[3]) " Memory Match!", 5066239, , , , id)
+			}
+			else
+				discord.SendEmbed((StrLen(params[3]) = 0) ? ("You must specify a game to " StrLower(params[2]) "!") : ("[``game``] must be one of the following: ``normal``, ``mega``, ``night``, ``extreme``, ``winter``!\nYou entered " params[3] "."), 16711731, , , , id)
+
+			case "ignore":
+			Loop 1
+			{
+				for item, data in MemoryMatch
+				{
+					if (item = params[3])
+					{
+						var := item "MatchIgnore"
+						switch game := StrTitle(params[4])
+						{
+							case "Normal","Mega","Night","Extreme","Winter":
+							if (data.games & (bit := MemoryMatchGames[game].bit))
+							{
+								if (vars[var] & bit)
+									UpdateInt(var, vars[var] & ~bit, "Collect"), discord.SendEmbed("Set " data.name " to be **matched** in " game " Memory Match!", 5066239, , , , id)
+								else
+									UpdateInt(var, vars[var] | bit, "Collect"), discord.SendEmbed("Set " data.name " to be **ignored** in " game " Memory Match!", 5066239, , , , id)
+							}
+							else
+								discord.SendEmbed(data.name " are not a possible item in " game " Memory Match!", 16711731, , , , id)
+
+							case "":
+							if (vars[var] > 0)
+								UpdateInt(var, 0, "Collect"), discord.SendEmbed("Set " data.name " to be **matched** in all Memory Match games!", 5066239, , , , id)
+							else
+								UpdateInt(var, data.games, "Collect"), discord.SendEmbed("Set " data.name " to be **ignored** in all Memory Match games!", 5066239, , , , id)
+
+							default:
+							discord.SendEmbed("You entered an invalid game!\n[``game``] must be either left blank, or one of the following: ``normal``, ``mega``, ``night``, ``extreme``, ``winter``!\nYou entered " params[4] ".", 16711731, , , , id)
+						}
+						break 2
+					}
+				}
+				discord.SendEmbed((StrLen(params[3]) = 0) ? ("You must specify an item to ignore!") : ("[``item``] must be a valid item name, e.g. ``royaljelly``!\nYou entered " params[3] "."), 16711731, , , , id)
+			}
+
+			default:
+			postdata :=
+			(
+			'
+			{
+				"allowed_mentions": {
+					"parse": []
+				},
+				"message_reference": {
+					"message_id": "' id '",
+					"fail_if_not_exists": false
+				},
+				"embeds": [{
+					"color": "5066239",
+					"title": "Memory Match",
+					"description": "The macro`'s currently enabled Memory Match games are shown below.\nYou can use ``' commandPrefix 'timers`` to change the timers, and you can also use these commands to change certain Memory Match settings:",
+					"fields": [{
+						"name": "' commandPrefix 'mm enable [``game``]",
+						"value": "Enables the macro playing the selected Memory Match game",
+						"inline": true
+					},
+					{
+						"name": "' commandPrefix 'mm disable [``game``]",
+						"value": "Disables the macro playing the selected Memory Match game",
+						"inline": true
+					},
+					{
+						"name": "' commandPrefix 'mm ignore [``item``] (``game``)",
+						"value": "Toggles whether ``item`` is ignored (if ``game`` is omitted, ignore is turned on/off for all games)",
+						"inline": true
+					}]
+				}
+			'
+			)
+
+			for game in ["Normal", "Mega", "Night", "Extreme", "Winter"]
+			{
+				if (vars[game "MemoryMatchCheck"] = 1)
+				{
+					bit := MemoryMatchGames[game].bit, ignore := "None"
+					for item, data in MemoryMatch
+						if (vars[item "MatchIgnore"] & bit)
+							ignore .= ", " data.name
+
+					postdata .=
+					(
+					'
+					,{
+						"title": "' game ' Memory Match",
+						"color": "5066239",
+						"fields": [{
+							"name": "Time Left",
+							"value": "' DurationFromSeconds(time := (vars["Last" game "MemoryMatch"] + MemoryMatchGames[game].cooldown - nowUnix()), (time > 0) ? (((time >= 86400) ? "d'd' h" : "") ((time >= 3600) ? "h'h' m" : "") ((time >= 60) ? "m'm' s" : "") "s's'") : "'Ready'") '"
+						},
+						{
+							"name": "Ignored Items",
+							"value": "' StrReplace(ignore, "None, ") '"
+						}]
+					}
+					'
+					)
+				}
+			}
+
+			postdata .= "]}"
+			discord.SendMessageAPI(postdata)
 		}
 
 
