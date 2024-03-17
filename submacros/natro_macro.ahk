@@ -16724,7 +16724,7 @@ nm_locateVB(){
 			;battle pattern
 			if (VBState=2) {
 				nm_setStatus("Attacking", "Vicious Bee (" v ")" ((A_Index > 1) ? " - Round " A_Index : ""))
-				startBattle := (A_Index = 1) ? nowUnix() : startBattle
+				(!IsSet(startBattle)) && (startBattle := nowUnix())
 
 				;configure
 				breps := 1
