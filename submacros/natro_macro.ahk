@@ -20840,7 +20840,6 @@ nm_Pause(*){
 			if(SpaceKeyState)
 				sendinput "{" SC_Space " down}"
 		}
-		nm_setStatus(PauseState, PauseObjective)
 		MacroState:=2
 		if WinExist("Status.ahk ahk_class AutoHotkey")
 			try PostMessage 0x5552, 23, MacroState
@@ -20853,6 +20852,7 @@ nm_Pause(*){
 		MacroStartTime:=nowUnix()
 		GatherStartTime:=nowUnix()
 		DetectHiddenWindows 0
+		nm_setStatus(PauseState, PauseObjective)
 	} else {
 		if (ShowOnPause = 1)
 			WinActivate "ahk_id " MainGui.Hwnd
