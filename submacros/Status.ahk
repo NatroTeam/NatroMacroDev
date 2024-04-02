@@ -776,10 +776,10 @@ nm_honey()
 CreateHoneyBitmap(honey := 1, backpack := 1)
 {
 	if (!honey && !backpack)
-		return -1
+		return 0
 	hwnd := GetRobloxHWND(), GetRobloxClientPos(hwnd), offsetY := GetYOffset(hwnd)
 	if (windowWidth <= 500)
-		return -2
+		return 0
 	pBM := Gdip_CreateBitmap(294, (!!honey)*36 + (!!backpack)*35), G := Gdip_GraphicsFromImage(pBM)
 	(honey) && (pBMHoney := Gdip_BitmapFromScreen(windowX + windowWidth//2 - 300 "|" windowY + offsetY "|294|36"), Gdip_DrawImage(G, pBMHoney), Gdip_DisposeImage(pBMHoney))
 	(backpack) && (pBMBackpack := Gdip_BitmapFromScreen(windowX + windowWidth//2 "|" windowY + offsetY "|294|35"), Gdip_DrawImage(G, pBMBackpack, , (!!honey)*36), Gdip_DisposeImage(pBMBackpack))
