@@ -28,7 +28,6 @@ SetWorkingDir A_ScriptDir "\.."
 
 ; set version number
 version := "2.3"
-os_version := "cant detect os"
 
 ; ▰▰▰▰▰▰▰▰
 ; INITIAL SETUP
@@ -261,6 +260,7 @@ OnMessage(0x5557, SetBackpack, 255)
 
 ; OBTAIN DATA
 ; detect OS version
+os_version := "cant detect os"
 for objItem in ComObjGet("winmgmts:").ExecQuery("SELECT * FROM Win32_OperatingSystem")
 	os_version := Trim(StrReplace(StrReplace(StrReplace(StrReplace(objItem.Caption, "Microsoft"), "Майкрософт"), "مايكروسوفت"), "微软"))
 
