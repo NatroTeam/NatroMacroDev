@@ -3201,6 +3201,7 @@ MainGui.Title := "Natro Macro"
 MainGui["StartButton"].Enabled := 1
 MainGui["PauseButton"].Enabled := 1
 MainGui["StopButton"].Enabled := 1
+MainGui.OnEvent("DropFiles", nm_fileDrop)
 
 ;enable hotkeys
 try {
@@ -3219,6 +3220,54 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; GUI FUNCTIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;file drop
+nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
+    for k, v in fileArr {
+        Content := fileRead(v)
+        If (!!regexmatch(content := FileRead(v), "im)patterns\[") | !!regexmatch(content, "im)paths\["))
+            return msgbox(
+                (
+                    'The file "' v '" seems to be deprecated!
+     Make sure to install a compatible version of the file.'
+                ), , 0x1010)
+        ToolTip('Importing file...')
+        f := StrSplit(v, ['/', '\'])
+        Filename := f[f.length]
+        f := FileOpen((!!regexmatch(filename, 'i)(wf|gt(b|c|p|q|f))') ? (type := 'paths') : type := 'patterns') '\' filename, 'w')
+        name := SubStr(Filename, 1, -4)
+        f.write(content)
+        f.close()
+        (%'nm_import' type%)()
+        ToolTip()
+        if (type = "paths")
+            return msgbox('Successfully imported the ' SubStr(type, 1, -1) ' ' name '!')
+        if (tabCtrl.value = 1 && (copyTo := ((y > 53 && y < 115) || 2 * (y > 115 && y < 175 && mainGui["fieldName2"].enabled) || 3 * (y > 175 && y < 235 && mainGui["fieldName3"].enabled)))) {
+			if !ObjHasValue(patternlist,name) {
+				patternList.push(name)
+				For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
+						MainGui[i].add([name])
+			}
+			msgboxOut := Msgbox('You dragged the pattern ' name '`r`non the ' (copyTo = 1 ? "first" : copyTo = 2 ? "second" : "third") ' gather settings!`r`nDo you want to use this pattern?', , 0x1044)
+			if (msgboxOut = "Yes") {
+				FieldPattern%copyTo% := name
+				IniWrite name, "settings\nm_config.ini", "Gather", "FieldPattern" copyTo
+				MainGui["FieldPattern" copyTo].Text := FieldPattern%copyTo%
+				msgbox MainGui["FieldPattern" copyTo].text
+			}
+			else
+				msgbox
+				(
+					'Successfully imported the pattern ' SubStr(filename, 1, -4) '!
+					Debuggin only: ' msgboxOut
+				), , 0x1040
+		}
+		msgbox
+		(
+			'Successfully imported the pattern ' name '!
+			Paste the gather settings by clicking on the paste button'
+		),,0x1040
+    }
+}
 ;buttons
 nm_StartButton(GuiCtrl, *){
 	MouseGetPos , , , &hCtrl, 2
