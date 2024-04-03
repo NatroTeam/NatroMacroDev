@@ -3209,8 +3209,8 @@ try {
 	Hotkey PauseHotkey, nm_pause, "On"
 	Hotkey AutoClickerHotkey, autoclicker, "On T2"
 	Hotkey TimersHotkey, timers, "On"
-	Hotkey "~*^v", nm_CopySettings, "On"
-	Hotkey "~*^c", nm_PasteSettings, "On"
+	Hotkey "~*^v", nm_PasteSettings, "On"
+	Hotkey "~*^c", nm_CopySettings, "On"
 }
 
 SetTimer Background, 2000
