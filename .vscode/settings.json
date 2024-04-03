@@ -1,0 +1,24 @@
+{
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "string.quoted",
+                "settings": {
+                    "fontStyle": "italic"
+                },
+            },
+            {
+                "scope":"punctuation.definition.string.begin",
+                "settings": {
+                    "foreground": "#990000",
+                }
+            },
+            {
+                "scope":"punctuation.definition.string.end",
+                "settings": {
+                    "foreground": "#990000"
+                }
+            }
+        ]
+    }
+}

@@ -3209,6 +3209,8 @@ try {
 	Hotkey PauseHotkey, nm_pause, "On"
 	Hotkey AutoClickerHotkey, autoclicker, "On T2"
 	Hotkey TimersHotkey, timers, "On"
+	Hotkey "~*^v", nm_CopySettings, "On"
+	Hotkey "~*^c", nm_PasteSettings, "On"
 }
 
 SetTimer Background, 2000
@@ -4562,6 +4564,28 @@ nm_SaveFieldDefault(GuiCtrl, *){
 				IniWrite v, "settings\field_config.ini", FieldName%i%, k
 		}
 	}
+}
+nm_CopySettings(*) {
+    if !(TabCtrl.tab == 1 || WinActivate("ahk_id" MainGui.Hwnd))
+        return
+    MouseGetPos &x, &y, &win
+    MainGui.GetPos(&wx,&wy)
+    y += wy
+    if !(copyFrom := (y>53 && y < 115 || 2* (y>115 && y<175 && MainGui["CopyGather2"].enabled) || 3* (y > 175 && y < 235 && MainGui["CopyGather3"].enabled))&&win=MainGui.hwnd)
+        return nm_CopyGatherSettings(MainGui["CopyGather1"]) " " MsgBox('Copied gather settings 1 to clipboard!',,0x1040) 
+    else
+        return nm_CopyGatherSettings(MainGui["CopyGather" copyFrom]) " " Msgbox('Copied gather settings ' copyFrom ' to clipboard!',,0x1040)
+}
+nm_PasteSettings(*) {
+    if !(TabCtrl.tab == 1 || WinActivate("ahk_id" MainGui.Hwnd))
+        return
+    MouseGetPos &x, &y, &win
+    MainGui.GetPos(&wx,&wy)
+    y += wy
+    if !(pasteTo := (y>53 && y < 115 || 2* (y>115 && y<175 && MainGui["PasteGather2"].enabled) || 3* (y > 175 && y < 235 && MainGui["PasteGather3"].enabled))&&win=MainGui.hwnd)
+        return nm_PasteGatherSettings(MainGui["PasteGather1"]) " " MsgBox('Pasted clipboard to  gather settings 1!',,0x1040) 
+    else
+        return nm_PasteGatherSettings(MainGui["PasteGather" pasteTo]) " " Msgbox('Pasted clipboard to gather settings ' pasteTo '!',,0x1040)
 }
 nm_CopyGatherSettings(GuiCtrl, *){
 	static q := Chr(34), ob := Chr(123), cb := Chr(125)
