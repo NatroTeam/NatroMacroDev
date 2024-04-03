@@ -15151,7 +15151,15 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 		' (NewWalk ? 'Walk(tiles)' : ('HyperSleep(4000/' MoveSpeedNum '*tiles)')) '
 		Send "{" MoveKey1 " up}" (MoveKey2 ? "{" MoveKey2 " up}" : "")
 	}
-
+	CameraRot(Dir, Num) {
+		Static LRNum := 0, LRDir := "Right", UDDir := "Down", UDNum := 0
+		OnExit((*) => send("{" Rot%LRDir% " " Abs(LRNum) "}{" Rot%UDDir% " " Abs(UDNum) "}"), -1)
+		send "{" Rot%Dir% " " Num "}"
+		if (Dir="Left" || Dir="Right")
+			LRNum := (Dir="Left") ? LRNum+Num : LRNum-Num, LRDir := (LRNum<0) ? "Right" : "Left"
+		else if (Dir="Up" || Dir="Down")
+			UDNum := (Dir="Up") ? UDNum+Num : UDNum-Num, UDDir := (UDNum<0) ? "Down" : "Up"
+	}
 	F13::
 		start(hk?)
 		{
