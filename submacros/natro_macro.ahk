@@ -4566,24 +4566,24 @@ nm_SaveFieldDefault(GuiCtrl, *){
 	}
 }
 nm_CopySettings(*) {
-    if !(TabCtrl.tab == 1 || WinActivate("ahk_id" MainGui.Hwnd))
+    if TabCtrl.Value !== 1 || WinExist("A") !== MainGui.Hwnd
         return
     MouseGetPos &x, &y, &win
-    MainGui.GetPos(&wx,&wy)
-    y += wy
-    if !(copyFrom := (y>53 && y < 115 || 2* (y>115 && y<175 && MainGui["CopyGather2"].enabled) || 3* (y > 175 && y < 235 && MainGui["CopyGather3"].enabled))&&win=MainGui.hwnd)
+    MainGui.GetPos(&wx,&wy,&ww)
+    y -= wy
+    if !(copyFrom := (y>53 && y < 115 || 2* (y>115 && y<175 && MainGui["CopyGather2"].enabled) || 3* (y > 175 && y < 235 && MainGui["CopyGather3"].enabled))) || !(win == MainGui.hwnd)
         return nm_CopyGatherSettings(MainGui["CopyGather1"]) " " MsgBox('Copied gather settings 1 to clipboard!',,0x1040) 
     else
         return nm_CopyGatherSettings(MainGui["CopyGather" copyFrom]) " " Msgbox('Copied gather settings ' copyFrom ' to clipboard!',,0x1040)
 }
 nm_PasteSettings(*) {
-    if !(TabCtrl.tab == 1 || WinActivate("ahk_id" MainGui.Hwnd))
+    if TabCtrl.Value !== 1 || WinExist("A") !== MainGui.Hwnd
         return
     MouseGetPos &x, &y, &win
-    MainGui.GetPos(&wx,&wy)
-    y += wy
-    if !(pasteTo := (y>53 && y < 115 || 2* (y>115 && y<175 && MainGui["PasteGather2"].enabled) || 3* (y > 175 && y < 235 && MainGui["PasteGather3"].enabled))&&win=MainGui.hwnd)
-        return nm_PasteGatherSettings(MainGui["PasteGather1"]) " " MsgBox('Pasted clipboard to  gather settings 1!',,0x1040) 
+    MainGui.GetPos(&wx,&wy,&ww)
+    y -= wy
+    if !(pasteTo := (y>53 && y < 115 || 2* (y>115 && y<175 && MainGui["PasteGather2"].enabled) || 3* (y > 175 && y < 235 && MainGui["PasteGather3"].enabled))) || !(win == MainGui.hwnd)
+        return nm_PasteGatherSettings(MainGui["PasteGather1"]) " " MsgBox('Pasted clipboard to gather settings 1!',,0x1040) 
     else
         return nm_PasteGatherSettings(MainGui["PasteGather" pasteTo]) " " Msgbox('Pasted clipboard to gather settings ' pasteTo '!',,0x1040)
 }
