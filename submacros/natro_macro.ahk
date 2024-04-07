@@ -2571,7 +2571,8 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Text", "x255 y55 w119 h120 -Wrap vTotalStats")
 MainGui.Add("Text", "x375 y55 w119 h120 -Wrap vSessionStats")
 MainGui.Add("Button", "x290 y39 w50 h15 vResetTotalStats Disabled", "Reset").OnEvent("Click", nm_ResetTotalStats)
-MainGui.Add("Button", "x265 y202 w215 h24 vWebhookGUI Disabled", "Change Discord Settings").OnEvent("Click", nm_WebhookGUI)
+MainGui.Add("Button", "x259 y202 w135 h24 vWebhookGUI Disabled", "Change Discord Settings").OnEvent("Click", nm_WebhookGUI)
+MainGui.Add("Button", "x401 y202 w85 h24 vPresetGUI Disabled", "Preset Settings").OnEvent("Click", nm_PresetGUI)
 nm_setStats()
 SetLoadingProgress(28)
 
@@ -4009,11 +4010,13 @@ nm_TabStatusLock(){
 	MainGui["StatusLogReverse"].Enabled := 0
 	MainGui["ResetTotalStats"].Enabled := 0
 	MainGui["WebhookGUI"].Enabled := 0
+	MainGui["PresetGUI"].Enabled := 0
 }
 nm_TabStatusUnLock(){
 	MainGui["StatusLogReverse"].Enabled := 1
 	MainGui["ResetTotalStats"].Enabled := 1
 	MainGui["WebhookGUI"].Enabled := 1
+	MainGui["PresetGUI"].Enabled := 1
 }
 nm_TabSettingsLock(){
 	global
@@ -7272,6 +7275,425 @@ nm_WebhookGUI(*){
 	exec.StdIn.Write(script), exec.StdIn.Close()
 
 	return (WGUIPID := exec.ProcessID)
+}
+nm_CreatePresetFiles(PresetName, type:=0) {
+    	Global PresetGui
+    	if (!FileExist(A_WorkingDir "\settings\presets")) {
+        	DirCreate(A_WorkingDir "\settings\presets")
+    	}
+    	if (type!=0) { ;create/delete/overwrite files
+        	KillArray := ["TunnelBearCheck", "TunnelBearBabyCheck", "StumpSnailCheck", "StingerSpiderCheck", "StingerRoseCheck", "StingerPepperCheck", "StingerMountainTopCheck", "StingerDailyBonusCheck", "StingerCloverCheck", "StingerCheck", "StingerCactusCheck", "SnailTime", "ShellAmuletMode", "MonsterRespawnTime", "MondoLootDirection", "KingBeetleCheck", "KingBeetleBabyCheck", "KingBeetleAmuletMode", "InputSnailHealth", "InputChickHealth", "CommandoCheck", "CocoCrabCheck", "ChickTime", "BugrunWerewolfLoot", "BugrunWerewolfCheck", "BugrunSpiderLoot", "BugrunSpiderCheck", "BugrunScorpionsLoot", "BugrunScorpionsCheck", "BugrunRhinoBeetlesLoot", "BugrunRhinoBeetlesCheck", "BugrunMantisLoot", "BugrunMantisCheck", "BugrunLadybugsLoot", "BugrunLadybugsCheck", "BugrunInterruptCheck", "BugRunCheck"]
+        	KillTimer := ["VBLastKilled", "LastBugrunLadybugs", "LastBugrunMantis", "LastBugrunRhinoBeetles", "LastBugrunScorpions", "LastBugrunSpider", "LastBugrunWerewolf", "LastCommando", "LastKingBeetle", "LastStumpSnail", "LastTunnelBear", "NightLastDetected", "LastCocoCrab"]
+        	MiscArray := ["TimersHotkey", "StopHotkey", "StartHotkey", "PauseHotkey", "AutoClickerHotkey", "ClickCount", "ClickDelay", "ClickDuration", "ClickMode"]
+        	MiscDiscord := ["NightAnnouncementCheck", "NightAnnouncementName", "NightAnnouncementPingID", "NightAnnouncementWebhook"]
+        	ServerArray := ["FallbackServer1", "FallbackServer2", "FallbackServer3", "PrivServer"]
+		CollectTimer := ["LastAntPass", "LastBlueberryDis", "LastCandles", "LastClock", "LastCoconutDis", "LastFeast", "LastGingerbread", "LastGlueDis", "LastGummyBeacon", "LastHoneyDis", "LastHoneystorm", "LastLidArt", "LastMondoBuff", "LastRBPDelevel", "LastRoboPass", "LastRoyalJellyDis", "LastSamovar", "LastSnowMachine", "LastStockings", "LastStrawberryDis", "LastTreatDis", "LastWreath"]
+        	BoostTimer := ["AFBdiceUsed", "AFBglitterUsed", "FieldLastBoosted", "FieldLastBoostedBy", "FieldNextBoostedBy", "LastEnzymes", "LastGlitter", "LastGuid", "LastHotkey2", "LastHotkey3", "LastHotkey4", "LastHotkey5", "LastHotkey6", "LastHotkey7", "LastMicroConverter", "LastSnowflake", "LastStickerPrinter", "LastStickerStack", "LastWhirligig"]
+        	BoosterTimer := ["LastBlueBoost", "LastMountainBoost", "LastRedBoost"]
+		WebBotArray := ["BotToken", "Webhook", "MainChannelID", "ReportChannelID", "discordUID"]
+        	PresetPath := A_WorkingDir . "\settings\presets\" . PresetName . ".ini"
+		ControlValue := Map()
+		for k, v in PresetGui {
+    			if (RegExMatch(v.name, "^Preset")) {
+        			ControlValue[v.name] := v.Value
+			}
+		}
+        	PresetArray := Map() ; array to determin what to save to preset
+		KeyToControl := Map("Gather", "PresetGather", "Kill", "PresetKill", "Quests", "PresetQuest", "Collect", "PresetCollect", "Blender", "PresetCollect", "Boost", "PresetBoost", "Shrine", "PresetBoost", "Gui", "PresetPlanters", "Status", "PresetDiscord", "Settings", "PresetSettings", "Misc", "PresetMisc", "Private Server", "PresetPrivateServer", "CollectTimers", "PresetCollectTimers", "KillTimers", "PresetKillTimers", "BoostTimers", "PresetBoostTimers", "Planters", "PresetPlantersTimers", "FieldDefaults", "PresetFDefaults", "WebBot", "PresetWebBot")
+		For k, c in KeyToControl {
+			PresetArray[k] := ControlValue[c]
+		}
+        	planterSectionNames := IniRead(A_WorkingDir . "\settings\manual_planters.ini")
+        	PlanterSections := StrSplit(planterSectionNames, "`n") ; get manual panters ini
+        	fieldSectionNames := IniRead(A_WorkingDir . "\settings\field_config.ini")
+        	FieldSections := StrSplit(fieldSectionNames, "`n") ; get field defaults
+        	switch type {
+            		case 1: ; create the preset file
+                		for k, v in PresetArray {
+                    			if (v!=0) {
+                        			switch k {
+                            				case "Gui":
+                                				for x, y in PlanterSections { ; save manual planter settings to preset
+                                    					ini := IniRead(A_WorkingDir . "\settings\manual_planters.ini", y)
+                                    					IniWrite(ini, PresetPath, y)
+                                				}
+                            				case "FieldDefaults":
+                                				for x, y in FieldSections { ; save field defaults
+                                    					ini := IniRead(A_WorkingDir . "\settings\field_config.ini", y)
+                                    					IniWrite(ini, PresetPath, y)
+                                				}
+								continue
+			    				case "Misc":
+								if (!PresetArray["Settings"]) {
+									For x, y in MiscArray {
+										ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
+										IniWrite(ini, PresetPath, "Settings", y)
+									}
+								}
+								if (!PresetArray["Status"]) {
+									For x, y in MiscDiscord {
+										ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Status", y)
+										IniWrite(ini, PresetPath, "Status", y)
+									}
+								}
+								continue
+							Case "WebBot":
+								if (!PresetArray["Status"]) {
+									For x, y in WebBotArray {
+										ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Status", y)
+										IniWrite(ini, PresetPath, "Status", y)
+									}
+								}
+								continue
+			    				case "Kill":
+								if (!PresetArray["Collect"]) {
+                                    					For x, y in KillArray {
+                                        					ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
+                                        					IniWrite(ini, PresetPath, "Collect", y)
+                                    					}
+                                    					if (PresetArray["KillTimers"]) {
+                                        					For x, y in KillTimer {
+                                            						ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
+                                            						IniWrite(ini, PresetPath, "Collect", y)
+                                        					}
+                                    					}
+                                				}
+								continue
+			    				case "Private Server":
+								if (!PresetArray["Settings"]) {
+                                    					For x, y in ServerArray {
+                                       						ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
+                                        					IniWrite(ini, PresetPath, "Settings", y)
+                                    					}
+                                				}
+								continue
+			    				case "BoostTimers":
+                               					if (!PresetArray["Settings"]) {
+                                    					For x, y in BoostTimers {
+                                        					ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
+                                        					IniWrite(ini, PresetPath, "Settings", y)
+                                    					}
+                                				}
+                                				if (!PresetArray["Collect"]) {
+                                    					For x, y in BoosterTimers {
+                                        					ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
+                                        					IniWrite(ini, PresetPath, "Collect", y)
+                                    					}
+                                				}
+								continue
+                            				case "CollectTimers":
+                                				continue
+			    			}	
+			    			ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", k)
+			    			IniWrite(ini, PresetPath, k)
+					}
+		    		}
+				if (PresetArray["Collect"]) {
+					if (!PresetArray["Kill"]) {
+						for k, v in KillArray
+							IniDelete(PresetPath, Collect, v)
+						for k, v in KillTimer
+							IniDelete(PresetPath, Collect, v)
+					} else if (!PresetArray["KillTimers"]) {
+						for k, v in KillTimer
+							IniDelete(PresetPath, Collect, v)
+					}
+					if (!PresetArray["CollectTimers"]) {
+						for k, v in CollectTimer
+							IniDelete(PresetPath, Collect, v)
+					}
+					if (!PresetArray["BoostTimers"]) {
+						for k, v in BoosterTimer
+							IniDelete(PresetPath, Collect, v)
+					}
+				}
+				if (PresetArray["Settings"]) {
+					if (!PresetArray["Misc"]) {
+						for k, v in MiscArray
+							IniDelete(PresetPath, Settings, v)
+					}
+					if (!PresetArray["Private Server"]) {
+						for k, v in ServerArray
+							IniDelete(PresetPath, Settings, v)
+					}
+				}
+				if (!PresetArray["Misc"] && PresetArray["Status"]) {
+					for k, v in MiscDiscord
+						IniDelete(PresetPath, Status, v)
+				}
+				if (!PresetArray["WebBot"] && PresetArray["Status"]) {
+					for k, v in WebBotArray
+						IniDelete(PresetPath, Status, v)
+				}
+				if (!PresetArray["BoostTimers"] && PresetArray["Boost"]) {
+					for k, v in BoostTimer
+						IniDelete(PresetPath, Boost, v)
+				}
+			case 2: ; delete preset file
+				FileDelete(PresetPath)
+		}
+	}
+}
+nm_CreatePreset(*) {
+	global PresetGui
+	PresetName := PresetGui["SetPresetName"].Value
+	PresetPath := A_WorkingDir . "\settings\presets\" . PresetName . ".ini"
+	nm_CreatePresetFiles(PresetName)
+	if (PresetName="") {
+		MsgBox("No preset name given.",, "T5")
+		return
+	}
+	if (FileExist(PresetPath)) {
+		if (MsgBox("Preset " . PresetName . " is already created. Do you want to overwrite " . PresetName . "?",, "4") == "no")
+			return
+		nm_CreatePresetFiles(PresetName, 2)
+	}
+	nm_PresetLock()
+	nm_CreatePresetFiles(PresetName, 1)
+	PresetGui.Destroy()
+	nm_PresetGUI()
+}
+nm_OverwritePreset(*) {
+	global PresetGui, SelectedPreset
+	PresetName := SelectedPreset.Text
+	PresetPath := A_WorkingDir . "\settings\presets\" . PresetName . ".ini"
+	nm_CreatePresetFiles(PresetName)
+	if (!FileExist(PresetPath)) {
+		MsgBox("Preset '" PresetName "' does not exist.", "Error", "T5")
+		return
+	}
+	if (MsgBox("Do you want to overwrite " . PresetName . "?",, "4") = "no")
+		return
+	nm_CreatePresetFiles(PresetName, 2)
+	nm_PresetLock()
+	nm_CreatePresetFiles(PresetName, 1)
+	PresetGui.destroy
+	nm_PresetGUI()
+}
+nm_DeletePreset(*) {
+	global PresetGui, SelectedPreset
+	PresetName := SelectedPreset.Text
+	PresetPath := A_WorkingDir . "\settings\presets\" . PresetName . ".ini"
+	nm_CreatePresetFiles(PresetName)
+	if (!FileExist(PresetPath)) {
+		MsgBox("Can't find '" PresetName "' to delete.", "Error", "T5")
+		return
+	}
+	if (MsgBox("Do you want to delete " . PresetName . "?",, "4") = "no")
+		return
+	nm_CreatePresetFiles(PresetName, 2)
+	PresetGui.Destroy()
+	nm_PresetGUI()
+}
+nm_LoadPreset(*) {
+	global PresetGui, SelectedPreset
+	PresetName := SelectedPreset.Text
+	PresetPath := A_WorkingDir . "\settings\presets\" PresetName ".ini"
+	if (!FileExist(PresetPath)) {
+		MsgBox("Can't open/load '" PresetName "' to load.", "Error", "T5")
+		return
+	}
+	if (MsgBox("Do you want to load " PresetName "? Current settings will be lost.",, "4") = "no")
+		return
+	Preset := PresetFile.Read()
+	SectionNames := IniRead(PresetPath)
+	SectionArray := StrSplit(SectionNames, "`n") ; save section names to array
+	PresetGui.Destroy()
+	nm_LockTabs()
+	for k, v in SectionArray { ; load preset
+		ini := IniRead(PresetPath, v)
+		switch v {
+			case "General", "Slot 1", "Slot 2", "Slot 3":
+				IniWrite(ini, A_WorkingDir . "\settings\manual_planters.ini", v) ; load manual planter settings
+				continue
+			case "Bamboo", "Blue Flower", "Cactus", "Clover", "Coconut", "Dandelion", "Mountain Top", "Mushroom", "Pepper", "Pine Tree", "Pineapple", "Pumpkin", "Rose", "Spider", "Strawberry", "Stump", "Sunflower":
+				IniWrite(ini, A_WorkingDir . "\settings\field_config.ini", v) ; load field defaults
+				continue
+			case "Status", "Settings", "Collect":
+				SectionKeys := nm_GetKeys(PresetPath, v)
+				for x, y in SectionKeys {
+					IniWrite(ini, A_WorkingDir . "\settings\nm_config.ini", v, y)
+				}
+			default:
+				IniWrite(ini, A_WorkingDir . "\settings\nm_config.ini", v)
+		}
+		SectionKeys := nm_GetKeys(PresetPath, v)
+		for x, y in SectionKeys {
+			y := IniRead(PresetPath, v, y)
+			nm_UpdateGUIVar(y)
+		}
+	}
+	nm_LockTabs(0)
+}
+nm_CopyPreset(*) {
+	global PresetGui, SelectedPreset
+	PresetName := SelectedPreset.Text
+	PresetPath := A_WorkingDir "\settings\presets\" PresetName ".ini"
+	try Preset := FileOpen(PresetPath, "r")
+	catch as Err
+	{
+		MsgBox("Cant open '" PresetName "' to export.`n`n" Type(Err) ": " Err.Message, "Error", "T5")
+		return
+	}
+	A_ClipBoard := Preset.Read()
+	Preset.Close()
+	MsgBox("Preset " PresetName " has been copied to clipboard.",, "T3")
+}
+nm_ImportPreset(*) {
+	PresetGui.GetPos(gx, gy, gw, gh)
+	PresetInput := InputBox("Enter preset name:", "Import", "w" . 120 . " h" . 120 " x" . gx+95 . " y" . gy-22)
+	PresetPath := A_WorkingDir . "\settings\presets\" . PresetInput . ".ini"
+	PresetPatternPath := A_WorkingDir . "\patterns"
+	PresetPatterns := ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
+	PresetDefaultPatterns := ["Bamboo", "Blue Flower", "Cactus", "Clover", "Coconut", "Dandelion", "Mountain Top", "Mushroom", "Pepper", "Pine Tree", "Pineapple", "Pumpkin", "Rose", "Spider", "Strawberry", "Stump", "Sunflower"]
+	if (PresetInput="") {
+		MsgBox("No preset name given.",, "T5")
+		return
+	}
+	if (FileExist(PresetPath)) {
+		if (MsgBox("Do you want to overwrite " . PresetInput . "?",, "4") = "No")
+			return
+		nm_CreatePresetFiles(PresetInput, 2)
+	}
+	FormatPath := A_WorkingDir "\settings\presets\formatcheck.ini"
+	try FormatCheck := FileOpen(FormatPath, "rw")
+	catch as Err
+	{
+		MsgBox("Error checking clipboard format.`n`n" Type(Err) ": " Err.Message, "Error", "T5")
+		return
+	}
+	FormatFile.Write(A_Clipboard)
+	FormatFile.Close()
+	SectionNames := IniRead(FormatPath)
+	SectionArray := StrSplit(SectionNames, "`n") ; save section names to array
+	for k, v in SectionArray {
+		ini := IniRead(FormatPath, v)
+		IniWrite(ini, PresetPath, v)
+	}
+	FileDelete(FormatPath)
+	if (!FileExist(PresetPath)) {
+		MsgBox("Preset " PresetInput " could not be created. No valid data was imported.", "Invalid", "T5")
+		return
+	}
+	ini := IniRead(PresetPath, "Gather")
+	if (ini!="") {
+		for k, v in PresetPatterns {
+			ini := IniRead(PresetPath, "Gather", v)
+			if (!FileExist(PresetPatternPath . "\" . ini . ".ahk") && ini!="Stationary") {
+				MsgBox("Pattern " . ini . " for " . v . " does not exist.",, "T5")
+			}
+		}
+		for k, v in PresetDefaultPatterns {
+			ini := IniRead(PresetPath, v, "pattern")
+			if (!FileExist(PresetPatternPath . "\" . ini . ".ahk") && ini!="Stationary") {
+				MsgBox("Default field pattern " . ini . " for " . v . " does not exist.",, "T5")
+			}
+		}
+	}
+	MsgBox("Preset " PresetInput " has been created.",, "T5")
+	PresetGui.Destroy()
+	nm_PresetGUI()
+}
+nm_GetKeys(FilePath, Section) {
+	SectionKeys := []
+	FoundSection := 0
+	Loop Read, FilePath
+	{
+		if (A_LoopReadLine="[" . Section . "]") {
+			FoundSection := 1
+			continue
+		}
+		else if (A_LoopReadLine="") {
+			continue
+		}
+		if (FoundSection) {	
+			if (SubStr(A_LoopReadLine, 1, 1)="[") {
+				break
+			}
+			if (InStr(A_LoopReadLine, "=")) {
+				key := StrSplit(A_LoopReadLine, "=")
+				SectionKeys.push(key[1])
+			}
+		}
+	}
+	return SectionKeys
+}
+FileNameCleanup(*) {
+	global PresetGui
+    	userInput := PresetGui["SetPresetName"].Value
+   	if (RegExMatch(userInput, "[\\/:\*\?<>\|]|[\s.]|^\.+$")) {
+        	cleanedFileName := RegExReplace(userInput, "[\\/:\*\?<>\|]|[\s.]|^\.+$", "")
+        	PresetGui["SetPresetName"].Value := cleanedFileName
+        	Send "{End}" ;otherwise it sets cursor to the beginning of the text
+    	}
+}
+HelpSection(*) {
+    	MsgBox("The Included Settings, each checkbox represents a different tab in natro macro to save.`n`nThere are a few exceptions:`nPS Link is your private server Link, Discord is the discord settings (screenshots, pings), Token/Webhook is your Bot Token and Webhook along with all your channel IDs and UserID, and Field Defaults is your saved gather settings for each field.", "Help")
+}
+RenameHelp(*) {
+	MsgBox("Select a preset under the Manage settings, and fill out a new name in the editbox under Creation settings, Then click Rename and your preset will be re-named.", "Help")
+}
+ConfirmWebBot(*) {
+    	global PresetGui
+    	if (PresetGui["PresetWebBot"].Value = 1)
+        	if (!MsgBox("Are you sure you would like to enable save Bot token and Webhook? This is very dangerous if shared and could allow people with it to control your computer.`nThis also includes all channel IDs and the user ID for discord.", "Webhook and Token Confirmation", 4))
+            		PresetGui["PresetWebBot"].Value := 0
+}
+hideTimer(ctrl,*) =>
+      PresetGui[ctrl.name . "Timers"].Enabled := ctrl.Value
+    . PresetGui[ctrl.name . "Timers"].Value := 0
+nm_PresetGUI(*){
+	global
+	local presetlist, FileName
+	presetlist:=[]
+	Loop Files, A_WorkingDir "\settings\presets\*.ini", "R" {
+		if (A_LoopFileName!="") {
+			SplitPath A_LoopFileName,,,, &FileName
+			presetlist.push(FileName)
+		}
+	}
+	MainGui.GetPos(&gx, &gy, &gw, &gh)
+	PresetGui:=Gui("-MinimizeBox +Owner" MainGui.Hwnd, "Preset Settings")
+	PresetGui.Show("x" gx+80 " y" gy+35 " w317 h236")
+	PresetGui.Font("s9", "Segoe UI")
+	PresetGui.Add("GroupBox", "x4 y2 w100 h120", "Creation")
+	(hEdtValue := PresetGui.Add("Edit", "x9 y20 w90 h21 vSetPresetName Limit15")).OnEvent("Change", FileNameCleanup)
+    	SendMessage 0x1501, 1, StrPtr("Name"), hEdtValue ; EM_SETCUEBANNER
+	PresetGui.Add("Button", "x9 y45 w90 h21 vCreatePreset", "Create New").OnEvent("Click", nm_CreatePreset)
+	PresetGui.Add("Button", "x9 y70 w90 h21 vImportPreset", "Import").OnEvent("Click", nm_ImportPreset)
+	PresetGui.Add("Button", "x9 y95 w75 h21 vRenamePreset", "Rename").OnEvent("Click", nm_ImportPreset)
+	PresetGui.Add("Button", "x88 y98 w10 h15", "?").OnEvent("Click", RenameHelp)
+	PresetGui.Add("GroupBox", "x108 y2 w100 h145", "Manage")
+	SelectedPreset := PresetGui.Add("DropDownList", "x113 y20 w90 choose1 vSelectPreset", presetlist)
+	PresetGui.Add("Button", "x113 y45 w90 h21 vOverwritePreset", "Overwrite").OnEvent("Click", nm_OverwritePreset)
+	PresetGui.Add("Button", "x113 y70 w90 h21 vDeletePreset", "&Delete").OnEvent("Click", nm_DeletePreset)
+	PresetGui.Add("Button", "x113 y95 w90 h21 vCopyPreset", "Export").OnEvent("Click", nm_CopyPreset)
+	PresetGui.Add("Button", "x113 y120 w90 h21 vLoadPreset", "Load Preset").OnEvent("Click", nm_LoadPreset)
+	PresetGui.Add("GroupBox", "x212 y2 w100 h95", "Timed")
+	if (presetlist.Length=0) {
+		For k, v in ["SelectPreset", "CopyPreset", "DeletePreset", "OverwritePreset", "LoadPreset", "RenamePreset"]
+			PresetGui[v].enabled:=0
+	}
+	PresetGui.Add("Button", "x9 y128 w10 h15", "?").OnEvent("Click", HelpSection)
+	PresetGui.Add("GroupBox", "x4 y143 w308 h90", "Included Settings")
+	PresetGui.Add("CheckBox", "x9 y159 w60 h16 +Checked vPresetGather", "Gather")
+	PresetGui.Add("CheckBox", "x9 y177 w55 h16 +Checked vPresetQuest", "Quest")
+	PresetGui.Add("CheckBox", "x9 y195 w60 h16 +Checked vPresetSettings", "Settings")
+	PresetGui.Add("CheckBox", "x9 y213 w58 h16 vPresetDiscord", "Discord")
+	PresetGui.Add("Text", "x72 y160 w1 h67 0x7")
+	PresetGui.Add("CheckBox", "x78 y159 w106 h16 +Checked vPresetFDefaults", "Field Defaults")
+	PresetGui.Add("CheckBox", "x78 y177 w45 h16 +Checked vPresetMisc", "Misc")
+	PresetGui.Add("CheckBox", "x78 y195 w60 h16 vPresetPrivateServer", "PS Link")
+	PresetGui.Add("CheckBox", "x78 y213 w106 h16 vPresetWebBot", "Token/Webhook").OnEvent("Click", ConfirmWebBot)
+	PresetGui.Add("Text", "x185 y160 w1 h67 0x7")
+	PresetGui.Add("CheckBox", "x192 y159 w48 h16 +Checked vPresetBoost", "Boost").OnEvent("Click", hideTimer)
+	PresetGui.Add("CheckBox", "x255 y159 w55 h16 vPresetBoostTimers", "Timers")
+	PresetGui.Add("CheckBox", "x192 y177 w57 h16 +Checked vPresetCollect", "Collect").OnEvent("Click", hideTimer)
+	PresetGui.Add("CheckBox", "x255 y177 w55 h16 vPresetCollectTimers", "Timers")
+	PresetGui.Add("CheckBox", "x192 y195 w40 h16 +Checked vPresetKill", "Kill").OnEvent("Click", hideTimer)
+	PresetGui.Add("CheckBox", "x255 y195 w55 h16 vPresetKillTimers", "Timers")
+	PresetGui.Add("CheckBox", "x192 y213 w59 h16 +Checked vPresetPlanters", "Planters").OnEvent("Click", hideTimer)
+	PresetGui.Add("CheckBox", "x255 y213 w55 h16 vPresetPlantersTimers", "Timers")
 }
 
 ; SETTINGS TAB
