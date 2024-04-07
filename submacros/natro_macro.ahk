@@ -1,4 +1,4 @@
-/*
+﻿/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -337,7 +337,8 @@ nm_importConfig()
 		, "TimersHotkey", "F5"
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
-		, "FDCWarn", 1)
+		, "FDCWarn", 1
+		, "FirstStartup", 1)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -2060,7 +2061,7 @@ class Tutorial {
 		nm_LockTabs(1)
 		TabCtrl.value := tutorialTab
 		TabCtrl.UseTab()
-		(this.pic := mainGui.AddPicture("x0 y0 w490 h275 0xE +BackgroundTrans")).OnEvent("Click", this.__nextStep.bind(this))
+		(this.pic := mainGui.AddPicture("x0 y0 w500 h240 0xE +BackgroundTrans")).OnEvent("Click", this.__nextStep.bind(this))
 		this.tutorialObj := Tutorial.tutorials.%tutorialTab%.Clone()
 		this.step := 1
 		this.drawTutorial()
@@ -2075,11 +2076,11 @@ class Tutorial {
 	drawTutorial() {
 		MainGui[this.tutorialObj.%this.step%.control].getPos(&x,&y,&w,&h)
 		pBitmap := Gdip_CreateBitmap(500, 240), pGraphics:=Gdip_GraphicsFromImage(pBitmap),Gdip_SetSmoothingMode(pGraphics,2)
-		Gdip_FillRectangle(pGraphics, pBrush := Gdip_BrushCreateSolid("0xaa000000"), -1,-1, 492,y+1)
-		Gdip_FillRectangle(pGraphics,pBrush, -1,y+1, x+1,h)
-		Gdip_FillRectangle(pGraphics,pBrush, x+w,y+1, 501-x-w,h)
+		Gdip_FillRectangle(pGraphics, pBrush := Gdip_BrushCreateSolid("0xaa000000"), -1,-1, 502,y+1)
+		Gdip_FillRectangle(pGraphics,pBrush, -1,y, x+1,h)
+		Gdip_FillRectangle(pGraphics,pBrush, x+w,y, 501-x-w,h)
 		Gdip_FillRectangle(pGraphics,pBrush, -1,y+h, 502,241-y-h), Gdip_DeleteBrush(pBrush)
-		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y200 s12 vCenter Center cffffffff",,490, 275)
+		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y200 s12 vCenter Center cffffffff",,500, 240)
 		Gdip_DeleteGraphics(pGraphics)
 		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0xaa000000")
 		Gdip_SaveBitmapToFile(pBitmap, "tutorial.png")
@@ -3243,9 +3244,10 @@ SetLoadingProgress(99)
 if (BuffDetectReset = 1)
 	nm_AdvancedGUI()
 SetLoadingProgress(100)
-
-Tutorial(1)
-;unlock tabs
+if FirstStartup
+	Tutorial(1)
+else
+	nm_LockTabs(0)
 ;nm_LockTabs(0)
 nm_setStatus("Startup", "UI")
 TabCtrl.Focus()
