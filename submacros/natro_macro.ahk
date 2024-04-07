@@ -3270,6 +3270,49 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 		),,0x1040
     }
 }
+/**
+ * Tutorial
+ * @param1 {number} create a new tutorial prompt of a tab, default: 0 -> "all"
+ */
+class Tutorial {
+	static tutorials := {
+		1: {
+			1:{
+				control:"FieldName1",
+				text: "The field drop down list is where you can select the gathering field."
+			},
+			2:{
+				control:"FieldPattern1",
+				text: "Here you can select your gathering pattern."
+			}
+		}
+	}
+	__New(tutorialTab := 1) {
+		TabCtrl.value := tutorialTab
+		TabCtrl.UseTab()
+		(this.pic := mainGui.AddPicture("x0 y0 w490 h275 +BackgroundTrans")).OnEvent("Click", this.__nextStep.bind(this))
+		this.tutorialObj := Tutorial.tutorials.%tutorialTab%.Clone()
+		this.step := 1
+	}
+	__nextStep(*) {
+		this.step++
+		this.drawTutorial()
+	}
+	drawTutorial() {
+		MainGui[this.tutorialObj.%this.step%.control].getPos(&x,&y,&w,&h)
+		pBitmap := Gdip_CreateBitmap(490, 275), pGraphics:=Gdip_GraphicsFromImage(pBitmap),Gdip_SetSmoothingMode(pGraphics,2)
+		Gdip_FillRectangle(pGraphics, pBrush := Gdip_BrushCreateSolid("0x55000000"), -1,-1, 492,y+1)
+		Gdip_FillRectangle(pGraphics,pBrush, -1,y+1, x+1,h)
+		Gdip_FillRectangle(pGraphics,pBrush, x+w,y+1, 491-x-w,h)
+		Gdip_FillRectangle(pGraphics,pBrush, -1,y+h, 492,276-y-h), Gdip_DeleteBrush(pBrush)
+		Gdip_TextToGraphics(pGraphics,"x0 y200 s12 vCenter Center c" (pBrush := Gdip_BrushCreateSolid("0xFFFFFFFF")),,490, 275), Gdip_DeleteBrush(pBrush)
+		Gdip_DeleteGraphics(pGraphics)
+		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0x55000000")
+		Gdip_DisposeImage(pBitmap)
+		SetImage(this.pic.hwnd, hBM)
+		DeleteObject(hBM)
+	}
+}
 ;buttons
 nm_StartButton(GuiCtrl, *){
 	MouseGetPos , , , &hCtrl, 2
