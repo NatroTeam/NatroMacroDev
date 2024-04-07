@@ -3305,7 +3305,7 @@ class Tutorial {
 		Gdip_FillRectangle(pGraphics,pBrush, -1,y+1, x+1,h)
 		Gdip_FillRectangle(pGraphics,pBrush, x+w,y+1, 491-x-w,h)
 		Gdip_FillRectangle(pGraphics,pBrush, -1,y+h, 492,276-y-h), Gdip_DeleteBrush(pBrush)
-		Gdip_TextToGraphics(pGraphics,"x0 y200 s12 vCenter Center c" (pBrush := Gdip_BrushCreateSolid("0xFFFFFFFF")),,490, 275), Gdip_DeleteBrush(pBrush)
+		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y200 s12 vCenter Center c" (pBrush := Gdip_BrushCreateSolid("0xFFFFFFFF")),,490, 275), Gdip_DeleteBrush(pBrush)
 		Gdip_DeleteGraphics(pGraphics)
 		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0x55000000")
 		Gdip_DisposeImage(pBitmap)
