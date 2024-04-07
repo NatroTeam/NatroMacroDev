@@ -2061,7 +2061,7 @@ class Tutorial {
 		nm_LockTabs(1)
 		TabCtrl.value := tutorialTab
 		TabCtrl.UseTab()
-		(this.pic := mainGui.AddPicture("x0 y0 w500 h240 0xE +BackgroundTrans")).OnEvent("Click", this.__nextStep.bind(this))
+		(this.pic := mainGui.AddPicture("x0 y25 w500 h240 0xE +BackgroundTrans")).OnEvent("Click", this.__nextStep.bind(this))
 		this.tutorialObj := Tutorial.tutorials.%tutorialTab%.Clone()
 		this.step := 1
 		this.drawTutorial()
@@ -2080,10 +2080,9 @@ class Tutorial {
 		Gdip_FillRectangle(pGraphics,pBrush, -1,y, x+1,h)
 		Gdip_FillRectangle(pGraphics,pBrush, x+w,y, 501-x-w,h)
 		Gdip_FillRectangle(pGraphics,pBrush, -1,y+h, 502,241-y-h), Gdip_DeleteBrush(pBrush)
-		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y200 s12 vCenter Center cffffffff",,500, 240)
+		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y200 s20 bold vCenter Center cffffffff",,500, 40)
 		Gdip_DeleteGraphics(pGraphics)
-		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0xaa000000")
-		Gdip_SaveBitmapToFile(pBitmap, "tutorial.png")
+		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0xc0000000")
 		Gdip_DisposeImage(pBitmap)
 		SetImage(this.pic.hwnd, hBM)
 		DeleteObject(hBM)
