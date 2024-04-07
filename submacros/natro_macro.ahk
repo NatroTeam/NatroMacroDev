@@ -1,4 +1,4 @@
-﻿/*
+/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -2074,14 +2074,14 @@ class Tutorial {
 	}
 	drawTutorial() {
 		MainGui[this.tutorialObj.%this.step%.control].getPos(&x,&y,&w,&h)
-		pBitmap := Gdip_CreateBitmap(490, 275), pGraphics:=Gdip_GraphicsFromImage(pBitmap),Gdip_SetSmoothingMode(pGraphics,2)
-		Gdip_FillRectangle(pGraphics, pBrush := Gdip_BrushCreateSolid("0x55000000"), -1,-1, 492,y+1)
+		pBitmap := Gdip_CreateBitmap(500, 240), pGraphics:=Gdip_GraphicsFromImage(pBitmap),Gdip_SetSmoothingMode(pGraphics,2)
+		Gdip_FillRectangle(pGraphics, pBrush := Gdip_BrushCreateSolid("0xaa000000"), -1,-1, 492,y+1)
 		Gdip_FillRectangle(pGraphics,pBrush, -1,y+1, x+1,h)
-		Gdip_FillRectangle(pGraphics,pBrush, x+w,y+1, 491-x-w,h)
-		Gdip_FillRectangle(pGraphics,pBrush, -1,y+h, 492,276-y-h), Gdip_DeleteBrush(pBrush)
-		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y200 s12 vCenter Center c" (pBrush := Gdip_BrushCreateSolid("0xFFFFFFFF")),,490, 275), Gdip_DeleteBrush(pBrush)
+		Gdip_FillRectangle(pGraphics,pBrush, x+w,y+1, 501-x-w,h)
+		Gdip_FillRectangle(pGraphics,pBrush, -1,y+h, 502,241-y-h), Gdip_DeleteBrush(pBrush)
+		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y200 s12 vCenter Center cffffffff",,490, 275)
 		Gdip_DeleteGraphics(pGraphics)
-		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0x55000000")
+		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0xaa000000")
 		Gdip_SaveBitmapToFile(pBitmap, "tutorial.png")
 		Gdip_DisposeImage(pBitmap)
 		SetImage(this.pic.hwnd, hBM)
