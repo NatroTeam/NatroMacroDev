@@ -2557,7 +2557,7 @@ TabCtrl.UseTab("Status")
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x5 y23 w240 h210", "Status Log")
 MainGui.Add("GroupBox", "x250 y23 w245 h160", "Stats")
-MainGui.Add("GroupBox", "x250 y185 w245 h48", "Discord Integration")
+MainGui.Add("GroupBox", "x250 y185 w245 h48", "Discord Integration and Presets")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
 MainGui.Add("CheckBox", "x85 y23 Disabled vStatusLogReverse Checked" StatusLogReverse, "Reverse Order").OnEvent("Click", nm_StatusLogReverseCheck)
@@ -7454,35 +7454,36 @@ nm_CreatePreset(*) {
 	PresetGui.Destroy()
 	nm_PresetGUI()
 }
-nm_OverwritePreset(*) {
+nm_ManagePreset(ctrl, *) {
 	global PresetGui, SelectedPreset
 	PresetName := SelectedPreset.Text
-	PresetPath := A_WorkingDir . "\settings\presets\" . PresetName . ".ini"
-	nm_CreatePresetFiles(PresetName)
+	PresetPath := A_WorkingDir "\settings\presets\" PresetName ".ini"
 	if (!FileExist(PresetPath)) {
 		MsgBox("Preset '" PresetName "' does not exist.", "Error", "T5")
 		return
 	}
-	if (MsgBox("Do you want to overwrite " . PresetName . "?",, "4") = "no")
-		return
-	nm_CreatePresetFiles(PresetName, 2)
-	nm_PresetLock()
-	nm_CreatePresetFiles(PresetName, 1)
-	PresetGui.destroy
-	nm_PresetGUI()
-}
-nm_DeletePreset(*) {
-	global PresetGui, SelectedPreset
-	PresetName := SelectedPreset.Text
-	PresetPath := A_WorkingDir . "\settings\presets\" . PresetName . ".ini"
-	nm_CreatePresetFiles(PresetName)
-	if (!FileExist(PresetPath)) {
-		MsgBox("Can't find '" PresetName "' to delete.", "Error", "T5")
+	if (ctrl.name = "CopyPreset") {
+		A_ClipBoard := FileRead(PresetPath)
+		MsgBox("Preset " PresetName " has been copied to clipboard.",, "T3")
 		return
 	}
-	if (MsgBox("Do you want to delete " . PresetName . "?",, "4") = "no")
+	if (MsgBox("Do you want to " StrLower(ctrl.text) " " PresetName "?",, "4") = "no")
 		return
-	nm_CreatePresetFiles(PresetName, 2)
+	if (ctrl.name = "RenamePreset") {
+		NewName := PresetGui["SetPresetName"].Value
+		if (NewName = "") {
+			MsgBox("No preset name given.`n`nPlease fill out the edit field under the Creation section.",, "T5")
+			return
+		}
+		FileMove(PresetPath, A_WorkingDir "\settings\presets\" NewName ".ini")
+	}
+	else if (ctrl.name = "DeletePreset")
+		nm_CreatePresetFiles(PresetName, 2)
+	else if (ctrl.name = "OverwritePreset") {
+		nm_CreatePresetFiles(PresetName, 2)
+		nm_PresetLock()
+		nm_CreatePresetFiles(PresetName, 1)
+	}
 	PresetGui.Destroy()
 	nm_PresetGUI()
 }
@@ -7525,20 +7526,6 @@ nm_LoadPreset(*) {
 		}
 	}
 	nm_LockTabs(0)
-}
-nm_CopyPreset(*) {
-	global PresetGui, SelectedPreset
-	PresetName := SelectedPreset.Text
-	PresetPath := A_WorkingDir "\settings\presets\" PresetName ".ini"
-	try Preset := FileOpen(PresetPath, "r")
-	catch as Err
-	{
-		MsgBox("Cant open '" PresetName "' to export.`n`n" Type(Err) ": " Err.Message, "Error", "T5")
-		return
-	}
-	A_ClipBoard := Preset.Read()
-	Preset.Close()
-	MsgBox("Preset " PresetName " has been copied to clipboard.",, "T3")
 }
 nm_ImportPreset(*) {
 	PresetGui.GetPos(gx, gy, gw, gh)
@@ -7662,13 +7649,13 @@ nm_PresetGUI(*){
     	SendMessage 0x1501, 1, StrPtr("Name"), hEdtValue ; EM_SETCUEBANNER
 	PresetGui.Add("Button", "x9 y45 w90 h21 vCreatePreset", "Create New").OnEvent("Click", nm_CreatePreset)
 	PresetGui.Add("Button", "x9 y70 w90 h21 vImportPreset", "Import").OnEvent("Click", nm_ImportPreset)
-	PresetGui.Add("Button", "x9 y95 w75 h21 vRenamePreset", "Rename").OnEvent("Click", nm_ImportPreset)
+	PresetGui.Add("Button", "x9 y95 w75 h21 vRenamePreset", "Rename").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x88 y98 w10 h15", "?").OnEvent("Click", RenameHelp)
 	PresetGui.Add("GroupBox", "x108 y2 w100 h145", "Manage")
 	SelectedPreset := PresetGui.Add("DropDownList", "x113 y20 w90 choose1 vSelectPreset", presetlist)
-	PresetGui.Add("Button", "x113 y45 w90 h21 vOverwritePreset", "Overwrite").OnEvent("Click", nm_OverwritePreset)
-	PresetGui.Add("Button", "x113 y70 w90 h21 vDeletePreset", "&Delete").OnEvent("Click", nm_DeletePreset)
-	PresetGui.Add("Button", "x113 y95 w90 h21 vCopyPreset", "Export").OnEvent("Click", nm_CopyPreset)
+	PresetGui.Add("Button", "x113 y45 w90 h21 vOverwritePreset", "Overwrite").OnEvent("Click", nm_ManagePreset)
+	PresetGui.Add("Button", "x113 y70 w90 h21 vDeletePreset", "Delete").OnEvent("Click", nm_ManagePreset)
+	PresetGui.Add("Button", "x113 y95 w90 h21 vCopyPreset", "Export").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x113 y120 w90 h21 vLoadPreset", "Load Preset").OnEvent("Click", nm_LoadPreset)
 	PresetGui.Add("GroupBox", "x212 y2 w100 h95", "Timed")
 	if (presetlist.Length=0) {
