@@ -45,3 +45,4 @@ lib-cov
 /coverage
 /test/test-apps/*/dist
 MMScreenshots/*
+.vscode/settings.json

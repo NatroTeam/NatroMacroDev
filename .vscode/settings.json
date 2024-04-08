@@ -20,5 +20,6 @@
                 }
             }
         ]
-    }
+    },
+    "AutoHotkey2.InterpreterPath": "c:\\Users\\znikbae\\Documents\\NatroMacroDev\\submacros\\AutoHotkey32.exe"
 }

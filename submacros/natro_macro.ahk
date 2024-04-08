@@ -109,7 +109,7 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 
 ; set version identifier
-VersionID := "1.0.0"
+VersionID := "1.0.1"
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
@@ -2041,6 +2041,7 @@ for x,y in hBitmapsSBT
 	hBitmapsSB[x] := Gdip_CreateHBITMAPFromBitmap(y), Gdip_DisposeImage(y)
 hBitmapsSB["None"] := 0
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; TUTORIAL
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2049,24 +2050,84 @@ class Tutorial {
 		1: {
 			1:{
 				control:"FieldName1",
-				text: "The field drop down list is where you can select the gathering field."
+				text: "Here you can select the field you wanna gather in."
 			},
 			2:{
 				control:"FieldPattern1",
 				text: "Here you can select your gathering pattern."
+			},
+			3:{
+				control:"FieldPatternSize1",
+				text: "Here you can select the size of your gathering pattern."
+			},
+			4:{
+				control:"FieldPatternRepsText1",
+				text: "Here you can select the width of your gathering pattern."
+			},
+			5:{
+				control:"FieldUntilMins1",
+				text: "Here you can select how long you want to gather for."
+			},
+			6:{
+				control:"FieldUntilPack1",
+				text: "Here you can select how full you want your backpack to be before you stop gathering."
+			},
+			7:{
+				control:"FieldSprinklerLoc1",
+				text: "Here you can select where the sprinkler should be placed in the field."
+			},
+			8:{
+				control:"CopyGather1",
+				text: "Here you can copy your current gather settings to the clipboard."
+			},
+			9:{
+				control:"PasteGather1",
+				text: "Here you can paste your copied gather settings."
+			},
+			10:{
+				control:"FieldDriftCheck1",
+				text: "Here you can enable or disable the Field Drift Compensation."
+			},
+			11:{
+				control:"FieldPatternShift1",
+				text: "Here you can enable or disable gathering with shiftlock."
+			},
+			12:{
+				control:"FieldPatternInvertFB1",
+				text: "Here you can invert the pattern Front/Back."
+			},
+			13:{
+				control:"FieldPatternInvertLR1",
+				text: "Here you can invert the pattern Left/Right."
+			},
+			14:{
+				control:"FieldRotateDirection1",
+				text: "Here you can choose the direction of the camera rotation."
+			},
+			15:{
+				control:"FieldRotateTimesText1",
+				text: "Here you can select the number of turns in the camera rotation."
+			},
+			16:{
+				control:"FieldReturnType1",
+				text: "Here you can select how you want to return to the hive."
+			},
+			17:{
+				control:"FieldSprinklerDistText1",
+				text: "Here you can select the distance to the sprinkler location."
 			}
-		}
+		},
+		2:{}
 	}
 	__New(tutorialTab := 1) {
+		this.tutorialObj := Tutorial.tutorials.%tutorialTab%.Clone()
 		nm_LockTabs(1)
 		TabCtrl.value := tutorialTab
 		TabCtrl.UseTab()
-		(this.pic := mainGui.AddPicture("x0 y25 w500 h240 0xE +BackgroundTrans")).OnEvent("Click", this.__nextStep.bind(this))
-		this.tutorialObj := Tutorial.tutorials.%tutorialTab%.Clone()
 		this.step := 1
 		this.drawTutorial()
 	}
-	__nextStep(*) {
+	nextStep(*) {
 		this.step++
 		if this.tutorialObj.HasProp(this.step)
 			return this.drawTutorial()
@@ -2074,21 +2135,25 @@ class Tutorial {
 		nm_LockTabs(0)
 	}
 	drawTutorial() {
+		if this.hasProp("pic") && IsObject(this.pic)
+			this.pic.visible := 0, this.pic.enabled := 0, this.pic.destroy()
+		(this.pic := mainGui.AddPicture("x0 y22 w500 h215 0xE +BackgroundTrans")).OnEvent("Click", this.nextStep.bind(this))
+		this.pic.fucused()
 		MainGui[this.tutorialObj.%this.step%.control].getPos(&x,&y,&w,&h)
-		pBitmap := Gdip_CreateBitmap(500, 240), pGraphics:=Gdip_GraphicsFromImage(pBitmap),Gdip_SetSmoothingMode(pGraphics,2)
-		Gdip_FillRectangle(pGraphics, pBrush := Gdip_BrushCreateSolid("0xaa000000"), -1,-1, 502,y+1)
-		Gdip_FillRectangle(pGraphics,pBrush, -1,y, x+1,h)
-		Gdip_FillRectangle(pGraphics,pBrush, x+w,y, 501-x-w,h)
-		Gdip_FillRectangle(pGraphics,pBrush, -1,y+h, 502,241-y-h), Gdip_DeleteBrush(pBrush)
-		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y200 s20 bold vCenter Center cffffffff",,500, 40)
+		y-=22
+		pBitmap := Gdip_CreateBitmap(500, 215), pGraphics:=Gdip_GraphicsFromImage(pBitmap),Gdip_SetSmoothingMode(pGraphics,2)
+		Gdip_FillRectangle(pGraphics, pBrush := Gdip_BrushCreateSolid("0xd0000000"), -1,0, 502,y)
+		Gdip_FillRectangle(pGraphics,pBrush, -1,y-0.3, x+1,h+0.5) ; left
+		Gdip_FillRectangle(pGraphics,pBrush, x+w,y-0.3, 501-x-w,h+0.5) ; right
+		Gdip_FillRectangle(pGraphics,pBrush, -1,y+h, 502,216-y-h), Gdip_DeleteBrush(pBrush)
+		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y160 s20 bold vCenter Center cffffffff",,500, 40)
 		Gdip_DeleteGraphics(pGraphics)
-		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0xc0000000")
+		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0xd0000000")
 		Gdip_DisposeImage(pBitmap)
-		SetImage(this.pic.hwnd, hBM)
+		this.pic.value := "HBITMAP:*" hBM
 		DeleteObject(hBM)
 	}
 }
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; SYSTEM TRAY
@@ -2408,11 +2473,11 @@ MainGui.Add("UpDown", "xp+14 yp h16 -16 Range1-5 Disabled vFieldPatternSize2UpDo
 MainGui.Add("Text", "x254 yp+60 h16 w12 0x201 +Center +BackgroundTrans vFieldPatternSize3", FieldPatternSize3)
 MainGui.Add("UpDown", "xp+14 yp h16 -16 Range1-5 Disabled vFieldPatternSize3UpDown", FieldPatternSizeArr[FieldPatternSize3]).OnEvent("Change", nm_FieldPatternSize)
 
-MainGui.Add("Text", "x294 y60 w28 h16 0x201 +Center")
+MainGui.Add("Text", "x294 y60 w28 h16 0x201 vFieldPatternRepsText1 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-9 Disabled vFieldPatternReps1", FieldPatternReps1)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldPatternRepsText2 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-9 Disabled vFieldPatternReps2", FieldPatternReps2)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldPatternRepsText3 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-9 Disabled vFieldPatternReps3", FieldPatternReps3)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 
 (GuiCtrl := MainGui.Add("CheckBox", "x129 y82 Disabled vFieldPatternShift1 Checked" FieldPatternShift1, "Gather w/Shift-Lock")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
@@ -2443,11 +2508,11 @@ MainGui.Add("Text", "x258 yp+61 w31 +Center +BackgroundTrans vFieldRotateDirecti
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 Disabled vFRD3Left", "<").OnEvent("Click", nm_FieldRotateDirection)
 MainGui.Add("Button", "xp+42 yp w12 h16 Disabled vFRD3Right", ">").OnEvent("Click", nm_FieldRotateDirection)
 
-MainGui.Add("Text", "x301 y95 w28 h16 0x201 +Center")
+MainGui.Add("Text", "x301 y95 w28 h16 0x201 vFieldRotateTimesText1 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-4 Disabled vFieldRotateTimes1", FieldRotateTimes1)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldRotateTimesText2 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-4 Disabled vFieldRotateTimes2", FieldRotateTimes2)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldRotateTimesText3 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-4 Disabled vFieldRotateTimes3", FieldRotateTimes3)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 
 (GuiCtrl := MainGui.Add("Edit", "x334 y58 w36 h20 limit4 number Disabled vFieldUntilMins1", ValidateInt(&FieldUntilMins1, 10))).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
@@ -2488,11 +2553,11 @@ MainGui.Add("Button", "xp+71 yp w12 h16 Disabled vFSL3Right", ">").OnEvent("Clic
 MainGui.Add("Text", "x415 y79 w86 +BackgroundTrans +Center", "Distance:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "Distance:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "Distance:")
-MainGui.Add("Text", "x440 y95 w32 h16 0x201 +Center")
+MainGui.Add("Text", "x440 y95 w32 h16 0x201 vFieldSprinklerDistText1 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-10 Disabled vFieldSprinklerDist1", FieldSprinklerDist1)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldSprinklerDistText1 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-10 Disabled vFieldSprinklerDist2", FieldSprinklerDist2)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldSprinklerDistText1 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-10 Disabled vFieldSprinklerDist3", FieldSprinklerDist3)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 SetLoadingProgress(26)
 
@@ -3244,7 +3309,7 @@ if (BuffDetectReset = 1)
 	nm_AdvancedGUI()
 SetLoadingProgress(100)
 if FirstStartup
-	Tutorial(1)
+	Tutorial(1),IniWrite(FirstStartup:=0,"settings\nm_config.ini", "Settings", "FirstStartup")
 else
 	nm_LockTabs(0)
 ;nm_LockTabs(0)
@@ -3280,8 +3345,8 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
         If (!!regexmatch(content := FileRead(v), "im)patterns\[") | !!regexmatch(content, "im)paths\["))
             return msgbox(
                 (
-                    'The file "' v '" seems to be deprecated!
-     Make sure to install a compatible version of the file.'
+                'The file "' v '" seems to be deprecated!
+     			Make sure to install a compatible version of the file.'
                 ), , 0x1010)
         ToolTip('Importing file...')
         f := StrSplit(v, ['/', '\'])
@@ -3290,29 +3355,19 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
         name := SubStr(Filename, 1, -4)
         f.write(content)
         f.close()
+		if type = "patterns" && !ObjHasValue(patternlist,name)
+			For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
+				MainGui[i].add([name])
         (%'nm_import' type%)()
         ToolTip()
         if (type = "paths")
             return msgbox('Successfully imported the ' SubStr(type, 1, -1) ' ' name '!')
         if (tabCtrl.value = 1 && (copyTo := ((y > 53 && y < 115) || 2 * (y > 115 && y < 175 && mainGui["fieldName2"].enabled) || 3 * (y > 175 && y < 235 && mainGui["fieldName3"].enabled)))) {
-			if !ObjHasValue(patternlist,name) {
-				patternList.push(name)
-				For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
-						MainGui[i].add([name])
-			}
 			msgboxOut := Msgbox('You dragged the pattern ' name '`r`non the ' (copyTo = 1 ? "first" : copyTo = 2 ? "second" : "third") ' gather settings!`r`nDo you want to use this pattern?', , 0x1044)
 			if (msgboxOut = "Yes") {
-				FieldPattern%copyTo% := name
 				IniWrite name, "settings\nm_config.ini", "Gather", "FieldPattern" copyTo
-				MainGui["FieldPattern" copyTo].Text := FieldPattern%copyTo%
-				msgbox MainGui["FieldPattern" copyTo].text
+				MainGui["FieldPattern" copyTo].Text := name
 			}
-			else
-				msgbox
-				(
-					'Successfully imported the pattern ' SubStr(filename, 1, -4) '!
-					Debuggin only: ' msgboxOut
-				), , 0x1040
 		}
 		msgbox
 		(
@@ -3321,10 +3376,6 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 		),,0x1040
     }
 }
-/**
- * Tutorial
- * @param1 {number} create a new tutorial prompt of a tab, default: 0 -> "all"
- */
 ;buttons
 nm_StartButton(GuiCtrl, *){
 	MouseGetPos , , , &hCtrl, 2
@@ -4627,11 +4678,12 @@ nm_CopySettings(*) {
         return
     MouseGetPos &x, &y, &win
     MainGui.GetPos(&wx,&wy,&ww)
-    y -= wy
+    y -= wy+25
     if !(copyFrom := (y>53 && y < 115 || 2* (y>115 && y<175 && MainGui["CopyGather2"].enabled) || 3* (y > 175 && y < 235 && MainGui["CopyGather3"].enabled))) || !(win == MainGui.hwnd)
         return nm_CopyGatherSettings(MainGui["CopyGather1"]) " " MsgBox('Copied gather settings 1 to clipboard!',,0x1040) 
     else
         return nm_CopyGatherSettings(MainGui["CopyGather" copyFrom]) " " Msgbox('Copied gather settings ' copyFrom ' to clipboard!',,0x1040)
+	TabCtrl.Focus()
 }
 nm_PasteSettings(*) {
     if TabCtrl.Value !== 1 || WinExist("A") !== MainGui.Hwnd
