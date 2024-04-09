@@ -7495,14 +7495,14 @@ nm_CreatePresetFiles(PresetName, type:=0) {
 nm_CreatePreset(*) {
 	global PresetGui
 	PresetName := PresetGui["SetPresetName"].Value
-	PresetPath := A_WorkingDir . "\settings\presets\" . PresetName . ".ini"
+	PresetPath := A_WorkingDir "\settings\presets\" PresetName ".ini"
 	nm_CreatePresetFiles(PresetName)
 	if (PresetName="") {
 		MsgBox("No preset name given.",, "T5")
 		return
 	}
 	if (FileExist(PresetPath)) {
-		if (MsgBox("Preset " . PresetName . " is already created. Do you want to overwrite " . PresetName . "?",, "4") == "no")
+		if (MsgBox("Preset " PresetName " is already created. Do you want to overwrite " PresetName "?",, "4") == "no")
 			return
 		nm_CreatePresetFiles(PresetName, 2)
 	}
@@ -7520,7 +7520,12 @@ nm_ManagePreset(ctrl, *) {
 		return
 	}
 	if (ctrl.name = "CopyPreset") {
-		FileToClipboard(PresetPath)
+		try IniRead(PresetPath, "Settings", "BotToken")
+		else {
+			if (!MsgBox("Your about to copy a preset that has your discord IDs (Channels and user ID) and your BotToken and webhook. Are you sure you want to copy this preset?`n`nThis is very dangerous if shared and could allow people with it to control your computer.",, 4))
+				return
+		}
+		A_ClipBoard := FileRead(PresetPath)
 		MsgBox("Preset " PresetName " has been copied to clipboard.",, "T3")
 		return
 	}
@@ -7550,23 +7555,23 @@ nm_ManagePreset(ctrl, *) {
 			ini := IniRead(PresetPath, v)
 			switch v {
 				case "General", "Slot 1", "Slot 2", "Slot 3":
-					IniWrite(ini, A_WorkingDir . "\settings\manual_planters.ini", v) ; load manual planter settings
+					IniWrite(ini, A_WorkingDir "\settings\manual_planters.ini", v) ; load manual planter settings
 					continue
 				case "Bamboo", "Blue Flower", "Cactus", "Clover", "Coconut", "Dandelion", "Mountain Top", "Mushroom", "Pepper", "Pine Tree", "Pineapple", "Pumpkin", "Rose", "Spider", "Strawberry", "Stump", "Sunflower":
-					IniWrite(ini, A_WorkingDir . "\settings\field_config.ini", v) ; load field defaults
+					IniWrite(ini, A_WorkingDir "\settings\field_config.ini", v) ; load field defaults
 					continue
 				case "Status", "Settings", "Collect":
 					SectionKeys := nm_GetKeys(PresetPath, v)
 					for x, y in SectionKeys {
-						IniWrite(ini, A_WorkingDir . "\settings\nm_config.ini", v, y)
+						IniWrite(ini, A_WorkingDir "\settings\nm_config.ini", v, y)
 					}
 				default:
-					IniWrite(ini, A_WorkingDir . "\settings\nm_config.ini", v)
+					IniWrite(ini, A_WorkingDir "\settings\nm_config.ini", v)
 			}
 			SectionKeys := nm_GetKeys(PresetPath, v)
 			for x, y in SectionKeys {
-				y := IniRead(PresetPath, v, y)
-				nm_UpdateGUIVar(v)
+				%y% := IniRead(PresetPath, v, y)
+				nm_UpdateGUIVar(y)
 			}
 		}
 		nm_LockTabs(0)
@@ -7676,8 +7681,8 @@ ConfirmWebBot(*) {
             		PresetGui["PresetWebBot"].Value := 0
 }
 hideTimer(ctrl,*) =>
-      PresetGui[ctrl.name . "Timers"].Enabled := ctrl.Value
-    . PresetGui[ctrl.name . "Timers"].Value := 0
+      PresetGui[ctrl.name "Timers"].Enabled := ctrl.Value
+    . PresetGui[ctrl.name "Timers"].Value := 0
 nm_PresetGUI(*){
 	global
 	local presetlist, FileName
