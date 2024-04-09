@@ -7517,10 +7517,10 @@ nm_ManagePreset(ctrl, *) {
 		return
 	}
 	if (ctrl.name = "CopyPreset") {
-		If IniRead(PresetPath, "Settings", "BotToken")
-			if (!MsgBox("Your about to copy a preset that has your discord IDs (Channels and user ID) and your BotToken and webhook. Are you sure you want to copy this preset?`n`nThis is very dangerous if shared and could allow people with it to control your computer.",, 4))
+		If (IniRead(PresetPath, "Status", "BotToken", 0)!=0)
+			if (MsgBox("Your about to copy a preset that has your discord IDs (Channels and user ID) and your BotToken and webhook. Are you sure you want to copy this preset?`n`nThis is very dangerous if shared and could allow people with it to control your computer.",, 4)="no")
 				return
-		A_ClipBoard := FileRead(PresetPath)
+		FileToClipboard(PresetPath)
 		MsgBox("Preset " PresetName " has been copied to clipboard.",, "T3")
 		return
 	}
@@ -7570,10 +7570,10 @@ nm_ManagePreset(ctrl, *) {
 			}
 		}
 		nm_LockTabs(0)
+		return
 	}
 	PresetGui.Destroy()
-	if (ctrl.name != "LoadPreset")
-		nm_PresetGUI()
+	nm_PresetGUI()
 }
 nm_ImportPreset(*) {
 	PresetGui.GetPos(gx, gy, gw, gh)
@@ -7672,7 +7672,7 @@ RenameHelp(*) {
 ConfirmWebBot(*) {
     global PresetGui
     if (PresetGui["PresetWebBot"].Value = 1)
-        if (!MsgBox("Are you sure you would like to enable save Bot token and Webhook? This is very dangerous if shared and could allow people with it to control your computer.`nThis also includes all channel IDs and the user ID for discord.", "Webhook and Token Confirmation", 4))
+        if (MsgBox("Are you sure you would like to enable save Bot token and Webhook? This is very dangerous if shared and could allow people with it to control your computer.`nThis also includes all channel IDs and the user ID for discord.", "Webhook and Token Confirmation", 4)="no")
             PresetGui["PresetWebBot"].Value := 0
 }
 hideTimer(ctrl,*) =>
