@@ -4675,9 +4675,6 @@ nm_SaveFieldDefault(GuiCtrl, *){
 		}
 	}
 }
-nm_LogsToClip(*) {
-	File
-}
 nm_CopySettings(*) {
     if TabCtrl.Value !== 1 || WinExist("A") !== MainGui.Hwnd
         return
@@ -7520,11 +7517,9 @@ nm_ManagePreset(ctrl, *) {
 		return
 	}
 	if (ctrl.name = "CopyPreset") {
-		try IniRead(PresetPath, "Settings", "BotToken")
-		else {
+		If IniRead(PresetPath, "Settings", "BotToken")
 			if (!MsgBox("Your about to copy a preset that has your discord IDs (Channels and user ID) and your BotToken and webhook. Are you sure you want to copy this preset?`n`nThis is very dangerous if shared and could allow people with it to control your computer.",, 4))
 				return
-		}
 		A_ClipBoard := FileRead(PresetPath)
 		MsgBox("Preset " PresetName " has been copied to clipboard.",, "T3")
 		return
