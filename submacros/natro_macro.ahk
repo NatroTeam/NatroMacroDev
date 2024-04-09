@@ -107,6 +107,7 @@ OnMessage(0x5555, nm_backgroundEvent, 255)
 OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
+OnMessage(0x5559, nm_FindItem)
 
 ; set version identifier
 VersionID := "1.0.1"
@@ -2162,6 +2163,7 @@ TraySetIcon "nm_image_assets\auryn.ico"
 A_TrayMenu.Delete()
 A_TrayMenu.Add()
 A_TrayMenu.Add("Open Logs", (*) => ListLines())
+A_TrayMenu.Add("Copy Logs", (*) => FileExist("settings\debug_log.txt") ? FileToClipboard("settings\debug_log.txt") : Msgbox("No logs found!"))
 A_TrayMenu.Add()
 A_TrayMenu.Add("Edit This Script", (*) => Edit())
 A_TrayMenu.Add("Suspend Hotkeys", (*) => (A_TrayMenu.ToggleCheck("Suspend Hotkeys"), Suspend()))
@@ -4672,6 +4674,9 @@ nm_SaveFieldDefault(GuiCtrl, *){
 				IniWrite v, "settings\field_config.ini", FieldName%i%, k
 		}
 	}
+}
+nm_LogsToClip(*) {
+	File
 }
 nm_CopySettings(*) {
     if TabCtrl.Value !== 1 || WinExist("A") !== MainGui.Hwnd
@@ -7398,21 +7403,21 @@ nm_CreatePresetFiles(PresetName, type:=0) {
 									}
 								}
 								continue
-			    				case "Kill":
+			    			case "Kill":
 								if (!PresetArray["Collect"]) {
-                                    					For x, y in KillArray {
-                                        					ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
-                                        					IniWrite(ini, PresetPath, "Collect", y)
-                                    					}
-                                    					if (PresetArray["KillTimers"]) {
-                                        					For x, y in KillTimer {
-                                            						ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
-                                            						IniWrite(ini, PresetPath, "Collect", y)
-                                        					}
-                                    					}
-                                				}
+                                    For x, y in KillArray {
+                						ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
+                            			IniWrite(ini, PresetPath, "Collect", y)
+                					}
+                                	if (PresetArray["KillTimers"]) {
+                						For x, y in KillTimer {
+                                        	ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
+                							IniWrite(ini, PresetPath, "Collect", y)
+                                    	}
+            						}
+                                }
 								continue
-			    				case "Private Server":
+			    			case "Private Server":
 								if (!PresetArray["Settings"]) {
                                     					For x, y in ServerArray {
                                        						ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
@@ -7420,13 +7425,13 @@ nm_CreatePresetFiles(PresetName, type:=0) {
                                     					}
                                 				}
 								continue
-			    				case "BoostTimers":
-                               					if (!PresetArray["Settings"]) {
-                                    					For x, y in BoostTimers {
-                                        					ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
-                                        					IniWrite(ini, PresetPath, "Settings", y)
-                                    					}
-                                				}
+			    			case "BoostTimers":
+               					if (!PresetArray["Settings"]) {
+                                    For x, y in BoostTimers {
+                    					ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
+                                        IniWrite(ini, PresetPath, "Settings", y)
+                    				}
+                            	}
                                 				if (!PresetArray["Collect"]) {
                                     					For x, y in BoosterTimers {
                                         					ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
@@ -7515,7 +7520,7 @@ nm_ManagePreset(ctrl, *) {
 		return
 	}
 	if (ctrl.name = "CopyPreset") {
-		A_ClipBoard := FileRead(PresetPath)
+		FileToClipboard(PresetPath)
 		MsgBox("Preset " PresetName " has been copied to clipboard.",, "T3")
 		return
 	}
@@ -7561,7 +7566,7 @@ nm_ManagePreset(ctrl, *) {
 			SectionKeys := nm_GetKeys(PresetPath, v)
 			for x, y in SectionKeys {
 				y := IniRead(PresetPath, v, y)
-				nm_UpdateGUIVar(y)
+				nm_UpdateGUIVar(v)
 			}
 		}
 		nm_LockTabs(0)
@@ -7653,7 +7658,7 @@ FileNameCleanup(*) {
 	global PresetGui
     	userInput := PresetGui["SetPresetName"].Value
    	if (RegExMatch(userInput, "[\\/:\*\?<>\|]|[\s.]|^\.+$")) {
-        	cleanedFileName := RegExReplace(userInput, "[\\/:\*\?<>\|]|[\s.]|^\.+$", "")
+    		cleanedFileName := RegExReplace(userInput, "[\\/:\*\?<>\|]|[\s.]|^\.+$", "")
         	PresetGui["SetPresetName"].Value := cleanedFileName
         	Send "{End}" ;otherwise it sets cursor to the beginning of the text
     	}
@@ -7683,48 +7688,50 @@ nm_PresetGUI(*){
 			presetlist.push(FileName)
 		}
 	}
+	if IsSet(PresetGui) && IsObject(PresetGui)
+		PresetGui.Destroy()
 	MainGui.GetPos(&gx, &gy, &gw, &gh)
 	PresetGui:=Gui("-MinimizeBox +Owner" MainGui.Hwnd, "Preset Settings")
-	PresetGui.Show("x" gx+80 " y" gy+35 " w317 h236")
+	PresetGui.Show("x" gx+80 " y" gy+35 " w306 h212")
 	PresetGui.Font("s9", "Segoe UI")
 	PresetGui.Add("GroupBox", "x4 y2 w100 h120", "Creation")
 	(hEdtValue := PresetGui.Add("Edit", "x9 y20 w90 h21 vSetPresetName Limit15")).OnEvent("Change", FileNameCleanup)
-    	SendMessage 0x1501, 1, StrPtr("Name"), hEdtValue ; EM_SETCUEBANNER
+    SendMessage 0x1501, 1, StrPtr("Name"), hEdtValue ; EM_SETCUEBANNER
 	PresetGui.Add("Button", "x9 y45 w90 h21 vCreatePreset", "Create New").OnEvent("Click", nm_CreatePreset)
 	PresetGui.Add("Button", "x9 y70 w90 h21 vImportPreset", "Import").OnEvent("Click", nm_ImportPreset)
 	PresetGui.Add("Button", "x9 y95 w75 h21 vRenamePreset", "Rename").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x88 y98 w10 h15", "?").OnEvent("Click", RenameHelp)
-	PresetGui.Add("GroupBox", "x108 y2 w100 h145", "Manage")
+	PresetGui.Add("GroupBox", "x108 y2 w100 h120", "Manage")
 	SelectedPreset := PresetGui.Add("DropDownList", "x113 y20 w90 choose1 vSelectPreset", presetlist)
-	PresetGui.Add("Button", "x113 y45 w90 h21 vOverwritePreset", "Overwrite").OnEvent("Click", nm_ManagePreset)
-	PresetGui.Add("Button", "x113 y70 w90 h21 vDeletePreset", "Delete").OnEvent("Click", nm_ManagePreset)
-	PresetGui.Add("Button", "x113 y95 w90 h21 vCopyPreset", "Export").OnEvent("Click", nm_ManagePreset)
-	PresetGui.Add("Button", "x113 y120 w90 h21 vLoadPreset", "Load Preset").OnEvent("Click", nm_ManagePreset)
-	PresetGui.Add("GroupBox", "x212 y2 w100 h95", "Timed")
+	PresetGui.Add("Button", "x113 y45 w45 hp vOverwritePreset", "Save").OnEvent("Click", nm_ManagePreset)
+	PresetGui.Add("Button", "x158 yp w45 hp vDeletePreset", "Delete").OnEvent("Click", nm_ManagePreset)
+	PresetGui.Add("Button", "x113 yp+25 w90 hp vCopyPreset", "Export").OnEvent("Click", nm_ManagePreset)
+	PresetGui.Add("Button", "x113 yp+25 wp hp vLoadPreset", "Load Preset").OnEvent("Click", nm_ManagePreset)
+	PresetGui.Add("GroupBox", "x212 y2 w100 h120", "Timed")
 	if (presetlist.Length=0) {
 		For k, v in ["SelectPreset", "CopyPreset", "DeletePreset", "OverwritePreset", "LoadPreset", "RenamePreset"]
 			PresetGui[v].enabled:=0
 	}
-	PresetGui.Add("Button", "x9 y128 w10 h15", "?").OnEvent("Click", HelpSection)
-	PresetGui.Add("GroupBox", "x4 y143 w308 h90", "Included Settings")
-	PresetGui.Add("CheckBox", "x9 y159 w60 h16 +Checked vPresetGather", "Gather")
-	PresetGui.Add("CheckBox", "x9 y177 w55 h16 +Checked vPresetQuest", "Quest")
-	PresetGui.Add("CheckBox", "x9 y195 w60 h16 +Checked vPresetSettings", "Settings")
-	PresetGui.Add("CheckBox", "x9 y213 w58 h16 vPresetDiscord", "Discord")
-	PresetGui.Add("Text", "x72 y160 w1 h67 0x7")
-	PresetGui.Add("CheckBox", "x78 y159 w106 h16 +Checked vPresetFDefaults", "Field Defaults")
-	PresetGui.Add("CheckBox", "x78 y177 w45 h16 +Checked vPresetMisc", "Misc")
-	PresetGui.Add("CheckBox", "x78 y195 w60 h16 vPresetPrivateServer", "PS Link")
-	PresetGui.Add("CheckBox", "x78 y213 w106 h16 vPresetWebBot", "Token/Webhook").OnEvent("Click", ConfirmWebBot)
-	PresetGui.Add("Text", "x185 y160 w1 h67 0x7")
-	PresetGui.Add("CheckBox", "x192 y159 w48 h16 +Checked vPresetBoost", "Boost").OnEvent("Click", hideTimer)
-	PresetGui.Add("CheckBox", "x255 y159 w55 h16 vPresetBoostTimers", "Timers")
-	PresetGui.Add("CheckBox", "x192 y177 w57 h16 +Checked vPresetCollect", "Collect").OnEvent("Click", hideTimer)
-	PresetGui.Add("CheckBox", "x255 y177 w55 h16 vPresetCollectTimers", "Timers")
-	PresetGui.Add("CheckBox", "x192 y195 w40 h16 +Checked vPresetKill", "Kill").OnEvent("Click", hideTimer)
-	PresetGui.Add("CheckBox", "x255 y195 w55 h16 vPresetKillTimers", "Timers")
-	PresetGui.Add("CheckBox", "x192 y213 w59 h16 +Checked vPresetPlanters", "Planters").OnEvent("Click", hideTimer)
-	PresetGui.Add("CheckBox", "x255 y213 w55 h16 vPresetPlantersTimers", "Timers")
+	PresetGui.Add("GroupBox", "x4 y126 w308 h92", "Included Settings")
+	PresetGui.Add("Button", "x97 y126 w10 h15", "?").OnEvent("Click", HelpSection)
+	PresetGui.Add("CheckBox", "x9 yp+18 w60 h16 +Checked vPresetGather", "Gather")
+	PresetGui.Add("CheckBox", "x9 yp+18 w55 h16 +Checked vPresetQuest", "Quest")
+	PresetGui.Add("CheckBox", "x9 yp+18 w60 h16 +Checked vPresetSettings", "Settings")
+	PresetGui.Add("CheckBox", "x9 yp+18 w58 h16 vPresetDiscord", "Discord")
+	PresetGui.Add("Text", "x72 y144 w1 h67 0x7")
+	PresetGui.Add("CheckBox", "x78 y144 w106 h16 +Checked vPresetFDefaults", "Field Defaults")
+	PresetGui.Add("CheckBox", "x78 yp+18 w45 h16 +Checked vPresetMisc", "Misc")
+	PresetGui.Add("CheckBox", "x78 yp+18 w60 h16 vPresetPrivateServer", "PS Link")
+	PresetGui.Add("CheckBox", "x78 yp+18 w106 h16 vPresetWebBot", "Token/Webhook").OnEvent("Click", ConfirmWebBot)
+	PresetGui.Add("Text", "x185 y144 w1 h67 0x7")
+	PresetGui.Add("CheckBox", "x192 y144 w48 h16 +Checked vPresetBoost", "Boost").OnEvent("Click", hideTimer)
+	PresetGui.Add("CheckBox", "x255 yp w55 h16 vPresetBoostTimers", "Timers")
+	PresetGui.Add("CheckBox", "x192 yp+18 w57 h16 +Checked vPresetCollect", "Collect").OnEvent("Click", hideTimer)
+	PresetGui.Add("CheckBox", "x255 yp w55 h16 vPresetCollectTimers", "Timers")
+	PresetGui.Add("CheckBox", "x192 yp+18 w40 h16 +Checked vPresetKill", "Kill").OnEvent("Click", hideTimer)
+	PresetGui.Add("CheckBox", "x255 yp w55 h16 vPresetKillTimers", "Timers")
+	PresetGui.Add("CheckBox", "x192 yp+18 w59 h16 +Checked vPresetPlanters", "Planters").OnEvent("Click", hideTimer)
+	PresetGui.Add("CheckBox", "x255 yp w55 h16 vPresetPlantersTimers", "Timers")
 }
 
 ; SETTINGS TAB
@@ -7734,6 +7741,24 @@ nm_guiThemeSelect(*){
 	IniWrite GuiTheme, "settings\nm_config.ini", "Settings", "GuiTheme"
 	reload
 	Sleep 10000
+}
+/**
+ * FileToClipboard(path)
+ * @param path full or relative path to the file. wildcards are allowed
+ * @author ninju | .ninju.
+ */
+FileToClipboard(path) {
+    loop files path,"F"
+        path := A_LoopFileFullPath
+    hGlobal := DllCall("GlobalAlloc", "UInt", 0x42, "Ptr", 20 + (StrLen(path) + 1) * 2)
+    pGlobal := DllCall("GlobalLock", "Ptr", hGlobal)
+    NumPut("uint", 20, pGlobal,0)
+    DllCall("RtlMoveMemory", "Ptr", pGlobal + 20, "astr", path, "UInt", (StrLen(path) + 1) * 2)
+    DllCall("GlobalUnlock", "Ptr", hGlobal)
+    DllCall("OpenClipboard", "Ptr", 0)
+    DllCall("EmptyClipboard")
+    DllCall("SetClipboardData", "UInt", 0x0000000F, "Ptr", hGlobal)
+    DllCall("CloseClipboard")
 }
 nm_guiTransparencySet(*){
 	global GuiTransparency
@@ -21646,7 +21671,6 @@ nm_UpdateGUIVar(var)
 {
 	global
 	local k, z, num
-
 	try
 		MainGui[var]
 	catch
@@ -21767,4 +21791,21 @@ nm_UpdateGUIVar(var)
 			MainGui[k].Value := %k%
 		}
 	}
+}
+nm_FindItem(wParam, lParam,*){
+	global shiftLockEnabled, bitmaps
+	static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
+	item := StrGet(lParam)
+	prevShiftLock := ShiftLockEnabled
+	yOffset := GetYOffset()
+	nm_setShiftLock(0)
+	GetRobloxClientPos()
+	if windowWidth == 0
+		return -1
+	ActivateRoblox()
+	if !nm_OpenMenu("itemmenu")
+		return nm_setStatus("Error", "Failed to open menu")
+	mouseMove(windowX+46, windowY+yOffset+219)
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-150)
+
 }
