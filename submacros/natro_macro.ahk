@@ -7332,53 +7332,53 @@ nm_WebhookGUI(*){
 	return (WGUIPID := exec.ProcessID)
 }
 nm_CreatePresetFiles(PresetName, type:=0) {
-    	Global PresetGui
-    	if (!FileExist(A_WorkingDir "\settings\presets")) {
-        	DirCreate(A_WorkingDir "\settings\presets")
-    	}
-    	if (type!=0) { ;create/delete/overwrite files
-        	KillArray := ["TunnelBearCheck", "TunnelBearBabyCheck", "StumpSnailCheck", "StingerSpiderCheck", "StingerRoseCheck", "StingerPepperCheck", "StingerMountainTopCheck", "StingerDailyBonusCheck", "StingerCloverCheck", "StingerCheck", "StingerCactusCheck", "SnailTime", "ShellAmuletMode", "MonsterRespawnTime", "MondoLootDirection", "KingBeetleCheck", "KingBeetleBabyCheck", "KingBeetleAmuletMode", "InputSnailHealth", "InputChickHealth", "CommandoCheck", "CocoCrabCheck", "ChickTime", "BugrunWerewolfLoot", "BugrunWerewolfCheck", "BugrunSpiderLoot", "BugrunSpiderCheck", "BugrunScorpionsLoot", "BugrunScorpionsCheck", "BugrunRhinoBeetlesLoot", "BugrunRhinoBeetlesCheck", "BugrunMantisLoot", "BugrunMantisCheck", "BugrunLadybugsLoot", "BugrunLadybugsCheck", "BugrunInterruptCheck", "BugRunCheck"]
-        	KillTimer := ["VBLastKilled", "LastBugrunLadybugs", "LastBugrunMantis", "LastBugrunRhinoBeetles", "LastBugrunScorpions", "LastBugrunSpider", "LastBugrunWerewolf", "LastCommando", "LastKingBeetle", "LastStumpSnail", "LastTunnelBear", "NightLastDetected", "LastCocoCrab"]
-        	MiscArray := ["TimersHotkey", "StopHotkey", "StartHotkey", "PauseHotkey", "AutoClickerHotkey", "ClickCount", "ClickDelay", "ClickDuration", "ClickMode"]
-        	MiscDiscord := ["NightAnnouncementCheck", "NightAnnouncementName", "NightAnnouncementPingID", "NightAnnouncementWebhook"]
-        	ServerArray := ["FallbackServer1", "FallbackServer2", "FallbackServer3", "PrivServer"]
+    Global PresetGui
+    if (!FileExist(A_WorkingDir "\settings\presets")) {
+        DirCreate(A_WorkingDir "\settings\presets")
+    }
+    if (type!=0) { ;create/delete/overwrite files
+        KillArray := ["TunnelBearCheck", "TunnelBearBabyCheck", "StumpSnailCheck", "StingerSpiderCheck", "StingerRoseCheck", "StingerPepperCheck", "StingerMountainTopCheck", "StingerDailyBonusCheck", "StingerCloverCheck", "StingerCheck", "StingerCactusCheck", "SnailTime", "ShellAmuletMode", "MonsterRespawnTime", "MondoLootDirection", "KingBeetleCheck", "KingBeetleBabyCheck", "KingBeetleAmuletMode", "InputSnailHealth", "InputChickHealth", "CommandoCheck", "CocoCrabCheck", "ChickTime", "BugrunWerewolfLoot", "BugrunWerewolfCheck", "BugrunSpiderLoot", "BugrunSpiderCheck", "BugrunScorpionsLoot", "BugrunScorpionsCheck", "BugrunRhinoBeetlesLoot", "BugrunRhinoBeetlesCheck", "BugrunMantisLoot", "BugrunMantisCheck", "BugrunLadybugsLoot", "BugrunLadybugsCheck", "BugrunInterruptCheck", "BugRunCheck"]
+        KillTimer := ["VBLastKilled", "LastBugrunLadybugs", "LastBugrunMantis", "LastBugrunRhinoBeetles", "LastBugrunScorpions", "LastBugrunSpider", "LastBugrunWerewolf", "LastCommando", "LastKingBeetle", "LastStumpSnail", "LastTunnelBear", "NightLastDetected", "LastCocoCrab"]
+        MiscArray := ["TimersHotkey", "StopHotkey", "StartHotkey", "PauseHotkey", "AutoClickerHotkey", "ClickCount", "ClickDelay", "ClickDuration", "ClickMode"]
+        MiscDiscord := ["NightAnnouncementCheck", "NightAnnouncementName", "NightAnnouncementPingID", "NightAnnouncementWebhook"]
+        ServerArray := ["FallbackServer1", "FallbackServer2", "FallbackServer3", "PrivServer"]
 		CollectTimer := ["LastAntPass", "LastBlueberryDis", "LastCandles", "LastClock", "LastCoconutDis", "LastFeast", "LastGingerbread", "LastGlueDis", "LastGummyBeacon", "LastHoneyDis", "LastHoneystorm", "LastLidArt", "LastMondoBuff", "LastRBPDelevel", "LastRoboPass", "LastRoyalJellyDis", "LastSamovar", "LastSnowMachine", "LastStockings", "LastStrawberryDis", "LastTreatDis", "LastWreath"]
-        	BoostTimer := ["AFBdiceUsed", "AFBglitterUsed", "FieldLastBoosted", "FieldLastBoostedBy", "FieldNextBoostedBy", "LastEnzymes", "LastGlitter", "LastGuid", "LastHotkey2", "LastHotkey3", "LastHotkey4", "LastHotkey5", "LastHotkey6", "LastHotkey7", "LastMicroConverter", "LastSnowflake", "LastStickerPrinter", "LastStickerStack", "LastWhirligig"]
-        	BoosterTimer := ["LastBlueBoost", "LastMountainBoost", "LastRedBoost"]
+        BoostTimer := ["AFBdiceUsed", "AFBglitterUsed", "FieldLastBoosted", "FieldLastBoostedBy", "FieldNextBoostedBy", "LastEnzymes", "LastGlitter", "LastGuid", "LastHotkey2", "LastHotkey3", "LastHotkey4", "LastHotkey5", "LastHotkey6", "LastHotkey7", "LastMicroConverter", "LastSnowflake", "LastStickerPrinter", "LastStickerStack", "LastWhirligig"]
+        BoosterTimer := ["LastBlueBoost", "LastMountainBoost", "LastRedBoost"]
 		WebBotArray := ["BotToken", "Webhook", "MainChannelID", "ReportChannelID", "discordUID"]
-        	PresetPath := A_WorkingDir . "\settings\presets\" . PresetName . ".ini"
+        PresetPath := A_WorkingDir . "\settings\presets\" . PresetName . ".ini"
 		ControlValue := Map()
 		for k, v in PresetGui {
-    			if (RegExMatch(v.name, "^Preset")) {
-        			ControlValue[v.name] := v.Value
+    		if (RegExMatch(v.name, "^Preset")) {
+        		ControlValue[v.name] := v.Value
 			}
 		}
-        	PresetArray := Map() ; array to determin what to save to preset
+        PresetArray := Map() ; array to determin what to save to preset
 		KeyToControl := Map("Gather", "PresetGather", "Kill", "PresetKill", "Quests", "PresetQuest", "Collect", "PresetCollect", "Blender", "PresetCollect", "Boost", "PresetBoost", "Shrine", "PresetBoost", "Gui", "PresetPlanters", "Status", "PresetDiscord", "Settings", "PresetSettings", "Misc", "PresetMisc", "Private Server", "PresetPrivateServer", "CollectTimers", "PresetCollectTimers", "KillTimers", "PresetKillTimers", "BoostTimers", "PresetBoostTimers", "Planters", "PresetPlantersTimers", "FieldDefaults", "PresetFDefaults", "WebBot", "PresetWebBot")
 		For k, c in KeyToControl {
 			PresetArray[k] := ControlValue[c]
 		}
-        	planterSectionNames := IniRead(A_WorkingDir . "\settings\manual_planters.ini")
-        	PlanterSections := StrSplit(planterSectionNames, "`n") ; get manual panters ini
-        	fieldSectionNames := IniRead(A_WorkingDir . "\settings\field_config.ini")
-        	FieldSections := StrSplit(fieldSectionNames, "`n") ; get field defaults
-        	switch type {
-            		case 1: ; create the preset file
-                		for k, v in PresetArray {
-                    			if (v!=0) {
-                        			switch k {
-                            				case "Gui":
-                                				for x, y in PlanterSections { ; save manual planter settings to preset
-                                    					ini := IniRead(A_WorkingDir . "\settings\manual_planters.ini", y)
-                                    					IniWrite(ini, PresetPath, y)
-                                				}
-                            				case "FieldDefaults":
-                                				for x, y in FieldSections { ; save field defaults
-                                    					ini := IniRead(A_WorkingDir . "\settings\field_config.ini", y)
-                                    					IniWrite(ini, PresetPath, y)
-                                				}
+        planterSectionNames := IniRead(A_WorkingDir . "\settings\manual_planters.ini")
+        PlanterSections := StrSplit(planterSectionNames, "`n") ; get manual panters ini
+        fieldSectionNames := IniRead(A_WorkingDir . "\settings\field_config.ini")
+        FieldSections := StrSplit(fieldSectionNames, "`n") ; get field defaults
+        switch type {
+            case 1: ; create the preset file
+                for k, v in PresetArray {
+                    if (v!=0) {
+                        switch k {
+                            case "Gui":
+                                for x, y in PlanterSections { ; save manual planter settings to preset
+                                    ini := IniRead(A_WorkingDir . "\settings\manual_planters.ini", y)
+                                    	IniWrite(ini, PresetPath, y)
+                                }
+                            case "FieldDefaults":
+                                for x, y in FieldSections { ; save field defaults
+                                    ini := IniRead(A_WorkingDir . "\settings\field_config.ini", y)
+                                    IniWrite(ini, PresetPath, y)
+                                }
 								continue
-			    				case "Misc":
+			    			case "Misc":
 								if (!PresetArray["Settings"]) {
 									For x, y in MiscArray {
 										ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
@@ -7416,11 +7416,11 @@ nm_CreatePresetFiles(PresetName, type:=0) {
 								continue
 			    			case "Private Server":
 								if (!PresetArray["Settings"]) {
-                                    					For x, y in ServerArray {
-                                       						ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
-                                        					IniWrite(ini, PresetPath, "Settings", y)
-                                    					}
-                                				}
+                                    For x, y in ServerArray {
+                                       	ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
+                                        IniWrite(ini, PresetPath, "Settings", y)
+                                    }
+                                }
 								continue
 			    			case "BoostTimers":
                					if (!PresetArray["Settings"]) {
@@ -7429,20 +7429,20 @@ nm_CreatePresetFiles(PresetName, type:=0) {
                                         IniWrite(ini, PresetPath, "Settings", y)
                     				}
                             	}
-                                				if (!PresetArray["Collect"]) {
-                                    					For x, y in BoosterTimers {
-                                        					ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
-                                        					IniWrite(ini, PresetPath, "Collect", y)
-                                    					}
-                                				}
+                                if (!PresetArray["Collect"]) {
+                                    For x, y in BoosterTimers {
+                                        ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
+                                        IniWrite(ini, PresetPath, "Collect", y)
+                                    }
+                                }
 								continue
-                            				case "CollectTimers":
-                                				continue
-			    			}	
-			    			ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", k)
-			    			IniWrite(ini, PresetPath, k)
+                            case "CollectTimers":
+                                continue
+			    		}	
+			    		ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", k)
+			    		IniWrite(ini, PresetPath, k)
 					}
-		    		}
+		    	}
 				if (PresetArray["Collect"]) {
 					if (!PresetArray["Kill"]) {
 						for k, v in KillArray
@@ -7656,24 +7656,24 @@ nm_GetKeys(FilePath, Section) {
 }
 FileNameCleanup(*) {
 	global PresetGui
-    	userInput := PresetGui["SetPresetName"].Value
+    userInput := PresetGui["SetPresetName"].Value
    	if (RegExMatch(userInput, "[\\/:\*\?<>\|]|[\s.]|^\.+$")) {
-    		cleanedFileName := RegExReplace(userInput, "[\\/:\*\?<>\|]|[\s.]|^\.+$", "")
-        	PresetGui["SetPresetName"].Value := cleanedFileName
-        	Send "{End}" ;otherwise it sets cursor to the beginning of the text
-    	}
+    	cleanedFileName := RegExReplace(userInput, "[\\/:\*\?<>\|]|[\s.]|^\.+$", "")
+        PresetGui["SetPresetName"].Value := cleanedFileName
+        Send "{End}" ;otherwise it sets cursor to the beginning of the text
+    }
 }
 HelpSection(*) {
-    	MsgBox("The Included Settings, each checkbox represents a different tab in natro macro to save.`n`nThere are a few exceptions:`nPS Link is your private server Link, Discord is the discord settings (screenshots, pings), Token/Webhook is your Bot Token and Webhook along with all your channel IDs and UserID, and Field Defaults is your saved gather settings for each field.", "Help")
+    MsgBox("The Included Settings, each checkbox represents a different tab in natro macro to save.`n`nThere are a few exceptions:`nPS Link is your private server Link, Discord is the discord settings (screenshots, pings), Token/Webhook is your Bot Token and Webhook along with all your channel IDs and UserID, and Field Defaults is your saved gather settings for each field.", "Help")
 }
 RenameHelp(*) {
 	MsgBox("Select a preset under the Manage settings, and fill out a new name in the editbox under Creation settings, Then click Rename and your preset will be re-named.", "Help")
 }
 ConfirmWebBot(*) {
-    	global PresetGui
-    	if (PresetGui["PresetWebBot"].Value = 1)
-        	if (!MsgBox("Are you sure you would like to enable save Bot token and Webhook? This is very dangerous if shared and could allow people with it to control your computer.`nThis also includes all channel IDs and the user ID for discord.", "Webhook and Token Confirmation", 4))
-            		PresetGui["PresetWebBot"].Value := 0
+    global PresetGui
+    if (PresetGui["PresetWebBot"].Value = 1)
+        if (!MsgBox("Are you sure you would like to enable save Bot token and Webhook? This is very dangerous if shared and could allow people with it to control your computer.`nThis also includes all channel IDs and the user ID for discord.", "Webhook and Token Confirmation", 4))
+            PresetGui["PresetWebBot"].Value := 0
 }
 hideTimer(ctrl,*) =>
       PresetGui[ctrl.name "Timers"].Enabled := ctrl.Value
