@@ -262,7 +262,6 @@ OnMessage(0x5557, SetBackpack, 255)
 ; detect OS version
 os_version := "Windows " StrSplit(A_OSVersion,".")[1] " " RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID")
 ; obtain natro version and other options (if exist)
-msgbox os_version
 if ((A_Args.Length > 0) && (natro_version := A_Args[1]))
 {
 	; read information from settings\nm_config.ini
