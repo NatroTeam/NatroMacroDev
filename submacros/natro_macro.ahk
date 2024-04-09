@@ -182,7 +182,7 @@ nm_importPatterns()
 	{
 		file := FileOpen(A_LoopFilePath, "r"), pattern := file.Read(), file.Close()
 		if !!RegexMatch(pattern, "im)patterns\[")
-    			MsgBox
+			MsgBox
 			(
 			"Pattern '" A_LoopFileName "' seems to be deprecated!
 			This means the pattern will NOT work!
@@ -209,7 +209,7 @@ nm_importPatterns()
 			nm_Walk(param1, param2, param3?) => ""
 			Gdip_ImageSearch(*) => ""
 			Gdip_BitmapFromBase64(*) => ""
-
+			CameraRot(Dir, Num) => ""
 			' pattern '
 
 			'
@@ -268,7 +268,7 @@ nm_importPaths()
 			try {
 				file := FileOpen(A_WorkingDir "\paths\" k "-" v ".ahk", "r"), paths[k][v] := file.Read(), file.Close()
 				if !!regexMatch(paths[k][v], "im)paths\[")
-    					MsgBox
+    				MsgBox
 					(
 					"Path '" k '-' v "' seems to be deprecated!
 					This means the macro will NOT work correctly!
@@ -9361,7 +9361,17 @@ nm_testButton(*){
 		size:=1, reps:=1, facingcorner:=0
 		FieldName:=FieldPattern:=FieldPatternSize:=FieldReturnType:=FieldSprinklerLoc:=FieldRotateDirection:=""
 		FieldUntilPack:=FieldPatternReps:=FieldPatternShift:=FieldSprinklerDist:=FieldRotateTimes:=FieldDriftCheck:=FieldPatternInvertFB:=FieldPatternInvertLR:=FieldUntilMins:=0
-
+		
+		CameraRot(Dir, count) {
+			Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Abs(LR) "}{" Rot%(UD > 0 ? "Down" : "Up")% " " Abs(UD) "}"), -1)
+			send "{" Rot%Dir% " " count "}"
+			Switch Dir,0 {
+				Case "Left": LR -= count
+				Case "Right": LR += count
+				Case "Up": UD -= count
+				Case "Down": UD += count
+			}
+		}
 		' nm_PathVars()
 		)
 	)
@@ -15591,7 +15601,18 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 			FieldSprinklerDist:=' FieldSprinklerDist '
 			FieldRotateDirection:="' FieldRotateDirection '"
 			FieldRotateTimes:=' FieldRotateTimes '
-			FieldDriftCheck:=' FieldDriftCheck
+			FieldDriftCheck:=' FieldDriftCheck '
+			CameraRot(Dir, count) {
+				Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Abs(LR) "}{" Rot%(UD > 0 ? "Down" : "Up")% " " Abs(UD) "}"), -1)
+				send "{" Rot%Dir% " " count "}"
+				Switch Dir,0 {
+					Case "Left": LR -= count
+					Case "Right": LR += count
+					Case "Up": UD -= count
+					Case "Down": UD += count
+				}
+			}
+			'
 			)
 		) ; create / replace cycled walk script for this gather session
 	else
@@ -15706,15 +15727,6 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 		Send "{" MoveKey1 " down}" (MoveKey2 ? "{" MoveKey2 " down}" : "")
 		' (NewWalk ? 'Walk(tiles)' : ('HyperSleep(4000/' MoveSpeedNum '*tiles)')) '
 		Send "{" MoveKey1 " up}" (MoveKey2 ? "{" MoveKey2 " up}" : "")
-	}
-	CameraRot(Dir, Num) {
-		Static LRNum := 0, LRDir := "Right", UDDir := "Down", UDNum := 0
-		OnExit((*) => send("{" Rot%LRDir% " " Abs(LRNum) "}{" Rot%UDDir% " " Abs(UDNum) "}"), -1)
-		send "{" Rot%Dir% " " Num "}"
-		if (Dir="Left" || Dir="Right")
-			LRNum := (Dir="Left") ? LRNum+Num : LRNum-Num, LRDir := (LRNum<0) ? "Right" : "Left"
-		else if (Dir="Up" || Dir="Down")
-			UDNum := (Dir="Up") ? UDNum+Num : UDNum-Num, UDDir := (UDNum<0) ? "Down" : "Up"
 	}
 	F13::
 		start(hk?)
