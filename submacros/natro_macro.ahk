@@ -7745,20 +7745,21 @@ nm_guiThemeSelect(*){
 /**
  * FileToClipboard(path)
  * @param path full or relative path to the file. wildcards are allowed
- * @author ninju | .ninju.
+ * @author Lexikos coverted by just me (https://www.autohotkey.com/boards/viewtopic.php?t=1103)
  */
-FileToClipboard(path) {
-    loop files path,"F"
-        path := A_LoopFileFullPath
-    hGlobal := DllCall("GlobalAlloc", "UInt", 0x42, "Ptr", 20 + (StrLen(path) + 1) * 2)
-    pGlobal := DllCall("GlobalLock", "Ptr", hGlobal)
-    NumPut("uint", 20, pGlobal,0)
-    DllCall("RtlMoveMemory", "Ptr", pGlobal + 20, "astr", path, "UInt", (StrLen(path) + 1) * 2)
-    DllCall("GlobalUnlock", "Ptr", hGlobal)
-    DllCall("OpenClipboard", "Ptr", 0)
-    DllCall("EmptyClipboard")
-    DllCall("SetClipboardData", "UInt", 0x0000000F, "Ptr", hGlobal)
-    DllCall("CloseClipboard")
+FileToClipboard(PathToCopy) {
+	Loop Files, PathToCopy
+		PathToCopy := A_LoopFileFullPath
+	hPath := DllCall("GlobalAlloc", "UInt", 0x42, "UInt", 20 + StrPut(PathToCopy) + 2, "UPtr")
+	pPath := DllCall("GlobalLock", "Ptr", hPath, "UPtr")
+	NumPut("UInt", 20, pPath)
+	NumPut("UInt", 1 , pPath, 16)
+	StrPut(PathToCopy, pPath + 20)
+	DllCall("GlobalUnlock", "UPtr", hPath)
+	DllCall("OpenClipboard", "Ptr", 0)
+	DllCall("EmptyClipboard")
+	DllCall("SetClipboardData","UInt", 0xF, "Ptr", hPath)
+	DllCall("CloseClipboard")
 }
 nm_guiTransparencySet(*){
 	global GuiTransparency
