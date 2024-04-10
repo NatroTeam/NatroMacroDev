@@ -2314,201 +2314,49 @@ nm_command(command)
 			discord.SendMessageAPI(postdata)
 		}
 
-		case "FindItem": ; IM TRANSLATING EVERYTHING
-		Prev_DetectHiddenWindows := A_DetectHiddenWindows
-		Prev_TitleMatchMode := A_TitleMatchMode
-		DetectHiddenWindows 1
-		;items + itemnubmer ; testing purposes
-		itemNumbers := Map(
-			"Cog", 1,
-			"Ticket", 2,
-			"SprinklerBuilder", 3,
-			"BeequipCase", 4,
-			"Gumdrops", 5,
-			"Coconut", 6,
-			"Stinger", 7,
-			"MicroConverter", 8,
-			"Honeysuckle", 9,
-			"Whirligig", 10,
-			"FieldDice", 11,
-			"SmoothDice", 12,
-			"LoadedDice", 13,
-			"JellyBeans", 14,
-			"RedExtract", 15,
-			"BlueExtract", 16,
-			"Glitter", 17,
-			"Glue", 18,
-			"Oil", 19,
-			"Enzymes", 20,
-			"TropicalDrink", 21,
-			"PurplePotion", 22,
-			"SuperSmoothie", 23,
-			"MarshmallowBee", 24,
-			"Sprout", 25,
-			"FestiveBean", 26,
-			"CloudVial", 27,
-			"NightBell", 28,
-			"BoxOFrogs", 29,
-			"AntPass", 30,
-			"BrokenDrive", 31,
-			"7ProngedCog", 32,
-			"RoboPass", 33,
-			"Translator", 34,
-			"SpiritPetal", 35,
-			"Present", 36,
-			"Treat", 37,
-			"StarTreat", 38,
-			"AtomicTreat", 39,
-			"SunflowerSeed", 40,
-			"Strawberry", 41,
-			"Pineapple", 42,
-			"Blueberry", 43,
-			"Bitterberry", 44,
-			"Neonberry", 45,
-			"MoonCharm", 46,
-			"GingerbreadBear", 47,
-			"AgedGingerbreadBear", 48,
-			"WhiteDrive", 49,
-			"RedDrive", 50,
-			"BlueDrive", 51,
-			"GlitchedDrive", 52,
-			"ComfortingVial", 53,
-			"InvigoratingVial", 54,
-			"MotivatingVial", 55,
-			"RefreshingVial", 56,
-			"SatisfyingVial", 57,
-			"PinkBalloon", 58,
-			"RedBalloon", 59,
-			"WhiteBalloon", 60,
-			"BlackBalloon", 61,
-			"SoftWax", 62,
-			"HardWax", 63,
-			"CausticWax", 64,
-			"SwirledWax", 65,
-			"Turpentine", 66,
-			"PaperPlanter", 67,
-			"TicketPlanter", 68,
-			"FestivePlanter", 69,
-			"PlasticPlanter", 70,
-			"CandyPlanter", 71,
-			"RedClayPlanter", 72,
-			"BlueClayPlanter", 73,
-			"TackyPlanter", 74,
-			"PesticidePlanter", 75,
-			"HeatTreatedPlanter", 76,
-			"HydroponicPlanter", 77,
-			"PetalPlanter", 78,
-			"ThePlanterOfPlenty", 79,
-			"BasicEgg", 80,
-			"SilverEgg", 81,
-			"GoldEgg", 82,
-			"DiamondEgg", 83,
-			"MythicEgg", 84,
-			"StarEgg", 85,
-			"GiftedSilverEgg", 86,
-			"GiftedGoldEgg", 87,
-			"GiftedDiamondEgg", 88,
-			"GiftedMythicEgg", 89,
-			"RoyalJelly", 90,
-			"StarJelly", 91,
-			"BumbleBeeEgg", 92,
-			"BumbleBeeJelly", 93,
-			"RageBeeJelly", 94,
-			"ShockedBeeJelly", 95
-		)
-				
-		; the more complicated stuff
-		dist := StrLen(s1 := SubStr(command.content, InStr(command.content, "FindItem ") + StrLen("FindItem ")))
-		loop 1 {
-			for i, v in items {
-				len1 := StrLen(s1), len2 := StrLen(v)
-				s1split := StrSplit(s1), s2 := StrSplit(v)
-
-				d := [], d[0, 0] := 0
-				Loop len1
-					d[A_Index, 0] := A_Index
-				Loop len2
-					d[0, A_Index] := A_Index
-
-				Loop len1 {
-					i := A_Index
-					Loop len2 {
-						j := A_Index  
-						cost := s1split[i] != s2[j]
-						d[i, j] := Min(d[i-1, j] + 1, d[i, j-1] + 1, d[i-1, j-1] + cost)
-					}
+		case "FindItem":
+		; just edit some part of the script that shows the result after putting in the input to Levblahblah distance
+		static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "MagicBean", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg"]
+		LevenshteinDistance(s1, s2) {
+			len1 := StrLen(s1), len2 := StrLen(s2)
+			s1 := StrSplit(s1), s2 := StrSplit(s2)
+			d := {}, d.0 := { 0: 0 }
+			Loop len1
+				d.%A_Index% := { 0: A_Index }
+			Loop len2
+				d.0.%A_Index% := A_Index
+			Loop len1 {
+				i := A_Index
+				Loop len2 {
+					j := A_Index  ; only for simplicity
+					cost := s1[i] != s2[j]
+					d.%i%.%j% := Min(d.%i - 1%.%j% + 1, d.%i%.%j - 1% + 1, d.%i - 1%.%j - 1% + cost)
 				}
-				if ((d := d[len1, len2]) < dist)
+			}
+			return d.%len1%.%len2%
+		}
+		findClosestItem(needle) {
+			dist := StrLen(needle)
+			for i,v in items
+				if (d := LevenshteinDistance(needle, v)) < dist
 					dist := d, item := v
-			}
-			if !(dist<6 || item = "") {
-				discord.SendEmbed("Item entered was not valid", 5066239, , , , id)
-				break ;return
-			}
+			return {item:item,dist:dist}
 		}
-		if WinExist("natro_macro ahk_class AutoHotkey")
-			SendMessage(0x5559, itemNumbers[item], , , , , , , 2000)
-
-		/* THIS PART IS A REFERENCE
-			case "keep":
+		ObjHasValue(obj, value) {
+			for k,v in obj
+				if (v = value)
+				return k
+			return 0
+		}
+		closestItem:=findClosestItem(input:=SubStr(command.content, StrLen(commandPrefix) + 9))
+		if closestItem.dist > 6 || not closestItem.item
+			return discord.SendEmbed("Item ``" input "`` is not valid", 5066239, , , , id)
 		DetectHiddenWindows 1
 		if WinExist("natro_macro ahk_class AutoHotkey")
-		{
-			try
-				result := SendMessage(0x5558, 1, , , , , , , 2000)
-			catch
-				result := -1
-			switch result
-			{
-				case 2:
-				discord.SendEmbed("No Roblox window found!", 16711731, , , , id)
-
-				case 1:
-				discord.SendEmbed("Kept Old Amulet", 5066239, , , , id)
-
-				case 0:
-				discord.SendEmbed("No Keep/Replace prompt found!", 16711731, , , , id)
-
-				default:
-				discord.SendEmbed("Error: SendMessage Timeout!", 16711731, , , , id)
-			}
-		}
-		else
-			discord.SendEmbed("Error: Macro not found!", 16711731, , , , id)
-
-
-		case "replace":
-		DetectHiddenWindows 1
-		if WinExist("natro_macro ahk_class AutoHotkey")
-		{
-			try
-				result := SendMessage(0x5558, 2, , , , , , , 2000)
-			catch
-				result := -1
-			switch result
-			{
-				case 2:
-				discord.SendEmbed("No Roblox window found!", 16711731, , , , id)
-
-				case 1:
-				discord.SendEmbed("Replaced Amulet!", 5066239, , , , id)
-
-				case 0:
-				discord.SendEmbed("No Keep/Replace prompt found!", 16711731, , , , id)
-
-				default:
-				discord.SendEmbed("Error: SendMessage Timeout!", 16711731, , , , id)
-			}
-		}
-		else
-			discord.SendEmbed("Error: Macro not found!", 16711731, , , , id)
-		*/
-
-		; end
-
-
+			SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)
+		; ninju look at discord, i sent you how it looked on my code
+		
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
-
 
 		default:
 		discord.SendEmbed("``" commandPrefix name "`` is not a valid command!\nUse ``" commandPrefix "help`` for a list of commonly used commands.", 16711731, , , , id)
@@ -2892,7 +2740,7 @@ nm_sendHeartbeat(*)
 	return 0
 }
 
-nm_sendItemPicture(y) { ; this should be finished i'd hope
+nm_sendItemPicture(y, *) { ; this should be finished i'd hope
 	if (y = 0) { ; 0 because it will never reach 0
 		discord.SendEmbed("Item was not found.", 16711731, , , , id)
 		
@@ -2903,6 +2751,7 @@ nm_sendItemPicture(y) { ; this should be finished i'd hope
 		; discord.SendEmbed(message, color, content, pBM?, channel?), IsSet(pBM) && pBM > 0 && Gdip_DisposeImage(pBM)
 		Gdip_DisposeImage(pBM)
 	}
+	DetectHiddenWindows 0
 }
 
 
