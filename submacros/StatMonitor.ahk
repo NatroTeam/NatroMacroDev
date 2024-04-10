@@ -24,7 +24,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Warn VarUnset, Off
 
 SetWorkingDir A_ScriptDir "\.."
-OnError (e, mode) => msgbox((mode = "Return") ? -1 : 0)
+OnError (e, mode) => (mode = "Return") ? -1 : 0
 
 ; set version number
 version := "2.3"
