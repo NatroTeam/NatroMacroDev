@@ -10133,8 +10133,8 @@ nm_FindItem(chosenItem, *){
 	Gdip_DisposeImage(pBitmap)
 	sleep 1000
 	DetectHiddenWindows 0
-	nm_setShiftLock(Prev_ShiftLock)
 	nm_OpenMenu()
+	nm_setShiftLock(Prev_ShiftLock)
 }
 nm_gotoRamp(){
 	global FwdKey, RightKey, HiveSlot, state, objective, HiveConfirmed
