@@ -7598,28 +7598,27 @@ nm_ManagePreset(ctrl, *) {
 		SectionArray := StrSplit(SectionNames, "`n") ; save section names to array
 		PresetGui.Destroy()
 		nm_LockTabs()
-		for k, v in SectionArray { ; load preset
+		for k, v in SectionArray { ; save preset to ini files
 			ini := IniRead(PresetPath, v)
 			switch v {
 				case "General", "Slot 1", "Slot 2", "Slot 3":
 					IniWrite(ini, A_WorkingDir "\settings\manual_planters.ini", v) ; load manual planter settings
-					continue
 				case "Bamboo", "Blue Flower", "Cactus", "Clover", "Coconut", "Dandelion", "Mountain Top", "Mushroom", "Pepper", "Pine Tree", "Pineapple", "Pumpkin", "Rose", "Spider", "Strawberry", "Stump", "Sunflower":
 					IniWrite(ini, A_WorkingDir "\settings\field_config.ini", v) ; load field defaults
-					continue
 				case "Status", "Settings", "Collect":
 					SectionKeys := nm_GetKeys(PresetPath, v)
-					for x, y in SectionKeys {
+					for x, y in SectionKeys
 						IniWrite(ini, A_WorkingDir "\settings\nm_config.ini", v, y)
-					}
 				default:
 					IniWrite(ini, A_WorkingDir "\settings\nm_config.ini", v)
 			}
+		}
+		nm_ReadIni(A_WorkingDir "\settings\nm_config.ini")
+		nm_ReadIni(A_WorkingDir "\settings\manual_planters.ini")
+		for k, v in SectionArray {
 			SectionKeys := nm_GetKeys(PresetPath, v)
-			for x, y in SectionKeys {
-				%y% := IniRead(PresetPath, v, y)
+			for x, y in SectionKeys
 				nm_UpdateGUIVar(y)
-			}
 		}
 		nm_LockTabs(0)
 		return
@@ -7627,37 +7626,18 @@ nm_ManagePreset(ctrl, *) {
 	PresetGui.Destroy()
 	nm_PresetGUI()
 }
-nm_ImportPreset(*) {
+nm_ImportPreset(*) { ;fixing soon
 	PresetGui.GetPos(gx, gy, gw, gh)
-	PresetInput := InputBox("Enter preset name:", "Import", "w" 120 " h" 120 " x" gx+95 " y" gy-22)
 	PresetPath := A_WorkingDir "\settings\presets\" PresetInput ".ini"
 	PresetPatternPath := A_WorkingDir "\patterns"
 	PresetPatterns := ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
 	PresetDefaultPatterns := ["Bamboo", "Blue Flower", "Cactus", "Clover", "Coconut", "Dandelion", "Mountain Top", "Mushroom", "Pepper", "Pine Tree", "Pineapple", "Pumpkin", "Rose", "Spider", "Strawberry", "Stump", "Sunflower"]
-	if (PresetInput="") {
-		MsgBox("No preset name given.",, "T5")
-		return
-	}
 	if (FileExist(PresetPath)) {
-		if (MsgBox("Do you want to overwrite " . PresetInput . "?",, "4") = "No")
+		if (MsgBox("Do you want to overwrite " PresetInput "?",, "4") = "No")
 			return
 		nm_CreatePresetFiles(PresetInput, 2)
 	}
-	FormatPath := A_WorkingDir "\settings\presets\formatcheck.ini"
-	try FormatCheck := FileOpen(FormatPath, "rw")
-	catch as Err
-	{
-		MsgBox("Error checking clipboard format.`n`n" Type(Err) ": " Err.Message, "Error", "T5")
-		return
-	}
-	FormatFile.Write(A_Clipboard)
-	FormatFile.Close()
-	SectionNames := IniRead(FormatPath)
-	SectionArray := StrSplit(SectionNames, "`n") ; save section names to array
-	for k, v in SectionArray {
-		ini := IniRead(FormatPath, v)
-		IniWrite(ini, PresetPath, v)
-	}
+	
 	FileDelete(FormatPath)
 	if (!FileExist(PresetPath)) {
 		MsgBox("Preset " PresetInput " could not be created. No valid data was imported.", "Invalid", "T5")
