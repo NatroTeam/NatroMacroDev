@@ -2315,8 +2315,7 @@ nm_command(command)
 		}
 
 		case "FindItem":
-		; just edit some part of the script that shows the result after putting in the input to Levblahblah distance
-		static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "MagicBean", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg"]
+		static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
 		LevenshteinDistance(s1, s2) {
 			len1 := StrLen(s1), len2 := StrLen(s2)
 			s1 := StrSplit(s1), s2 := StrSplit(s2)
@@ -2350,11 +2349,12 @@ nm_command(command)
 		}
 		closestItem:=findClosestItem(input:=SubStr(command.content, StrLen(commandPrefix) + 9))
 		if closestItem.dist > 6 || not closestItem.item
-			return discord.SendEmbed("Item ``" input "`` is not valid", 5066239, , , , id)
-		DetectHiddenWindows 1
-		if WinExist("natro_macro ahk_class AutoHotkey")
-			SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)
-		; ninju look at discord, i sent you how it looked on my code
+			discord.SendEmbed("Item ``" input "`` is not valid", 5066239, , , , id)
+		else
+			DetectHiddenWindows 1
+			if WinExist("natro_macro ahk_class AutoHotkey")
+				SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)	
+			DetectHiddenWindows 0
 		
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
@@ -2740,18 +2740,15 @@ nm_sendHeartbeat(*)
 	return 0
 }
 
-nm_sendItemPicture(y, *) { ; this should be finished i'd hope
+nm_sendItemPicture(y, *) {
 	if (y = 0) { ; 0 because it will never reach 0
-		discord.SendEmbed("Item was not found.", 16711731, , , , id)
+		discord.SendEmbed("Item was not found.", 16711731)
 		
 	}else{
 		GetRobloxClientPos()
-		discord.SendEmbed("Item Found!", 5066239, , (pBM := Gdip_BitmapFromScreen(windowX "|" y "|306|97")), , id)
-		; examples
-		; discord.SendEmbed(message, color, content, pBM?, channel?), IsSet(pBM) && pBM > 0 && Gdip_DisposeImage(pBM)
-		Gdip_DisposeImage(pBM)
+		discord.SendEmbed("Item Found!", 5066239, , (pBMScreen := Gdip_BitmapFromScreen(windowX "|" y "|306|97")))
+		Gdip_DisposeImage(pBMScreen)
 	}
-	DetectHiddenWindows 0
 }
 
 
