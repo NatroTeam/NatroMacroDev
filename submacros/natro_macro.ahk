@@ -338,8 +338,7 @@ nm_importConfig()
 		, "TimersHotkey", "F5"
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
-		, "FDCWarn", 1
-		, "FirstStartup", 1)
+		, "FDCWarn", 1)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -2046,119 +2045,6 @@ hBitmapsSB["None"] := 0
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; TUTORIAL
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-class Tutorial {
-	static tutorials := {
-		1: {
-			1:{
-				control:"FieldName1",
-				text: "Here you can select the field you wanna gather in."
-			},
-			2:{
-				control:"FieldPattern1",
-				text: "Here you can select your gathering pattern."
-			},
-			3:{
-				control:"FieldPatternSize1",
-				text: "Here you can select the size of your gathering pattern."
-			},
-			4:{
-				control:"FieldPatternRepsText1",
-				text: "Here you can select the width of your gathering pattern."
-			},
-			5:{
-				control:"FieldUntilMins1",
-				text: "Here you can select how long you want to gather for."
-			},
-			6:{
-				control:"FieldUntilPack1",
-				text: "Here you can select how full you want your backpack to be before you stop gathering."
-			},
-			7:{
-				control:"FieldSprinklerLoc1",
-				text: "Here you can select where the sprinkler should be placed in the field."
-			},
-			8:{
-				control:"CopyGather1",
-				text: "Here you can copy your current gather settings to the clipboard."
-			},
-			9:{
-				control:"PasteGather1",
-				text: "Here you can paste your copied gather settings."
-			},
-			10:{
-				control:"FieldDriftCheck1",
-				text: "Here you can enable or disable the Field Drift Compensation."
-			},
-			11:{
-				control:"FieldPatternShift1",
-				text: "Here you can enable or disable gathering with shiftlock."
-			},
-			12:{
-				control:"FieldPatternInvertFB1",
-				text: "Here you can invert the pattern Front/Back."
-			},
-			13:{
-				control:"FieldPatternInvertLR1",
-				text: "Here you can invert the pattern Left/Right."
-			},
-			14:{
-				control:"FieldRotateDirection1",
-				text: "Here you can choose the direction of the camera rotation."
-			},
-			15:{
-				control:"FieldRotateTimesText1",
-				text: "Here you can select the number of turns in the camera rotation."
-			},
-			16:{
-				control:"FieldReturnType1",
-				text: "Here you can select how you want to return to the hive."
-			},
-			17:{
-				control:"FieldSprinklerDistText1",
-				text: "Here you can select the distance to the sprinkler location."
-			}
-		},
-		2:{}
-	}
-	__New(tutorialTab := 1) {
-		this.tutorialObj := Tutorial.tutorials.%tutorialTab%.Clone()
-		nm_LockTabs(1)
-		TabCtrl.value := tutorialTab
-		TabCtrl.UseTab()
-		this.step := 1
-		this.drawTutorial()
-	}
-	nextStep(*) {
-		this.step++
-		if this.tutorialObj.HasProp(this.step)
-			return this.drawTutorial()
-		this.pic.visible := 0
-		nm_LockTabs(0)
-	}
-	drawTutorial() {
-		if this.hasProp("pic") && IsObject(this.pic)
-			this.pic.visible := 0, this.pic.enabled := 0, this.pic.destroy()
-		(this.pic := mainGui.AddPicture("x0 y22 w500 h215 0xE +BackgroundTrans")).OnEvent("Click", this.nextStep.bind(this))
-		this.pic.fucused()
-		MainGui[this.tutorialObj.%this.step%.control].getPos(&x,&y,&w,&h)
-		y-=22
-		pBitmap := Gdip_CreateBitmap(500, 215), pGraphics:=Gdip_GraphicsFromImage(pBitmap),Gdip_SetSmoothingMode(pGraphics,2)
-		Gdip_FillRectangle(pGraphics, pBrush := Gdip_BrushCreateSolid("0xd0000000"), -1,0, 502,y)
-		Gdip_FillRectangle(pGraphics,pBrush, -1,y-0.3, x+1,h+0.5) ; left
-		Gdip_FillRectangle(pGraphics,pBrush, x+w,y-0.3, 501-x-w,h+0.5) ; right
-		Gdip_FillRectangle(pGraphics,pBrush, -1,y+h, 502,216-y-h), Gdip_DeleteBrush(pBrush)
-		Gdip_TextToGraphics(pGraphics,this.tutorialObj.%this.step%.text,"x0 y160 s20 bold vCenter Center cffffffff",,500, 40)
-		Gdip_DeleteGraphics(pGraphics)
-		hBM := Gdip_CreateHBITMAPFromBitmap(pBitmap, "0xd0000000")
-		Gdip_DisposeImage(pBitmap)
-		this.pic.value := "HBITMAP:*" hBM
-		DeleteObject(hBM)
-	}
-}
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; SYSTEM TRAY
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 TraySetIcon "nm_image_assets\auryn.ico"
@@ -3315,10 +3201,7 @@ SetLoadingProgress(99)
 if (BuffDetectReset = 1)
 	nm_AdvancedGUI()
 SetLoadingProgress(100)
-if FirstStartup
-	Tutorial(1),IniWrite(FirstStartup:=0,"settings\nm_config.ini", "Settings", "FirstStartup")
-else
-	nm_LockTabs(0)
+nm_LockTabs(0)
 ;nm_LockTabs(0)
 nm_setStatus("Startup", "UI")
 TabCtrl.Focus()
@@ -3669,6 +3552,7 @@ nm_TabCollectLock(){
 	MainGui["MARight"].Enabled := 0
 	MainGui["RoboPassCheck"].Enabled := 0
 	MainGui["HoneystormCheck"].Enabled := 0
+	MainGui["MeteorShowerCheck"].Enabled := 0
 	MainGui["AntPassCheck"].Enabled := 0
 	MainGui["AntPassBuyCheck"].Enabled := 0
 	MainGui["APALeft"].Enabled := 0
@@ -3759,6 +3643,7 @@ nm_TabCollectUnLock(){
 	MainGui["MARight"].Enabled := 1
 	MainGui["RoboPassCheck"].Enabled := 1
 	MainGui["HoneystormCheck"].Enabled := 1
+	MainGui["MeteorShowerCheck"].Enabled := 1
 	MainGui["AntPassCheck"].Enabled := 1
 	MainGui["AntPassBuyCheck"].Enabled := 1
 	MainGui["APALeft"].Enabled := 1
@@ -4116,13 +4001,11 @@ nm_TabStatusLock(){
 	MainGui["StatusLogReverse"].Enabled := 0
 	MainGui["ResetTotalStats"].Enabled := 0
 	MainGui["WebhookGUI"].Enabled := 0
-	MainGui["PresetGUI"].Enabled := 0
 }
 nm_TabStatusUnLock(){
 	MainGui["StatusLogReverse"].Enabled := 1
 	MainGui["ResetTotalStats"].Enabled := 1
 	MainGui["WebhookGUI"].Enabled := 1
-	MainGui["PresetGUI"].Enabled := 1
 }
 nm_TabSettingsLock(){
 	global
@@ -4152,6 +4035,7 @@ nm_TabSettingsLock(){
 	MainGui["PrivServer"].Enabled := 0
 	MainGui["ReconnectMessage"].Enabled := 0
 	MainGui["PublicFallback"].Enabled := 0
+	MainGui["PresetGUI"].Enabled := 0
 	MainGui["ResetFieldDefaultsButton"].Enabled := 0
 	MainGui["ResetAllButton"].Enabled := 0
 	MainGui["TestReconnectButton"].Enabled := 0
@@ -4193,6 +4077,7 @@ nm_TabSettingsUnLock(){
 	MainGui["PrivServer"].Enabled := 1
 	MainGui["ReconnectMessage"].Enabled := 1
 	MainGui["PublicFallback"].Enabled := 1
+	MainGui["PresetGUI"].Enabled := 1
 	MainGui["ResetFieldDefaultsButton"].Enabled := 1
 	MainGui["ResetAllButton"].Enabled := 1
 	MainGui["TestReconnectButton"].Enabled := 1
