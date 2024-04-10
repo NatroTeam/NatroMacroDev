@@ -2638,8 +2638,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Text", "x255 y55 w119 h120 -Wrap vTotalStats")
 MainGui.Add("Text", "x375 y55 w119 h120 -Wrap vSessionStats")
 MainGui.Add("Button", "x290 y39 w50 h15 vResetTotalStats Disabled", "Reset").OnEvent("Click", nm_ResetTotalStats)
-MainGui.Add("Button", "x259 y202 w135 h24 vWebhookGUI Disabled", "Change Discord Settings").OnEvent("Click", nm_WebhookGUI)
-MainGui.Add("Button", "x401 y202 w85 h24 vPresetGUI Disabled", "Preset Settings").OnEvent("Click", nm_PresetGUI)
+MainGui.Add("Button", "x259 y202 w227 h24 vWebhookGUI Disabled", "Change Discord Settings").OnEvent("Click", nm_WebhookGUI)
 nm_setStats()
 SetLoadingProgress(28)
 
@@ -2648,8 +2647,9 @@ SetLoadingProgress(28)
 TabCtrl.UseTab("Settings")
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x5 y25 w160 h65", "Gui")
-MainGui.Add("GroupBox", "x5 y95 w160 h65", "Hive")
-MainGui.Add("GroupBox", "x5 y165 w160 h70", "Reset")
+MainGui.Add("GroupBox", "x5 y91 w160 h65", "Hive")
+MainGui.Add("GroupBox", "x5 y157 w160 h38", "Presets")
+MainGui.Add("GroupBox", "x5 y197 w160 h38", "Reset")
 MainGui.Add("GroupBox", "x170 y25 w160 h35", "Input")
 MainGui.Add("GroupBox", "x170 y65 w160 h170", "Reconnect")
 MainGui.Add("GroupBox", "x335 y25 w160 h210", "Character")
@@ -2668,23 +2668,25 @@ MainGui.Add("UpDown", "xp+22 yp-1 h16 -16 Range0-14 vGuiTransparencyUpDown Disab
 SetLoadingProgress(29)
 
 ;hive settings
-MainGui.Add("Text", "x10 y110 w60 +BackgroundTrans", "Hive Slot:")
+MainGui.Add("Text", "x10 y106 w60 +BackgroundTrans", "Hive Slot:")
 MainGui.SetFont("s6")
-MainGui.Add("Text", "x61 y112 w60 +BackgroundTrans", "(6-5-4-3-2-1)")
+MainGui.Add("Text", "x61 y108 w60 +BackgroundTrans", "(6-5-4-3-2-1)")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
-MainGui.Add("Text", "x110 y109 w34 h16 0x201 +Center")
+MainGui.Add("Text", "x110 y105 w34 h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-6 vHiveSlot Disabled", HiveSlot)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "x10 y125 w110 +BackgroundTrans", "My Hive Has:")
-MainGui.Add("Edit", "x75 y124 w18 h16 Limit2 number vHiveBees Disabled", ValidateInt(&HiveBees, 50)).OnEvent("Change", nm_HiveBees)
-MainGui.Add("Text", "x98 y125 w110 +BackgroundTrans", "Bees")
-MainGui.Add("Button", "x150 y124 w10 h15 vHiveBeesHelp Disabled", "?").OnEvent("Click", nm_HiveBeesHelp)
-MainGui.Add("Text", "x9 y142 w110 +BackgroundTrans", "Wait")
-(GuiCtrl := MainGui.Add("Edit", "x33 y141 w18 h16 Limit2 number vConvertDelay Disabled", ValidateInt(&ConvertDelay))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "x54 y142 w110 +BackgroundTrans", "seconds after convert")
+MainGui.Add("Text", "x10 y121 w110 +BackgroundTrans", "My Hive Has:")
+MainGui.Add("Edit", "x75 y120 w18 h16 Limit2 number vHiveBees Disabled", ValidateInt(&HiveBees, 50)).OnEvent("Change", nm_HiveBees)
+MainGui.Add("Text", "x98 y121 w110 +BackgroundTrans", "Bees")
+MainGui.Add("Button", "x150 y120 w10 h15 vHiveBeesHelp Disabled", "?").OnEvent("Click", nm_HiveBeesHelp)
+MainGui.Add("Text", "x9 y138 w110 +BackgroundTrans", "Wait")
+(GuiCtrl := MainGui.Add("Edit", "x33 y137 w18 h16 Limit2 number vConvertDelay Disabled", ValidateInt(&ConvertDelay))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+MainGui.Add("Text", "x54 y138 w110 +BackgroundTrans", "seconds after convert")
+;preset settings
+MainGui.Add("Button", "x10 y170 w150 h20 vPresetGUI Disabled", "Preset Settings").OnEvent("Click", nm_PresetGUI)
 
 ;reset settings
-MainGui.Add("Button", "x20 y183 w130 h22 vResetFieldDefaultsButton Disabled", "Reset Field Defaults").OnEvent("Click", nm_ResetFieldDefaultGUI)
-MainGui.Add("Button", "x20 y207 w130 h22 vResetAllButton Disabled", "Reset All Settings").OnEvent("Click", nm_ResetConfig)
+MainGui.Add("Button", "x10 y211 w75 h19 vResetFieldDefaultsButton Disabled", "Field Defaults").OnEvent("Click", nm_ResetFieldDefaultGUI)
+MainGui.Add("Button", "x85 y211 w75 h19 vResetAllButton Disabled", "All Settings").OnEvent("Click", nm_ResetConfig)
 
 ;input settings
 MainGui.Add("Text", "x178 y41 w100 +BackgroundTrans", "Add Key Delay (ms):")
@@ -3350,18 +3352,36 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
                 'The file "' v '" seems to be deprecated!
      			Make sure to install a compatible version of the file.'
                 ), , 0x1010)
-        ToolTip('Importing file...')
-        f := StrSplit(v, ['/', '\'])
-        Filename := f[f.length]
-        f := FileOpen((!!regexmatch(filename, 'i)(wf|gt(b|c|p|q|f))') ? (type := 'paths') : type := 'patterns') '\' filename, 'w')
-        name := SubStr(Filename, 1, -4)
+			SplitPath(v,&FileName:="",,&Ext:="",&Name:="")
+			if not ObjHasValue(["ahk", "ini"], Ext)
+			return msgbox(
+				(
+				'The file "' v '" is not a valid file type!
+				Make sure to import a valid file type.'
+				), , 0x1010)
+		if SubStr(name,1,3) = "ct-"
+			return msgbox(
+				(
+					'ct- paths are no longer supported!
+					Use gtf- instead.'
+				), , 0x1010)
+		ReplaceSystemCursors("IDC_LOAD")
+		if ext = "ini"
+			f := FileOpen((!!RegExMatch(name, "i)(nm_config|field_config|manual_planter)^") ? "settings\" : "settings\presets\") filename, "w")
+        else
+			f := FileOpen((!!regexmatch(filename, 'i)(wf|gt(b|c|p|q|f))') ? (type := 'paths') : type := 'patterns') '\' filename, 'w')
         f.write(content)
         f.close()
+		if ext = "ini"
+			return ReplaceSystemCursors() msgbox(
+					(
+					'Successfully imported ' filename '!'
+					),,0x1040)
 		if type = "patterns" && !ObjHasValue(patternlist,name)
 			For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
 				MainGui[i].add([name])
         (%'nm_import' type%)()
-        ToolTip()
+        ReplaceSystemCursors()
         if (type = "paths")
             return msgbox('Successfully imported the ' SubStr(type, 1, -1) ' ' name '!')
         if (tabCtrl.value = 1 && (copyTo := ((y > 53 && y < 115) || 2 * (y > 115 && y < 175 && mainGui["fieldName2"].enabled) || 3 * (y > 175 && y < 235 && mainGui["fieldName3"].enabled)))) {
@@ -3377,6 +3397,35 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 			Paste the gather settings by clicking on the paste button'
 		),,0x1040
     }
+	ReplaceSystemCursors(IDC := "")
+	{
+		static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
+			, SysCursors := Map("IDC_APPSTARTING", 32650
+				, "IDC_ARROW", 32512
+				, "IDC_CROSS", 32515
+				, "IDC_HAND", 32649
+				, "IDC_HELP", 32651
+				, "IDC_IBEAM", 32513
+				, "IDC_NO", 32648
+				, "IDC_SIZEALL", 32646
+				, "IDC_SIZENESW", 32643
+				, "IDC_SIZENWSE", 32642
+				, "IDC_SIZEWE", 32644
+				, "IDC_SIZENS", 32645
+				, "IDC_UPARROW", 32516
+				, "IDC_WAIT", 32514)
+		if !IDC
+			DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
+		else
+		{
+			hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
+			for k, v in SysCursors
+			{
+				hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
+				DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
+			}
+		}
+	}
 }
 ;buttons
 nm_StartButton(GuiCtrl, *){
