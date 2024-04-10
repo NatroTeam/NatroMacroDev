@@ -455,6 +455,8 @@ nm_importConfig()
 		, "LastAntPass", 1
 		, "RoboPassCheck", 0
 		, "LastRoboPass", 1
+		, "MeteorShowerCheck", 0
+		, "LastMeteorShower", 1
 		, "HoneystormCheck", 0
 		, "LastHoneystorm", 1
 		, "HoneyDisCheck", 0
@@ -2762,7 +2764,7 @@ MainGui.Add("Button", "x4 y21 w246 h18 vCollectSubTab Disabled", "Collect").OnEv
 MainGui.Add("Button", "x250 y21 w246 h18 vKillSubTab", "Kill").OnEvent("Click", nm_CollectKillButton)
 ;collect
 MainGui.SetFont("w700")
-MainGui.Add("GroupBox", "x5 y42 w125 h124 vCollectGroupBox", "Collect")
+MainGui.Add("GroupBox", "x5 y42 w125 h142 vCollectGroupBox", "Collect")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 (GuiCtrl := MainGui.Add("CheckBox", "x10 y57 vClockCheck Disabled Checked" ClockCheck, "Clock (tickets)")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "x10 yp+18 w50 vMondoBuffCheck Disabled Checked" MondoBuffCheck, "Mondo")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
@@ -2784,15 +2786,16 @@ MainGui.Add("Button", "xp+66 yp w12 h16 vAPARight Disabled", ">").OnEvent("Click
 MainGui.Add("Text", "x14 yp+15 vAntPassPointText +BackgroundTrans", "\__")
 MainGui.Add("CheckBox", "x+4 yp+5 vAntPassBuyCheck Disabled Checked" AntPassBuyCheck, "Use Tickets").OnEvent("Click", nm_AntPassBuyCheck)
 (GuiCtrl := MainGui.Add("CheckBox", "x10 yp+17 vHoneystormCheck Disabled Checked" HoneystormCheck, "Honeystorm")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("Checkbox", "x10 yp+18 vMeteorShowerCheck Disabled Checked" meteorShowerCheck, "Meteor Shower")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 ;memory match
 MainGui.SetFont("w700")
-MainGui.Add("GroupBox", "x5 y168 w125 h68 vMemoryMatchGroupBox", "Memory Match")
+MainGui.Add("GroupBox", "x5 y184 w125 h52 vMemoryMatchGroupBox", "Memory Match")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 (GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 w58 vNormalMemoryMatchCheck Disabled Checked" NormalMemoryMatchCheck, "Normal")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("CheckBox", "xp yp+18 wp vNightMemoryMatchCheck Disabled Checked" NightMemoryMatchCheck, "Night").OnEvent("Click", nm_NightMemoryMatchCheck)
 (GuiCtrl := MainGui.Add("CheckBox", "xp+58 yp-18 wp vMegaMemoryMatchCheck Disabled Checked" MegaMemoryMatchCheck, "Mega")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 wp vExtremeMemoryMatchCheck Disabled Checked" ExtremeMemoryMatchCheck, "Extreme")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-MainGui.Add("Button", "x43 yp+16 w49 h16 vMemoryMatchOptions Disabled", "Options").OnEvent("Click", nm_MemoryMatchOptions)
+MainGui.Add("Button", "x103 y185 w14 h14 vMemoryMatchOptions Disabled", "+ ").OnEvent("Click", nm_MemoryMatchOptions)
 ;dispensers
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x135 y42 w165 h105 vDispensersGroupBox", "Dispensers")
@@ -21869,5 +21872,4 @@ nm_FindItem(wParam, lParam,*){
 		return nm_setStatus("Error", "Failed to open menu")
 	mouseMove(windowX+46, windowY+yOffset+219)
 	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-150)
-
 }
