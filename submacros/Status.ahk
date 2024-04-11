@@ -59,27 +59,28 @@ ViciousSSCheck := A_Args[16]
 DeathSSCheck := A_Args[17]
 PlanterSSCheck := A_Args[18]
 HoneySSCheck := A_Args[19]
+HoneyUpdateCheck := A_Args[20]
 
-criticalCheck := A_Args[20]
-discordUID := A_Args[21]
-CriticalErrorPingCheck := A_Args[22]
-DisconnectPingCheck := A_Args[23]
-GameFrozenPingCheck := A_Args[24]
-PhantomPingCheck := A_Args[25]
-UnexpectedDeathPingCheck := A_Args[26]
-EmergencyBalloonPingCheck := A_Args[27]
+criticalCheck := A_Args[21]
+discordUID := A_Args[22]
+CriticalErrorPingCheck := A_Args[23]
+DisconnectPingCheck := A_Args[24]
+GameFrozenPingCheck := A_Args[25]
+PhantomPingCheck := A_Args[26]
+UnexpectedDeathPingCheck := A_Args[27]
+EmergencyBalloonPingCheck := A_Args[28]
 
-commandPrefix := A_Args[28]
+commandPrefix := A_Args[29]
 
-NightAnnouncementCheck := A_Args[29]
-NightAnnouncementName := A_Args[30]
-NightAnnouncementPingID := A_Args[31]
-NightAnnouncementWebhook := A_Args[32]
-PrivServer := A_Args[33]
+NightAnnouncementCheck := A_Args[30]
+NightAnnouncementName := A_Args[31]
+NightAnnouncementPingID := A_Args[32]
+NightAnnouncementWebhook := A_Args[33]
+PrivServer := A_Args[34]
 
-DebugLogEnabled := A_Args[34]
+DebugLogEnabled := A_Args[35]
 
-MonsterRespawnTime := A_Args[35]
+MonsterRespawnTime := A_Args[36]
 
 pToken := Gdip_Startup()
 OnExit(ExitFunc)
@@ -763,8 +764,7 @@ nm_status(status)
 nm_honey()
 {
 	static id := ""
-
-	if HoneyUpdate
+	if HoneyUpdate && HoneyUpdateCheck
 	{
 		payload_json := '{"embeds": [{"description": "[' A_Hour ':' A_Min ':' A_Sec '] Current Honey/Pollen", "color": "' HoneyUpdate '", "image": {"url": "attachment://honey.png"}}], "attachments": []}'
 		discord.CreateFormData(&postdata, &contentType
