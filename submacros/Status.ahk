@@ -2360,24 +2360,24 @@ nm_command(command)
 				return k
 			return 0
 		}
-		if !(input:=SubStr(command.content, StrLen(commandPrefix) + 9)) {
+		if !(params[2]) {
 			command_buffer.RemoveAt(1)
 			return discord.SendEmbed("Missing required parameter!\n``````?finditem [itemname]``````", 16711731, , , , id)
 		}
-		closestItem:=findClosestItem(input)
+		closestItem:=findClosestItem(params[2])
 		if closestItem.dist > 6 || not closestItem.item
-			discord.SendEmbed("Item ``" input "`` is not valid", 5066239, , , , id)
+			discord.SendEmbed("Item ``" params[2] "`` is not valid", 5066239, , , , id)
 		else
 			DetectHiddenWindows 1
 			if WinExist("natro_macro ahk_class AutoHotkey")
 				SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)	
 			DetectHiddenWindows 0
 		case "performance":
-			if !(input:=SubStr(command.content, StrLen(commandPrefix) + 13)) {
+			if not params.Has(2) or not params[2]{
 				command_buffer.RemoveAt(1)
 				return discord.SendEmbed("Missing required parameter!\n``````?performance [cpu|ram|gpu]``````", 16711731, , , , id)
 			}
-			switch input,0 {
+			switch params[2],0 {
 				case "cpu":
 					discord.SendEmbed("CPU Usage: " nm_getCPUPercentage() "%", 5066239, , , , id)
 				case "ram":
