@@ -2491,9 +2491,14 @@ MainGui.Add("Button", "x10 y124 w150 h40 Disabled", "Auto-Mutator`n(coming soon!
 ;other tools
 MainGui.Add("Button", "x10 y184 w150 h42 vGenerateBeeListButton Disabled", "Export Hive Bee List`n(for Hive Builder)").OnEvent("Click", nm_GenerateBeeList)
 ;calculators
-MainGui.Add("Button", "x175 y40 w150 h40 vTicketShopCalculatorButton Disabled", "Ticket Shop Calculator`n(Google Sheets)").OnEvent("Click", nm_TicketShopCalculatorButton)
-MainGui.Add("Button", "x175 y82 w150 h40 vSSACalculatorButton Disabled", "SSA Calculator`n(Google Sheets)").OnEvent("Click", nm_SSACalculatorButton)
-MainGui.Add("Button", "x175 y124 w150 h40 vBondCalculatorButton Disabled", "Bond Calculator`n(Google Sheets)").OnEvent("Click", nm_BondCalculatorButton)
+/**
+ * @author gyhkijffk
+ */
+MainGui.Add("Button", "x175 y40 w150 h23 vTicketShopCalculatorButton Disabled", "Ticket Shop Calculator").OnEvent("Click", nm_TicketShopCalculatorButton)
+MainGui.Add("Button", "x175 yp+25 w150 h23 vSSACalculatorButton Disabled", "SSA Calculator").OnEvent("Click", nm_SSACalculatorButton)
+MainGui.Add("Button", "x175 yp+25 w150 h23 vBondCalculatorButton Disabled", "Bond Calculator").OnEvent("Click", nm_BondCalculatorButton)
+MainGui.Add("Button", "x175 yp+25 w150 h23 vStickerPricesButton Disabled", "Sticker Prices").OnEvent("Click", (*) => Run("https://docs.google.com/spreadsheets/d/13rin_Z_tyDdFm3F1nhnVUywtp5hjFFuAB32iBY14mbE/edit?usp=sharing"))
+MainGui.Add("Button", "x175 yp+25 w150 h23 vBeequipChancesButton Disabled", "Beequip Chances").OnEvent("Click", (*) => Run("https://docs.google.com/spreadsheets/d/10_7oay1yHgykAccrhqYp5gr-P_0jpEKMbTJS9ty4JA8/edit?usp=sharing"))
 ;autoclicker
 MainGui.Add("Button", "x175 y184 w150 h42 vAutoClickerGUI Disabled", "AutoClicker`nSettings").OnEvent("Click", nm_AutoClickerButton)
 ;macro tools
@@ -4098,6 +4103,8 @@ nm_TabMiscLock(){
 	MainGui["TicketShopCalculatorButton"].Enabled := 0
 	MainGui["SSACalculatorButton"].Enabled := 0
 	MainGui["BondCalculatorButton"].Enabled := 0
+	MainGui["StickerPricesButton"].Enabled := 0
+	MainGui["BeequipChancesButton"].Enabled := 0
 	MainGui["AutoClickerGUI"].Enabled := 0
 	MainGui["HotkeyGUI"].Enabled := 0
 	MainGui["DebugLogGUI"].Enabled := 0
@@ -4113,6 +4120,8 @@ nm_TabMiscUnLock(){
 	MainGui["TicketShopCalculatorButton"].Enabled := 1
 	MainGui["SSACalculatorButton"].Enabled := 1
 	MainGui["BondCalculatorButton"].Enabled := 1
+	MainGui["StickerPricesButton"].Enabled := 1
+	MainGui["BeequipChancesButton"].Enabled := 1
 	MainGui["AutoClickerGUI"].Enabled := 1
 	MainGui["HotkeyGUI"].Enabled := 1
 	MainGui["DebugLogGUI"].Enabled := 1
@@ -4736,7 +4745,7 @@ nm_CollectKillButton(GuiCtrl, *){
 		,"HoneyDisCheck","TreatDisCheck","BlueberryDisCheck","StrawberryDisCheck","CoconutDisCheck","RoyalJellyDisCheck","GlueDisCheck"
 		,"MALeft","MARight","APALeft","APARight"
 		,"BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"
-		,"MemoryMatchGroupBox","NormalMemoryMatchCheck","MegaMemoryMatchCheck","NightMemoryMatchCheck","ExtremeMemoryMatchCheck","MemoryMatchOptions"]
+		,"MemoryMatchGroupBox","NormalMemoryMatchCheck","MegaMemoryMatchCheck","NightMemoryMatchCheck","ExtremeMemoryMatchCheck","MemoryMatchOptions", "MeteorShowerCheck"]
 	, KillControls := ["BugRunGroupBox","BugRunCheck","MonsterRespawnTime","TextMonsterRespawnPercent","TextMonsterRespawn","MonsterRespawnTimeHelp"
 		,"BugrunInterruptCheck","TextLoot","TextKill","TextLineBugRun1","TextLineBugRun2"
 		,"BugrunLadybugsLoot","BugrunRhinoBeetlesLoot","BugrunSpiderLoot","BugrunMantisLoot","BugrunScorpionsLoot","BugrunWerewolfLoot"
