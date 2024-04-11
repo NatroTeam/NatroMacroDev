@@ -2513,7 +2513,7 @@ TabCtrl.UseTab("Status")
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x5 y23 w240 h210", "Status Log")
 MainGui.Add("GroupBox", "x250 y23 w245 h160", "Stats")
-MainGui.Add("GroupBox", "x250 y185 w245 h48", "Discord Integration and Presets")
+MainGui.Add("GroupBox", "x250 y185 w245 h48", "Discord Integration")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
 MainGui.Add("CheckBox", "x85 y23 Disabled vStatusLogReverse Checked" StatusLogReverse, "Reverse Order").OnEvent("Click", nm_StatusLogReverseCheck)
