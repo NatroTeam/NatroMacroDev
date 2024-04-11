@@ -937,6 +937,11 @@ nm_command(command)
 						"name": "' commandPrefix 'finditem [item]",
 						"value": "finds an item in your inventory and send you a screenshot",
 						"inline": true
+					},
+					{
+						"name": "' commandPrefix 'preset [create|delete|list|load] [preset]",
+						"value": "Manages your presets",
+						"inline": true
 					}]
 				}],
 				"allowed_mentions": {
@@ -2386,6 +2391,45 @@ nm_command(command)
 					discord.SendEmbed("GPU Usage: " nm_getGPUPercentage() "%", 5066239, , , , id)
 				default:
 					discord.SendEmbed("Invalid parameter!\n``````?performance [cpu|ram|gpu]``````", 16711731, , , , id)
+			}
+		case "preset":
+			presets := []
+			Loop Files, "*.ini"
+				presets.Push(A_LoopFileName)
+			if (StrLen(params[3]!=0)) {
+				closestPreset:=findClosestpreset(params[3])
+				PresetPath := A_WorkingDir "\settings\presets\" closestPreset ".ini"
+			}
+			findClosestpreset(needle) {
+				dist := StrLen(needle)
+				for i,v in presets
+					if (d := LevenshteinDistance(needle, v)) < dist
+						dist := d, preset := v
+				return {preset:preset,dist:dist}
+			}
+			switch params[2],0 {
+				case "list":
+					list := ""
+					for , p in presets
+						list .= p "\n"
+					discord.SendEmbed("Preset List:" list, 5066239, , , , id)
+				case "load":
+					;will do after my exam
+				case "create":
+					;will do after my exam
+				case "delete":
+					if (StrLen(params[3])=0)
+						discord.SendEmbed(((StrLen(params[3])=0) ? "No parameter!\n?preset [create|delete|list|load] [preset]" : "Invalid Parameter!\n?preset [create|delete|list|load] [preset]"))
+					else {
+						if closestPreset.dist > 6 || not closestPreset.preset
+							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
+						else {
+							FileDelete(PresetPath)
+							discord.SendEmbed("Preset " closestPreset " is deleted.", 5066239, , , , id)
+						}
+					}
+				default:
+					discord.SendEmbed(((StrLen(params[2])=0) ? "No parameter!\n?preset [create|delete|list|load] [preset]" : "Invalid Parameter!\n?preset [create|delete|list|load] [preset]"))
 			}
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 

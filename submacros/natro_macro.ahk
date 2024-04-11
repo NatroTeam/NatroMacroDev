@@ -7516,29 +7516,36 @@ nm_ManagePreset(ctrl, *) {
 }
 nm_ImportPreset(*) { ;fixing soon
 	PresetGui.GetPos(gx, gy, gw, gh)
-	PresetPath := A_WorkingDir "\settings\presets\" PresetInput ".ini"
+	destinationFolder := "C:\path\to\your\folder"
+	DllCall("OpenClipboard", "Ptr", 0)
+	hData := DllCall("GetClipboardData", "UInt", 15)  ; 15 is CF_HDROP
+	op := Buffer(42*2 + A_PtrSize*3)  ; Size of SHFILEOPSTRUCT
+	NumPut(0x4004, op, "UShort")  ; FO_COPY | FOF_ALLOWUNDO
+	NumPut(A_WorkingDir, op, 42*2, "Str")  ; pTo
+	DllCall("shell32\SHFileOperation", "Ptr", op.ptr)
+	DllCall("CloseClipboard")
+	PresetPath := A_WorkingDir "\settings\presets\" Preset ".ini"
 	PresetPatternPath := A_WorkingDir "\patterns"
 	PresetPatterns := ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
 	PresetDefaultPatterns := ["Bamboo", "Blue Flower", "Cactus", "Clover", "Coconut", "Dandelion", "Mountain Top", "Mushroom", "Pepper", "Pine Tree", "Pineapple", "Pumpkin", "Rose", "Spider", "Strawberry", "Stump", "Sunflower"]
 	if (FileExist(PresetPath)) {
-		if (MsgBox("Do you want to overwrite " PresetInput "?",, "4") = "No")
+		if (MsgBox("Do you want to overwrite " Preset "?",, "4") = "No")
 			return
-		nm_CreatePresetFiles(PresetInput, 2)
+		nm_CreatePresetFiles(Preset, 2)
 	}
-	
-	FileDelete(FormatPath)
 	if (!FileExist(PresetPath)) {
-		MsgBox("Preset " PresetInput " could not be created. No valid data was imported.", "Invalid", "T5")
+		MsgBox("Preset " Preset " could not be created. No valid data was imported.", "Invalid", "T5")
 		return
 	}
-	ini := IniRead(PresetPath, "Gather")
-	if (ini!="") {
+	if (IniRead(PresetPath, "Gather")!="") {
 		for k, v in PresetPatterns {
 			ini := IniRead(PresetPath, "Gather", v)
 			if (!FileExist(PresetPatternPath "\" ini ".ahk") && ini!="Stationary") {
 				MsgBox("Pattern " ini " for " v " does not exist.",, "T5")
 			}
 		}
+	}
+	if (IniRead(PresetPath, "Bamboo")!="") {
 		for k, v in PresetDefaultPatterns {
 			ini := IniRead(PresetPath, v, "pattern")
 			if (!FileExist(PresetPatternPath "\" ini ".ahk") && ini!="Stationary") {
@@ -7546,7 +7553,7 @@ nm_ImportPreset(*) { ;fixing soon
 			}
 		}
 	}
-	MsgBox("Preset " PresetInput " has been created.",, "T5")
+	MsgBox("Preset " Preset " has been created.",, "T5")
 	PresetGui.Destroy()
 	nm_PresetGUI()
 }
