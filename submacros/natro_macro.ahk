@@ -10076,61 +10076,35 @@ nm_AmuletPrompt(decision:=0, *){
 nm_FindItem(chosenItem, *){
 	global shiftLockEnabled, bitmaps
 	static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
-	itemNames := Map(1, "Cog", 2, "Ticket", 3, "SprinklerBuilder", 4, "BeequipCase", 5, "Gumdrops", 6, "Coconut", 7, "Stinger", 8, "MicroConverter", 9, "Honeysuckle", 10, "Whirligig", 11, "FieldDice", 12, "SmoothDice", 13, "LoadedDice", 14, "JellyBeans", 15, "RedExtract", 16, "BlueExtract", 17, "Glitter", 18, "Glue", 19, "Oil", 20, "Enzymes", 21, "TropicalDrink", 22, "PurplePotion", 23, "SuperSmoothie", 24, "MarshmallowBee", 25, "Sprout", 26, "FestiveBean", 27, "CloudVial", 28, "NightBell", 29, "BoxOFrogs", 30, "AntPass", 31, "BrokenDrive", 32, "7ProngedCog", 33, "RoboPass", 34, "Translator", 35, "SpiritPetal", 36, "Present", 37, "Treat", 38, "StarTreat", 39, "AtomicTreat", 40, "SunflowerSeed", 41, "Strawberry", 42, "Pineapple", 43, "Blueberry", 44, "Bitterberry", 45, "Neonberry", 46, "MoonCharm", 47, "GingerbreadBear", 48, "AgedGingerbreadBear", 49, "WhiteDrive", 50, "RedDrive", 51, "BlueDrive", 52, "GlitchedDrive", 53, "ComfortingVial", 54, "InvigoratingVial", 55, "MotivatingVial", 56, "RefreshingVial", 57, "SatisfyingVial", 58, "PinkBalloon", 59, "RedBalloon", 60, "WhiteBalloon", 61, "BlackBalloon", 62, "SoftWax", 63, "HardWax", 64, "CausticWax", 65, "SwirledWax", 66, "Turpentine", 67, "PaperPlanter", 68, "TicketPlanter", 69, "FestivePlanter", 70, "PlasticPlanter", 71, "CandyPlanter", 72, "RedClayPlanter", 73, "BlueClayPlanter", 74, "TackyPlanter", 75, "PesticidePlanter", 76, "HeatTreatedPlanter", 77, "HydroponicPlanter", 78, "PetalPlanter", 79, "ThePlanterOfPlenty", 80, "BasicEgg", 81, "SilverEgg", 82, "GoldEgg", 83, "DiamondEgg", 84, "MythicEgg", 85, "StarEgg", 86, "GiftedSilverEgg", 87, "GiftedGoldEgg", 88, "GiftedDiamondEgg", 89, "GiftedMythicEgg", 90, "RoyalJelly", 91, "StarJelly", 92, "BumbleBeeEgg", 93, "BumbleBeeJelly", 94, "RageBeeJelly", 95, "ShockedBeeJelly")
-	itemNumbers := Map("Cog", 1, "Ticket", 2, "SprinklerBuilder", 3, "BeequipCase", 4, "Gumdrops", 5, "Coconut", 6, "Stinger", 7, "MicroConverter", 8, "Honeysuckle", 9, "Whirligig", 10, "FieldDice", 11, "SmoothDice", 12, "LoadedDice", 13, "JellyBeans", 14, "RedExtract", 15, "BlueExtract", 16, "Glitter", 17, "Glue", 18, "Oil", 19, "Enzymes", 20, "TropicalDrink", 21, "PurplePotion", 22, "SuperSmoothie", 23, "MarshmallowBee", 24, "Sprout", 25, "FestiveBean", 26, "CloudVial", 27, "NightBell", 28, "BoxOFrogs", 29, "AntPass", 30, "BrokenDrive", 31, "7ProngedCog", 32, "RoboPass", 33, "Translator", 34, "SpiritPetal", 35, "Present", 36, "Treat", 37, "StarTreat", 38, "AtomicTreat", 39, "SunflowerSeed", 40, "Strawberry", 41, "Pineapple", 42, "Blueberry", 43, "Bitterberry", 44, "Neonberry", 45, "MoonCharm", 46, "GingerbreadBear", 47, "AgedGingerbreadBear", 48, "WhiteDrive", 49, "RedDrive", 50, "BlueDrive", 51, "GlitchedDrive", 52, "ComfortingVial", 53, "InvigoratingVial", 54, "MotivatingVial", 55, "RefreshingVial", 56, "SatisfyingVial", 57, "PinkBalloon", 58, "RedBalloon", 59, "WhiteBalloon", 60, "BlackBalloon", 61, "SoftWax", 62, "HardWax", 63, "CausticWax", 64, "SwirledWax", 65, "Turpentine", 66, "PaperPlanter", 67, "TicketPlanter", 68, "FestivePlanter", 69, "PlasticPlanter", 70, "CandyPlanter", 71, "RedClayPlanter", 72, "BlueClayPlanter", 73, "TackyPlanter", 74, "PesticidePlanter", 75, "HeatTreatedPlanter", 76, "HydroponicPlanter", 77, "PetalPlanter", 78, "ThePlanterOfPlenty", 79, "BasicEgg", 80, "SilverEgg", 81, "GoldEgg", 82, "DiamondEgg", 83, "MythicEgg", 84, "StarEgg", 85, "GiftedSilverEgg", 86, "GiftedGoldEgg", 87, "GiftedDiamondEgg", 88, "GiftedMythicEgg", 89, "RoyalJelly", 90, "StarJelly", 91, "BumbleBeeEgg", 92, "BumbleBeeJelly", 93, "RageBeeJelly", 94, "ShockedBeeJelly", 95)
-	item := itemNames.Get(chosenItem)
+	GetRobloxClientPos()
+	DetectHiddenWindows 1
+	if windowWidth == 0
+		return WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 0, , , , , , 2000) :""
 	Prev_ShiftLock := ShiftLockEnabled
 	yOffset := GetYOffset()
 	nm_setShiftLock(0)
-	GetRobloxClientPos()
-	if windowWidth == 0
-		return -1
 	ActivateRoblox()
-	outer:
-	loop 1 {
-		if (nm_OpenMenu("itemmenu") = 0)
-			return nm_setStatus("Error", "Failed to open menu")
-		mouseMove(windowX+46, windowY+yOffset+219)
+	if (nm_OpenMenu("itemmenu") = 0)
+		return WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 2, , , , , , 2000) : ""
+	MouseMove windowX+46, windowY+yOffset+219
+	Loop 55 {
 		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-150)
-		FilePath := A_ScriptDir "\captured_image.png"
-		Gdip_SaveBitmapToFile(pBMScreen, FilePath)
-		itemFound := 0
-		for i,v in items { ; looking for the first item in the menu
-				if (Gdip_ImageSearch(pBMScreen, bitmaps[v], &itemCoords,,,,,5) > 0) {
-					Loop 55 {
-						mouseMove(windowX+46, windowY+yOffset+219)
-						pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-150)
-						if (itemNumbers.Get(v) >= itemNumbers.Get(item)) {
-							if (Gdip_ImageSearch(pBMScreen, bitmaps[item], &itemCoords,,,,,5)) { ; scroll up
-								itemFound := 1
-								break outer
-							}
-							send "{WheelUp 1}"
-						} else {
-							if (Gdip_ImageSearch(pBMScreen, bitmaps[item], &itemCoords,,,,,5)) { ; scroll down
-								itemFound := 1
-								break outer
-							}
-							send "{WheelDown 1}"
-						}
-						Gdip_DisposeImage(pBMScreen)
-						sleep 300
-					}
-			}
+		if (Gdip_ImageSearch(pBMScreen, bitmaps[items[chosenitem]], &itemCoords,,,,,5)) {
+			Gdip_DisposeImage(pBMScreen)
+			break
 		}
+		for k,v in items
+			if (Gdip_ImageSearch(pBMScreen, bitmaps[v], , , , , , 5)) {
+				Send "{Wheel" (k > chosenItem ? "Up" : "Down") " 1}"
+				break
+			}
+		Gdip_DisposeImage(pBMScreen)
 	}
-	break_outer:
-	Gdip_DisposeImage(pBMScreen)
-	FounditemCoords := SubStr(ItemCoords, InStr(ItemCoords, ",")+1)+WindowY+140+yOffset
 	DetectHiddenWindows 1
-	if (ItemFound = 1){
-		if WinExist("Status.ahk ahk_class AutoHotkey")
-			SendMessage(0x5559, FoundItemCoords, , , , , , , 2000)
-	}else{
-		if WinExist("Status.ahk ahk_class AutoHotkey")
-			SendMessage(0x5559, 0, , , , , , , 2000)
-	}
-	Gdip_DisposeImage(pBitmap)
+	if !itemCoords
+		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 1, , , , , , 2000) : ""
+	else
+		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, StrSplit(itemCoords,"`n")[1], , , , , , , 2000) : ""
 	sleep 1000
 	DetectHiddenWindows 0
 	nm_OpenMenu()

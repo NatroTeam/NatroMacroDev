@@ -2347,7 +2347,11 @@ nm_command(command)
 				return k
 			return 0
 		}
-		closestItem:=findClosestItem(input:=SubStr(command.content, StrLen(commandPrefix) + 9))
+		if !(input:=SubStr(command.content, StrLen(commandPrefix) + 9)) {
+			command_buffer.RemoveAt(1)
+			return discord.SendEmbed("Missing required parameter!\n``````?finditem [itemname]``````", 16711731, , , , id)
+		}
+		closestItem:=findClosestItem(input)
 		if closestItem.dist > 6 || not closestItem.item
 			discord.SendEmbed("Item ``" input "`` is not valid", 5066239, , , , id)
 		else
@@ -2740,14 +2744,22 @@ nm_sendHeartbeat(*)
 	return 0
 }
 
-nm_sendItemPicture(y, *) {
-	if (y = 0) { ; 0 because it will never reach 0
-		discord.SendEmbed("Item was not found.", 16711731)
-		
-	}else{
-		GetRobloxClientPos()
-		discord.SendEmbed("Item Found!", 5066239, , (pBMScreen := Gdip_BitmapFromScreen(windowX "|" y "|306|97")))
-		Gdip_DisposeImage(pBMScreen)
+nm_sendItemPicture(wParam, lParam,*) {
+	critical
+	switch wParam {
+		case 0:
+			switch lParam {
+				case 0:
+					discord.SendEmbed("No Roblox found!", 16711731)
+				case 1:
+					discord.SendEmbed("Item was not found.", 16711731)
+				case 2:
+					discord.SendEmbed("Can't open inventory!", 16711731)
+			}
+		default:
+			GetRobloxClientPos()
+			discord.SendEmbed("Item Found!", 5066239, , (pBMScreen := Gdip_BitmapFromScreen(windowX "|" wParam "|306|97")))
+			Gdip_DisposeImage(pBMScreen)
 	}
 }
 
