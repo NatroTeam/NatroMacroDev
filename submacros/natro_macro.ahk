@@ -10339,6 +10339,7 @@ nm_Collect(){
 	nm_Honeystorm()
 	nm_HoneyLB()
 	nm_StickerPrinter()
+	nm_MeteorShower()
 }
 nm_Clock(){
 	global ClockCheck, LastClock
@@ -11732,6 +11733,33 @@ nm_Honeystorm(fromSnowMachine:=0){
 		}
 		(HoneystormCheck) && updateConfig()
 	}
+	updateConfig() {
+		LastHoneystorm:=nowUnix()
+		IniWrite LastHoneystorm, "settings\nm_config.ini", "Collect", "LastHoneystorm"
+	}
+}
+nm_MeteorShower() {
+	global MeteorShowerCheck, LastMeteorShower
+	if not (meteorShowerCheck and (nowUnix()-LastMeteorShower)>79200)
+		return
+	Loop 2 {
+		hwnd := GetRobloxHWND()
+		YOffset := GetYOffset(hwnd)
+		GetRobloxClientPos(hwnd)
+		nm_updateAction("Collect")
+		nm_Reset()
+		nm_SetStatus("Traveling", "Meteor Shower" ((A_Index = 2) ? " (Attempt 2)" : ""))
+		nm_gotoCollect("meteorshower")
+		If (nm_imgSearch("e_button.png",30,"high")[1] = 0) {
+			sendinput "{" SC_E " down}"
+			Sleep 100
+			sendinput "{" SC_E " up}"
+			nm_setStatus("Collected", "Meteor Shower")
+			updateConfig()
+			break
+		}
+	}
+	updateConfig()
 	updateConfig() {
 		LastHoneystorm:=nowUnix()
 		IniWrite LastHoneystorm, "settings\nm_config.ini", "Collect", "LastHoneystorm"
