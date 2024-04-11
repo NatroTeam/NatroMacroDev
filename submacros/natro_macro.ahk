@@ -10088,7 +10088,7 @@ nm_FindItem(chosenItem, *){
 		return WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 2, , , , , , 2000) : ""
 	MouseMove windowX+46, windowY+yOffset+219
 	Loop 55 {
-		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-150)
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-300)
 		if (Gdip_ImageSearch(pBMScreen, bitmaps[items[chosenitem]], &itemCoords,,,,,5)) {
 			Gdip_DisposeImage(pBMScreen)
 			break
@@ -10099,12 +10099,13 @@ nm_FindItem(chosenItem, *){
 				break
 			}
 		Gdip_DisposeImage(pBMScreen)
+		sleep 300
 	}
 	DetectHiddenWindows 1
 	if !itemCoords
 		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 1, , , , , , 2000) : ""
 	else
-		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, StrSplit(itemCoords,"`n")[1], , , , , , , 2000) : ""
+		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, StrSplit(itemCoords,",")[2]+windowY+yOffset+150, , , , , , , 2000) : ""
 	sleep 1000
 	DetectHiddenWindows 0
 	nm_OpenMenu()
