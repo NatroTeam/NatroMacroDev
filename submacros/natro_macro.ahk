@@ -10105,7 +10105,7 @@ nm_FindItem(chosenItem, *){
 	if !itemCoords
 		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 1, , , , , , 2000) : ""
 	else
-		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, StrSplit(itemCoords,",")[2]+windowY+yOffset+150, , , , , , , 2000) : ""
+		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, StrSplit(itemCoords,",")[2]+windowY+yOffset+140, , , , , , , 2000) : ""
 	sleep 1000
 	DetectHiddenWindows 0
 	nm_OpenMenu()
