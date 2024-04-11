@@ -10093,11 +10093,14 @@ nm_FindItem(chosenItem, *){
 			Gdip_DisposeImage(pBMScreen)
 			break
 		}
-		for k,v in items
+		for k,v in items {
 			if (Gdip_ImageSearch(pBMScreen, bitmaps[v], , , , , , 5)) {
 				Send "{Wheel" (k > chosenItem ? "Up" : "Down") " 1}"
 				break
 			}
+			if A_Index = items.length
+				Send "{WheelUp 1}"
+		}
 		Gdip_DisposeImage(pBMScreen)
 		sleep 300
 	}
