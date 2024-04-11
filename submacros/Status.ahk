@@ -939,7 +939,7 @@ nm_command(command)
 						"inline": true
 					},
 					{
-						"name": "' commandPrefix 'preset [create|delete|list|load] [preset]",
+						"name": "' commandPrefix 'preset [create|delete|list|load|upload] [preset]",
 						"value": "Manages your presets",
 						"inline": true
 					}]
@@ -1886,7 +1886,6 @@ nm_command(command)
 		case "upload":
 		discord.SendFile(Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name))), id)
 
-
 		case "download":
 		if (url := command.url)
 		{
@@ -2398,7 +2397,7 @@ nm_command(command)
 				presets.Push(A_LoopFileName)
 			if (StrLen(params[3]!=0)) {
 				closestPreset:=findClosestpreset(params[3])
-				PresetPath := A_WorkingDir "\settings\presets\" closestPreset ".ini"
+				PresetPath := A_WorkingDir "\settings\presets\" closestPreset.preset ".ini"
 			}
 			findClosestpreset(needle) {
 				dist := StrLen(needle)
@@ -2414,22 +2413,48 @@ nm_command(command)
 						list .= p "\n"
 					discord.SendEmbed("Preset List:" list, 5066239, , , , id)
 				case "load":
-					;will do after my exam
+					if (StrLen(params[3])=0)
+						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload] [preset]")
+					else if (closestPreset.dist > 6 || not closestPreset.preset || !FileExist(PresetPath))
+						discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
+					else {
+						DetectHiddenWindows 1
+						if WinExist("natro_macro ahk_class AutoHotkey")
+							SendMessage(0x5560, closestPreset.preset,,,,,,,2000)	
+						DetectHiddenWindows 0
+					}
 				case "create":
-					;will do after my exam
+					if (StrLen(params[3])=0)
+						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload] [preset]")
+					else if (closestPreset.dist > 6 || not closestPreset.preset || FileExist(PresetPath))
+						discord.SendEmbed("Preset " params[3] ((FileExist(PresetPath)) ? " already exists." : " is not valid."), 5066239, , , , id)
+					else {
+						DetectHiddenWindows 1
+						if WinExist("natro_macro ahk_class AutoHotkey")
+							SendMessage(0x5561, closestPreset.preset,,,,,,,2000)	
+						DetectHiddenWindows 0
+					}
 				case "delete":
 					if (StrLen(params[3])=0)
-						discord.SendEmbed(((StrLen(params[3])=0) ? "No parameter!\n?preset [create|delete|list|load] [preset]" : "Invalid Parameter!\n?preset [create|delete|list|load] [preset]"))
+						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload] [preset]")
 					else {
-						if closestPreset.dist > 6 || not closestPreset.preset
+						if (closestPreset.dist > 6 || not closestPreset.preset || !FileExist(PresetPath))
 							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
 						else {
 							FileDelete(PresetPath)
-							discord.SendEmbed("Preset " closestPreset " is deleted.", 5066239, , , , id)
+							discord.SendEmbed("Preset " closestPreset.preset " is deleted.", 5066239, , , , id)
 						}
 					}
+				case "upload":
+					if (StrLen(params[3])=0)
+						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload] [preset]")
+					else {
+						if (closestPreset.dist > 6 || not closestPreset.preset || !FileExist(PresetPath))
+							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
+						else discord.SendFile(A_WorkingDir "\settings\presets\" closestPreset.preset ".ini", id)
+					}
 				default:
-					discord.SendEmbed(((StrLen(params[2])=0) ? "No parameter!\n?preset [create|delete|list|load] [preset]" : "Invalid Parameter!\n?preset [create|delete|list|load] [preset]"))
+					discord.SendEmbed(((StrLen(params[2])=0) ? "No given" : "Invalid ") "parameter!\n\n?preset [create|delete|list|load|upload] [preset]")
 			}
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
