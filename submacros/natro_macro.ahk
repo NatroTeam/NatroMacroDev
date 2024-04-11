@@ -2009,7 +2009,7 @@ Run
 '"' exe_path64 '" /script "' A_WorkingDir '\submacros\Status.ahk" '
 '"' discordMode '" "' discordCheck '" "' webhook '" "' bottoken '" "' MainChannelCheck '" "' MainChannelID '" "' ReportChannelCheck '" "' ReportChannelID '" '
 '"' WebhookEasterEgg '" "' ssCheck '" "' ssDebugging '" "' CriticalSSCheck '" "' AmuletSSCheck '" "' MachineSSCheck '" "' BalloonSSCheck '" "' ViciousSSCheck '" '
-'"' DeathSSCheck '" "' PlanterSSCheck '" "' HoneySSCheck '" "' HoneyUpdateSSCheck '"' criticalCheck '" "' discordUID '" "' CriticalErrorPingCheck '" "' DisconnectPingCheck '" "' GameFrozenPingCheck '" '
+'"' DeathSSCheck '" "' PlanterSSCheck '" "' HoneySSCheck '" "' HoneyUpdateSSCheck '" "' criticalCheck '" "' discordUID '" "' CriticalErrorPingCheck '" "' DisconnectPingCheck '" "' GameFrozenPingCheck '" '
 '"' PhantomPingCheck '" "' UnexpectedDeathPingCheck '" "' EmergencyBalloonPingCheck '" "' commandPrefix '" "' NightAnnouncementCheck '" "' NightAnnouncementName '" '
 '"' NightAnnouncementPingID '" "' NightAnnouncementWebhook '" "' PrivServer '" "' DebugLogEnabled '" "' MonsterRespawnTime '"'
 )
