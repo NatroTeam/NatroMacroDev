@@ -13,7 +13,6 @@
 	, "DeathSSCheck"
 	, "PlanterSSCheck"
 	, "HoneySSCheck"
-	, "HoneyUpdateSSCheck"
 	, "criticalCheck"
 	, "CriticalErrorPingCheck"
 	, "DisconnectPingCheck"
