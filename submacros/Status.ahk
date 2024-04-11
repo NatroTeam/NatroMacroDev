@@ -92,6 +92,9 @@ OnMessage(0x5559, nm_sendItemPicture)
 
 discord.SendEmbed("Connected to Discord!", 5066239)
 
+;nm_getCPUPercentage()
+nm_getCPUPercentage()
+
 planters := Map(), planters.CaseSense := 0
 planters["blueclayplanter"] := {bitmap: Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAMAAAC7IEhfAAAB2lBMVEUAAAAeHh42NjY1NTUyMjIoKCgkJCQaGho1NTU2NjYzMzM0NDQzMzMvLy8tLS0qKio2NjY2NjYzMzM0NDQxMTEuLi4uLi4qKio2NjY1NTU0NDQsLCwvLy8kJCQyMjIzMzMzMzMzMzMyMjI0NDQ1NTUyMjIyMjIxMTEvLy8wMDEtLS0tLS05WbpAZs8/UH82NjY2NjdAZs5NcddAZcw4WLZOctg2N0I1NjY5WrsyTqE4WLg3V7QyT6Q5Wrg1VLE/UIJMb9Y9Ycc6W70tSJU+UYRMb9NFadFCZ9BBZ85Mbco4VbEzUKc3UKYxTZ4sRpM3O0w1Nz01NztJbdVFaM1KacJBYLo2VrMwTKAuSpo/VJE3TJFAU403SYo/Uoc4R3s3RHA6QmQ3P2A2PVc2O1E2NjlNb9BHactBZMlGZ8ZFZL40VK40U6w3U6szUqpAWaQ2Tp88U5wwTJw1SY03Qmw2QGk2OkdGa9NHa9JJa88+ZMpKasg6XcBEYbU8W643VK1EXqo4U6Y3UaItSJc6To41RYs/Uok3RXg3PVtEZsJAYcI/YL4+XbdBXbFGYK9EXKM2TZo/VplBVpY3TJU7TIo7S4c4SIIyO1xKbM9CZMY8X8I4Va49UJIuQ4U1QYKebRTcAAAALHRSTlMABP33xTITCfH73sqGY0Ia6uK7tXtMLB3awKxGOyWwpZmTb9fQzoBsW1lZI7SYQXAAAANuSURBVDjLfdVnV9pQGMDxECxiAdFau/ceofdmEPaSpSAbyl6Ce++9q3bvPb5rb5KCKNj/i5wc7i95yD05J1i1ZuUjheJGE5dMDABoa2q6pLjcjB3rqvyOVAMAhGwgECj1FQulAAsBaGm/eUVUwx7fbAOh+YLjw9s30R5Uf79z6MWrqc/5+TIUXzpfdecuQPbJmxUnRanVFGV19vesDD1/8Z2m6ZdTsyHQpBSY6NQFWFhDxvptYGj49cT79J7DYbE4ssmJWPfC4BQLLgr/9JYUFqKUMxKbSO45LE9qs2xSVOQTFPPDr0qDuRVrZDOJTF3ZAbUzNo8rOHgK7EeskYknDUsuqRcHD8BZHmo+dbvpZEOXfq6m3HShAr/QKvK1o05Z9t5GKcqlomfBPQHmaZWKjL1PZy0CcGSz6fSHzWg/2ioXqSJzQCbiYXFQhepe6okOD6+txYaHBgaWnJSasi64uAXyMzzNwXMtgZc8DFspCi2r+ajwoptEd+PgrgCbb7OvOIio2+1aCIfDiy6Xu1t12C8BYnfL66qGkSqhXY0AZXCXbKyE6DwQ4Fm8OPgfSK6zsAPjOi8OTdHkSdOXuw6guJWHzTLIrp8EbV0eFl5vrr6O+zYVeYygaNuqltgKwU7sX514ybBqs9F8JIkOy8s2249VrZYgiMlyS2sFSqTBbcJEaLXaLi5unSNCKdimrEBRB8gQJ/R0JoTfxyopYF5fb7ifGKP9K7hWha0tfRtmhl98ahZOmFGj0WvWj0/7v4KOKryM9037vHo0yDid8BnN6ILxhN/u03l99t8suH54Rzw4s7MzQph1dr8/odONGrwJf3x0XKfz2UsacWcVSmQgN2JPGOM7du+IwaxDwB9n0IDRke2gRi7Camcbxqd18biZf1Kv0WhEjusdxK9ihymlwS1Cb2CIujKgXVIDRWfgDNGwHDiD1SYHc3pTA8fMHYOdOLtNHMZfM+Yhenv7wI0jUHIRzDFEr8FEML0MQuhgmpkkNj4GwQPsSK3i0EfTs0kt4fnjQROf/UR4TD9W1IivHIWia+DAMDbJGY8J7YoBnW1kShrNJRF2tHNt5RSDCMFvEuPZSs3OQ4CfkWDHkwN2bnb/SyaVyuTyxQBb1kC8/Wy9w863AwAgH+BqEV98qMQadaoDB5Wk8ltXJLXfjr8sUSDBBtdhwQAAAABJRU5ErkJggg==")
 	, name: "Blue Clay Planter", color: 5403341}
@@ -923,6 +926,16 @@ nm_command(command)
 					{
 						"name": "' commandPrefix 'restart",
 						"value": "Restarts your computer",
+						"inline": true
+					},
+					{
+						"name": "' commandPrefix 'performance [ram|cpu|gpu]",
+						"value": "returns the usage of your selected hardware",
+						"inline": true
+					},
+					{
+						"name": "' commandPrefix 'finditem [item]",
+						"value": "finds an item in your inventory and send you a screenshot",
 						"inline": true
 					}]
 				}],
@@ -2359,7 +2372,21 @@ nm_command(command)
 			if WinExist("natro_macro ahk_class AutoHotkey")
 				SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)	
 			DetectHiddenWindows 0
-		
+		case "performance":
+			if !(input:=SubStr(command.content, StrLen(commandPrefix) + 13)) {
+				command_buffer.RemoveAt(1)
+				return discord.SendEmbed("Missing required parameter!\n``````?performance [cpu|ram|gpu]``````", 16711731, , , , id)
+			}
+			switch input,0 {
+				case "cpu":
+					discord.SendEmbed("CPU Usage: " nm_getCPUPercentage() "%", 5066239, , , , id)
+				case "ram":
+					discord.SendEmbed("RAM Usage: " nm_getRAMPercentage() "%", 5066239, , , , id)
+				case "gpu":
+					discord.SendEmbed("GPU Usage: " nm_getGPUPercentage() "%", 5066239, , , , id)
+				default:
+					discord.SendEmbed("Invalid parameter!\n``````?performance [cpu|ram|gpu]``````", 16711731, , , , id)
+			}
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
 		default:
@@ -2763,6 +2790,30 @@ nm_sendItemPicture(wParam, lParam,*) {
 	}
 }
 
+nm_getCPUPercentage() {
+    static pIdleTime := 0, pKernelTime := 0, pUserTime := 0
+	if !pIdleTime
+		return (DllCall("GetSystemTimes", "int64*", &pIdleTime , "int64*", &pKernelTime, "int64*", &pUserTime))
+	DllCall("GetSystemTimes", "int64*", &pIdleTime2:=0 , "int64*", &pKernelTime2:=0, "int64*", &pUserTime2:=0)
+    load := ((s:=pKernelTime-pKernelTime2 + pUserTime - pUserTime2) - pIdleTime+pIdleTime2 ) * 100//s
+	pIdleTime := pIdleTime2, pKernelTime := pKernelTime2, pUserTime := pUserTime2
+	return load
+}
+
+nm_getRAMPercentage() {
+	static MEMORYSTATUSEX := Buffer(64, 0)
+	NumPut("uint",64, MEMORYSTATUSEX)
+	DllCall("Kernel32.dll\GlobalMemoryStatusEx", "Ptr", MEMORYSTATUSEX.Ptr)
+	totalMemory := NumGet(MEMORYSTATUSEX,8,"int64")
+	freeMemory := NumGet(MEMORYSTATUSEX, 16, "int64")
+	return (totalMemory - freeMemory) * 100 // totalMemory
+}
+
+nm_getGPUPercentage() {
+    gpuUsage := ComObjGet("winmgmts:").ExecQuery("Select * from Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine")
+    for gpu in gpuUsage
+        return gpu.UtilizationPercentage
+}
 
 ExitFunc(*)
 {
