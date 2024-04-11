@@ -357,4 +357,5 @@
 	, "SilverEggMatchIgnore"
 	, "GoldEggMatchIgnore"
 	, "DiamondEggMatchIgnore"
-	, "CoconutBoosterCheck"]
+	, "CoconutBoosterCheck"
+	, "HoneyUpdateSSCheck"]
