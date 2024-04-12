@@ -90,6 +90,7 @@ OnMessage(0x5552, nm_setGlobalInt, 255)
 OnMessage(0x5553, nm_setGlobalStr, 255)
 OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5559, nm_sendItemPicture)
+OnMessage(0xC, nm_sendNectarImage)
 
 discord.SendEmbed("Connected to Discord!", 5066239)
 
@@ -2459,6 +2460,11 @@ nm_command(command)
 				default:
 					discord.SendEmbed(((StrLen(params[2])=0) ? "No given" : "Invalid ") "parameter!\n\n?preset [create|delete|list|load|upload] [preset]")
 			}
+		case "nectar", "nectars","nec":
+		DetectHiddenWindows 1
+		if WinExist("natro_macro ahk_class AutoHotkey")
+			SendMessage(0x5562, , , , , , , , 2000)
+		DetectHiddenWindows 0
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
 		default:
@@ -2885,6 +2891,32 @@ nm_getGPUPercentage() {
     gpuUsage := ComObjGet("winmgmts:").ExecQuery("Select * from Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine")
     for gpu in gpuUsage
         return gpu.UtilizationPercentage
+}
+
+nm_sendNectarImage(wParam,lParam,* ) {
+	static nectarNames := ["comforting","refreshing","satisfying","motivating","invigorating"]
+	msgbox StrGet(lParam)
+	nectars := StrSplit(StrGet(lParam), ",")
+    pBitmap := Gdip_CreateBitmap(1100, 211), G:= Gdip_GraphicsFromImage(pBitmap), Gdip_SetSmoothingMode(G,4)
+	for i,j in ["comforting","motivating","satisfying","refreshing","invigorating"]
+	{
+		color := (j = "comforting") ? 0xff7e9eb3
+			: (j = "motivating") ? 0xff937db3
+			: (j = "satisfying") ? 0xffb398a7
+			: (j = "refreshing") ? 0xff78b375
+			: 0xffb35951 ; invigorating
+
+		nectar_value := nectars[i]
+		pPen := Gdip_CreatePen(color, 32), Gdip_DrawArc(G, pPen, 24+(A_Index-1)*220,20, 170, 170,-90, nectar_value/100*360), Gdip_DeletePen(pPen)
+		pPen := Gdip_CreatePen(color-0xd0000000, 32), Gdip_DrawArc(G, pPen, 24+(A_Index-1)*220, 20, 170, 170, -90, 360), Gdip_DeletePen(pPen)
+
+		pBrush := Gdip_BrushCreateSolid(color)
+		Gdip_TextToGraphics(G, nectar_value "%", "s40 Center Bold c" pBrush " x" 24+(A_Index-1)*220+85 " y80", "Segoe UI")
+		Gdip_DeleteBrush(pBrush)
+    }
+    Gdip_DeleteGraphics(G)
+    discord.SendEmbed("**Nectar Percentages**", 0x2b2d31+0,, pBitmap)
+    Gdip_DisposeImage(pBitmap)
 }
 
 ExitFunc(*)
