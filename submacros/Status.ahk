@@ -942,7 +942,7 @@ nm_command(command)
 						"inline": true
 					},
 					{
-						"name": "' commandPrefix 'preset [create|delete|list|load|upload] [preset]",
+						"name": "' commandPrefix 'preset [create|delete|list|load|upload|download] [preset]",
 						"value": "Manages your presets",
 						"inline": true
 					}]
@@ -2417,29 +2417,29 @@ nm_command(command)
 					discord.SendEmbed("Preset List:" list, 5066239, , , , id)
 				case "load":
 					if (StrLen(params[3])=0)
-						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload] [preset]")
+						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload|download] [preset]")
 					else if (closestPreset.dist > 6 || not closestPreset.preset || !FileExist(PresetPath))
 						discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
 					else {
 						DetectHiddenWindows 1
 						if WinExist("natro_macro ahk_class AutoHotkey")
-							SendMessage(0x5560, closestPreset.preset,,,,,,,2000)	
+							SendMessage(0x5560, closestPreset,,,,,,,2000)	
 						DetectHiddenWindows 0
 					}
 				case "create":
 					if (StrLen(params[3])=0)
-						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload] [preset]")
+						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload|download] [preset]")
 					else if (closestPreset.dist > 6 || not closestPreset.preset || FileExist(PresetPath))
 						discord.SendEmbed("Preset " params[3] ((FileExist(PresetPath)) ? " already exists." : " is not valid."), 5066239, , , , id)
 					else {
 						DetectHiddenWindows 1
 						if WinExist("natro_macro ahk_class AutoHotkey")
-							SendMessage(0x5561, closestPreset.preset,,,,,,,2000)	
+							SendMessage(0x5561, closestPreset,,,,,,,2000)	
 						DetectHiddenWindows 0
 					}
 				case "delete":
 					if (StrLen(params[3])=0)
-						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload] [preset]")
+						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload|download] [preset]")
 					else {
 						if (closestPreset.dist > 6 || not closestPreset.preset || !FileExist(PresetPath))
 							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
@@ -2450,14 +2450,35 @@ nm_command(command)
 					}
 				case "upload":
 					if (StrLen(params[3])=0)
-						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload] [preset]")
+						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload|download] [preset]")
 					else {
 						if (closestPreset.dist > 6 || not closestPreset.preset || !FileExist(PresetPath))
 							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
 						else discord.SendFile(A_WorkingDir "\settings\presets\" closestPreset.preset ".ini", id)
 					}
+				case "download":
+					if (url := command.url) {
+						path := A_WorkingDir "\settings\presets"
+						if !FileExist(path) {
+							try DirCreate(path), message .= 'Created folder ``' StrReplace(StrReplace(path, "\", "\\"), '"', '\"') '``\n'
+							catch as e
+								message .= "DirCreate Error:\n" e.Message " " e.What "\n\n"
+						}
+						if InStr(FileExist(path), "D") {
+							SplitPath url, &filename
+							(pos := InStr(filename, "?")) && (filename := SubStr(filename, 1, pos-1))
+							try
+							{
+								Download url, (path .= "\" filename)
+								discord.SendEmbed(message .= 'Downloaded ``' StrReplace(StrReplace(path, "\", "\\"), '"', '\"') '``', 5066239, , , , id)
+							}
+							catch as e
+								discord.SendEmbed(message .= "Download Error:\n" e.Message " " e.What, 16711731, , , , id)
+						}
+					} 
+					else discord.SendEmbed("No attachment found to download!", 16711731, , , , id)
 				default:
-					discord.SendEmbed(((StrLen(params[2])=0) ? "No given" : "Invalid ") "parameter!\n\n?preset [create|delete|list|load|upload] [preset]")
+					discord.SendEmbed(((StrLen(params[2])=0) ? "No given" : "Invalid ") "parameter!\n\n?preset [create|delete|list|load|upload|download] [preset]")
 			}
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 

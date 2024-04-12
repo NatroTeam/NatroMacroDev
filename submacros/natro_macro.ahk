@@ -7288,6 +7288,8 @@ nm_WebhookGUI(*){
 }
 nm_CreatePresetFiles(PresetName, *) {
     Global PresetGui
+	if (IsObject(PresetName))
+		PresetName := PresetName.preset
     if (!FileExist(A_WorkingDir "\settings\presets")) {
         DirCreate(A_WorkingDir "\settings\presets")
     }
@@ -7496,6 +7498,8 @@ nm_ManagePreset(ctrl, *) {
 	nm_PresetGUI()
 }
 nm_LoadPreset(PresetName, *) {
+	if (IsObject(PresetName))
+		PresetName := PresetName.preset
 	PresetPath := A_WorkingDir "\settings\presets\" PresetName ".ini"
 	SectionNames := IniRead(PresetPath)
 	SectionArray := StrSplit(SectionNames, "`n") ; save section names to array
