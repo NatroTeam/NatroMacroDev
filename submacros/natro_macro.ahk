@@ -3260,11 +3260,12 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 					Use gtf- instead.'
 				), , 0x1010)
 		ReplaceSystemCursors("IDC_LOAD")
-		f := FileOpen(
+		f := FileOpen(outputPath:=
 			(!!RegExMatch(name, "i)^(nm_config|field_config|manual_planter)$") ? "settings\" 
 				: ext = "preset" ? "settings\presets\"
 					: !!RegExMatch(fileName, "i)^(wf|gt(b|c|p|q|f))-") ? (type='paths') "\"
-						: (type := "patterns") "\")  FileName
+						: ext = "ahk" ? (type := "patterns") "\"
+							: "")  FileName 
 			, "w"
 		)
         f.write(content)
@@ -3272,7 +3273,7 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 		if ext = "ini" or ext = "preset"
 			return ReplaceSystemCursors() msgbox(
 					(
-					'Successfully imported the ' (ext = "ini" ? "config " : "preset ") filename '!'
+					(FileExist(outputPath) ? 'Successfully imported ' : 'Could not import ') (ext = "ini" ? "config " : "preset ") filename '!'
 					),,0x1040)
 		if type = "patterns" && !ObjHasValue(patternlist,name)
 			For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
