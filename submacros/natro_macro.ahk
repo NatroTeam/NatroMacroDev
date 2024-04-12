@@ -7063,9 +7063,9 @@ nm_WebhookGUI(*){
 		else
 		{
 			if (ssCheck = 0)
-				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), 16, h-260, w//2-24, 210), Gdip_DeleteBrush(pBrush)
+				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), 16, h-260, w//2-24, 240), Gdip_DeleteBrush(pBrush)
 			if (criticalCheck = 0)
-				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), w//2+8, h-260, w//2-24, 210), Gdip_DeleteBrush(pBrush)
+				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), w//2+8, h-260, w//2-24, 240), Gdip_DeleteBrush(pBrush)
 		}
 
 		UpdateLayeredWindow(hMain, hdc, , , w, h)
