@@ -11752,6 +11752,7 @@ nm_MeteorShower() {
 			sendinput "{" SC_E " down}"
 			Sleep 100
 			sendinput "{" SC_E " up}"
+			sleep 200
 			nm_setStatus("Collected", "Meteor Shower")
 			updateConfig()
 			break
