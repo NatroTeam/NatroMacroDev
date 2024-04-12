@@ -358,4 +358,6 @@
 	, "GoldEggMatchIgnore"
 	, "DiamondEggMatchIgnore"
 	, "CoconutBoosterCheck"
-	, "HoneyUpdateSSCheck"]
+	, "HoneyUpdateSSCheck"
+	, "MeteorShowerCheck"
+	, "LastMeteorShower"]
