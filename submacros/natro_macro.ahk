@@ -249,7 +249,7 @@ nm_importPaths()
 		"gtb", ["blue", "mountain", "red"], ; go to (field) booster
 		"gtc", ["clock", "antpass", "robopass", "honeydis", "treatdis", "blueberrydis", "strawberrydis", "coconutdis", "gluedis", "royaljellydis", "blender", "windshrine", ; go to collect (machine)
 				"stockings", "wreath", "feast", "gingerbread", "snowmachine", "candles", "samovar", "lidart", "gummybeacon", "rbpdelevel", ; beesmas
-				"honeylb", "honeystorm", "stickerstack", "stickerprinter", "normalmm", "megamm", "nightmm", "extrememm", "wintermm"], ; other
+				"honeylb", "honeystorm", "stickerstack", "stickerprinter", "normalmm", "megamm", "nightmm", "extrememm", "wintermm", "meteorshower"], ; other
 		"gtf", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
 				"rose", "spider", "strawberry", "stump", "sunflower"], ; go to field
 		"gtp", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
@@ -11759,8 +11759,8 @@ nm_MeteorShower() {
 	}
 	updateConfig()
 	updateConfig() {
-		LastHoneystorm:=nowUnix()
-		IniWrite LastHoneystorm, "settings\nm_config.ini", "Collect", "LastHoneystorm"
+		LastMeteorShower:=nowUnix()
+		IniWrite LastMeteorShower, "settings\nm_config.ini", "Collect", "LastMeteorShower"
 	}
 }
 nm_HoneyLB(){ ;Daily Honey LB
