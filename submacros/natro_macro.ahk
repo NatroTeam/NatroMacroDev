@@ -3247,7 +3247,7 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
      			Make sure to install a compatible version of the file.'
                 ), , 0x1010)
 			SplitPath(v,&FileName:="",,&Ext:="",&Name:="")
-			if not ObjHasValue(["ahk", "ini"], Ext)
+			if not ObjHasValue(["ahk", "ini", "preset"], Ext)
 			return msgbox(
 				(
 				'The file "' v '" is not a valid file type!
@@ -3260,16 +3260,19 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 					Use gtf- instead.'
 				), , 0x1010)
 		ReplaceSystemCursors("IDC_LOAD")
-		if ext = "ini"
-			f := FileOpen((!!RegExMatch(name, "i)(nm_config|field_config|manual_planter)^") ? "settings\" : "settings\presets\") filename, "w")
-        else
-			f := FileOpen((!!regexmatch(filename, 'i)(wf|gt(b|c|p|q|f))') ? (type := 'paths') : type := 'patterns') '\' filename, 'w')
+		f := FileOpen(
+			(!!RegExMatch(name, "i)^(nm_config|field_config|manual_planter)$") ? "settings\" 
+				: ext = "preset" ? "settings\presets\"
+					: !!RegExMatch(fileName, "i)^(wf|gt(b|c|p|q|f))-") ? (type='paths') "\"
+						: (type := "patterns") "\")  FileName
+			, "w"
+		)
         f.write(content)
         f.close()
-		if ext = "ini"
+		if ext = "ini" or ext = "preset"
 			return ReplaceSystemCursors() msgbox(
 					(
-					'Successfully imported ' filename '!'
+					'Successfully imported the ' (ext = "ini" ? "config " : "preset ") filename '!'
 					),,0x1040)
 		if type = "patterns" && !ObjHasValue(patternlist,name)
 			For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
