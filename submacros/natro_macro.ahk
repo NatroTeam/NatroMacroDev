@@ -7530,48 +7530,34 @@ nm_LoadPreset(PresetName, *) {
 	}
 	nm_LockTabs(0)
 }
-nm_ImportPreset(*) { ;fixing soon
-	PresetGui.GetPos(gx, gy, gw, gh)
-	destinationFolder := "C:\path\to\your\folder"
-	DllCall("OpenClipboard", "Ptr", 0)
-	hData := DllCall("GetClipboardData", "UInt", 15)  ; 15 is CF_HDROP
-	op := Buffer(42*2 + A_PtrSize*3)  ; Size of SHFILEOPSTRUCT
-	NumPut(0x4004, op, "UShort")  ; FO_COPY | FOF_ALLOWUNDO
-	NumPut(A_WorkingDir, op, 42*2, "Str")  ; pTo
-	DllCall("shell32\SHFileOperation", "Ptr", op.ptr)
-	DllCall("CloseClipboard")
-	PresetPath := A_WorkingDir "\settings\presets\" Preset ".ini"
-	PresetPatternPath := A_WorkingDir "\patterns"
-	PresetPatterns := ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
-	PresetDefaultPatterns := ["Bamboo", "Blue Flower", "Cactus", "Clover", "Coconut", "Dandelion", "Mountain Top", "Mushroom", "Pepper", "Pine Tree", "Pineapple", "Pumpkin", "Rose", "Spider", "Strawberry", "Stump", "Sunflower"]
-	if (FileExist(PresetPath)) {
-		if (MsgBox("Do you want to overwrite " Preset "?",, "4") = "No")
-			return
-		FileDelete(PresetPath)
-	}
-	if (!FileExist(PresetPath)) {
-		MsgBox("Preset " Preset " could not be created. No valid data was imported.", "Invalid", "T5")
-		return
-	}
-	if (IniRead(PresetPath, "Gather")!="") {
-		for k, v in PresetPatterns {
-			ini := IniRead(PresetPath, "Gather", v)
-			if (!FileExist(PresetPatternPath "\" ini ".ahk") && ini!="Stationary") {
-				MsgBox("Pattern " ini " for " v " does not exist.",, "T5")
-			}
-		}
-	}
-	if (IniRead(PresetPath, "Bamboo")!="") {
-		for k, v in PresetDefaultPatterns {
-			ini := IniRead(PresetPath, v, "pattern")
-			if (!FileExist(PresetPatternPath "\" ini ".ahk") && ini!="Stationary") {
-				MsgBox("Default field pattern " ini " for " v " does not exist.",, "T5")
-			}
-		}
-	}
-	MsgBox("Preset " Preset " has been created.",, "T5")
-	PresetGui.Destroy()
-	nm_PresetGUI()
+nm_ImportPreset(*) {
+    presetsImported := []
+    DllCall("OpenClipboard", "uint", 0)
+    if !hData := DllCall("GetClipboardData", "uint", 0xF)
+        return DllCall("CloseClipboard") MsgBox("No file in clipboard",,0x1010)
+    numFiles := DllCall("shell32\DragQueryFileW", "uint", hData, "uint", 0xFFFFFFFF, "uint", 0, "uint", 0)
+    Loop numFiles
+    {
+        len := DllCall("shell32\DragQueryFileW", "uint", hData, "uint", A_Index-1, "uint", 0, "uint", 0)
+        VarSetStrCapacity(&filePath, len*2+2)
+        DllCall("shell32\DragQueryFileW", "uint", hData, "uint", A_Index-1, "str", filePath, "uint", len+1)
+        SplitPath(filePath,,,&ext,&fileName)
+        if ext != "preset" ||!FileExist(filePath)
+            continue
+        if filePath != "settings\presets\" fileName ".preset"
+            FileCopy(filePath, "settings\presets\" fileName ".preset",1)
+        presetsImported.push(fileName)
+    }
+    DllCall("CloseClipboard")
+    if !presetsImported.length
+        MsgBox("No presets found in clipboard")
+    else
+        MsgBox("Imported presets: " Join(presetsImported, ", "))
+    Join(obj,delim) {
+        for i in obj
+            str .= delim i
+        return SubStr(str, StrLen(delim))
+    }
 }
 nm_GetKeys(FilePath, Section) {
 	SectionKeys := []
