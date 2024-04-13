@@ -2337,42 +2337,11 @@ nm_command(command)
 
 		case "FindItem":
 		static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
-		LevenshteinDistance(s1, s2) {
-			len1 := StrLen(s1), len2 := StrLen(s2)
-			s1 := StrSplit(s1), s2 := StrSplit(s2)
-			d := {}, d.0 := { 0: 0 }
-			Loop len1
-				d.%A_Index% := { 0: A_Index }
-			Loop len2
-				d.0.%A_Index% := A_Index
-			Loop len1 {
-				i := A_Index
-				Loop len2 {
-					j := A_Index  ; only for simplicity
-					cost := s1[i] != s2[j]
-					d.%i%.%j% := Min(d.%i - 1%.%j% + 1, d.%i%.%j - 1% + 1, d.%i - 1%.%j - 1% + cost)
-				}
-			}
-			return d.%len1%.%len2%
-		}
-		findClosestItem(needle) {
-			dist := StrLen(needle)
-			for i,v in items
-				if (d := LevenshteinDistance(needle, v)) < dist
-					dist := d, item := v
-			return {item:item,dist:dist}
-		}
-		ObjHasValue(obj, value) {
-			for k,v in obj
-				if (v = value)
-				return k
-			return 0
-		}
 		if !(params[2]) {
 			command_buffer.RemoveAt(1)
 			return discord.SendEmbed("Missing required parameter!\n``````?finditem [itemname]``````", 16711731, , , , id)
 		}
-		closestItem:=findClosestItem(params[2])
+		closestItem:=findClosestItem(items,params[2])
 		if closestItem.dist > 6 || not closestItem.item
 			discord.SendEmbed("Item ``" params[2] "`` is not valid", 5066239, , , , id)
 		else
@@ -2397,29 +2366,27 @@ nm_command(command)
 			}
 		case "preset":
 			presets := []
-			Loop Files, "*.ini"
-				presets.Push(A_LoopFileName)
-			if (StrLen(params[3]!=0)) {
-				closestPreset:=findClosestpreset(params[3])
-				PresetPath := A_WorkingDir "\settings\presets\" closestPreset.preset ".ini"
+			Loop Files, "settings\presets\*.preset" {
+				SplitPath(A_LoopFileFullPath,,,,&name)
+				presets.Push(name)
 			}
-			findClosestpreset(needle) {
-				dist := StrLen(needle)
-				for i,v in presets
-					if (d := LevenshteinDistance(needle, v)) < dist
-						dist := d, preset := v
-				return {preset:preset,dist:dist}
+			if (params.Has(3) && params[3]) {
+				closestPreset:=findClosestItem(presets, params[3])
+				PresetPath := A_WorkingDir "\settings\presets\" closestPreset.item ".ini"
 			}
 			switch params[2],0 {
 				case "list":
 					list := ""
 					for , p in presets
-						list .= p "\n"
-					discord.SendEmbed("Preset List:" list, 5066239, , , , id)
+						list .= "\n" p
+					if list
+						discord.SendEmbed("**Preset List:**" list, 5066239, , , , id)
+					else
+						discord.SendEmbed("**No presets found!**", 16711731, , , , id)
 				case "load":
-					if (StrLen(params[3])=0)
-						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload|download] [preset]")
-					else if (closestPreset.dist > 6 || not closestPreset.preset || !FileExist(PresetPath))
+					if !isSet(closestPreset)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [create|delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
+					else if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 						discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
 					else {
 						DetectHiddenWindows 1
@@ -2428,9 +2395,9 @@ nm_command(command)
 						DetectHiddenWindows 0
 					}
 				case "create":
-					if (StrLen(params[3])=0)
-						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload|download] [preset]")
-					else if (closestPreset.dist > 6 || not closestPreset.preset || FileExist(PresetPath))
+					if !IsSet(closestPreset)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [create|delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
+					else if (closestPreset.dist > 6 || not closestPreset.item || FileExist(PresetPath))
 						discord.SendEmbed("Preset " params[3] ((FileExist(PresetPath)) ? " already exists." : " is not valid."), 5066239, , , , id)
 					else {
 						DetectHiddenWindows 1
@@ -2439,23 +2406,23 @@ nm_command(command)
 						DetectHiddenWindows 0
 					}
 				case "delete":
-					if (StrLen(params[3])=0)
-						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload|download] [preset]")
+					if !IsSet(closestPreset)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [create|delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
 					else {
-						if (closestPreset.dist > 6 || not closestPreset.preset || !FileExist(PresetPath))
+						if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
 						else {
 							FileDelete(PresetPath)
-							discord.SendEmbed("Preset " closestPreset.preset " is deleted.", 5066239, , , , id)
+							discord.SendEmbed("Preset " closestPreset.item " is deleted.", 5066239, , , , id)
 						}
 					}
 				case "upload":
-					if (StrLen(params[3])=0)
-						discord.SendEmbed("No Parameter Given!\n\n?preset [create|delete|list|load|upload|download] [preset]")
+					if !IsSet(closestPreset)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [create|delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
 					else {
-						if (closestPreset.dist > 6 || not closestPreset.preset || !FileExist(PresetPath))
+						if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
-						else discord.SendFile(A_WorkingDir "\settings\presets\" closestPreset.preset ".ini", id)
+						else discord.SendFile(A_WorkingDir "\settings\presets\" closestPreset.item ".ini", id)
 					}
 				case "download":
 					if (url := command.url) {
@@ -2493,6 +2460,39 @@ nm_command(command)
 	}
 
 	command_buffer.RemoveAt(1)
+	LevenshteinDistance(s1, s2) {
+		len1 := StrLen(s1), len2 := StrLen(s2)
+		s1 := StrSplit(s1), s2 := StrSplit(s2)
+		d := {}, d.0 := { 0: 0 }
+		Loop len1
+			d.%A_Index% := { 0: A_Index }
+		Loop len2
+			d.0.%A_Index% := A_Index
+		Loop len1 {
+			i := A_Index
+			Loop len2 {
+				j := A_Index  ; only for simplicity
+				cost := s1[i] != s2[j]
+				d.%i%.%j% := Min(d.%i - 1%.%j% + 1, d.%i%.%j - 1% + 1, d.%i - 1%.%j - 1% + cost)
+			}
+		}
+		return d.%len1%.%len2%
+	}
+	findClosestItem(arr,needle) {
+		dist := StrLen(needle)
+		for i,v in arr
+			if (d := LevenshteinDistance(needle, v)) < dist
+				dist := d, item := v
+		if !IsSet(item)
+			return {item:0,dist:100} ;large dist to break
+		return {item:item,dist:dist}
+	}
+	ObjHasValue(obj, value) {
+		for k,v in obj
+			if (v = value)
+			return k
+		return 0
+	}
 }
 
 class discord
