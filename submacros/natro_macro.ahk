@@ -109,7 +109,6 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5560, nm_LoadPreset)
-OnMessage(0x5561, nm_CreatePresetFiles)
 OnMessage(0x5562, nm_ReturnNectarPercentages)
 
 ; set version identifier
