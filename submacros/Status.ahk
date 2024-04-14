@@ -943,7 +943,7 @@ nm_command(command)
 						"inline": true
 					},
 					{
-						"name": "' commandPrefix 'preset [create|delete|list|load|upload|download] [preset]",
+						"name": "' commandPrefix 'preset [delete|list|load|upload|download] [preset]",
 						"value": "Manages your presets",
 						"inline": true
 					}]
@@ -2372,7 +2372,7 @@ nm_command(command)
 			}
 			if (params.Has(3) && params[3]) {
 				closestPreset:=findClosestItem(presets, params[3])
-				PresetPath := A_WorkingDir "\settings\presets\" closestPreset.item ".ini"
+				PresetPath := A_WorkingDir "\settings\presets\" closestPreset.item ".preset"
 			}
 			switch params[2],0 {
 				case "list":
@@ -2385,7 +2385,7 @@ nm_command(command)
 						discord.SendEmbed("**No presets found!**", 16711731, , , , id)
 				case "load":
 					if !isSet(closestPreset)
-						discord.SendEmbed("No Parameter Given!\n``````?preset [create|delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
 					else if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 						discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
 					else {
@@ -2394,20 +2394,9 @@ nm_command(command)
 							SendMessage(0x5560, closestPreset,,,,,,,2000)	
 						DetectHiddenWindows 0
 					}
-				case "create":
-					if !IsSet(closestPreset)
-						discord.SendEmbed("No Parameter Given!\n``````?preset [create|delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
-					else if (closestPreset.dist > 6 || not closestPreset.item || FileExist(PresetPath))
-						discord.SendEmbed("Preset " params[3] ((FileExist(PresetPath)) ? " already exists." : " is not valid."), 5066239, , , , id)
-					else {
-						DetectHiddenWindows 1
-						if WinExist("natro_macro ahk_class AutoHotkey")
-							SendMessage(0x5561, closestPreset,,,,,,,2000)	
-						DetectHiddenWindows 0
-					}
 				case "delete":
 					if !IsSet(closestPreset)
-						discord.SendEmbed("No Parameter Given!\n``````?preset [create|delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
 					else {
 						if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
@@ -2418,11 +2407,11 @@ nm_command(command)
 					}
 				case "upload":
 					if !IsSet(closestPreset)
-						discord.SendEmbed("No Parameter Given!\n``````?preset [create|delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
 					else {
 						if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
-						else discord.SendFile(A_WorkingDir "\settings\presets\" closestPreset.item ".ini", id)
+						else discord.SendFile(PresetPath, id)
 					}
 				case "download":
 					if (url := command.url) {
@@ -2446,7 +2435,7 @@ nm_command(command)
 					} 
 					else discord.SendEmbed("No attachment found to download!", 16711731, , , , id)
 				default:
-					discord.SendEmbed(((StrLen(params[2])=0) ? "No given" : "Invalid ") "parameter!\n\n?preset [create|delete|list|load|upload|download] [preset]")
+					discord.SendEmbed(((StrLen(params[2])=0) ? "No given" : "Invalid ") "parameter!\n\n?preset [delete|list|load|upload|download] [preset]")
 			}
 		case "nectar", "nectars","nec":
 		DetectHiddenWindows 1
