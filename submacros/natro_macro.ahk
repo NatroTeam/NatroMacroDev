@@ -7455,8 +7455,8 @@ nm_CreatePresetFiles(presetName,*) {
 		"PresetCollect", "PresetCollectTimers", "PresetKill",
 		"PresetKillTimers", "PresetPlanters", "PresetPlantersTimers"
 	]
-	, PlantersSettings := []
-	, PlantersTimers := []
+	, PlantersSettings := nm_GetKeys(".\settings\nm_config.ini", "Gui")
+	, PlantersTimers := nm_GetKeys(".\settings\nm_config.ini", "Planters")
 	If !DirExist(".\settings\presets")
 		DirCreate(".\settings\presets")
 
@@ -7476,8 +7476,8 @@ nm_CreatePresetFiles(presetName,*) {
 						: n = "CollectTimers" ? "Collect"
 						: n = "Kill" ? "Collect"
 						: n = "KillTimers" ? "Collect"
-						: n = "Planters" ? n
-						: n = "PlantersTimers" ? n
+						: n = "Planters" ? "Gui"
+						: n = "PlantersTimers" ? "Planters"
 						: unset)
 			Switch {
 				case InStr(n, "Timers"):
@@ -7491,7 +7491,9 @@ nm_CreatePresetFiles(presetName,*) {
 	if PresetGui["PresetFDefaults"].Value
 		configFile := FileOpen(".\settings\field_config.ini", "r"), field_config := configFile.Read(), configFile.Close()
 		, presetFile := FileOpen(".\settings\presets\" presetName ".preset", "a"), presetFile.Write("`r`n" field_config), presetFile.Close()
-
+	if PresetGui["PresetPlanters"].Value
+		configFile := FileOpen(".\settings\manual_planters.ini", "r"), planter_config := configFile.Read(), configFile.Close()
+		, presetFile := FileOpen(".\settings\presets\" presetName ".preset", "a"), presetFile.Write("`r`n" planter_config), presetFile.Close()
 }
 /*
 nm_CreatePresetFiless(PresetName, *) {
