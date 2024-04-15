@@ -108,7 +108,6 @@ OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
-OnMessage(0x5560, nm_LoadPreset)
 OnMessage(0x5562, nm_ReturnNectarPercentages)
 
 ; set version identifier
@@ -2494,9 +2493,12 @@ MainGui.Add("Button", "x10 y124 w150 h40 Disabled", "Auto-Mutator`n(coming soon!
 MainGui.Add("Button", "x10 y184 w150 h42 vGenerateBeeListButton Disabled", "Export Hive Bee List`n(for Hive Builder)").OnEvent("Click", nm_GenerateBeeList)
 ;calculators
 /**
- * @author gyhkijffk
+ * @author xspx
  */
 MainGui.Add("Button", "x175 y40 w150 h23 vTicketShopCalculatorButton Disabled", "Ticket Shop Calculator").OnEvent("Click", nm_TicketShopCalculatorButton)
+/**
+ * @author gyhkijffk
+ */
 MainGui.Add("Button", "x175 yp+25 w150 h23 vSSACalculatorButton Disabled", "SSA Calculator").OnEvent("Click", nm_SSACalculatorButton)
 MainGui.Add("Button", "x175 yp+25 w150 h23 vBondCalculatorButton Disabled", "Bond Calculator").OnEvent("Click", nm_BondCalculatorButton)
 MainGui.Add("Button", "x175 yp+25 w150 h23 vStickerPricesButton Disabled", "Sticker Prices").OnEvent("Click", (*) => Run("https://docs.google.com/spreadsheets/d/13rin_Z_tyDdFm3F1nhnVUywtp5hjFFuAB32iBY14mbE/edit?usp=sharing"))
@@ -4752,7 +4754,7 @@ nm_CollectKillButton(GuiCtrl, *){
 		,"MALeft","MARight","APALeft","APARight"
 		,"BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"
 		,"MemoryMatchGroupBox","NormalMemoryMatchCheck","MegaMemoryMatchCheck","NightMemoryMatchCheck","ExtremeMemoryMatchCheck","MemoryMatchOptions", "MeteorShowerCheck"]
-	, KillControls := ["BugRunGroupBox","BugRunCheck","MonsterRespawnTime","TextMonsterRespawnPercent","TextMonsterRespawn","MonsterRespawnTimeHelp"
+	, KillControls := ["BugRunGroupBox","MonsterRespawnTime","TextMonsterRespawnPercent","TextMonsterRespawn","MonsterRespawnTimeHelp"
 		,"BugrunInterruptCheck","TextLoot","TextKill","TextLineBugRun1","TextLineBugRun2"
 		,"BugrunLadybugsLoot","BugrunRhinoBeetlesLoot","BugrunSpiderLoot","BugrunMantisLoot","BugrunScorpionsLoot","BugrunWerewolfLoot"
 		,"BugrunLadybugsCheck","BugrunRhinoBeetlesCheck","BugrunSpiderCheck","BugrunMantisCheck","BugrunScorpionsCheck","BugrunWerewolfCheck"
@@ -7336,8 +7338,7 @@ nm_CreatePresetFiles(presetName,*) {
 		"LastGlitter", "LastGuid", "LastHotkey2",
 		"LastHotkey3", "LastHotkey4", "LastHotkey5",
 		"LastHotkey6", "LastHotkey7", "LastMicroConverter",
-		"LastSnowflake", "LastStickerPrinter", "LastStickerStack",
-		"LastWhirligig"
+		"LastStickerPrinter", "LastStickerStack","LastWhirligig"
 	]
 	, WebBotSettings := [
 		"BotToken", "Webhook", "MainChannelID",
@@ -7574,8 +7575,7 @@ nm_ManagePreset(ctrl,* ) {
 					(
 					'You`'re about to copy a preset that has your sensitive information
 					that could allow people with it to control your macro if shared with them.'
-					)
-				),,0x1034) = "no"
+					),,0x1034) = "no")
 					return
 				FileToClipboard(PresetPath)
 				Msgbox("Preset " PresetName " has been copied to clipboard.",, "0x1040 T3")
@@ -7655,14 +7655,7 @@ nm_ManagePreset(ctrl, *) {
 */
 nm_LoadPreset(PresetName,* ) {
     global
-    local LocalPresetList, PresetPath, pair, i, j
-	if PresetName is Number {
-		LocalPresetList := []
-		loop files ".\settings\presets\*.preset"
-			SplitPath(A_LoopFileFullPath,,,,&name)
-		, LocalPresetList.push(name)
-		PresetName := LocalPresetList[PresetName]
-	}
+    local PresetPath, pair, i, j
 	ReplaceSystemCursors("IDC_WAIT")
 	nm_LockTabs()
 	PresetPath := ".\settings\presets\" PresetName ".preset"
@@ -7670,7 +7663,7 @@ nm_LoadPreset(PresetName,* ) {
 		switch {
 			case ObjHasValue(fieldnamelist, i):
 				IniWrite(IniRead(PresetPath, i), ".\settings\field_config.ini", i)
-			case i = "General", "Slot 1", "Slot 2", "Slot 3":
+			case i = "General",i = "Slot 1",i = "Slot 2",i = "Slot 3":
 				IniWrite(IniRead(PresetPath, i), ".\settings\manual_planters.ini", i)
 			default:
 				for j in StrSplit(IniRead(PresetPath, i), "`n", "`r") {
@@ -7689,6 +7682,7 @@ nm_LoadPreset(PresetName,* ) {
 	}
 	ReplaceSystemCursors()
 	nm_LockTabs(0)
+	return 1
 }
 /*
 nm_LoadPreset(PresetName, *) {
@@ -21757,12 +21751,24 @@ autoclicker(*){
 }
 ;TIMERS
 timers(*) => ba_showPlanterTimers()
-
+/**
+ * @param wParam
+ * 0	-	Set Status
+ * 1	-	Guiding Star Detected
+ * 2	-	Load Preset
+ */
 nm_WM_COPYDATA(wParam, lParam, *){
 	Critical
 	global LastGuid, PMondoGuid, MondoAction, MondoBuffCheck, currentWalk, FwdKey, BackKey, LeftKey, RightKey, SC_Space
 	StringAddress := NumGet(lParam + 2*A_PtrSize, "Ptr")  ; Retrieves the CopyDataStruct's lpData member.
 	StringText := StrGet(StringAddress)  ; Copy the string out of the structure.
+	if (wParam = 2) {
+		DetectHiddenWindows 1
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			SendMessage(0x5554,nm_LoadPreset(StringText))
+		DetectHiddenWindows 0
+		return 0
+	}
 	if(wParam=1){ ;guiding star detected
 		nm_setStatus("Detected", "Guiding Star in " . StringText)
 		;pause

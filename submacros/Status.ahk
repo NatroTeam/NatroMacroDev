@@ -91,6 +91,7 @@ OnMessage(0x5553, nm_setGlobalStr, 255)
 OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5559, nm_sendItemPicture)
 OnMessage(0xC, nm_sendNectarImage)
+OnMessage(0x5554, nm_sendPresetLoad)
 
 discord.SendEmbed("Connected to Discord!", 5066239)
 
@@ -2389,9 +2390,13 @@ nm_command(command)
 					else if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 						discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
 					else {
+						CopyDataStruct := Buffer(3*A_PtrSize, 0)
+						NumPut( "ptr" , (StrLen(PresetPath)+1)*2 
+							  , "ptr" , StrPtr(closestPreset.item)
+							  , CopyDataStruct , A_PtrSize )
 						DetectHiddenWindows 1
 						if WinExist("natro_macro ahk_class AutoHotkey")
-							SendMessage(0x5560, closestPreset,,,,,,,2000)	
+							SendMessage(0x4A, 2, CopyDataStruct,,,,,,2000)	
 						DetectHiddenWindows 0
 					}
 				case "delete":
@@ -2435,7 +2440,7 @@ nm_command(command)
 					} 
 					else discord.SendEmbed("No attachment found to download!", 16711731, , , , id)
 				default:
-					discord.SendEmbed(((StrLen(params[2])=0) ? "No given" : "Invalid ") "parameter!\n\n?preset [delete|list|load|upload|download] [preset]")
+					discord.SendEmbed(((StrLen(params[2])=0) ? "missing " : "Invalid ") "parameter!\n``````?preset [delete|list|load|upload|download] [preset]``````",0x2b2d31 + 0)
 			}
 		case "nectar", "nectars","nec":
 		DetectHiddenWindows 1
@@ -2928,6 +2933,8 @@ nm_sendNectarImage(wParam,lParam,* ) {
     discord.SendEmbed("**Nectar Percentages**", 0x2b2d31+0,, pBitmap)
     Gdip_DisposeImage(pBitmap)
 }
+
+nm_sendPresetLoad(wParam, * ) => discord.SendEmbed((wParam ? "Successfully loaded" : "Failed to load") " preset!", (wParam ? 0x2b2d31+0: 16711731))
 
 ExitFunc(*)
 {
