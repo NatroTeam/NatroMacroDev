@@ -7302,7 +7302,7 @@ nm_CreatePresetFiles(presetName,*) {
         "BugrunSpiderLoot", "BugrunSpiderCheck", "BugrunScorpionsLoot",
         "BugrunScorpionsCheck", "BugrunRhinoBeetlesLoot", "BugrunRhinoBeetlesCheck",
         "BugrunMantisLoot", "BugrunMantisCheck", "BugrunLadybugsLoot",
-        "BugrunLadybugsCheck", "BugrunInterruptCheck", "BugRunCheck"
+        "BugrunLadybugsCheck", "BugrunInterruptCheck"
     ]
 	, KillTimers := [
 		"VBLastKilled", "LastBugrunLadybugs", "LastBugrunMantis",
@@ -7315,8 +7315,6 @@ nm_CreatePresetFiles(presetName,*) {
 		"TimersHotkey", "StopHotkey", "StartHotkey",
 		"PauseHotkey", "AutoClickerHotkey", "ClickCount",
 		"ClickDelay", "ClickDuration", "ClickMode",
-		"NightAnnouncementCheck", "NightAnnouncementName", "NightAnnouncementPingID",
-		"NightAnnouncementWebhook"
 	]
 	, PrivateServerSettings := [
 		"FallbackServer1", "FallbackServer2", "FallbackServer3",
@@ -7338,12 +7336,14 @@ nm_CreatePresetFiles(presetName,*) {
 		"LastGlitter", "LastGuid", "LastHotkey2",
 		"LastHotkey3", "LastHotkey4", "LastHotkey5",
 		"LastHotkey6", "LastHotkey7", "LastMicroConverter",
-		"LastStickerPrinter", "LastStickerStack","LastWhirligig"
+		"LastStickerStack","LastWhirligig"
 	]
 	, WebBotSettings := [
 		"BotToken", "Webhook", "MainChannelID",
 		"ReportChannelID", "discordUID", "commandPrefix",
-		"WebhookEasterEgg", "DiscordCheck", "DiscordMode"
+		"WebhookEasterEgg", "DiscordCheck", "DiscordMode",
+		"NightAnnouncementCheck", "NightAnnouncementName",
+		"NightAnnouncementPingID", "NightAnnouncementWebhook"
 	]
 	, GatherSettings := [
 		"FieldName1", "FieldName2", "FieldName3",
@@ -7592,6 +7592,10 @@ nm_ManagePreset(ctrl,* ) {
 			if (MsgBox("Are you sure you want to delete " PresetName "?",, "0x1034") = "no")
 				return
 			FileDelete(PresetPath)
+			PresetGui["SelectPreset"].delete([PresetName])
+			presetList.pop(PresetName)
+			if PresetGui.enabled := !!presetList.length
+				presetGui["SelectPreset"].Value := 1
 		case "OverwritePreset":
 			if Msgbox(
 				(
@@ -7690,9 +7694,8 @@ hideTimer(ctrl,*) =>
     . PresetGui[ctrl.name "Timers"].Value := 0
 nm_includePresets() {
 	global presetList
-	if !isSet(presetList) {
+	if !isSet(presetList)
 		presetList := []
-	}
 	if !DirExist(".\settings\presets")
 		return
 	Loop Files ".\settings\presets\*.preset", "R" {
