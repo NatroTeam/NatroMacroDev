@@ -7562,6 +7562,15 @@ nm_CreatePreset(*) {
 	PresetGui["SetPresetName"].Value := ""
 	if PresetGui["SelectPreset"].Enabled := !!presetList.length
 		PresetGui["SelectPreset"].Text := PresetName
+		, PresetGui["OverwritePreset"].Enabled := 1
+		, PresetGui["DeletePreset"].Enabled := 1
+		, PresetGui["CopyPreset"].Enabled := 1
+		, PresetGui["LoadPreset"].Enabled := 1
+	else
+		PresetGui["OverwritePreset"].Enabled := 0
+		, PresetGui["DeletePreset"].Enabled := 0
+		, PresetGui["CopyPreset"].Enabled := 0
+		, PresetGui["LoadPreset"].Enabled := 0
 }
 nm_ManagePreset(ctrl,* ) {
 	PresetName := PresetGui["SelectPreset"].Text
