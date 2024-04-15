@@ -32,7 +32,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "nowUnix.ahk"
 
 #Warn VarUnset, Off
-OnError (e, mode) => (mode = "Return") ? -1 : 0
+;OnError (e, mode) => (mode = "Return") ? -1 : 0
 
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Screen"
@@ -3259,7 +3259,7 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 					'ct- paths are no longer supported!
 					Use gtf- instead.'
 				), , 0x1010)
-		ReplaceSystemCursors("IDC_LOAD")
+		ReplaceSystemCursors("IDC_WAIT")
 		f := FileOpen(outputPath:=
 			(!!RegExMatch(name, "i)^(nm_config|field_config|manual_planter)$") ? "settings\" 
 				: ext = "preset" ? "settings\presets\"
@@ -3295,33 +3295,33 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 			Paste the gather settings by clicking on the paste button'
 		),,0x1040
     }
-	ReplaceSystemCursors(IDC := "")
+}
+ReplaceSystemCursors(IDC := "")
+{
+	static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
+		, SysCursors := Map("IDC_APPSTARTING", 32650
+			, "IDC_ARROW", 32512
+			, "IDC_CROSS", 32515
+			, "IDC_HAND", 32649
+			, "IDC_HELP", 32651
+			, "IDC_IBEAM", 32513
+			, "IDC_NO", 32648
+			, "IDC_SIZEALL", 32646
+			, "IDC_SIZENESW", 32643
+			, "IDC_SIZENWSE", 32642
+			, "IDC_SIZEWE", 32644
+			, "IDC_SIZENS", 32645
+			, "IDC_UPARROW", 32516
+			, "IDC_WAIT", 32514)
+	if !IDC
+		DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
+	else
 	{
-		static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
-			, SysCursors := Map("IDC_APPSTARTING", 32650
-				, "IDC_ARROW", 32512
-				, "IDC_CROSS", 32515
-				, "IDC_HAND", 32649
-				, "IDC_HELP", 32651
-				, "IDC_IBEAM", 32513
-				, "IDC_NO", 32648
-				, "IDC_SIZEALL", 32646
-				, "IDC_SIZENESW", 32643
-				, "IDC_SIZENWSE", 32642
-				, "IDC_SIZEWE", 32644
-				, "IDC_SIZENS", 32645
-				, "IDC_UPARROW", 32516
-				, "IDC_WAIT", 32514)
-		if !IDC
-			DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
-		else
+		hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
+		for k, v in SysCursors
 		{
-			hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
-			for k, v in SysCursors
-			{
-				hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
-				DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
-			}
+			hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
+			DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
 		}
 	}
 }
@@ -7359,7 +7359,8 @@ nm_CreatePresetFiles(presetName,*) {
 		"FieldUntilPack1", "FieldUntilPack2", "FieldUntilPack3",
 		"FieldReturnType1", "FieldReturnType2", "FieldReturnType3",
 		"FieldSprinklerLoc1", "FieldSprinklerLoc2", "FieldSprinklerLoc3",
-		"FieldSprinklerDist1", "FieldSprinklerDist2", "FieldSprinklerDist3"
+		"FieldSprinklerDist1", "FieldSprinklerDist2", "FieldSprinklerDist3",
+		"CurrentFieldNum"
 	]
 	, QuestSettings := [
 		"BlackQuestCheck", "BlackQuestProgress", "BrownQuestCheck",
@@ -7455,8 +7456,57 @@ nm_CreatePresetFiles(presetName,*) {
 		"PresetCollect", "PresetCollectTimers", "PresetKill",
 		"PresetKillTimers", "PresetPlanters", "PresetPlantersTimers"
 	]
-	, PlantersSettings := []
-	, PlantersTimers := []
+	, PlantersSettings := [
+		"AutomaticHarvestInterval", "ConvertFullBagHarvest",
+		"LastComfortingField", "LastInvigoratingField",
+		"LastMotivatingField", "LastPlanterGatherSlot", "LastRefreshingField",
+		"LastSatisfyingField", "MConvertFullBagHarvest",
+		"MPlanterHold1", "MPlanterHold2", "MPlanterHold3", "MPlanterSmoking1",
+		"MPlanterSmoking2", "MPlanterSmoking3", "MPuffMode1", "MPuffMode2",
+		"MPuffMode3", "MPuffModeA", "PlanterEstPercent1",
+		"PlanterEstPercent2", "PlanterEstPercent3", "PlanterField1",
+		"PlanterField2", "PlanterField3", "PlanterGlitter1", "PlanterGlitter2",
+		"PlanterGlitter3", "PlanterGlitterC1", "PlanterGlitterC2",
+		"PlanterGlitterC3", "PlanterHarvestNow1", "PlanterHarvestNow2",
+		"PlanterHarvestNow3", "PlanterHarvestTime1", "PlanterHarvestTime2",
+		"PlanterHarvestTime3", "PlanterManualCycle1", "PlanterManualCycle2",
+		"PlanterManualCycle3", "PlanterName1", "PlanterName2", "PlanterName3",
+		"PlanterNectar1", "PlanterNectar2", "PlanterNectar3",
+		"PlanterOfPlentyCheck", "PlanterSS1", "PlanterSS2", "PlanterSS3",
+		"TimerGuiTransparency", "TimerX", "TimerY", "TimersOpen", "dayOrNight",
+		"BambooFieldCheck", "BlueClayPlanterCheck", "BlueFlowerFieldCheck",
+		"CactusFieldCheck", "CandyPlanterCheck", "CloverFieldCheck",
+		"CoconutFieldCheck", "HeatTreatedPlanterCheck",
+		"HydroponicPlanterCheck", "MountainTopFieldCheck",
+		"MushroomFieldCheck", "PaperPlanterCheck", "PepperFieldCheck",
+		"PesticidePlanterCheck", "PetalPlanterCheck", "PineTreeFieldCheck",
+		"PineappleFieldCheck", "PlasticPlanterCheck", "PumpkinFieldCheck",
+		"RedClayPlanterCheck", "RoseFieldCheck", "SpiderFieldCheck",
+		"StrawberryFieldCheck", "StumpFieldCheck", "SunflowerFieldCheck",
+		"TackyPlanterCheck", "TicketPlanterCheck", "PlanterMode",
+		"n1minPercent", "n1priority", "n2minPercent", "n2priority",
+		"n3minPercent", "n3priority", "n4minPercent", "n4priority",
+		"n5minPercent", "n5priority", "nPreset","PlanterOfPlentyCheck"
+	]	 
+	, PlantersTimers := [
+		"AutomaticHarvestInterval", "ConvertFullBagHarvest",
+		"LastComfortingField", "LastInvigoratingField",
+		"LastMotivatingField", "LastPlanterGatherSlot", "LastRefreshingField",
+		"LastSatisfyingField", "MConvertFullBagHarvest",
+		"MPlanterHold1", "MPlanterHold2", "MPlanterHold3", "MPlanterSmoking1",
+		"MPlanterSmoking2", "MPlanterSmoking3", "MPuffMode1", "MPuffMode2",
+		"MPuffMode3", "MPuffModeA", "PlanterEstPercent1",
+		"PlanterEstPercent2", "PlanterEstPercent3", "PlanterField1",
+		"PlanterField2", "PlanterField3", "PlanterGlitter1", "PlanterGlitter2",
+		"PlanterGlitter3", "PlanterGlitterC1", "PlanterGlitterC2",
+		"PlanterGlitterC3", "PlanterHarvestNow1", "PlanterHarvestNow2",
+		"PlanterHarvestNow3", "PlanterHarvestTime1", "PlanterHarvestTime2",
+		"PlanterHarvestTime3", "PlanterManualCycle1", "PlanterManualCycle2",
+		"PlanterManualCycle3", "PlanterName1", "PlanterName2", "PlanterName3",
+		"PlanterNectar1", "PlanterNectar2", "PlanterNectar3",
+		"PlanterSS1", "PlanterSS2", "PlanterSS3"
+	 ]
+	 
 	If !DirExist(".\settings\presets")
 		DirCreate(".\settings\presets")
 
@@ -7477,7 +7527,7 @@ nm_CreatePresetFiles(presetName,*) {
 						: n = "Kill" ? "Collect"
 						: n = "KillTimers" ? "Collect"
 						: n = "Planters" ? n
-						: n = "PlantersTimers" ? n
+						: n = "PlantersTimers" ? "Planters"
 						: unset)
 			Switch {
 				case InStr(n, "Timers"):
@@ -7491,167 +7541,14 @@ nm_CreatePresetFiles(presetName,*) {
 	if PresetGui["PresetFDefaults"].Value
 		configFile := FileOpen(".\settings\field_config.ini", "r"), field_config := configFile.Read(), configFile.Close()
 		, presetFile := FileOpen(".\settings\presets\" presetName ".preset", "a"), presetFile.Write("`r`n" field_config), presetFile.Close()
-
+	if PresetGui["PresetPlanters"].Value
+		configFile := FileOpen(".\settings\manual_planters.ini", "r"), planter_config := configFile.Read(), configFile.Close()
+		, presetFile := FileOpen(".\settings\presets\" presetName ".preset", "a"), presetFile.Write("`r`n" planter_config), presetFile.Close()
 }
-/*
-nm_CreatePresetFiless(PresetName, *) {
-    Global PresetGui
-	if (IsObject(PresetName))
-		PresetName := PresetName.preset
-    if (!FileExist(A_WorkingDir "\settings\presets")) {
-        DirCreate(A_WorkingDir "\settings\presets")
-    }
-	KillArray := ["TunnelBearCheck", "TunnelBearBabyCheck", "StumpSnailCheck", "StingerSpiderCheck", "StingerRoseCheck", "StingerPepperCheck", "StingerMountainTopCheck", "StingerDailyBonusCheck", "StingerCloverCheck", "StingerCheck", "StingerCactusCheck", "SnailTime", "ShellAmuletMode", "MonsterRespawnTime", "MondoLootDirection", "KingBeetleCheck", "KingBeetleBabyCheck", "KingBeetleAmuletMode", "InputSnailHealth", "InputChickHealth", "CommandoCheck", "CocoCrabCheck", "ChickTime", "BugrunWerewolfLoot", "BugrunWerewolfCheck", "BugrunSpiderLoot", "BugrunSpiderCheck", "BugrunScorpionsLoot", "BugrunScorpionsCheck", "BugrunRhinoBeetlesLoot", "BugrunRhinoBeetlesCheck", "BugrunMantisLoot", "BugrunMantisCheck", "BugrunLadybugsLoot", "BugrunLadybugsCheck", "BugrunInterruptCheck", "BugRunCheck"]
-	KillTimer := ["VBLastKilled", "LastBugrunLadybugs", "LastBugrunMantis", "LastBugrunRhinoBeetles", "LastBugrunScorpions", "LastBugrunSpider", "LastBugrunWerewolf", "LastCommando", "LastKingBeetle", "LastStumpSnail", "LastTunnelBear", "NightLastDetected", "LastCocoCrab"]
-	MiscArray := ["TimersHotkey", "StopHotkey", "StartHotkey", "PauseHotkey", "AutoClickerHotkey", "ClickCount", "ClickDelay", "ClickDuration", "ClickMode"]
-	MiscDiscord := ["NightAnnouncementCheck", "NightAnnouncementName", "NightAnnouncementPingID", "NightAnnouncementWebhook"]
-	ServerArray := ["FallbackServer1", "FallbackServer2", "FallbackServer3", "PrivServer"]
-	CollectTimer := ["LastAntPass", "LastBlueberryDis", "LastCandles", "LastClock", "LastCoconutDis", "LastFeast", "LastGingerbread", "LastGlueDis", "LastGummyBeacon", "LastHoneyDis", "LastHoneystorm", "LastLidArt", "LastMondoBuff", "LastRBPDelevel", "LastRoboPass", "LastRoyalJellyDis", "LastSamovar", "LastSnowMachine", "LastStockings", "LastStrawberryDis", "LastTreatDis", "LastWreath"]
-	BoostTimer := ["AFBdiceUsed", "AFBglitterUsed", "FieldLastBoosted", "FieldLastBoostedBy", "FieldNextBoostedBy", "LastEnzymes", "LastGlitter", "LastGuid", "LastHotkey2", "LastHotkey3", "LastHotkey4", "LastHotkey5", "LastHotkey6", "LastHotkey7", "LastMicroConverter", "LastSnowflake", "LastStickerPrinter", "LastStickerStack", "LastWhirligig"]
-	BoosterTimer := ["LastBlueBoost", "LastMountainBoost", "LastRedBoost"]
-	WebBotArray := ["BotToken", "Webhook", "MainChannelID", "ReportChannelID", "discordUID"]
-	PresetPath := A_WorkingDir . "\settings\presets\" PresetName ".preset"
-	ControlValue := Map()
-	for k, v in PresetGui {
-		if (RegExMatch(v.name, "^Preset")) {
-			ControlValue[v.name] := v.Value
-		}
-	}
-	PresetArray := Map() ; array to determin what to save to preset
-	KeyToControl := Map("Gather", "PresetGather", "Kill", "PresetKill", "Quests", "PresetQuest", "Collect", "PresetCollect", "Blender", "PresetCollect", "Boost", "PresetBoost", "Shrine", "PresetBoost", "Gui", "PresetPlanters", "Status", "PresetDiscord", "Settings", "PresetSettings", "Misc", "PresetMisc", "Private Server", "PresetPrivateServer", "CollectTimers", "PresetCollectTimers", "KillTimers", "PresetKillTimers", "BoostTimers", "PresetBoostTimers", "Planters", "PresetPlantersTimers", "FieldDefaults", "PresetFDefaults", "WebBot", "PresetWebBot")
-	For k, c in KeyToControl {
-		PresetArray[k] := ControlValue[c]
-	}
-	planterSectionNames := IniRead(A_WorkingDir . "\settings\manual_planters.ini")
-	PlanterSections := StrSplit(planterSectionNames, "`n") ; get manual panters ini
-	fieldSectionNames := IniRead(A_WorkingDir . "\settings\field_config.ini")
-	FieldSections := StrSplit(fieldSectionNames, "`n") ; get field defaults
-	for k, v in PresetArray {
-		if (v!=0) {
-			switch k {
-				case "Gui":
-					for x, y in PlanterSections { ; save manual planter settings to preset
-						ini := IniRead(A_WorkingDir . "\settings\manual_planters.ini", y)
-							IniWrite(ini, PresetPath, y)
-					}
-				case "FieldDefaults":
-					for x, y in FieldSections { ; save field defaults
-						ini := IniRead(A_WorkingDir . "\settings\field_config.ini", y)
-						IniWrite(ini, PresetPath, y)
-					}
-					continue
-				case "Misc":
-					if (!PresetArray["Settings"]) {
-						For x, y in MiscArray {
-							ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
-							IniWrite(ini, PresetPath, "Settings", y)
-						}
-					}
-					if (!PresetArray["Status"]) {
-						For x, y in MiscDiscord {
-							ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Status", y)
-							IniWrite(ini, PresetPath, "Status", y)
-						}
-					}
-					continue
-				Case "WebBot":
-					if (!PresetArray["Status"]) {
-						For x, y in WebBotArray {
-							ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Status", y)
-							IniWrite(ini, PresetPath, "Status", y)
-						}
-					}
-					continue
-				case "Kill":
-					if (!PresetArray["Collect"]) {
-						For x, y in KillArray {
-							ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
-							IniWrite(ini, PresetPath, "Collect", y)
-						}
-						if (PresetArray["KillTimers"]) {
-							For x, y in KillTimer {
-								ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
-								IniWrite(ini, PresetPath, "Collect", y)
-							}
-						}
-					}
-					continue
-				case "Private Server":
-					if (!PresetArray["Settings"]) {
-						For x, y in ServerArray {
-							ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
-							IniWrite(ini, PresetPath, "Settings", y)
-						}
-					}
-					continue
-				case "BoostTimers":
-					if (!PresetArray["Settings"]) {
-						For x, y in BoostTimers {
-							ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", y)
-							IniWrite(ini, PresetPath, "Settings", y)
-						}
-					}
-					if (!PresetArray["Collect"]) {
-						For x, y in BoosterTimers {
-							ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Collect", y)
-							IniWrite(ini, PresetPath, "Collect", y)
-						}
-					}
-					continue
-				case "CollectTimers":
-					continue
-			}	
-			ini := IniRead(A_WorkingDir . "\settings\nm_config.ini", k)
-			IniWrite(ini, PresetPath, k)
-		}
-	}
-	if (PresetArray["Collect"]) {
-		if (!PresetArray["Kill"]) {
-			for k, v in KillArray
-				IniDelete(PresetPath, Collect, v)
-			for k, v in KillTimer
-				IniDelete(PresetPath, Collect, v)
-		} else if (!PresetArray["KillTimers"]) {
-			for k, v in KillTimer
-				IniDelete(PresetPath, Collect, v)
-		}
-		if (!PresetArray["CollectTimers"]) {
-			for k, v in CollectTimer
-				IniDelete(PresetPath, Collect, v)
-		}
-		if (!PresetArray["BoostTimers"]) {
-			for k, v in BoosterTimer
-				IniDelete(PresetPath, Collect, v)
-		}
-	}
-	if (PresetArray["Settings"]) {
-		if (!PresetArray["Misc"]) {
-			for k, v in MiscArray
-				IniDelete(PresetPath, Settings, v)
-		}
-		if (!PresetArray["Private Server"]) {
-			for k, v in ServerArray
-				IniDelete(PresetPath, Settings, v)
-		}
-	}
-	if (!PresetArray["Misc"] && PresetArray["Status"]) {
-		for k, v in MiscDiscord
-			IniDelete(PresetPath, Status, v)
-	}
-	if (!PresetArray["WebBot"] && PresetArray["Status"]) {
-		for k, v in WebBotArray
-			IniDelete(PresetPath, Status, v)
-	}
-	if (!PresetArray["BoostTimers"] && PresetArray["Boost"]) {
-		for k, v in BoostTimer
-			IniDelete(PresetPath, Boost, v)
-	}
-}
-*/
-
 nm_CreatePreset(*) {
 	global PresetGui
 	PresetName := PresetGui["SetPresetName"].Value
+	PresetPath := '.\settings\presets\' PresetName '.preset'
 	if (!PresetName)
 		return MsgBox("No preset name given.",, "0x1010 T5")
 	if (FileExist(".\settings\presets\" PresetName ".preset")) {
@@ -7659,17 +7556,66 @@ nm_CreatePreset(*) {
 			return
 		FileDelete(PresetPath)
 	}
-	nm_PresetLock()
 	nm_CreatePresetFiles(PresetName)
 	nm_includePresets()
 	PresetGui["SetPresetName"].Value := ""
 	if PresetGui["SelectPreset"].Enabled := !!presetList.length
 		PresetGui["SelectPreset"].Text := PresetName
 }
+nm_ManagePreset(ctrl,* ) {
+	PresetName := PresetGui["SelectPreset"].Text
+	PresetPath := '.\settings\presets\' PresetName '.preset'
+	if (!FileExist(PresetPath))
+		return MsgBox("Preset '" PresetName "' does not exist.",, "0x1010 T5")
+	Switch ctrl.name, 0 {
+		case "CopyPreset":
+			if IniRead(PresetPath, "Status", "BotToken") {
+				if (msgbox(
+					(
+					'You`'re about to copy a preset that has your sensitive information
+					that could allow people with it to control your macro if shared with them.'
+					)
+				),,0x1034) = "no"
+					return
+				FileToClipboard(PresetPath)
+				Msgbox("Preset " PresetName " has been copied to clipboard.",, "0x1040 T3")
+			}
+		case "RenamePreset":
+			NewName := PresetGui["SetPresetName"].Value
+			if (!NewName)
+				return MsgBox("No preset name given.",, "0x1010 T5")
+			FileMove(PresetPath, '.\settings\presets\' NewName '.preset')
+			PresetGui["SelectPreset"].delete([PresetName])
+			PresetGui["SelectPreset"].add([NewName])
+			PresetGui["Select"].Text := NewName
+		case "DeletePreset":
+			if (MsgBox("Are you sure you want to delete " PresetName "?",, "0x1034") = "no")
+				return
+			FileDelete(PresetPath)
+		case "OverwritePreset":
+			if Msgbox(
+				(
+					'Are you sure you want to overwrite ' PresetName '?
+					Current settings will be lost.'
+				),,0x1034 ) = "no"
+					return
+			FileDelete(PresetPath)
+			nm_CreatePresetFiles(PresetName)
+		case "LoadPreset":
+			if Msgbox(
+			(
+				'Are you sure you want to load ' PresetName '?
+				Current settings will be lost.'
+			),,0x1034 ) = "no"
+				return
+			nm_LoadPreset(PresetName)
+	}
+}
+/*
 nm_ManagePreset(ctrl, *) {
-	global PresetGui, SelectedPreset
-	PresetName := SelectedPreset.Text
-	PresetPath := A_WorkingDir "\settings\presets\" PresetName ".ini"
+	global PresetGui
+	PresetName := PresetGui["SelectPreset"].Text
+	PresetPath := A_WorkingDir "\settings\presets\" PresetName ".preset"
 	if (!FileExist(PresetPath)) {
 		MsgBox("Preset '" PresetName "' does not exist.", "Error", "T5")
 		return
@@ -7706,6 +7652,45 @@ nm_ManagePreset(ctrl, *) {
 	PresetGui.Destroy()
 	nm_PresetGUI()
 }
+*/
+nm_LoadPreset(PresetName,* ) {
+    global
+    local LocalPresetList, PresetPath, pair, i, j
+	if PresetName is Number {
+		LocalPresetList := []
+		loop files ".\settings\presets\*.preset"
+			SplitPath(A_LoopFileFullPath,,,,&name)
+		, LocalPresetList.push(name)
+		PresetName := LocalPresetList[PresetName]
+	}
+	ReplaceSystemCursors("IDC_WAIT")
+	nm_LockTabs()
+	PresetPath := ".\settings\presets\" PresetName ".preset"
+	for i in StrSplit(IniRead(PresetPath), "`n", "`r") {
+		switch {
+			case ObjHasValue(fieldnamelist, i):
+				IniWrite(IniRead(PresetPath, i), ".\settings\field_config.ini", i)
+			case i = "General", "Slot 1", "Slot 2", "Slot 3":
+				IniWrite(IniRead(PresetPath, i), ".\settings\manual_planters.ini", i)
+			default:
+				for j in StrSplit(IniRead(PresetPath, i), "`n", "`r") {
+					pair := StrSplit(j, "=")
+					IniWrite(pair[2], './settings/nm_config.ini', i, pair[1]), %pair[1]% := pair[2]
+					try {
+						Switch MainGui[pair[1]].type,0 {
+							case "DDL":
+								mainGui[pair[1]].text := pair[2]
+							default:
+								MainGui[pair[1]].value := pair[2]
+						}
+					}
+				}
+		}
+	}
+	ReplaceSystemCursors()
+	nm_LockTabs(0)
+}
+/*
 nm_LoadPreset(PresetName, *) {
 	if (IsObject(PresetName))
 		PresetName := PresetName.preset
@@ -7738,6 +7723,7 @@ nm_LoadPreset(PresetName, *) {
 	}
 	nm_LockTabs(0)
 }
+*/
 nm_ImportPreset(*) {
     presetsImported := []
     DllCall("OpenClipboard", "uint", 0)
@@ -7758,14 +7744,11 @@ nm_ImportPreset(*) {
     }
     DllCall("CloseClipboard")
     if !presetsImported.length
-        MsgBox("No presets found in clipboard")
-    else
-        MsgBox("Imported presets: " Join(presetsImported, ", "))
-    Join(obj,delim) {
-        for i in obj
-            str .= delim i
-        return SubStr(str, StrLen(delim))
-    }
+        return MsgBox("No presets found in clipboard")
+    for i in presetsImported
+		finalMsg .= "`n" i
+	nm_includePresets()
+	MsgBox("Presets imported:" finalMsg)
 }
 nm_GetKeys(FilePath, Section) {
 	SectionKeys := []
@@ -7839,7 +7822,7 @@ nm_PresetGUI(*){
 	MainGui.GetPos(&gx, &gy, &gw, &gh)
 	PresetGui:=Gui("-MinimizeBox +Owner" MainGui.Hwnd, "Preset Settings")
 	PresetGui.Show("x" gx+80 " y" gy+35 " w306 h212")
-	PresetGui.Font("s9", "Segoe UI")
+	PresetGui.SetFont("s9", "Segoe UI")
 	PresetGui.Add("GroupBox", "x4 y2 w100 h120", "Creation")
 	(hEdtValue := PresetGui.Add("Edit", "x9 y20 w90 h21 vSetPresetName Limit15")).OnEvent("Change", FileNameCleanup)
     SendMessage 0x1501, 1, StrPtr("Name"), hEdtValue ; EM_SETCUEBANNER
