@@ -7303,7 +7303,7 @@ nm_CreatePresetFiles(presetName,*) {
         "BugrunScorpionsCheck", "BugrunRhinoBeetlesLoot", "BugrunRhinoBeetlesCheck",
         "BugrunMantisLoot", "BugrunMantisCheck", "BugrunLadybugsLoot",
         "BugrunLadybugsCheck", "BugrunInterruptCheck"
-    ]
+    	]
 	, KillTimers := [
 		"VBLastKilled", "LastBugrunLadybugs", "LastBugrunMantis",
 		"LastBugrunRhinoBeetles", "LastBugrunScorpions", "LastBugrunSpider",
@@ -7458,41 +7458,47 @@ nm_CreatePresetFiles(presetName,*) {
 		"PresetKillTimers", "PresetPlanters", "PresetPlantersTimers"
 	]
 	, PlanterSettings := [
-		"PlanterOfPlentyCheck",
-		"BambooFieldCheck", "BlueClayPlanterCheck", "BlueFlowerFieldCheck", 
-		"CactusFieldCheck", "CandyPlanterCheck", "CloverFieldCheck", 
-		"CoconutFieldCheck", "HeatTreatedPlanterCheck", "HydroponicPlanterCheck", 
-		"MountainTopFieldCheck", "MushroomFieldCheck", "PaperPlanterCheck", 
-		"PepperFieldCheck", "PesticidePlanterCheck", "PetalPlanterCheck", 
-		"PineTreeFieldCheck", "PineappleFieldCheck", "PlasticPlanterCheck", 
-		"PumpkinFieldCheck", "RedClayPlanterCheck", "RoseFieldCheck", 
-		"SpiderFieldCheck", "StrawberryFieldCheck", "StumpFieldCheck", 
-		"SunflowerFieldCheck", "TackyPlanterCheck", "TicketPlanterCheck", 
-		"PlanterMode", "n1minPercent", "n1priority", 
-		"n2minPercent", "n2priority", "n3minPercent", 
-		"n3priority", "n4minPercent", "n4priority", 
-		"n5minPercent", "n5priority", "nPreset", 
-		"PlanterOfPlentyCheck"
+    		"AutomaticHarvestInterval", "ConvertFullBagHarvest", "GatherFieldSipping",
+    		"GatherPlanterLoot", "HarvestFullGrown", "HarvestInterval",
+    		"MaxAllowedPlanters", "PlanterMode", "TimerGuiTransparency",
+    		"TimerX", "TimerY", "n1minPercent",
+   		"n1priority", "n2minPercent", "n2priority"
+    		"n3minPercent", "n3priority", "n4minPercent",
+    		"n4priority", "n5minPercent", "n5priority",
+    		"nPreset", "GotoPlanterField", "TimersOpen"
+    		"MConvertFullBagHarvest", "MPlanterGather1", "MPlanterGather2",
+    		"MPlanterGather3", "MPlanterGatherA", "MPuffMode1",
+    		"MPuffMode2", "MPuffMode3", "MPuffModeA",
+    		"PlanterGlitter1", "PlanterGlitter2", "PlanterGlitter3",
+    		"PlanterGlitterC1", "PlanterGlitterC2", "PlanterGlitterC3",
+    		"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull3",
+    		"PlanterManualCycle1", "PlanterManualCycle2", "PlanterManualCycle3"
+    		"BambooFieldCheck", "BlueFlowerFieldCheck", "CactusFieldCheck",
+    		"CloverFieldCheck", "CoconutFieldCheck", "DandelionFieldCheck",
+    		"MountainTopFieldCheck", "MushroomFieldCheck", "PepperFieldCheck",
+    		"PineTreeFieldCheck", "PineappleFieldCheck", "PumpkinFieldCheck",
+    		"RoseFieldCheck", "SpiderFieldCheck", "StrawberryFieldCheck",
+    		"StumpFieldCheck", "SunflowerFieldCheck",
+    		"BlueClayPlanterCheck", "CandyPlanterCheck", "HeatTreatedPlanterCheck",
+    		"HydroponicPlanterCheck", "PaperPlanterCheck", "PesticidePlanterCheck",
+    		"PetalPlanterCheck", "PlanterOfPlentyCheck", "PlasticPlanterCheck",
+    		"RedClayPlanterCheck", "TackyPlanterCheck", "TicketPlanterCheck"
 	]
-	, PlantersTimers := [
-		"AutomaticHarvestInterval", "ConvertFullBagHarvest",
-		"LastComfortingField", "LastInvigoratingField",
-		"LastMotivatingField", "LastPlanterGatherSlot", "LastRefreshingField",
-		"LastSatisfyingField", "MConvertFullBagHarvest",
-		"MPlanterHold1", "MPlanterHold2", "MPlanterHold3", "MPlanterSmoking1",
-		"MPlanterSmoking2", "MPlanterSmoking3", "MPuffMode1", "MPuffMode2",
-		"MPuffMode3", "MPuffModeA", "PlanterEstPercent1",
-		"PlanterEstPercent2", "PlanterEstPercent3", "PlanterField1",
-		"PlanterField2", "PlanterField3", "PlanterGlitter1", "PlanterGlitter2",
-		"PlanterGlitter3", "PlanterGlitterC1", "PlanterGlitterC2",
-		"PlanterGlitterC3", "PlanterHarvestNow1", "PlanterHarvestNow2",
-		"PlanterHarvestNow3", "PlanterHarvestTime1", "PlanterHarvestTime2",
-		"PlanterHarvestTime3", "PlanterManualCycle1", "PlanterManualCycle2",
-		"PlanterManualCycle3", "PlanterName1", "PlanterName2", "PlanterName3",
-		"PlanterNectar1", "PlanterNectar2", "PlanterNectar3",
-		"PlanterSS1", "PlanterSS2", "PlanterSS3"
-	 ]
-	 
+	, PlanterTimers := [
+    		"LastComfortingField", "LastInvigoratingField", "LastMotivatingField",
+    		"LastRefreshingField", "LastSatisfyingField", "LastPlanterGatherSlot",
+    		"MPlanterHold1", "MPlanterHold2", "MPlanterHold3",
+    		"MPlanterSmoking1", "MPlanterSmoking2", "MPlanterSmoking3",
+    		"PlanterEstPercent1", "PlanterEstPercent2", "PlanterEstPercent3",
+    		"PlanterField1", "PlanterField2", "PlanterField3",
+    		"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull13",
+    		"PlanterHarvestNow1", "PlanterHarvestNow2", "PlanterHarvestNow3",
+   		"PlanterHarvestTime1", "PlanterHarvestTime2", "PlanterHarvestTime3",
+    		"PlanterName1", "PlanterName2", "PlanterName3",
+    		"PlanterNectar1", "PlanterNectar2", "PlanterNectar3",
+    		"PlanterSS1", "PlanterSS2", "PlanterSS3",
+    		"dayOrNight"
+	]
 	If !DirExist(".\settings\presets")
 		DirCreate(".\settings\presets")
 
@@ -7727,6 +7733,7 @@ nm_PresetGUI(*){
 	PresetGui.Add("Button", "x113 yp+25 w90 hp vCopyPreset", "Export").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x113 yp+25 wp hp vLoadPreset", "Load Preset").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("GroupBox", "x212 y2 w100 h120", "Timed")
+	PresetGui.Add("DropDownList", "x220 y9 w90 h21")
 	if (presetlist.Length=0) {
 		For k, v in ["SelectPreset", "CopyPreset", "DeletePreset", "OverwritePreset", "LoadPreset", "RenamePreset"]
 			PresetGui[v].enabled:=0
