@@ -7611,48 +7611,7 @@ nm_ManagePreset(ctrl,* ) {
 			nm_LoadPreset(PresetName)
 	}
 }
-/*
-nm_ManagePreset(ctrl, *) {
-	global PresetGui
-	PresetName := PresetGui["SelectPreset"].Text
-	PresetPath := A_WorkingDir "\settings\presets\" PresetName ".preset"
-	if (!FileExist(PresetPath)) {
-		MsgBox("Preset '" PresetName "' does not exist.", "Error", "T5")
-		return
-	}
-	if (ctrl.name = "CopyPreset") {
-		If (IniRead(PresetPath, "Status", "BotToken", 0)!=0)
-			if (MsgBox("Your about to copy a preset that has your discord IDs (Channels and user ID) and your BotToken and webhook. Are you sure you want to copy this preset?`n`nThis is very dangerous if shared and could allow people with it to control your computer.",, 4)="no")
-				return
-		FileToClipboard(PresetPath)
-		MsgBox("Preset " PresetName " has been copied to clipboard.",, "T3")
-		return
-	}
-	if (MsgBox("Do you want to " StrLower(ctrl.text) " " PresetName "?" ((ctrl.name="LoadPreset") ? " Current settings will be lost." : ""),, "4") = "no")
-		return
-	if (ctrl.name = "RenamePreset") {
-		NewName := PresetGui["SetPresetName"].Value
-		if (NewName = "") {
-			MsgBox("No preset name given.`n`nPlease fill out the edit field under the Creation section.",, "T5")
-			return
-		}
-		FileMove(PresetPath, A_WorkingDir "\settings\presets\" NewName ".ini")
-	}
-	else if (ctrl.name = "DeletePreset")
-		FileDelete(PresetPath)
-	else if (ctrl.name = "OverwritePreset") {
-		FileDelete(PresetPath)
-		nm_PresetLock()
-		nm_CreatePresetFiles(PresetName)
-	}
-	else if (ctrl.name = "LoadPreset") {
-		nm_LoadPreset(PresetName)
-		return
-	}
-	PresetGui.Destroy()
-	nm_PresetGUI()
-}
-*/
+
 nm_LoadPreset(PresetName,* ) {
     global
     local PresetPath, pair, i, j
@@ -7684,40 +7643,7 @@ nm_LoadPreset(PresetName,* ) {
 	nm_LockTabs(0)
 	return 1
 }
-/*
-nm_LoadPreset(PresetName, *) {
-	if (IsObject(PresetName))
-		PresetName := PresetName.preset
-	PresetPath := A_WorkingDir "\settings\presets\" PresetName ".ini"
-	SectionNames := IniRead(PresetPath)
-	SectionArray := StrSplit(SectionNames, "`n") ; save section names to array
-	PresetGui.Destroy()
-	nm_LockTabs()
-	for k, v in SectionArray { ; save preset to ini files
-		ini := IniRead(PresetPath, v)
-		switch v {
-			case "General", "Slot 1", "Slot 2", "Slot 3":
-				IniWrite(ini, A_WorkingDir "\settings\manual_planters.ini", v) ; load manual planter settings
-			case "Bamboo", "Blue Flower", "Cactus", "Clover", "Coconut", "Dandelion", "Mountain Top", "Mushroom", "Pepper", "Pine Tree", "Pineapple", "Pumpkin", "Rose", "Spider", "Strawberry", "Stump", "Sunflower":
-				IniWrite(ini, A_WorkingDir "\settings\field_config.ini", v) ; load field defaults
-			case "Status", "Settings", "Collect":
-				SectionKeys := nm_GetKeys(PresetPath, v)
-				for x, y in SectionKeys
-					IniWrite(ini, A_WorkingDir "\settings\nm_config.ini", v, y)
-			default:
-				IniWrite(ini, A_WorkingDir "\settings\nm_config.ini", v)
-		}
-	}
-	nm_ReadIni(A_WorkingDir "\settings\nm_config.ini")
-	nm_ReadIni(A_WorkingDir "\settings\manual_planters.ini")
-	for k, v in SectionArray {
-		SectionKeys := nm_GetKeys(PresetPath, v)
-		for x, y in SectionKeys
-			nm_UpdateGUIVar(y)
-	}
-	nm_LockTabs(0)
-}
-*/
+
 nm_ImportPreset(*) {
     presetsImported := []
     DllCall("OpenClipboard", "uint", 0)
@@ -7744,30 +7670,6 @@ nm_ImportPreset(*) {
 	nm_includePresets()
 	MsgBox("Presets imported:" finalMsg)
 }
-nm_GetKeys(FilePath, Section) {
-	SectionKeys := []
-	FoundSection := 0
-	Loop Read, FilePath
-	{
-		if (A_LoopReadLine="[" . Section . "]") {
-			FoundSection := 1
-			continue
-		}
-		else if (A_LoopReadLine="") {
-			continue
-		}
-		if (FoundSection) {	
-			if (SubStr(A_LoopReadLine, 1, 1)="[") {
-				break
-			}
-			if (InStr(A_LoopReadLine, "=")) {
-				key := StrSplit(A_LoopReadLine, "=")
-				SectionKeys.push(key[1])
-			}
-		}
-	}
-	return SectionKeys
-}
 FileNameCleanup(*) {
 	global PresetGui
     userInput := PresetGui["SetPresetName"].Value
@@ -7776,12 +7678,6 @@ FileNameCleanup(*) {
         PresetGui["SetPresetName"].Value := cleanedFileName
         Send "{End}" ;otherwise it sets cursor to the beginning of the text
     }
-}
-HelpSection(*) {
-    MsgBox("The Included Settings, each checkbox represents a different tab in natro macro to save.`n`nThere are a few exceptions:`nPS Link is your private server Link, Discord is the discord settings (screenshots, pings), Token/Webhook is your Bot Token and Webhook along with all your channel IDs and UserID, and Field Defaults is your saved gather settings for each field.", "Help")
-}
-RenameHelp(*) {
-	MsgBox("Select a preset under the Manage settings, and fill out a new name in the editbox under Creation settings, Then click Rename and your preset will be re-named.", "Help")
 }
 ConfirmWebBot(*) {
     global PresetGui
@@ -7818,14 +7714,14 @@ nm_PresetGUI(*){
 	PresetGui.Show("x" gx+80 " y" gy+35 " w306 h212")
 	PresetGui.SetFont("s9", "Segoe UI")
 	PresetGui.Add("GroupBox", "x4 y2 w100 h120", "Creation")
-	(hEdtValue := PresetGui.Add("Edit", "x9 y20 w90 h21 vSetPresetName Limit15")).OnEvent("Change", FileNameCleanup)
-    SendMessage 0x1501, 1, StrPtr("Name"), hEdtValue ; EM_SETCUEBANNER
+	(GuiCtrl := PresetGui.Add("Edit", "x9 y20 w90 h21 vSetPresetName Limit15")).OnEvent("Change", FileNameCleanup)
+    SendMessage 0x1501, 1, StrPtr("Name"), GuiCtrl ; EM_SETCUEBANNER
 	PresetGui.Add("Button", "x9 y45 w90 h21 vCreatePreset", "Create New").OnEvent("Click", nm_CreatePreset)
 	PresetGui.Add("Button", "x9 y70 w90 h21 vImportPreset", "Import").OnEvent("Click", nm_ImportPreset)
 	PresetGui.Add("Button", "x9 y95 w75 h21 vRenamePreset", "Rename").OnEvent("Click", nm_ManagePreset)
-	PresetGui.Add("Button", "x88 y98 w10 h15", "?").OnEvent("Click", RenameHelp)
+	PresetGui.Add("Button", "x88 y98 w10 h15", "?").OnEvent("Click", (*) => MsgBox("Select a preset under the Manage settings, and fill out a new name in the editbox under Creation settings, Then click Rename and your preset will be re-named.", "Help","0x1040"))
 	PresetGui.Add("GroupBox", "x108 y2 w100 h120", "Manage")
-	SelectedPreset := PresetGui.Add("DropDownList", "x113 y20 w90 choose1 vSelectPreset", presetlist)
+	PresetGui.Add("DropDownList", "x113 y20 w90 choose1 vSelectPreset", presetlist)
 	PresetGui.Add("Button", "x113 y45 w45 h20 vOverwritePreset", "Save").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x158 yp w45 hp vDeletePreset", "Delete").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x113 yp+25 w90 hp vCopyPreset", "Export").OnEvent("Click", nm_ManagePreset)
@@ -7836,7 +7732,7 @@ nm_PresetGUI(*){
 			PresetGui[v].enabled:=0
 	}
 	PresetGui.Add("GroupBox", "x4 y126 w308 h92", "Included Settings")
-	PresetGui.Add("Button", "x97 y126 w10 h15", "?").OnEvent("Click", HelpSection)
+	PresetGui.Add("Button", "x97 y126 w10 h15", "?").OnEvent("Click", (*) => MsgBox("The Included Settings, each checkbox represents a different tab in natro macro to save.`n`nThere are a few exceptions:`nPS Link is your private server Link, Discord is the discord settings (screenshots, pings), Token/Webhook is your Bot Token and Webhook along with all your channel IDs and UserID, and Field Defaults is your saved gather settings for each field.", "Help", "0x1040"))
 	PresetGui.Add("CheckBox", "x9 yp+18 w60 h16 +Checked vPresetGather", "Gather")
 	PresetGui.Add("CheckBox", "x9 yp+18 w55 h16 +Checked vPresetQuest", "Quest")
 	PresetGui.Add("CheckBox", "x9 yp+18 w60 h16 +Checked vPresetSettings", "Settings")
