@@ -7566,11 +7566,13 @@ nm_CreatePreset(*) {
 		, PresetGui["DeletePreset"].Enabled := 1
 		, PresetGui["CopyPreset"].Enabled := 1
 		, PresetGui["LoadPreset"].Enabled := 1
+		, PresetGui["RenamePreset"].Enabled := 1
 	else
 		PresetGui["OverwritePreset"].Enabled := 0
 		, PresetGui["DeletePreset"].Enabled := 0
 		, PresetGui["CopyPreset"].Enabled := 0
 		, PresetGui["LoadPreset"].Enabled := 0
+		, PresetGui["RenamePreset"].Enabled := 0
 }
 nm_ManagePreset(ctrl,* ) {
 	PresetName := PresetGui["SelectPreset"].Text
@@ -7594,17 +7596,18 @@ nm_ManagePreset(ctrl,* ) {
 			if (!NewName)
 				return MsgBox("No preset name given.",, "0x1010 T5")
 			FileMove(PresetPath, '.\settings\presets\' NewName '.preset')
-			PresetGui["SelectPreset"].delete([PresetName])
+			PresetGui["SelectPreset"].delete(PresetGui["SelectPreset"].value)
 			PresetGui["SelectPreset"].add([NewName])
-			PresetGui["Select"].Text := NewName
+			PresetGui["SelectPreset"].Text := NewName
 		case "DeletePreset":
 			if (MsgBox("Are you sure you want to delete " PresetName "?",, "0x1034") = "no")
 				return
 			FileDelete(PresetPath)
-			PresetGui["SelectPreset"].delete([PresetName])
-			presetList.pop(PresetName)
-			if PresetGui.enabled := !!presetList.length
-				presetGui["SelectPreset"].Value := 1
+			presetList.RemoveAt(PresetGui["SelectPreset"].Value)
+			PresetGui["SelectPreset"].delete(PresetGui["SelectPreset"].Value)
+			if (PresetGui["SelectPreset"].enabled := presetList.length)
+				return presetGui["SelectPreset"].Value := 1
+			PresetGui["OverwritePreset"].Enabled := 0, PresetGui["DeletePreset"].Enabled := 0, PresetGui["CopyPreset"].Enabled := 0, PresetGui["LoadPreset"].Enabled := 0, PresetGui["RenamePreset"].Enabled := 0
 		case "OverwritePreset":
 			if Msgbox(
 				(
