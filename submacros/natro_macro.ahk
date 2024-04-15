@@ -7298,7 +7298,7 @@ nm_CreatePresetFiles(presetName,*) {
         "MonsterRespawnTime", "MondoLootDirection", "KingBeetleCheck",
         "KingBeetleBabyCheck", "KingBeetleAmuletMode", "InputSnailHealth",
         "InputChickHealth", "CommandoCheck", "CocoCrabCheck",
-        "ChickTime", "BugrunWerewolfLoot", "BugrunWerewolfCheck",
+        "ChickTime", "ChickLevel", "BugrunWerewolfLoot", "BugrunWerewolfCheck",
         "BugrunSpiderLoot", "BugrunSpiderCheck", "BugrunScorpionsLoot",
         "BugrunScorpionsCheck", "BugrunRhinoBeetlesLoot", "BugrunRhinoBeetlesCheck",
         "BugrunMantisLoot", "BugrunMantisCheck", "BugrunLadybugsLoot",
@@ -7321,15 +7321,17 @@ nm_CreatePresetFiles(presetName,*) {
 		"PrivServer"
 	]
 	, CollectTimers := [
-		"LastAntPass", "LastBlueberryDis", "LastCandles",
-		"LastClock", "LastCoconutDis", "LastFeast",
+		"LastAntPass", "LastBlueBoost",
+		"LastBugrunLadybugs", "LastCandles", "LastCocoCrab",
+		"LastCommando", "LastExtremeMemoryMatch", "LastFeast",
 		"LastGingerbread", "LastGlueDis", "LastGummyBeacon",
-		"LastHoneyDis", "LastHoneystorm", "LastLidArt",
-		"LastMondoBuff", "LastRBPDelevel", "LastRoboPass",
+		"LastHoneyDis", "LastHoneystorm", "LastKingBeetle",
+		"LastLidArt", "LastMegaMemoryMatch", "LastMeteorShower",
+		"LastMondoBuff", "LastMountainBoost", "LastNightMemoryMatch",
+		"LastRBPDelevel", "LastRedBoost", "LastRoboPass",
 		"LastRoyalJellyDis", "LastSamovar", "LastSnowMachine",
-		"LastStockings", "LastStrawberryDis", "LastTreatDis",
-		"LastWreath", "LastBlueBoost", "LastRedBoost",
-		"LastMountainBoost"
+		"LastStickerPrinter", "LastStockings", "LastStrawberryDis",
+		"LastTreatDis", "LastTunnelBear", "LastWreath"
 	]
 	, BoostTimers := ["AFBdiceUsed", "AFBglitterUsed", "FieldLastBoosted",
 		"FieldLastBoostedBy", "FieldNextBoostedBy", "LastEnzymes",
@@ -7403,8 +7405,7 @@ nm_CreatePresetFiles(presetName,*) {
 		"BambooBoosterCheck", "BlueFlowerBoosterCheck", "BoostChaserCheck",
 		"CactusBoosterCheck", "CloverBoosterCheck", "CoconutBoosterCheck",
 		"DandelionBoosterCheck", "FieldBoostStacks", "FieldBooster1",
-		"FieldBooster2", "FieldBooster3", "FieldBoosterMins",
-		"FieldLastBoostedBy", "FieldNextBoostedBy", "HotbarMax2",
+		"FieldBooster2", "FieldBooster3", "FieldBoosterMins", "HotbarMax2",
 		"HotbarMax3", "HotbarMax4", "HotbarMax5", "HotbarMax6",
 		"HotbarMax7", "HotbarTime2", "HotbarTime3", "HotbarTime4",
 		"HotbarTime5", "HotbarTime6", "HotbarTime7", "HotbarWhile2",
@@ -7418,23 +7419,13 @@ nm_CreatePresetFiles(presetName,*) {
 	, CollectSettings := [
 		"AntPassAction", "AntPassBuyCheck", "BeesmasGatherInterruptCheck",
 		"BlueExtractMatchIgnore", "BlueberryDisCheck", "CandlesCheck",
-		"ChickLevel", "ClockCheck", "CloudVialMatchIgnore",
+		"ClockCheck", "CloudVialMatchIgnore",
 		"CoconutDisCheck", "CyanTrimMatchIgnore", "DiamondEggMatchIgnore",
 		"EnzymeMatchIgnore", "ExtremeMemoryMatchCheck", "FeastCheck",
 		"FieldDiceMatchIgnore", "GingerbreadCheck", "GlitterMatchIgnore",
 		"GlueDisCheck", "GoldEggMatchIgnore", "GumdropMatchIgnore",
 		"HardWaxMatchIgnore", "HoneyDisCheck", "HoneystormCheck",
-		"JellyBeanMatchIgnore", "LastAntPass", "LastBlueBoost",
-		"LastBugrunLadybugs", "LastCandles", "LastCocoCrab",
-		"LastCommando", "LastExtremeMemoryMatch", "LastFeast",
-		"LastGingerbread", "LastGlueDis", "LastGummyBeacon",
-		"LastHoneyDis", "LastHoneystorm", "LastKingBeetle",
-		"LastLidArt", "LastMegaMemoryMatch", "LastMeteorShower",
-		"LastMondoBuff", "LastMountainBoost", "LastNightMemoryMatch",
-		"LastRBPDelevel", "LastRedBoost", "LastRoboPass",
-		"LastRoyalJellyDis", "LastSamovar", "LastSnowMachine",
-		"LastStickerPrinter", "LastStockings", "LastStrawberryDis",
-		"LastTreatDis", "LastTunnelBear", "LastWreath",
+		"JellyBeanMatchIgnore",
 		"LidArtCheck", "MagicBeanMatchIgnore", "MegaMemoryMatchCheck",
 		"MeteorShowerCheck", "MicroConverterMatchIgnore", "MondoAction",
 		"MondoSecs", "MoonCharmMatchIgnore", "NeonberryMatchIgnore",
@@ -7448,7 +7439,7 @@ nm_CreatePresetFiles(presetName,*) {
 		"StrawberryMatchIgnore", "SunflowerSeedMatchIgnore",
 		"SuperSmoothieMatchIgnore", "SwirledWaxMatchIgnore", "TicketMatchIgnore",
 		"TreatDisCheck", "TreatMatchIgnore", "TropicalDrinkMatchIgnore",
-		"VBLastKilled", "WinterMemoryMatchCheck", "WreathCheck"
+		"WinterMemoryMatchCheck", "WreathCheck"
 	]
 	, PresetSettingsCtrls := [
 		"PresetGather", "PresetQuest", "PresetSettings",
@@ -7530,12 +7521,22 @@ nm_CreatePresetFiles(presetName,*) {
 			for j in keys
 				IniWrite(IniRead(".\settings\nm_config.ini", section, j), ".\settings\presets\" . presetName . ".preset", section, j)
 		}
+	presetFile := FileOpen(".\settings\presets\" presetName ".preset", "a")
 	if PresetGui["PresetFDefaults"].Value
 		configFile := FileOpen(".\settings\field_config.ini", "r"), field_config := configFile.Read(), configFile.Close()
-		, presetFile := FileOpen(".\settings\presets\" presetName ".preset", "a"), presetFile.Write("`r`n" field_config), presetFile.Close()
+		, presetFile.Write("`r`n" field_config)
 	if PresetGui["PresetPlanters"].Value
 		configFile := FileOpen(".\settings\manual_planters.ini", "r"), planter_config := configFile.Read(), configFile.Close()
-		, presetFile := FileOpen(".\settings\presets\" presetName ".preset", "a"), presetFile.Write("`r`n" planter_config), presetFile.Close()
+		, presetFile.Write("`r`n" planter_config)
+	if PresetGui["PresetCollect"].Value
+		presetFile.Write("`r`n" IniRead(".\settings\nm_config.ini", "Blender"))
+	if PresetGui["PresetBoost"].Value {
+		presetFile.Write("`r`n" IniRead(".\settings\nm_config.ini", "Shrine"))
+		if !PresetGui["PresetBoostTimers"].Value
+			For , k in ["LastShrine", "ShrineRot", "ShrineIndex1", "ShrineIndex2"]
+				IniDelete(".\settings\presets\" . presetName . ".preset", "Shrine", k)
+	}
+	presetFile.Close()
 }
 nm_CreatePreset(*) {
 	global PresetGui
