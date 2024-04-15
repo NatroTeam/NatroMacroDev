@@ -2910,7 +2910,6 @@ nm_getGPUPercentage() {
 
 nm_sendNectarImage(wParam,lParam,* ) {
 	static nectarNames := ["comforting","refreshing","satisfying","motivating","invigorating"]
-	msgbox StrGet(lParam)
 	nectars := StrSplit(StrGet(lParam), ",")
     pBitmap := Gdip_CreateBitmap(1100, 211), G:= Gdip_GraphicsFromImage(pBitmap), Gdip_SetSmoothingMode(G,4)
 	for i,j in ["comforting","motivating","satisfying","refreshing","invigorating"]
