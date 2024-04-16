@@ -7548,20 +7548,20 @@ nm_createPresetFiles(presetName, *) {
 	if !DirExist("./settings/presets")
 		DirCreate("./settings/presets")
 	f := FileOpen("./settings/presets/" presetName ".preset", "w"), f.Write(JSON.stringify(presetObj)), f.Close()
-	configToObject(iniStr) {
-		returnObj := Map()
-		loop parse iniStr, "`n", "`r" {
-			if !A_LoopField || SubStr(A_LoopField, 1, 1) = ";"
-				continue
-			if SubStr(A_LoopField, 1, 1) = "[" {
-				section := SubStr(A_LoopField, 2, -1), (returnObj[section] := Map()).CaseSense := 0
-				continue
-			}
-			field := StrSplit(A_LoopField, "=")
-			returnObj[section][field[1]] := field[2]
+}
+configToObject(iniStr) {
+	returnObj := Map()
+	loop parse iniStr, "`n", "`r" {
+		if !A_LoopField || SubStr(A_LoopField, 1, 1) = ";"
+			continue
+		if SubStr(A_LoopField, 1, 1) = "[" {
+			section := SubStr(A_LoopField, 2, -1), (returnObj[section] := Map()).CaseSense := 0
+			continue
 		}
-		return returnObj
+		field := StrSplit(A_LoopField, "=")
+		returnObj[section][field[1]] := field[2]
 	}
+	return returnObj
 }
 nm_CreatePreset(*) {
 	global PresetGui
@@ -7654,25 +7654,25 @@ nm_ManagePreset(ctrl,* ) {
 
 nm_LoadPreset(PresetName,* ) {
     global
-    local PresetPath, pair, i, j
+    local PresetPath, k,v, i, j
 	ReplaceSystemCursors("IDC_WAIT")
 	nm_LockTabs()
 	PresetPath := ".\settings\presets\" PresetName ".preset"
 	PresetMap := JSON.Parse(FileRead(PresetPath))
-	for s in PresetMap {
+	for k,v in PresetMap {
 		switch {
-			case ObjHasValue(fieldnamelist, s):
-				for k in PresetMap[s]
-					IniWrite(PresetMap[s][k], './settings/nm_config.ini', s, k)
-			case s = "General",s = "Slot 1",s = "Slot 2",s = "Slot 3":
-				for k in PresetMap[s]
-					IniWrite(PresetMap[s][k], './settings/nm_config.ini', s, k)
-			default:
-				for k in PresetMap[s] {
-					IniWrite(PresetMap[s][k], './settings/nm_config.ini', s, k)
-					try %k% := PresetMap[s][k]
-					nm_UpdateGUIVar(k)
+			case "Gather", "Collect", "Boost", "Quests", "Planters", "Status", "Settings":
+				for i,j in v {
+					IniWrite(j, './settings/nm_config.ini', k, i)
+					%i% := j
+					try nm_UpdateGUIVar(i)
 				}
+			case k = "General",k = "Slot 1",k = "Slot 2",k = "Slot 3":
+				for i,j in v
+					IniWrite(j, './settings/manual_planters.ini', k, i)
+			default:
+				for i,j in v
+					IniWrite(j, './settings/field_config.ini', k, i)
 		}
 	}
 	ReplaceSystemCursors()
