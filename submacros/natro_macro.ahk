@@ -7545,6 +7545,8 @@ nm_createPresetFiles(presetName, *) {
 			presetObj.Set(k, v)
 
 	}
+	if !DirExist("./settings/presets")
+		DirCreate("./settings/presets")
 	f := FileOpen("./settings/presets/" presetName ".preset", "w"), f.Write(JSON.stringify(presetObj)), f.Close()
 	configToObject(iniStr) {
 		returnObj := Map()
@@ -7582,12 +7584,18 @@ nm_CreatePreset(*) {
 		, PresetGui["CopyPreset"].Enabled := 1
 		, PresetGui["LoadPreset"].Enabled := 1
 		, PresetGui["RenamePreset"].Enabled := 1
+		, PresetGui["PresetTimed1"].Enabled := 1
+		, PresetGui["PresetTimed2"].Enabled := 1
+		, PresetGui["PresetInterval"].Enabled := 1
 	else
 		PresetGui["OverwritePreset"].Enabled := 0
 		, PresetGui["DeletePreset"].Enabled := 0
 		, PresetGui["CopyPreset"].Enabled := 0
 		, PresetGui["LoadPreset"].Enabled := 0
 		, PresetGui["RenamePreset"].Enabled := 0
+		, PresetGui["PresetTimed1"].Enabled := 0
+		, PresetGui["PresetTimed2"].Enabled := 0
+		, PresetGui["PresetInterval"].Enabled := 0
 }
 nm_ManagePreset(ctrl,* ) {
 	PresetName := PresetGui["SelectPreset"].Text
@@ -7622,7 +7630,7 @@ nm_ManagePreset(ctrl,* ) {
 			PresetGui["SelectPreset"].delete(PresetGui["SelectPreset"].Value)
 			if (PresetGui["SelectPreset"].enabled := presetList.length)
 				return presetGui["SelectPreset"].Value := 1
-			PresetGui["OverwritePreset"].Enabled := 0, PresetGui["DeletePreset"].Enabled := 0, PresetGui["CopyPreset"].Enabled := 0, PresetGui["LoadPreset"].Enabled := 0, PresetGui["RenamePreset"].Enabled := 0
+			PresetGui["OverwritePreset"].Enabled := 0, PresetGui["DeletePreset"].Enabled := 0, PresetGui["CopyPreset"].Enabled := 0, PresetGui["LoadPreset"].Enabled := 0, PresetGui["RenamePreset"].Enabled := 0, PresetGui["PresetTimed1"].Enabled := 0, PresetGui["PresetTimed2"].Enabled := 0, PresetGui["PresetInterval"].Enabled := 0
 		case "OverwritePreset":
 			if Msgbox(
 				(
@@ -7640,6 +7648,7 @@ nm_ManagePreset(ctrl,* ) {
 			),,0x1034 ) = "no"
 				return
 			nm_LoadPreset(PresetName)
+			PresetGui.Destroy()
 	}
 }
 
@@ -7649,24 +7658,20 @@ nm_LoadPreset(PresetName,* ) {
 	ReplaceSystemCursors("IDC_WAIT")
 	nm_LockTabs()
 	PresetPath := ".\settings\presets\" PresetName ".preset"
-	for i in StrSplit(IniRead(PresetPath), "`n", "`r") {
+	PresetMap := JSON.Parse(FileRead(PresetPath))
+	for s in PresetMap {
 		switch {
-			case ObjHasValue(fieldnamelist, i):
-				IniWrite(IniRead(PresetPath, i), ".\settings\field_config.ini", i)
-			case i = "General",i = "Slot 1",i = "Slot 2",i = "Slot 3":
-				IniWrite(IniRead(PresetPath, i), ".\settings\manual_planters.ini", i)
+			case ObjHasValue(fieldnamelist, s):
+				for k in PresetMap[s]
+					IniWrite(PresetMap[s][k], './settings/nm_config.ini', s, k)
+			case s = "General",s = "Slot 1",s = "Slot 2",s = "Slot 3":
+				for k in PresetMap[s]
+					IniWrite(PresetMap[s][k], './settings/nm_config.ini', s, k)
 			default:
-				for j in StrSplit(IniRead(PresetPath, i), "`n", "`r") {
-					pair := StrSplit(j, "=")
-					IniWrite(pair[2], './settings/nm_config.ini', i, pair[1]), %pair[1]% := pair[2]
-					try {
-						Switch MainGui[pair[1]].type,0 {
-							case "DDL":
-								mainGui[pair[1]].text := pair[2]
-							default:
-								MainGui[pair[1]].value := pair[2]
-						}
-					}
+				for k in PresetMap[s] {
+					IniWrite(PresetMap[s][k], './settings/nm_config.ini', s, k)
+					try %k% := PresetMap[s][k]
+					nm_UpdateGUIVar(k)
 				}
 		}
 	}
