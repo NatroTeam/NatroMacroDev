@@ -4822,8 +4822,7 @@ nm_MondoAction(GuiCtrl?, *){
 		default:
 		i := 4
 	}
-
-	MainGui["MondoAction"].Text := MondoAction := MondoActionList[(GuiCtrl.Name = "MARight") ? (Mod(i, l) + 1) : (GuiCtrl.Name = "MALeft") ? (Mod(l + i - 2, l) + 1) : i]
+	MainGui["MondoAction"].Text := (IsSet(GuiCtrl) ? MondoAction := MondoActionList[(GuiCtrl.Name = "MARight") ? (Mod(i, l) + 1) : (GuiCtrl.Name = "MALeft") ? (Mod(l + i - 2, l) + 1) : i] : MondoAction)
 	MainGui["MondoPointText"].Visible := (MondoAction = "Buff") || (MondoAction = "Kill")
 	MainGui["MondoSecs"].Visible := MainGui["MondoSecsText"].Visible := (MondoAction = "Buff")
 	MainGui["MondoLootText"].Visible := MainGui["MondoLootDirection"].Visible := MainGui["MLDLeft"].Visible := MainGui["MLDRight"].Visible := (MondoAction = "Kill")
@@ -7563,6 +7562,17 @@ configToObject(iniStr) {
 	}
 	return returnObj
 }
+
+objectToIni(object) {
+	static crlf := "`r`n"
+	for k,v in object {
+		iniStr .= "[" k "]" crlf
+		for i,j in v
+			iniStr .= i "=" j crlf
+	}
+	return iniStr
+}
+
 nm_CreatePreset(*) {
 	global PresetGui
 	PresetName := PresetGui["SetPresetName"].Value
@@ -7652,32 +7662,36 @@ nm_ManagePreset(ctrl,* ) {
 	}
 }
 
-nm_LoadPreset(PresetName,* ) {
-    global
-    local PresetPath, k,v, i, j
+nm_loadPreset(presetName, * ) {
+	global
+	local f, preset, config, planters, fields, k,v, i, j
+	if !FileExist('.\settings\presets\' presetName '.preset')
+		return MsgBox("Preset appears to be missing: " presetName,"ERROR",0x1010)
 	ReplaceSystemCursors("IDC_WAIT")
-	nm_LockTabs()
-	PresetPath := ".\settings\presets\" PresetName ".preset"
-	PresetMap := JSON.Parse(FileRead(PresetPath))
-	for k,v in PresetMap {
-		switch {
-			case "Gather", "Collect", "Boost", "Quests", "Planters", "Status", "Settings":
+	f := FileOpen('.\settings\presets\' presetName '.preset', "r"), preset := JSON.parse(f.Read()), f.Close()
+	f := FileOpen('.\settings\nm_config.ini', "r"), config := configToObject(f.Read()), f.Close()
+	preset.has('General') && (f := FileOpen('.\settings\manual_planters.ini', "r")) && (planters := configToObject(f.Read())) && f.Close()
+	preset.Has('Bamboo') &&	(f := FileOpen('.\settings\Field_Config.ini', "r")) && (fields := configToObject(f.Read())) && f.Close()
+	for k,v in preset {
+		switch k,0 {
+			case "Gather", "Boost", "Quests", "Collect", "Planters", "Status", "Settings":
 				for i,j in v {
-					IniWrite(j, './settings/nm_config.ini', k, i)
+					config[k][i] := j
 					%i% := j
-					try nm_UpdateGUIVar(i)
-				}
-			case k = "General",k = "Slot 1",k = "Slot 2",k = "Slot 3":
+					nm_updateGuiVar(i)
+				}			
+			case "general", "Slot 1", "Slot 2", "Slot 3":
 				for i,j in v
-					IniWrite(j, './settings/manual_planters.ini', k, i)
+					planters[k][i] := j
 			default:
 				for i,j in v
-					IniWrite(j, './settings/field_config.ini', k, i)
+					fields[k][i] := j
 		}
 	}
+	f := FileOpen('.\settings\nm_config.ini', "w"), f.Write(objectToIni(config)), f.Close()
+	preset.Has('General') && (f := FileOpen('.\settings\manual_planters.ini', "w")) && f.Write(objectToIni(planters)) && f.Close()
+	preset.Has('Bamboo') && (f := FileOpen('.\settings\Field_Config.ini', "w")) && f.Write(objectToIni(fields)) && f.Close()
 	ReplaceSystemCursors()
-	nm_LockTabs(0)
-	return 1
 }
 
 nm_ImportPreset(*) {
@@ -21308,6 +21322,7 @@ mp_HarvestPlanter(PlanterIndex) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 getout(*){
 	global
+	ReplaceSystemCursors()
 	nm_saveGUIPos()
 	nm_endWalk()
 	DetectHiddenWindows 1
