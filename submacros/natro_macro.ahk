@@ -7502,20 +7502,20 @@ nm_createPresetFiles(presetName, *) {
 			continue
 		section := (k = "Gather" ? k
 			: k = "Quest" ? "Quests"
-				: k = "Settings" ? k
-					: k = "Discord" ? "Status"
-						: k = "Misc" ? "Settings"
-							: k = "PrivateServer" ? "Settings"
-								: k = "WebBot" ? "Status"
-									: k = "Boost" ? k
-										: k = "BoostTimers" ? "Boost"
-											: k = "Collect" ? k
-												: k = "CollectTimers" ? "Collect"
-													: k = "Kill" ? "Collect"
-														: k = "KillTimers" ? "Collect"
-															: k = "Planters" ? k
-																: k = "PlantersTimers" ? "Planters"
-																	: unset)
+			: k = "Settings" ? k
+			: k = "Discord" ? "Status"
+			: k = "Misc" ? "Settings"
+			: k = "PrivateServer" ? "Settings"
+			: k = "WebBot" ? "Status"
+			: k = "Boost" ? k
+			: k = "BoostTimers" ? "Boost"
+			: k = "Collect" ? k
+			: k = "CollectTimers" ? "Collect"
+			: k = "Kill" ? "Collect"
+			: k = "KillTimers" ? "Collect"
+			: k = "Planters" ? k
+			: k = "PlantersTimers" ? "Planters"
+			: unset)
 		if !presetObj.Has(section)
 		(presetObj[section] := Map()).CaseSense := 0
 		if k = "KillTimers" or k = "PlantersTimers" or k = "BoostTimers" or k = "CollectTimers" {
