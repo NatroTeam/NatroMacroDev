@@ -360,4 +360,5 @@
 	, "CoconutBoosterCheck"
 	, "HoneyUpdateSSCheck"
 	, "MeteorShowerCheck"
-	, "LastMeteorShower"]
+	, "LastMeteorShower"
+	, "PresetInterval"]

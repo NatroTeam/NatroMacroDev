@@ -76,4 +76,7 @@
 	, "PlanterNectar3"
 	, "PlanterHarvestFull1"
 	, "PlanterHarvestFull2"
-	, "PlanterHarvestFull3"]
+	, "PlanterHarvestFull3"
+	, "PresetTimed1"
+	, "PresetTimed2"
+	, "SelectPreset"]

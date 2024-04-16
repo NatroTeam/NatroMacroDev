@@ -339,7 +339,11 @@ nm_importConfig()
 		, "TimersHotkey", "F5"
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
-		, "FDCWarn", 1)
+		, "FDCWarn", 1
+		, "PresetTimed1", ""
+		, "PresetTimed2", ""
+		, "PresetInterval", 12
+		, "SelectPreset", "")
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -7448,47 +7452,46 @@ nm_CreatePresetFiles(presetName,*) {
 		"PresetCollect", "PresetCollectTimers", "PresetKill",
 		"PresetKillTimers", "PresetPlanters", "PresetPlantersTimers"
 	]
-	, PlanterSettings := [
-    	"AutomaticHarvestInterval", "ConvertFullBagHarvest", "GatherFieldSipping",
-    	"GatherPlanterLoot", "HarvestFullGrown", "HarvestInterval",
-    	"MaxAllowedPlanters", "PlanterMode", "TimerGuiTransparency",
-    	"TimerX", "TimerY", "n1minPercent",
+	, PlantersSettings := [
+		"AutomaticHarvestInterval", "ConvertFullBagHarvest", "GatherFieldSipping",
+		"GatherPlanterLoot", "HarvestFullGrown", "HarvestInterval",
+		"MaxAllowedPlanters", "PlanterMode", "TimerGuiTransparency",
+		"TimerX", "TimerY", "n1minPercent",
    		"n1priority", "n2minPercent", "n2priority"
-    	"n3minPercent", "n3priority", "n4minPercent",
-    	"n4priority", "n5minPercent", "n5priority",
-    	"nPreset", "GotoPlanterField", "TimersOpen"
-    	"MConvertFullBagHarvest", "MPlanterGather1", "MPlanterGather2",
-    	"MPlanterGather3", "MPlanterGatherA", "MPuffMode1",
-    	"MPuffMode2", "MPuffMode3", "MPuffModeA",
-    	"PlanterGlitter1", "PlanterGlitter2", "PlanterGlitter3",
-    	"PlanterGlitterC1", "PlanterGlitterC2", "PlanterGlitterC3",
-    	"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull3",
-    	"PlanterManualCycle1", "PlanterManualCycle2", "PlanterManualCycle3"
-    	"BambooFieldCheck", "BlueFlowerFieldCheck", "CactusFieldCheck",
-    	"CloverFieldCheck", "CoconutFieldCheck", "DandelionFieldCheck",
-    	"MountainTopFieldCheck", "MushroomFieldCheck", "PepperFieldCheck",
-    	"PineTreeFieldCheck", "PineappleFieldCheck", "PumpkinFieldCheck",
-    	"RoseFieldCheck", "SpiderFieldCheck", "StrawberryFieldCheck",
-    	"StumpFieldCheck", "SunflowerFieldCheck",
-    	"BlueClayPlanterCheck", "CandyPlanterCheck", "HeatTreatedPlanterCheck",
-    	"HydroponicPlanterCheck", "PaperPlanterCheck", "PesticidePlanterCheck",
-    	"PetalPlanterCheck", "PlanterOfPlentyCheck", "PlasticPlanterCheck",
-    	"RedClayPlanterCheck", "TackyPlanterCheck", "TicketPlanterCheck"
+		"n3minPercent", "n3priority", "n4minPercent",
+		"n4priority", "n5minPercent", "n5priority",
+		"nPreset", "GotoPlanterField", "TimersOpen"
+		"MConvertFullBagHarvest", "MPlanterGather1", "MPlanterGather2",
+		"MPlanterGather3", "MPlanterGatherA", "MPuffMode1",
+		"MPuffMode2", "MPuffMode3", "MPuffModeA",
+		"PlanterGlitter1", "PlanterGlitter2", "PlanterGlitter3",
+		"PlanterGlitterC1", "PlanterGlitterC2", "PlanterGlitterC3",
+		"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull3",
+		"PlanterManualCycle1", "PlanterManualCycle2", "PlanterManualCycle3"
+		"BambooFieldCheck", "BlueFlowerFieldCheck", "CactusFieldCheck",
+		"CloverFieldCheck", "CoconutFieldCheck", "DandelionFieldCheck",
+		"MountainTopFieldCheck", "MushroomFieldCheck", "PepperFieldCheck",
+		"PineTreeFieldCheck", "PineappleFieldCheck", "PumpkinFieldCheck",
+		"RoseFieldCheck", "SpiderFieldCheck", "StrawberryFieldCheck",
+		"StumpFieldCheck", "SunflowerFieldCheck",
+		"BlueClayPlanterCheck", "CandyPlanterCheck", "HeatTreatedPlanterCheck",
+		"HydroponicPlanterCheck", "PaperPlanterCheck", "PesticidePlanterCheck",
+		"PetalPlanterCheck", "PlanterOfPlentyCheck", "PlasticPlanterCheck",
+		"RedClayPlanterCheck", "TackyPlanterCheck", "TicketPlanterCheck"
 	]
 	, PlanterTimers := [
-    		"LastComfortingField", "LastInvigoratingField", "LastMotivatingField",
-    		"LastRefreshingField", "LastSatisfyingField", "LastPlanterGatherSlot",
-    		"MPlanterHold1", "MPlanterHold2", "MPlanterHold3",
-    		"MPlanterSmoking1", "MPlanterSmoking2", "MPlanterSmoking3",
-    		"PlanterEstPercent1", "PlanterEstPercent2", "PlanterEstPercent3",
-    		"PlanterField1", "PlanterField2", "PlanterField3",
-    		"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull13",
-    		"PlanterHarvestNow1", "PlanterHarvestNow2", "PlanterHarvestNow3",
+		"LastComfortingField", "LastInvigoratingField", "LastMotivatingField",
+		"LastRefreshingField", "LastSatisfyingField", "LastPlanterGatherSlot",
+		"MPlanterHold1", "MPlanterHold2", "MPlanterHold3",
+		"MPlanterSmoking1", "MPlanterSmoking2", "MPlanterSmoking3",
+		"PlanterEstPercent1", "PlanterEstPercent2", "PlanterEstPercent3",
+		"PlanterField1", "PlanterField2", "PlanterField3",
+		"PlanterHarvestNow1", "PlanterHarvestNow2", "PlanterHarvestNow3",
    		"PlanterHarvestTime1", "PlanterHarvestTime2", "PlanterHarvestTime3",
-    		"PlanterName1", "PlanterName2", "PlanterName3",
-    		"PlanterNectar1", "PlanterNectar2", "PlanterNectar3",
-    		"PlanterSS1", "PlanterSS2", "PlanterSS3",
-    		"dayOrNight"
+		"PlanterName1", "PlanterName2", "PlanterName3",
+		"PlanterNectar1", "PlanterNectar2", "PlanterNectar3",
+		"PlanterSS1", "PlanterSS2", "PlanterSS3",
+		"dayOrNight"
 	]
 	If !DirExist(".\settings\presets")
 		DirCreate(".\settings\presets")
@@ -7712,7 +7715,8 @@ nm_includePresets() {
 	}
 }
 nm_PresetGUI(*){
-	global presetGui
+	global
+	local GuiCtrl
 	nm_includePresets()
 	if IsSet(PresetGui) && IsObject(PresetGui)
 		PresetGui.Destroy()
@@ -7728,17 +7732,18 @@ nm_PresetGUI(*){
 	PresetGui.Add("Button", "x9 y95 w75 h21 vRenamePreset", "Rename").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x88 y98 w10 h15", "?").OnEvent("Click", (*) => MsgBox("Select a preset under the Manage settings, and fill out a new name in the editbox under Creation settings, Then click Rename and your preset will be re-named.", "Help","0x1040"))
 	PresetGui.Add("GroupBox", "x108 y2 w100 h120", "Manage")
-	PresetGui.Add("DropDownList", "x113 y20 w90 choose1 vSelectPreset", presetlist)
+	(GuiCtrl := PresetGui.Add("DropDownList", "x113 y20 w90 vSelectPreset", presetlist)).Section := "Settings", GuiCtrl.Text := SelectPreset, GuiCtrl.OnEvent("Change", nm_saveConfig)
 	PresetGui.Add("Button", "x113 y45 w45 h20 vOverwritePreset", "Save").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x158 yp w45 hp vDeletePreset", "Delete").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x113 yp+25 w90 hp vCopyPreset", "Export").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x113 yp+25 wp hp vLoadPreset", "Load Preset").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("GroupBox", "x212 y2 w100 h120", "Timed")
-	PresetGui.Add("DropDownList", "x220 y9 w90 h21")
-	if (presetlist.Length=0) {
-		For k, v in ["SelectPreset", "CopyPreset", "DeletePreset", "OverwritePreset", "LoadPreset", "RenamePreset"]
+	(GuiCtrl := PresetGui.Add("DropDownList", "x220 y20 w90 h21 vPresetTimed1", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed1, GuiCtrl.OnEvent("Change", nm_saveConfig)
+	(GuiCtrl := PresetGui.Add("Edit", "x240 y45 w32 h21 limit3 Number vPresetInterval", ValidateNumber(&PresetInterval, 12))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	(GuiCtrl := PresetGui.Add("DropDownList", "x220 y75 w90 h21 vPresetTimed2", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed2, GuiCtrl.OnEvent("Change", nm_saveConfig)
+	if (presetlist.Length=0)
+		For k, v in ["SelectPreset", "CopyPreset", "DeletePreset", "OverwritePreset", "LoadPreset", "RenamePreset", "PresetTimed1", "PresetInterval", "PresetTimed2"]
 			PresetGui[v].enabled:=0
-	}
 	PresetGui.Add("GroupBox", "x4 y126 w308 h92", "Included Settings")
 	PresetGui.Add("Button", "x97 y126 w10 h15", "?").OnEvent("Click", (*) => MsgBox("The Included Settings, each checkbox represents a different tab in natro macro to save.`n`nThere are a few exceptions:`nPS Link is your private server Link, Discord is the discord settings (screenshots, pings), Token/Webhook is your Bot Token and Webhook along with all your channel IDs and UserID, and Field Defaults is your saved gather settings for each field.", "Help", "0x1040"))
 	PresetGui.Add("CheckBox", "x9 yp+18 w60 h16 +Checked vPresetGather", "Gather")
