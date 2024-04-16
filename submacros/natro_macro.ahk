@@ -7449,31 +7449,31 @@ nm_CreatePresetFiles(presetName,*) {
 		"PresetKillTimers", "PresetPlanters", "PresetPlantersTimers"
 	]
 	, PlanterSettings := [
-    		"AutomaticHarvestInterval", "ConvertFullBagHarvest", "GatherFieldSipping",
-    		"GatherPlanterLoot", "HarvestFullGrown", "HarvestInterval",
-    		"MaxAllowedPlanters", "PlanterMode", "TimerGuiTransparency",
-    		"TimerX", "TimerY", "n1minPercent",
+    	"AutomaticHarvestInterval", "ConvertFullBagHarvest", "GatherFieldSipping",
+    	"GatherPlanterLoot", "HarvestFullGrown", "HarvestInterval",
+    	"MaxAllowedPlanters", "PlanterMode", "TimerGuiTransparency",
+    	"TimerX", "TimerY", "n1minPercent",
    		"n1priority", "n2minPercent", "n2priority"
-    		"n3minPercent", "n3priority", "n4minPercent",
-    		"n4priority", "n5minPercent", "n5priority",
-    		"nPreset", "GotoPlanterField", "TimersOpen"
-    		"MConvertFullBagHarvest", "MPlanterGather1", "MPlanterGather2",
-    		"MPlanterGather3", "MPlanterGatherA", "MPuffMode1",
-    		"MPuffMode2", "MPuffMode3", "MPuffModeA",
-    		"PlanterGlitter1", "PlanterGlitter2", "PlanterGlitter3",
-    		"PlanterGlitterC1", "PlanterGlitterC2", "PlanterGlitterC3",
-    		"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull3",
-    		"PlanterManualCycle1", "PlanterManualCycle2", "PlanterManualCycle3"
-    		"BambooFieldCheck", "BlueFlowerFieldCheck", "CactusFieldCheck",
-    		"CloverFieldCheck", "CoconutFieldCheck", "DandelionFieldCheck",
-    		"MountainTopFieldCheck", "MushroomFieldCheck", "PepperFieldCheck",
-    		"PineTreeFieldCheck", "PineappleFieldCheck", "PumpkinFieldCheck",
-    		"RoseFieldCheck", "SpiderFieldCheck", "StrawberryFieldCheck",
-    		"StumpFieldCheck", "SunflowerFieldCheck",
-    		"BlueClayPlanterCheck", "CandyPlanterCheck", "HeatTreatedPlanterCheck",
-    		"HydroponicPlanterCheck", "PaperPlanterCheck", "PesticidePlanterCheck",
-    		"PetalPlanterCheck", "PlanterOfPlentyCheck", "PlasticPlanterCheck",
-    		"RedClayPlanterCheck", "TackyPlanterCheck", "TicketPlanterCheck"
+    	"n3minPercent", "n3priority", "n4minPercent",
+    	"n4priority", "n5minPercent", "n5priority",
+    	"nPreset", "GotoPlanterField", "TimersOpen"
+    	"MConvertFullBagHarvest", "MPlanterGather1", "MPlanterGather2",
+    	"MPlanterGather3", "MPlanterGatherA", "MPuffMode1",
+    	"MPuffMode2", "MPuffMode3", "MPuffModeA",
+    	"PlanterGlitter1", "PlanterGlitter2", "PlanterGlitter3",
+    	"PlanterGlitterC1", "PlanterGlitterC2", "PlanterGlitterC3",
+    	"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull3",
+    	"PlanterManualCycle1", "PlanterManualCycle2", "PlanterManualCycle3"
+    	"BambooFieldCheck", "BlueFlowerFieldCheck", "CactusFieldCheck",
+    	"CloverFieldCheck", "CoconutFieldCheck", "DandelionFieldCheck",
+    	"MountainTopFieldCheck", "MushroomFieldCheck", "PepperFieldCheck",
+    	"PineTreeFieldCheck", "PineappleFieldCheck", "PumpkinFieldCheck",
+    	"RoseFieldCheck", "SpiderFieldCheck", "StrawberryFieldCheck",
+    	"StumpFieldCheck", "SunflowerFieldCheck",
+    	"BlueClayPlanterCheck", "CandyPlanterCheck", "HeatTreatedPlanterCheck",
+    	"HydroponicPlanterCheck", "PaperPlanterCheck", "PesticidePlanterCheck",
+    	"PetalPlanterCheck", "PlanterOfPlentyCheck", "PlasticPlanterCheck",
+    	"RedClayPlanterCheck", "TackyPlanterCheck", "TicketPlanterCheck"
 	]
 	, PlanterTimers := [
     		"LastComfortingField", "LastInvigoratingField", "LastMotivatingField",
