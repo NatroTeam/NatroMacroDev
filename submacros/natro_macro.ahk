@@ -7293,253 +7293,273 @@ nm_WebhookGUI(*){
 	return (WGUIPID := exec.ProcessID)
 }
 
-nm_CreatePresetFiles(presetName,*) {
+nm_createPresetFiles(presetName, *) {
 	static KillSettings := [
-        "TunnelBearCheck", "TunnelBearBabyCheck", "StumpSnailCheck",
-        "StingerSpiderCheck", "StingerRoseCheck", "StingerPepperCheck",
-        "StingerMountainTopCheck", "StingerDailyBonusCheck", "StingerCloverCheck",
-        "StingerCheck", "StingerCactusCheck", "SnailTime", "ShellAmuletMode",
-        "MonsterRespawnTime", "MondoLootDirection", "KingBeetleCheck",
-        "KingBeetleBabyCheck", "KingBeetleAmuletMode", "InputSnailHealth",
-        "InputChickHealth", "CommandoCheck", "CocoCrabCheck",
-        "ChickTime", "ChickLevel", "BugrunWerewolfLoot", "BugrunWerewolfCheck",
-        "BugrunSpiderLoot", "BugrunSpiderCheck", "BugrunScorpionsLoot",
-        "BugrunScorpionsCheck", "BugrunRhinoBeetlesLoot", "BugrunRhinoBeetlesCheck",
-        "BugrunMantisLoot", "BugrunMantisCheck", "BugrunLadybugsLoot",
-        "BugrunLadybugsCheck", "BugrunInterruptCheck"
-    	]
-	, KillTimers := [
-		"VBLastKilled", "LastBugrunLadybugs", "LastBugrunMantis",
-		"LastBugrunRhinoBeetles", "LastBugrunScorpions", "LastBugrunSpider",
-		"LastBugrunWerewolf", "LastCommando", "LastKingBeetle",
-		"LastStumpSnail", "LastTunnelBear", "NightLastDetected",
-		"LastCocoCrab"
+		"TunnelBearCheck", "TunnelBearBabyCheck", "StumpSnailCheck",
+		"StingerSpiderCheck", "StingerRoseCheck", "StingerPepperCheck",
+		"StingerMountainTopCheck", "StingerDailyBonusCheck", "StingerCloverCheck",
+		"StingerCheck", "StingerCactusCheck", "SnailTime", "ShellAmuletMode",
+		"MonsterRespawnTime", "MondoLootDirection", "KingBeetleCheck",
+		"KingBeetleBabyCheck", "KingBeetleAmuletMode", "InputSnailHealth",
+		"InputChickHealth", "CommandoCheck", "CocoCrabCheck",
+		"ChickTime", "ChickLevel", "BugrunWerewolfLoot", "BugrunWerewolfCheck",
+		"BugrunSpiderLoot", "BugrunSpiderCheck", "BugrunScorpionsLoot",
+		"BugrunScorpionsCheck", "BugrunRhinoBeetlesLoot", "BugrunRhinoBeetlesCheck",
+		"BugrunMantisLoot", "BugrunMantisCheck", "BugrunLadybugsLoot",
+		"BugrunLadybugsCheck", "BugrunInterruptCheck"
 	]
-	, MiscSettings := [
-		"TimersHotkey", "StopHotkey", "StartHotkey",
-		"PauseHotkey", "AutoClickerHotkey", "ClickCount",
-		"ClickDelay", "ClickDuration", "ClickMode",
-	]
-	, PrivateServerSettings := [
-		"FallbackServer1", "FallbackServer2", "FallbackServer3",
-		"PrivServer"
-	]
-	, CollectTimers := [
-		"LastAntPass", "LastBlueBoost",
-		"LastBugrunLadybugs", "LastCandles", "LastCocoCrab",
-		"LastCommando", "LastExtremeMemoryMatch", "LastFeast",
-		"LastGingerbread", "LastGlueDis", "LastGummyBeacon",
-		"LastHoneyDis", "LastHoneystorm", "LastKingBeetle",
-		"LastLidArt", "LastMegaMemoryMatch", "LastMeteorShower",
-		"LastMondoBuff", "LastMountainBoost", "LastNightMemoryMatch",
-		"LastRBPDelevel", "LastRedBoost", "LastRoboPass",
-		"LastRoyalJellyDis", "LastSamovar", "LastSnowMachine",
-		"LastStickerPrinter", "LastStockings", "LastStrawberryDis",
-		"LastTreatDis", "LastTunnelBear", "LastWreath"
-	]
-	, BoostTimers := ["AFBdiceUsed", "AFBglitterUsed", "FieldLastBoosted",
-		"FieldLastBoostedBy", "FieldNextBoostedBy", "LastEnzymes",
-		"LastGlitter", "LastGuid", "LastHotkey2",
-		"LastHotkey3", "LastHotkey4", "LastHotkey5",
-		"LastHotkey6", "LastHotkey7", "LastMicroConverter",
-		"LastStickerStack","LastWhirligig"
-	]
-	, WebBotSettings := [
-		"BotToken", "Webhook", "MainChannelID",
-		"ReportChannelID", "discordUID", "commandPrefix",
-		"WebhookEasterEgg", "DiscordCheck", "DiscordMode",
-		"NightAnnouncementCheck", "NightAnnouncementName",
-		"NightAnnouncementPingID", "NightAnnouncementWebhook"
-	]
-	, GatherSettings := [
-		"FieldName1", "FieldName2", "FieldName3",
-		"FieldDriftCheck1", "FieldDriftCheck2", "FieldDriftCheck3",
-		"FieldPattern1", "FieldPattern2", "FieldPattern3",
-		"FieldPatternSize1", "FieldPatternSize2", "FieldPatternSize3",
-		"FieldPatternReps1", "FieldPatternReps2", "FieldPatternReps3",
-		"FieldPatternShift1", "FieldPatternShift2", "FieldPatternShift3",
-		"FieldPatternInvertFB1", "FieldPatternInvertFB2", "FieldPatternInvertFB3",
-		"FieldPatternInvertLR1", "FieldPatternInvertLR2", "FieldPatternInvertLR3",
-		"FieldRotateDirection1", "FieldRotateDirection2", "FieldRotateDirection3",
-		"FieldRotateTimes1", "FieldRotateTimes2", "FieldRotateTimes3",
-		"FieldUntilMins1", "FieldUntilMins2", "FieldUntilMins3",
-		"FieldUntilPack1", "FieldUntilPack2", "FieldUntilPack3",
-		"FieldReturnType1", "FieldReturnType2", "FieldReturnType3",
-		"FieldSprinklerLoc1", "FieldSprinklerLoc2", "FieldSprinklerLoc3",
-		"FieldSprinklerDist1", "FieldSprinklerDist2", "FieldSprinklerDist3",
-		"CurrentFieldNum"
-	]
-	, QuestSettings := [
-		"BlackQuestCheck", "BlackQuestProgress", "BrownQuestCheck",
-		"BrownQuestProgress", "BuckoQuestCheck", "BuckoQuestGatherInterruptCheck",
-		"BuckoQuestProgress", "HoneyQuestCheck", "HoneyQuestProgress",
-		"LastBlackQuest", "LastBrownQuest", "PolarQuestCheck",
-		"PolarQuestGatherInterruptCheck", "PolarQuestProgress", "QuestBoostCheck",
-		"QuestGatherMins", "QuestGatherReturnBy", "RileyQuestCheck",
-		"RileyQuestGatherInterruptCheck", "RileyQuestProgress"
-	]
-	, SettingsSettings := [
-		"AlwaysOnTop", "AnnounceGuidingStar",
-		"BuffDetectReset", "ConvertBalloon",
-		"ConvertDelay", "ConvertMins", "DisableToolUse",
-		"FDCWarn", "GatherDoubleReset", "GuiTheme",
-		"GuiTransparency", "GuiX", "GuiY",
-		"HiveBees", "HiveSlot", "IgnoreUpdateVersion",
-		"KeyDelay", "LastConvertBalloon", "MoveMethod",
-		"MoveSpeedNum", "MultiReset", "NewWalk",
-		"PublicFallback", "ReconnectHour", "ReconnectInterval",
-		"ReconnectMessage", "ReconnectMethod", "ReconnectMin",
-		"ShowOnPause", "SprinklerType"
-	]
-	, DiscordSettings := [
-		"AmuletSSCheck", "BalloonSSCheck", "CriticalErrorPingCheck",
-		"CriticalSSCheck", "DeathSSCheck", "DisconnectPingCheck",
-		"DiscordCheck", "EmergencyBalloonPingCheck", "GameFrozenPingCheck",
-		"HoneySSCheck", "HoneyUpdateSSCheck", "MachineSSCheck",
-		"PhantomPingCheck", "PlanterSSCheck", "UnexpectedDeathPingCheck",
-		"ViciousSSCheck", "criticalCheck", "ssCheck",
-		"ssDebugging"
-	]
-	, BoostSettings := [
-		"AFBDiceEnable", "AFBDiceHotbar", "AFBDiceLimit",
-		"AFBDiceLimitEnable", "AFBFieldEnable", "AFBGlitterEnable",
-		"AFBGlitterHotbar", "AFBGlitterLimit", "AFBGlitterLimitEnable",
-		"AFBHoursLimit", "AFBHoursLimitEnable", "AFBdiceUsed",
-		"AFBglitterUsed", "AutoFieldBoostActive", "AutoFieldBoostRefresh",
-		"BambooBoosterCheck", "BlueFlowerBoosterCheck", "BoostChaserCheck",
-		"CactusBoosterCheck", "CloverBoosterCheck", "CoconutBoosterCheck",
-		"DandelionBoosterCheck", "FieldBoostStacks", "FieldBooster1",
-		"FieldBooster2", "FieldBooster3", "FieldBoosterMins", "HotbarMax2",
-		"HotbarMax3", "HotbarMax4", "HotbarMax5", "HotbarMax6",
-		"HotbarMax7", "HotbarTime2", "HotbarTime3", "HotbarTime4",
-		"HotbarTime5", "HotbarTime6", "HotbarTime7", "HotbarWhile2",
-		"HotbarWhile3", "HotbarWhile4", "HotbarWhile5", "HotbarWhile6",
-		"HotbarWhile7", "MushroomBoosterCheck", "PineTreeBoosterCheck",
-		"PineappleBoosterCheck", "PumpkinBoosterCheck", "RoseBoosterCheck",
-		"SpiderBoosterCheck", "StickerStackCheck", "StickerStackCub",
-		"StickerStackHive", "StickerStackItem", "StickerStackMode",
-		"StickerStackTimer", "StrawberryBoosterCheck", "SunflowerBoosterCheck"
-	]
-	, CollectSettings := [
-		"AntPassAction", "AntPassBuyCheck", "BeesmasGatherInterruptCheck",
-		"BlueExtractMatchIgnore", "BlueberryDisCheck", "CandlesCheck",
-		"ClockCheck", "CloudVialMatchIgnore",
-		"CoconutDisCheck", "CyanTrimMatchIgnore", "DiamondEggMatchIgnore",
-		"EnzymeMatchIgnore", "ExtremeMemoryMatchCheck", "FeastCheck",
-		"FieldDiceMatchIgnore", "GingerbreadCheck", "GlitterMatchIgnore",
-		"GlueDisCheck", "GoldEggMatchIgnore", "GumdropMatchIgnore",
-		"HardWaxMatchIgnore", "HoneyDisCheck", "HoneystormCheck",
-		"JellyBeanMatchIgnore",
-		"LidArtCheck", "MagicBeanMatchIgnore", "MegaMemoryMatchCheck",
-		"MeteorShowerCheck", "MicroConverterMatchIgnore", "MondoAction",
-		"MondoSecs", "MoonCharmMatchIgnore", "NeonberryMatchIgnore",
-		"NightBellMatchIgnore", "NightLastDetected", "NightMemoryMatchCheck",
-		"NormalMemoryMatchCheck", "OilMatchIgnore", "PineappleMatchIgnore",
-		"RBPDelevelCheck", "RedExtractMatchIgnore", "RoboPassCheck",
-		"RoyalJellyDisCheck", "RoyalJellyMatchIgnore", "SamovarCheck",
-		"SilverEggMatchIgnore", "SmoothDiceMatchIgnore", "SoftWaxMatchIgnore",
-		"StarJellyMatchIgnore", "StickerPrinterCheck", "StickerPrinterEgg",
-		"StingerMatchIgnore", "StockingsCheck", "StrawberryDisCheck",
-		"StrawberryMatchIgnore", "SunflowerSeedMatchIgnore",
-		"SuperSmoothieMatchIgnore", "SwirledWaxMatchIgnore", "TicketMatchIgnore",
-		"TreatDisCheck", "TreatMatchIgnore", "TropicalDrinkMatchIgnore",
-		"WinterMemoryMatchCheck", "WreathCheck"
-	]
-	, PresetSettingsCtrls := [
-		"PresetGather", "PresetQuest", "PresetSettings",
-		"PresetDiscord", "PresetMisc", "PresetPrivateServer",
-		"PresetWebBot", "PresetBoost", "PresetBoostTimers",
-		"PresetCollect", "PresetCollectTimers", "PresetKill",
-		"PresetKillTimers", "PresetPlanters", "PresetPlantersTimers"
-	]
-	, PlantersSettings := [
-		"AutomaticHarvestInterval", "ConvertFullBagHarvest", "GatherFieldSipping",
-		"GatherPlanterLoot", "HarvestFullGrown", "HarvestInterval",
-		"MaxAllowedPlanters", "PlanterMode", "TimerGuiTransparency",
-		"TimerX", "TimerY", "n1minPercent",
-   		"n1priority", "n2minPercent", "n2priority"
-		"n3minPercent", "n3priority", "n4minPercent",
-		"n4priority", "n5minPercent", "n5priority",
-		"nPreset", "GotoPlanterField", "TimersOpen"
-		"MConvertFullBagHarvest", "MPlanterGather1", "MPlanterGather2",
-		"MPlanterGather3", "MPlanterGatherA", "MPuffMode1",
-		"MPuffMode2", "MPuffMode3", "MPuffModeA",
-		"PlanterGlitter1", "PlanterGlitter2", "PlanterGlitter3",
-		"PlanterGlitterC1", "PlanterGlitterC2", "PlanterGlitterC3",
-		"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull3",
-		"PlanterManualCycle1", "PlanterManualCycle2", "PlanterManualCycle3"
-		"BambooFieldCheck", "BlueFlowerFieldCheck", "CactusFieldCheck",
-		"CloverFieldCheck", "CoconutFieldCheck", "DandelionFieldCheck",
-		"MountainTopFieldCheck", "MushroomFieldCheck", "PepperFieldCheck",
-		"PineTreeFieldCheck", "PineappleFieldCheck", "PumpkinFieldCheck",
-		"RoseFieldCheck", "SpiderFieldCheck", "StrawberryFieldCheck",
-		"StumpFieldCheck", "SunflowerFieldCheck",
-		"BlueClayPlanterCheck", "CandyPlanterCheck", "HeatTreatedPlanterCheck",
-		"HydroponicPlanterCheck", "PaperPlanterCheck", "PesticidePlanterCheck",
-		"PetalPlanterCheck", "PlanterOfPlentyCheck", "PlasticPlanterCheck",
-		"RedClayPlanterCheck", "TackyPlanterCheck", "TicketPlanterCheck"
-	]
-	, PlanterTimers := [
-		"LastComfortingField", "LastInvigoratingField", "LastMotivatingField",
-		"LastRefreshingField", "LastSatisfyingField", "LastPlanterGatherSlot",
-		"MPlanterHold1", "MPlanterHold2", "MPlanterHold3",
-		"MPlanterSmoking1", "MPlanterSmoking2", "MPlanterSmoking3",
-		"PlanterEstPercent1", "PlanterEstPercent2", "PlanterEstPercent3",
-		"PlanterField1", "PlanterField2", "PlanterField3",
-		"PlanterHarvestNow1", "PlanterHarvestNow2", "PlanterHarvestNow3",
-   		"PlanterHarvestTime1", "PlanterHarvestTime2", "PlanterHarvestTime3",
-		"PlanterName1", "PlanterName2", "PlanterName3",
-		"PlanterNectar1", "PlanterNectar2", "PlanterNectar3",
-		"PlanterSS1", "PlanterSS2", "PlanterSS3",
-		"dayOrNight"
-	]
-	If !DirExist(".\settings\presets")
-		DirCreate(".\settings\presets")
-
-	for i in PresetSettingsCtrls
-		if PresetGui[i].Value {
-			n:=SubStr(i, 7)
-			section := (n = "Gather" ? n
-						: n = "Quest" ? "Quests"
-						: n = "Settings" ? n
-						: n = "Discord" ? "Status"
-						: n = "Misc" ? "Settings"
-						: n = "PrivateServer" ? "Settings"
-						: n = "WebBot" ? "Status"
-						: n = "Boost" ? n
-						: n = "BoostTimers" ? "Boost"
-						: n = "Collect" ? n
-						: n = "CollectTimers" ? "Collect"
-						: n = "Kill" ? "Collect"
-						: n = "KillTimers" ? "Collect"
-						: n = "Planters" ? n
-						: n = "PlantersTimers" ? "Planters"
-						: unset)
-			Switch {
-				case InStr(n, "Timers"):
-					keys := %n%
-				default:
-					keys := %n%Settings
+		, KillTimers := [
+			"VBLastKilled", "LastBugrunLadybugs", "LastBugrunMantis",
+			"LastBugrunRhinoBeetles", "LastBugrunScorpions", "LastBugrunSpider",
+			"LastBugrunWerewolf", "LastCommando", "LastKingBeetle",
+			"LastStumpSnail", "LastTunnelBear", "NightLastDetected",
+			"LastCocoCrab"
+		]
+		, MiscSettings := [
+			"TimersHotkey", "StopHotkey", "StartHotkey",
+			"PauseHotkey", "AutoClickerHotkey", "ClickCount",
+			"ClickDelay", "ClickDuration", "ClickMode",
+		]
+		, PrivateServerSettings := [
+			"FallbackServer1", "FallbackServer2", "FallbackServer3",
+			"PrivServer"
+		]
+		, CollectTimers := [
+			"LastAntPass", "LastBlueBoost",
+			"LastBugrunLadybugs", "LastCandles", "LastCocoCrab",
+			"LastCommando", "LastExtremeMemoryMatch", "LastFeast",
+			"LastGingerbread", "LastGlueDis", "LastGummyBeacon",
+			"LastHoneyDis", "LastHoneystorm", "LastKingBeetle",
+			"LastLidArt", "LastMegaMemoryMatch", "LastMeteorShower",
+			"LastMondoBuff", "LastMountainBoost", "LastNightMemoryMatch",
+			"LastRBPDelevel", "LastRedBoost", "LastRoboPass",
+			"LastRoyalJellyDis", "LastSamovar", "LastSnowMachine",
+			"LastStickerPrinter", "LastStockings", "LastStrawberryDis",
+			"LastTreatDis", "LastTunnelBear", "LastWreath"
+		]
+		, BoostTimers := ["AFBdiceUsed", "AFBglitterUsed", "FieldLastBoosted",
+			"FieldLastBoostedBy", "FieldNextBoostedBy", "LastEnzymes",
+			"LastGlitter", "LastGuid", "LastHotkey2",
+			"LastHotkey3", "LastHotkey4", "LastHotkey5",
+			"LastHotkey6", "LastHotkey7", "LastMicroConverter",
+			"LastStickerStack", "LastWhirligig"
+		]
+		, WebBotSettings := [
+			"BotToken", "Webhook", "MainChannelID",
+			"ReportChannelID", "discordUID", "commandPrefix",
+			"WebhookEasterEgg", "DiscordCheck", "DiscordMode",
+			"NightAnnouncementCheck", "NightAnnouncementName",
+			"NightAnnouncementPingID", "NightAnnouncementWebhook"
+		]
+		, GatherSettings := [
+			"FieldName1", "FieldName2", "FieldName3",
+			"FieldDriftCheck1", "FieldDriftCheck2", "FieldDriftCheck3",
+			"FieldPattern1", "FieldPattern2", "FieldPattern3",
+			"FieldPatternSize1", "FieldPatternSize2", "FieldPatternSize3",
+			"FieldPatternReps1", "FieldPatternReps2", "FieldPatternReps3",
+			"FieldPatternShift1", "FieldPatternShift2", "FieldPatternShift3",
+			"FieldPatternInvertFB1", "FieldPatternInvertFB2", "FieldPatternInvertFB3",
+			"FieldPatternInvertLR1", "FieldPatternInvertLR2", "FieldPatternInvertLR3",
+			"FieldRotateDirection1", "FieldRotateDirection2", "FieldRotateDirection3",
+			"FieldRotateTimes1", "FieldRotateTimes2", "FieldRotateTimes3",
+			"FieldUntilMins1", "FieldUntilMins2", "FieldUntilMins3",
+			"FieldUntilPack1", "FieldUntilPack2", "FieldUntilPack3",
+			"FieldReturnType1", "FieldReturnType2", "FieldReturnType3",
+			"FieldSprinklerLoc1", "FieldSprinklerLoc2", "FieldSprinklerLoc3",
+			"FieldSprinklerDist1", "FieldSprinklerDist2", "FieldSprinklerDist3",
+			"CurrentFieldNum"
+		]
+		, QuestSettings := [
+			"BlackQuestCheck", "BlackQuestProgress", "BrownQuestCheck",
+			"BrownQuestProgress", "BuckoQuestCheck", "BuckoQuestGatherInterruptCheck",
+			"BuckoQuestProgress", "HoneyQuestCheck", "HoneyQuestProgress",
+			"LastBlackQuest", "LastBrownQuest", "PolarQuestCheck",
+			"PolarQuestGatherInterruptCheck", "PolarQuestProgress", "QuestBoostCheck",
+			"QuestGatherMins", "QuestGatherReturnBy", "RileyQuestCheck",
+			"RileyQuestGatherInterruptCheck", "RileyQuestProgress"
+		]
+		, SettingsSettings := [
+			"AlwaysOnTop", "AnnounceGuidingStar",
+			"BuffDetectReset", "ConvertBalloon",
+			"ConvertDelay", "ConvertMins", "DisableToolUse",
+			"FDCWarn", "GatherDoubleReset", "GuiTheme",
+			"GuiTransparency", "GuiX", "GuiY",
+			"HiveBees", "HiveSlot", "IgnoreUpdateVersion",
+			"KeyDelay", "LastConvertBalloon", "MoveMethod",
+			"MoveSpeedNum", "MultiReset", "NewWalk",
+			"PublicFallback", "ReconnectHour", "ReconnectInterval",
+			"ReconnectMessage", "ReconnectMethod", "ReconnectMin",
+			"ShowOnPause", "SprinklerType"
+		]
+		, DiscordSettings := [
+			"AmuletSSCheck", "BalloonSSCheck", "CriticalErrorPingCheck",
+			"CriticalSSCheck", "DeathSSCheck", "DisconnectPingCheck",
+			"DiscordCheck", "EmergencyBalloonPingCheck", "GameFrozenPingCheck",
+			"HoneySSCheck", "HoneyUpdateSSCheck", "MachineSSCheck",
+			"PhantomPingCheck", "PlanterSSCheck", "UnexpectedDeathPingCheck",
+			"ViciousSSCheck", "criticalCheck", "ssCheck",
+			"ssDebugging"
+		]
+		, BoostSettings := [
+			"AFBDiceEnable", "AFBDiceHotbar", "AFBDiceLimit",
+			"AFBDiceLimitEnable", "AFBFieldEnable", "AFBGlitterEnable",
+			"AFBGlitterHotbar", "AFBGlitterLimit", "AFBGlitterLimitEnable",
+			"AFBHoursLimit", "AFBHoursLimitEnable", "AFBdiceUsed",
+			"AFBglitterUsed", "AutoFieldBoostActive", "AutoFieldBoostRefresh",
+			"BambooBoosterCheck", "BlueFlowerBoosterCheck", "BoostChaserCheck",
+			"CactusBoosterCheck", "CloverBoosterCheck", "CoconutBoosterCheck",
+			"DandelionBoosterCheck", "FieldBoostStacks", "FieldBooster1",
+			"FieldBooster2", "FieldBooster3", "FieldBoosterMins", "HotbarMax2",
+			"HotbarMax3", "HotbarMax4", "HotbarMax5", "HotbarMax6",
+			"HotbarMax7", "HotbarTime2", "HotbarTime3", "HotbarTime4",
+			"HotbarTime5", "HotbarTime6", "HotbarTime7", "HotbarWhile2",
+			"HotbarWhile3", "HotbarWhile4", "HotbarWhile5", "HotbarWhile6",
+			"HotbarWhile7", "MushroomBoosterCheck", "PineTreeBoosterCheck",
+			"PineappleBoosterCheck", "PumpkinBoosterCheck", "RoseBoosterCheck",
+			"SpiderBoosterCheck", "StickerStackCheck", "StickerStackCub",
+			"StickerStackHive", "StickerStackItem", "StickerStackMode",
+			"StickerStackTimer", "StrawberryBoosterCheck", "SunflowerBoosterCheck"
+		]
+		, CollectSettings := [
+			"AntPassAction", "AntPassBuyCheck", "BeesmasGatherInterruptCheck",
+			"BlueExtractMatchIgnore", "BlueberryDisCheck", "CandlesCheck",
+			"ClockCheck", "CloudVialMatchIgnore",
+			"CoconutDisCheck", "CyanTrimMatchIgnore", "DiamondEggMatchIgnore",
+			"EnzymeMatchIgnore", "ExtremeMemoryMatchCheck", "FeastCheck",
+			"FieldDiceMatchIgnore", "GingerbreadCheck", "GlitterMatchIgnore",
+			"GlueDisCheck", "GoldEggMatchIgnore", "GumdropMatchIgnore",
+			"HardWaxMatchIgnore", "HoneyDisCheck", "HoneystormCheck",
+			"JellyBeanMatchIgnore",
+			"LidArtCheck", "MagicBeanMatchIgnore", "MegaMemoryMatchCheck",
+			"MeteorShowerCheck", "MicroConverterMatchIgnore", "MondoAction",
+			"MondoSecs", "MoonCharmMatchIgnore", "NeonberryMatchIgnore",
+			"NightBellMatchIgnore", "NightLastDetected", "NightMemoryMatchCheck",
+			"NormalMemoryMatchCheck", "OilMatchIgnore", "PineappleMatchIgnore",
+			"RBPDelevelCheck", "RedExtractMatchIgnore", "RoboPassCheck",
+			"RoyalJellyDisCheck", "RoyalJellyMatchIgnore", "SamovarCheck",
+			"SilverEggMatchIgnore", "SmoothDiceMatchIgnore", "SoftWaxMatchIgnore",
+			"StarJellyMatchIgnore", "StickerPrinterCheck", "StickerPrinterEgg",
+			"StingerMatchIgnore", "StockingsCheck", "StrawberryDisCheck",
+			"StrawberryMatchIgnore", "SunflowerSeedMatchIgnore",
+			"SuperSmoothieMatchIgnore", "SwirledWaxMatchIgnore", "TicketMatchIgnore",
+			"TreatDisCheck", "TreatMatchIgnore", "TropicalDrinkMatchIgnore",
+			"WinterMemoryMatchCheck", "WreathCheck"
+		]
+		, PresetSettingsCtrls := [
+			"Gather", "Quest", "Settings",
+			"Discord", "Misc", "PrivateServer",
+			"WebBot", "Boost", "BoostTimers",
+			"Collect", "CollectTimers", "Kill",
+			"KillTimers", "Planters", "PlantersTimers"
+		]
+		, PlantersSettings := [
+			"AutomaticHarvestInterval", "ConvertFullBagHarvest", "GatherFieldSipping",
+			"GatherPlanterLoot", "HarvestFullGrown", "HarvestInterval",
+			"MaxAllowedPlanters", "PlanterMode", "TimerGuiTransparency",
+			"TimerX", "TimerY", "n1minPercent",
+			"n1priority", "n2minPercent", "n2priority",
+			"n3minPercent", "n3priority", "n4minPercent",
+			"n4priority", "n5minPercent", "n5priority",
+			"nPreset", "GotoPlanterField", "TimersOpen",
+			"MConvertFullBagHarvest", "MPlanterGather1", "MPlanterGather2",
+			"MPlanterGather3", "MPlanterGatherA", "MPuffMode1",
+			"MPuffMode2", "MPuffMode3", "MPuffModeA",
+			"PlanterGlitter1", "PlanterGlitter2", "PlanterGlitter3",
+			"PlanterGlitterC1", "PlanterGlitterC2", "PlanterGlitterC3",
+			"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull3",
+			"PlanterManualCycle1", "PlanterManualCycle2", "PlanterManualCycle3",
+			"BambooFieldCheck", "BlueFlowerFieldCheck", "CactusFieldCheck",
+			"CloverFieldCheck", "CoconutFieldCheck", "DandelionFieldCheck",
+			"MountainTopFieldCheck", "MushroomFieldCheck", "PepperFieldCheck",
+			"PineTreeFieldCheck", "PineappleFieldCheck", "PumpkinFieldCheck",
+			"RoseFieldCheck", "SpiderFieldCheck", "StrawberryFieldCheck",
+			"StumpFieldCheck", "SunflowerFieldCheck",
+			"BlueClayPlanterCheck", "CandyPlanterCheck", "HeatTreatedPlanterCheck",
+			"HydroponicPlanterCheck", "PaperPlanterCheck", "PesticidePlanterCheck",
+			"PetalPlanterCheck", "PlanterOfPlentyCheck", "PlasticPlanterCheck",
+			"RedClayPlanterCheck", "TackyPlanterCheck", "TicketPlanterCheck"
+		]
+		, PlantersTimers := [
+			"LastComfortingField", "LastInvigoratingField", "LastMotivatingField",
+			"LastRefreshingField", "LastSatisfyingField", "LastPlanterGatherSlot",
+			"MPlanterHold1", "MPlanterHold2", "MPlanterHold3",
+			"MPlanterSmoking1", "MPlanterSmoking2", "MPlanterSmoking3",
+			"PlanterEstPercent1", "PlanterEstPercent2", "PlanterEstPercent3",
+			"PlanterField1", "PlanterField2", "PlanterField3",
+			"PlanterHarvestFull1", "PlanterHarvestFull2", "PlanterHarvestFull3",
+			"PlanterHarvestNow1", "PlanterHarvestNow2", "PlanterHarvestNow3",
+			"PlanterHarvestTime1", "PlanterHarvestTime2", "PlanterHarvestTime3",
+			"PlanterName1", "PlanterName2", "PlanterName3",
+			"PlanterNectar1", "PlanterNectar2", "PlanterNectar3",
+			"PlanterSS1", "PlanterSS2", "PlanterSS3",
+			"dayOrNight"
+		]
+	f := FileOpen('./settings/nm_config.ini', 'r'), config := f.Read(), f.Close()
+	configObj := configToObject(config)
+	(presetObj := Map()).CaseSense := 0
+	for k in PresetSettingsCtrls {
+		if !PresetGui["Preset" k].value
+			continue
+		section := (k = "Gather" ? k
+			: k = "Quest" ? "Quests"
+				: k = "Settings" ? k
+					: k = "Discord" ? "Status"
+						: k = "Misc" ? "Settings"
+							: k = "PrivateServer" ? "Settings"
+								: k = "WebBot" ? "Status"
+									: k = "Boost" ? k
+										: k = "BoostTimers" ? "Boost"
+											: k = "Collect" ? k
+												: k = "CollectTimers" ? "Collect"
+													: k = "Kill" ? "Collect"
+														: k = "KillTimers" ? "Collect"
+															: k = "Planters" ? k
+																: k = "PlantersTimers" ? "Planters"
+																	: unset)
+		if !presetObj.Has(section)
+		(presetObj[section] := Map()).CaseSense := 0
+		if k = "KillTimers" or k = "PlantersTimers" or k = "BoostTimers" or k = "CollectTimers" {
+			for v in %k% {
+				if !configObj[section].Has(v)
+					throw Error("Setting " v " not found in nm_config.ini")
+				presetObj[section][v] := configObj[section][v]
 			}
-			for j in keys
-				IniWrite(IniRead(".\settings\nm_config.ini", section, j), ".\settings\presets\" . presetName . ".preset", section, j)
 		}
-	presetFile := FileOpen(".\settings\presets\" presetName ".preset", "a")
-	if PresetGui["PresetFDefaults"].Value
-		configFile := FileOpen(".\settings\field_config.ini", "r"), field_config := configFile.Read(), configFile.Close()
-		, presetFile.Write("`r`n" field_config)
-	if PresetGui["PresetPlanters"].Value
-		configFile := FileOpen(".\settings\manual_planters.ini", "r"), planter_config := configFile.Read(), configFile.Close()
-		, presetFile.Write("`r`n" planter_config)
-	if PresetGui["PresetCollect"].Value
-		presetFile.Write("`r`n" IniRead(".\settings\nm_config.ini", "Blender"))
-	if PresetGui["PresetBoost"].Value {
-		presetFile.Write("`r`n" IniRead(".\settings\nm_config.ini", "Shrine"))
-		if !PresetGui["PresetBoostTimers"].Value
-			For , k in ["LastShrine", "ShrineRot", "ShrineIndex1", "ShrineIndex2"]
-				IniDelete(".\settings\presets\" . presetName . ".preset", "Shrine", k)
+		else {
+			for v in %k%Settings {
+				if !configObj[section].Has(v)
+					throw Error("Setting " v " not found in nm_config.ini")
+				presetObj[section][v] := configObj[section][v]
+			}
+		}
 	}
-	presetFile.Close()
+	if presetGui["presetPlanters"].value {
+		f := FileOpen("./settings/manual_planters.ini", "r"), planter := configToObject(f.Read()), f.Close()
+
+		for k, v in planter
+			presetObj.Set(k, v)
+	}
+	if presetGui["presetFDefaults"].value {
+		f := FileOpen("./settings/Field_config.ini", "r"), fields := configToObject(f.Read()), f.Close()
+		for k, v in fields
+			presetObj.Set(k, v)
+
+	}
+	f := FileOpen("./settings/presets/" presetName ".preset", "w"), f.Write(JSON.stringify(presetObj)), f.Close()
+	configToObject(iniStr) {
+		returnObj := Map()
+		loop parse iniStr, "`n", "`r" {
+			if !A_LoopField || SubStr(A_LoopField, 1, 1) = ";"
+				continue
+			if SubStr(A_LoopField, 1, 1) = "[" {
+				section := SubStr(A_LoopField, 2, -1), (returnObj[section] := Map()).CaseSense := 0
+				continue
+			}
+			field := StrSplit(A_LoopField, "=")
+			returnObj[section][field[1]] := field[2]
+		}
+		return returnObj
+	}
 }
 nm_CreatePreset(*) {
 	global PresetGui
