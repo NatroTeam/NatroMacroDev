@@ -9821,16 +9821,16 @@ nm_preset() {
 	PresetChangeTime += (IsSet(now) ? nowUnix()-now : 0)
 	if (PresetChangeTime > timeInterval) {
 		if (preset!="" || (PresetTimed1!=PresetTimed2 && LastPreset))
-			nm_loadPreset(preset), nm_setStatus("Preset Change", "Changed from preset " (LastPreset ? PresetTimed2 : PresetTimed1) " to preset " preset)
+			nm_loadPreset(preset), nm_setStatus("Preset", "Loaded preset '" preset "'. Changed from preset '" (LastPreset ? PresetTimed2 : PresetTimed1) "'.")
 		else {
-			nm_setStatus("Failed Preset Change", (PresetTimed1=PresetTimed2 ? "Both slots have the same preset." : "No preset given for slot " (LastPreset ? "1" : "2")) ". Skipping preset change.")
+			nm_setStatus("Preset", "Failed to change presets. " (PresetTimed1=PresetTimed2 ? "Both slots have the same preset." : "No preset given for slot " (LastPreset ? "1" : "2")) ". Skipping preset change.")
 		}
 		PresetChangeTime := 0
 		LastPreset := (PresetRepeat ? (LastPreset ? 0 : 1) : 1)
 		IniWrite(LastPreset, ".\settings\nm_config.ini", "Settings", "LastPreset")
 	}
 	else {
-		nm_setStatus("Test", "Time Left: " timeInterval-PresetChangeTime)
+		nm_setStatus("Preset", "Hours remaining: " (timeInterval-PresetChangeTime) / 1000 / 60 / 60 " - To load preset '" preset "'.")
 	}
 	now := nowUnix()
 }
