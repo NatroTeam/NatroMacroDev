@@ -7675,8 +7675,10 @@ nm_ManagePreset(ctrl,* ) {
 				Current settings will be lost.'
 			),,0x1034 ) = "no"
 				return
-			nm_LoadPreset(PresetName)
+			nm_LockTabs()
 			PresetGui.Destroy()
+			nm_LoadPreset(PresetName)
+			nm_LockTabs(0)
 	}
 }
 
