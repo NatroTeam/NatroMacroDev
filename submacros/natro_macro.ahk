@@ -7601,6 +7601,7 @@ nm_CreatePreset(*) {
 		, PresetGui["PresetTimed1"].Enabled := 1
 		, PresetGui["PresetTimed2"].Enabled := 1
 		, PresetGui["PresetInterval"].Enabled := 1
+		, PresetGui["PresetRepeat"].Enabled := 1
 	else
 		PresetGui["OverwritePreset"].Enabled := 0
 		, PresetGui["DeletePreset"].Enabled := 0
