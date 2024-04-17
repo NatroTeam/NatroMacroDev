@@ -363,4 +363,5 @@
 	, "LastMeteorShower"
 	, "PresetInterval"
 	, "LastPreset"
-	, "PresetRepeat"]
+	, "PresetRepeat"
+	, "PresetTimedEnable"]

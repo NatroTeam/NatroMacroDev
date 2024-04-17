@@ -345,7 +345,8 @@ nm_importConfig()
 		, "PresetInterval", 12
 		, "SelectPreset", ""
 		, "LastPreset", 0
-		, "PresetRepeat", 0)
+		, "PresetRepeat", 0
+		, "PresetTimedEnable", 0)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -7599,10 +7600,7 @@ nm_CreatePreset(*) {
 		, PresetGui["CopyPreset"].Enabled := 1
 		, PresetGui["LoadPreset"].Enabled := 1
 		, PresetGui["RenamePreset"].Enabled := 1
-		, PresetGui["PresetTimed1"].Enabled := 1
-		, PresetGui["PresetTimed2"].Enabled := 1
-		, PresetGui["PresetInterval"].Enabled := 1
-		, PresetGui["PresetRepeat"].Enabled := 1
+		, PresetGui["PresetTimedEnable"].Enabled := 1
 	else
 		PresetGui["OverwritePreset"].Enabled := 0
 		, PresetGui["DeletePreset"].Enabled := 0
@@ -7613,6 +7611,8 @@ nm_CreatePreset(*) {
 		, PresetGui["PresetTimed2"].Enabled := 0
 		, PresetGui["PresetInterval"].Enabled := 0
 		, PresetGui["PresetRepeat"].Enabled := 0
+		, PresetGui["PresetTimedEnable"].Enabled := 0
+		, PresetGui["PresetTimedEnable"].Value := 0
 }
 nm_ManagePreset(ctrl,* ) {
 	global PresetGui, SelectPreset, PresetTimed1, PresetTimed2
@@ -7630,9 +7630,9 @@ nm_ManagePreset(ctrl,* ) {
 					that could allow people with it to control your macro if shared with them.'
 					),,0x1034) = "no")
 					return
-				FileToClipboard(PresetPath)
-				Msgbox("Preset " PresetName " has been copied to clipboard.",, "0x1040 T3")
 			}
+			FileToClipboard(PresetPath)
+			Msgbox("Preset " PresetName " has been copied to clipboard.",, "0x1040 T3")
 		case "RenamePreset":
 			NewName := PresetGui["SetPresetName"].Value
 			if (!NewName)
@@ -7652,8 +7652,13 @@ nm_ManagePreset(ctrl,* ) {
 				PresetGui[v].delete(PresetGui["SelectPreset"].Value)
 			if (PresetGui["SelectPreset"].enabled := presetList.length)
 				PresetGui["SelectPreset"].Value := 1
-			else PresetGui["OverwritePreset"].Enabled := 0, PresetGui["DeletePreset"].Enabled := 0, PresetGui["CopyPreset"].Enabled := 0, PresetGui["LoadPreset"].Enabled := 0, PresetGui["RenamePreset"].Enabled := 0, PresetGui["PresetTimed1"].Enabled := 0, PresetGui["PresetTimed2"].Enabled := 0, PresetGui["PresetInterval"].Enabled := 0, PresetGui["PresetRepeat"].Enabled := 0
-			IniWrite(PresetGui["SelectPreset"].Text, ".\settings\nm_config.ini", "Settings", "SelectPreset")
+			else PresetGui["OverwritePreset"].Enabled := 0, PresetGui["DeletePreset"].Enabled := 0, PresetGui["CopyPreset"].Enabled := 0, PresetGui["LoadPreset"].Enabled := 0, PresetGui["RenamePreset"].Enabled := 0, PresetGui["PresetTimed1"].Enabled := 0, PresetGui["PresetTimed2"].Enabled := 0, PresetGui["PresetInterval"].Enabled := 0, PresetGui["PresetRepeat"].Enabled := 0, PresetGui["PresetTimedEnable"].Enabled := 0, PresetGui["PresetTimedEnable"].Value := 0
+			if PresetTimed1 = SelectPreset
+				PresetTimed1 := "", IniWrite(PresetTimed1, ".\settings\nm_config.ini", "Settings", "PresetTimed1")
+			if PresetTimed2 = SelectPreset
+				PresetTimed2 := "", IniWrite(PresetTimed2, ".\settings\nm_config.ini", "Settings", "PresetTimed2")
+			SelectPreset := PresetGui["SelectPreset"].Text
+			IniWrite(SelectPreset, ".\settings\nm_config.ini", "Settings", "SelectPreset")
 		case "OverwritePreset":
 			if Msgbox(
 				(
@@ -7721,7 +7726,7 @@ nm_ImportPreset(*) {
         SplitPath(filePath,,,&ext,&fileName)
         if ext != "preset" ||!FileExist(filePath)
             continue
-        if filePath != "settings\presets\" fileName ".preset"
+        if filePath != A_WorkingDir "\settings\presets\" fileName ".preset"
             FileCopy(filePath, "settings\presets\" fileName ".preset",1)
         presetsImported.push(fileName)
     }
@@ -7731,6 +7736,8 @@ nm_ImportPreset(*) {
     for i in presetsImported
 		finalMsg .= "`n" i
 	nm_includePresets()
+	if (PresetGui["SelectPreset"].enabled := presetList.length)
+		PresetGui["SelectPreset"].Value := 1
 	MsgBox("Presets imported:" finalMsg)
 }
 FileNameCleanup(*) {
@@ -7767,6 +7774,10 @@ nm_includePresets() {
 		}
 	}
 }
+hideTimed(ctrl,*) {
+	For , v in ["PresetTimed1", "PresetInterval", "PresetTimed2", "PresetRepeat"]
+		PresetGui[v].enabled:=ctrl.Value
+}
 nm_PresetGUI(*){
 	global
 	local GuiCtrl
@@ -7791,18 +7802,25 @@ nm_PresetGUI(*){
 	PresetGui.Add("Button", "x113 yp+25 w90 hp vCopyPreset", "Export").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x113 yp+25 wp hp vLoadPreset", "Load Preset").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("GroupBox", "x212 y2 w100 h120", "Timed")
-	(GuiCtrl := PresetGui.Add("DropDownList", "x217 y20 w90 vPresetTimed1", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed1, GuiCtrl.OnEvent("Change", nm_saveConfig)
-	PresetGui.Add("Text", "x225 y51", "Hours:")
+	(GuiCtrl := PresetGui.Add("CheckBox", "x217 y16 w55 h16 vPresetTimedEnable", "Enable")).Section := "Settings", GuiCtrl.Value := PresetTimedEnable, GuiCtrl.OnEvent("Click", nm_saveConfig), GuiCtrl.OnEvent("Click", hideTimed)
+	(GuiCtrl := PresetGui.Add("DropDownList", "x217 y33 w90 vPresetTimed1", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed1, GuiCtrl.OnEvent("Change", nm_saveConfig)
+	PresetGui.Add("Text", "x225 y59", "Hours:")
 	if !IsNumber(PresetInterval)
 		IniWrite(12, ".\settings\nm_config.ini", "Settings", "PresetInterval")
-	(GuiCtrl := PresetGui.Add("Edit", "x267 y48 w32 h21 limit3 Number vPresetInterval", ValidateNumber(&PresetInterval, 12))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-	(GuiCtrl := PresetGui.Add("DropDownList", "x217 y75 w90 vPresetTimed2", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed2, GuiCtrl.OnEvent("Change", nm_saveConfig)
-	(GuiCtrl := PresetGui.Add("CheckBox", "x250 y100 w60 h16 vPresetRepeat", "Repeat")).Section := "Settings", GuiCtrl.Value := PresetRepeat, GuiCtrl.OnEvent("Click", nm_saveConfig)
-	if (presetlist.Length=0)
-		For k, v in ["SelectPreset", "CopyPreset", "DeletePreset", "OverwritePreset", "LoadPreset", "RenamePreset", "PresetTimed1", "PresetInterval", "PresetTimed2", "PresetRepeat"]
+	(GuiCtrl := PresetGui.Add("Edit", "x267 y59 w32 h18 limit3 Number vPresetInterval", ValidateNumber(&PresetInterval, 12))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	(GuiCtrl := PresetGui.Add("DropDownList", "x217 y79 w90 vPresetTimed2", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed2, GuiCtrl.OnEvent("Change", nm_saveConfig)
+	(GuiCtrl := PresetGui.Add("CheckBox", "x218 y103 w55 h16 vPresetRepeat", "Repeat")).Section := "Settings", GuiCtrl.Value := PresetRepeat, GuiCtrl.OnEvent("Click", nm_saveConfig)
+	if (presetlist.Length=0) {
+		For k, v in ["SelectPreset", "CopyPreset", "DeletePreset", "OverwritePreset", "LoadPreset", "RenamePreset", "PresetTimedEnable"]
+			PresetGui[v].enabled:=0
+		if PresetTimedEnable
+			PresetGui["PresetTimedEnable"].Value := 0, IniWrite(0, ".\settings\nm_config.ini", "Settings", "PresetTimedEnable") PresetTimedEnable := 0
+	}
+	if (!PresetTimedEnable || presetlist.Length=0)
+		For , v in ["PresetTimed1", "PresetInterval", "PresetTimed2", "PresetRepeat"]
 			PresetGui[v].enabled:=0
 	PresetGui.Add("GroupBox", "x4 y126 w308 h92", "Included Settings")
-	PresetGui.Add("Button", "x97 y126 w10 h15", "?").OnEvent("Click", (*) => MsgBox("The Included Settings, each checkbox represents a different tab in natro macro to save.`n`nThere are a few exceptions:`nPS Link is your private server Link, Discord is the discord settings (screenshots, pings), Token/Webhook is your Bot Token and Webhook along with all your channel IDs and UserID, and Field Defaults is your saved gather settings for each field.", "Help", "0x1040"))
+	PresetGui.Add("Button", "x107 y127 w10 h15", "?").OnEvent("Click", (*) => MsgBox("The Included Settings, each checkbox represents a different tab in natro macro to save.`n`nThere are a few exceptions:`nPS Link is your private server Link, Discord is the discord settings (screenshots, pings), Token/Webhook is your Bot Token and Webhook along with all your channel IDs and UserID, and Field Defaults is your saved gather settings for each field.", "Help", "0x1040"))
 	PresetGui.Add("CheckBox", "x9 yp+18 w60 h16 +Checked vPresetGather", "Gather")
 	PresetGui.Add("CheckBox", "x9 yp+18 w55 h16 +Checked vPresetQuest", "Quest")
 	PresetGui.Add("CheckBox", "x9 yp+18 w60 h16 +Checked vPresetSettings", "Settings")
@@ -9787,6 +9805,8 @@ nm_preset() {
 	global
 	local timeInterval, preset
 	static now
+	if !PresetTimedEnable
+		return
 	if (!PresetRepeat && LastPreset = 1)
 		return
 	if !IsNumber(PresetInterval)
