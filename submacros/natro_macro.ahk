@@ -7577,7 +7577,7 @@ objectToIni(object) {
 }
 
 nm_CreatePreset(*) {
-	global PresetGui
+	global PresetGui, SelectPreset
 	PresetName := PresetGui["SetPresetName"].Value
 	PresetPath := '.\settings\presets\' PresetName '.preset'
 	if (!PresetName)
@@ -7592,6 +7592,7 @@ nm_CreatePreset(*) {
 	PresetGui["SetPresetName"].Value := ""
 	if PresetGui["SelectPreset"].Enabled := !!presetList.length
 		PresetGui["SelectPreset"].Text := PresetName
+		, SelectPreset := PresetName
 		, IniWrite(PresetName, ".\settings\nm_config.ini", "Settings", "SelectPreset")
 		, PresetGui["OverwritePreset"].Enabled := 1
 		, PresetGui["DeletePreset"].Enabled := 1
@@ -7614,13 +7615,15 @@ nm_CreatePreset(*) {
 		, PresetGui["PresetRepeat"].Enabled := 0
 }
 nm_ManagePreset(ctrl,* ) {
+	global PresetGui, SelectPreset, PresetTimed1, PresetTimed2
 	PresetName := PresetGui["SelectPreset"].Text
 	PresetPath := '.\settings\presets\' PresetName '.preset'
 	if (!FileExist(PresetPath))
 		return MsgBox("Preset '" PresetName "' does not exist.",, "0x1010 T5")
 	Switch ctrl.name, 0 {
 		case "CopyPreset":
-			if IniRead(PresetPath, "Status", "BotToken") {
+			f := FileOpen('.\settings\presets\' presetName '.preset', "r"), preset := JSON.parse(f.Read()), f.Close()
+			if preset.Has("Status") && preset["Status"].Has("BotToken") {
 				if (msgbox(
 					(
 					'You`'re about to copy a preset that has your sensitive information
@@ -7635,21 +7638,22 @@ nm_ManagePreset(ctrl,* ) {
 			if (!NewName)
 				return MsgBox("No preset name given.",, "0x1010 T5")
 			FileMove(PresetPath, '.\settings\presets\' NewName '.preset')
-			for , v in ["SelectPreset", "PresetTimed1", "PresetTimed2"] {
-				PresetGui[v].delete(PresetGui[v].value)
-				presetGui[v].Add([NewName])
-			}
-			PresetGui["SelectPreset"].Text := NewName
+			presetList[PresetGui["SelectPreset"].Value] := NewName
+			for , v in ["PresetTimed1", "PresetTimed2", "SelectPreset"]
+				PresetGui[v].delete(PresetGui["SelectPreset"].value), presetGui[v].Add([NewName])
+			PresetGui["SelectPreset"].Text := NewName, SelectPreset := NewName
+			IniWrite(NewName, ".\settings\nm_config.ini", "Settings", "SelectPreset")
 		case "DeletePreset":
 			if (MsgBox("Are you sure you want to delete " PresetName "?",, "0x1034") = "no")
 				return
 			FileDelete(PresetPath)
 			presetList.RemoveAt(PresetGui["SelectPreset"].Value)
-			for , v in ["SelectPreset", "PresetTimed1", "PresetTimed2"]
-				PresetGui[v].delete(PresetGui[v].Value)
+			for , v in ["PresetTimed1", "PresetTimed2", "SelectPreset"]
+				PresetGui[v].delete(PresetGui["SelectPreset"].Value)
 			if (PresetGui["SelectPreset"].enabled := presetList.length)
-				return presetGui["SelectPreset"].Value := 1
-			PresetGui["OverwritePreset"].Enabled := 0, PresetGui["DeletePreset"].Enabled := 0, PresetGui["CopyPreset"].Enabled := 0, PresetGui["LoadPreset"].Enabled := 0, PresetGui["RenamePreset"].Enabled := 0, PresetGui["PresetTimed1"].Enabled := 0, PresetGui["PresetTimed2"].Enabled := 0, PresetGui["PresetInterval"].Enabled := 0, PresetGui["PresetRepeat"].Enabled := 0
+				PresetGui["SelectPreset"].Value := 1
+			else PresetGui["OverwritePreset"].Enabled := 0, PresetGui["DeletePreset"].Enabled := 0, PresetGui["CopyPreset"].Enabled := 0, PresetGui["LoadPreset"].Enabled := 0, PresetGui["RenamePreset"].Enabled := 0, PresetGui["PresetTimed1"].Enabled := 0, PresetGui["PresetTimed2"].Enabled := 0, PresetGui["PresetInterval"].Enabled := 0, PresetGui["PresetRepeat"].Enabled := 0
+			IniWrite(PresetGui["SelectPreset"].Text, ".\settings\nm_config.ini", "Settings", "SelectPreset")
 		case "OverwritePreset":
 			if Msgbox(
 				(
@@ -7787,10 +7791,13 @@ nm_PresetGUI(*){
 	PresetGui.Add("Button", "x113 yp+25 w90 hp vCopyPreset", "Export").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("Button", "x113 yp+25 wp hp vLoadPreset", "Load Preset").OnEvent("Click", nm_ManagePreset)
 	PresetGui.Add("GroupBox", "x212 y2 w100 h120", "Timed")
-	(GuiCtrl := PresetGui.Add("DropDownList", "x220 y20 w90 h21 vPresetTimed1", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed1, GuiCtrl.OnEvent("Change", nm_saveConfig)
-	(GuiCtrl := PresetGui.Add("Edit", "x240 y45 w32 h21 limit3 Number vPresetInterval", ValidateNumber(&PresetInterval, 12))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-	(GuiCtrl := PresetGui.Add("DropDownList", "x220 y75 w90 h21 vPresetTimed2", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed2, GuiCtrl.OnEvent("Change", nm_saveConfig)
-	(GuiCtrl := PresetGui.Add("CheckBox", "x220 y100 w60 h16 vPresetRepeat", "Repeat")).Section := "Settings", GuiCtrl.Value := PresetRepeat, GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := PresetGui.Add("DropDownList", "x217 y20 w90 vPresetTimed1", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed1, GuiCtrl.OnEvent("Change", nm_saveConfig)
+	PresetGui.Add("Text", "x225 y51", "Hours:")
+	if !IsNumber(PresetInterval)
+		IniWrite(12, ".\settings\nm_config.ini", "Settings", "PresetInterval")
+	(GuiCtrl := PresetGui.Add("Edit", "x267 y48 w32 h21 limit3 Number vPresetInterval", ValidateNumber(&PresetInterval, 12))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	(GuiCtrl := PresetGui.Add("DropDownList", "x217 y75 w90 vPresetTimed2", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed2, GuiCtrl.OnEvent("Change", nm_saveConfig)
+	(GuiCtrl := PresetGui.Add("CheckBox", "x250 y100 w60 h16 vPresetRepeat", "Repeat")).Section := "Settings", GuiCtrl.Value := PresetRepeat, GuiCtrl.OnEvent("Click", nm_saveConfig)
 	if (presetlist.Length=0)
 		For k, v in ["SelectPreset", "CopyPreset", "DeletePreset", "OverwritePreset", "LoadPreset", "RenamePreset", "PresetTimed1", "PresetInterval", "PresetTimed2", "PresetRepeat"]
 			PresetGui[v].enabled:=0
@@ -9782,6 +9789,8 @@ nm_preset() {
 	static now
 	if (!PresetRepeat && LastPreset = 1)
 		return
+	if !IsNumber(PresetInterval)
+		PresetInterval := 12, IniWrite(12, ".\settings\nm_config.ini", "Settings", "PresetInterval")
 	timeInterval := PresetInterval * 1000 * 60 * 60
 	preset := (LastPreset) ? PresetTimed1 : PresetTimed2
 	if (PresetChangeTime > timeInterval) {
