@@ -361,4 +361,6 @@
 	, "HoneyUpdateSSCheck"
 	, "MeteorShowerCheck"
 	, "LastMeteorShower"
-	, "PresetInterval"]
+	, "PresetInterval"
+	, "LastPreset"
+	, "PresetRepeat"]
