@@ -7777,8 +7777,11 @@ nm_includePresets() {
 	}
 }
 hideTimed(ctrl,*) {
-	For , v in ["PresetTimed1", "PresetInterval", "PresetTimed2", "PresetRepeat"]
+	global
+	For , v in ["PresetInterval", "PresetTimed2", "PresetRepeat"]
 		PresetGui[v].enabled:=ctrl.Value
+	if PresetRepeat
+		PresetGui["PresetTimed1"].Enabled:=ctrl.Value
 }
 nm_PresetGUI(*){
 	global
@@ -7811,7 +7814,7 @@ nm_PresetGUI(*){
 		IniWrite(12, ".\settings\nm_config.ini", "Settings", "PresetInterval")
 	(GuiCtrl := PresetGui.Add("Edit", "x267 y59 w32 h18 limit3 Number vPresetInterval", ValidateNumber(&PresetInterval, 12))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 	(GuiCtrl := PresetGui.Add("DropDownList", "x217 y79 w90 vPresetTimed2", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed2, GuiCtrl.OnEvent("Change", nm_saveConfig)
-	(GuiCtrl := PresetGui.Add("CheckBox", "x218 y103 w55 h16 vPresetRepeat", "Repeat")).Section := "Settings", GuiCtrl.Value := PresetRepeat, GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := PresetGui.Add("CheckBox", "x218 y103 w55 h16 vPresetRepeat", "Repeat")).Section := "Settings", GuiCtrl.Value := PresetRepeat, GuiCtrl.OnEvent("Click", nm_saveConfig), GuiCtrl.OnEvent("Click", (ctrl, *) => PresetGui["PresetTimed1"].Enabled := ctrl.Value)
 	if (presetlist.Length=0) {
 		For k, v in ["SelectPreset", "CopyPreset", "DeletePreset", "OverwritePreset", "LoadPreset", "RenamePreset", "PresetTimedEnable"]
 			PresetGui[v].enabled:=0
@@ -9815,14 +9818,19 @@ nm_preset() {
 		PresetInterval := 12, IniWrite(12, ".\settings\nm_config.ini", "Settings", "PresetInterval")
 	timeInterval := PresetInterval * 1000 * 60 * 60
 	preset := (LastPreset) ? PresetTimed1 : PresetTimed2
+	PresetChangeTime += (IsSet(now) ? nowUnix()-now : 0)
 	if (PresetChangeTime > timeInterval) {
-		nm_loadPreset(preset)
+		if (preset!="" || (PresetTimed1!=PresetTimed2 && LastPreset))
+			nm_loadPreset(preset), nm_setStatus("Preset Change", "Changed from preset " (LastPreset ? PresetTimed2 : PresetTimed1) " to preset " preset)
+		else {
+			nm_setStatus("Failed Preset Change", (PresetTimed1=PresetTimed2 ? "Both slots have the same preset." : "No preset given for slot " (LastPreset ? "1" : "2")) ". Skipping preset change.")
+		}
 		PresetChangeTime := 0
 		LastPreset := (PresetRepeat ? (LastPreset ? 0 : 1) : 1)
-		IniWrite(LastPreset, ".\settigns\nm_config.ini", "Settings", "LastPreset")
+		IniWrite(LastPreset, ".\settings\nm_config.ini", "Settings", "LastPreset")
 	}
 	else {
-		PresetChangeTime += (IsSet(now) ? nowUnix()-now : 0)
+		nm_setStatus("Test", "Time Left: " timeInterval-PresetChangeTime)
 	}
 	now := nowUnix()
 }
