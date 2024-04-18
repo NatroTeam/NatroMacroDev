@@ -7610,6 +7610,7 @@ nm_CreatePreset(*) {
 		, PresetGui["PresetTimed1"].Enabled := 0
 		, PresetGui["PresetTimed2"].Enabled := 0
 		, PresetGui["PresetInterval"].Enabled := 0
+		, PresetGui["PresetIntervalEdit"].Enabled := 0
 		, PresetGui["PresetRepeat"].Enabled := 0
 		, PresetGui["PresetTimedEnable"].Enabled := 0
 		, PresetGui["PresetTimedEnable"].Value := 0
@@ -7652,7 +7653,7 @@ nm_ManagePreset(ctrl,* ) {
 				PresetGui[v].delete(PresetGui["SelectPreset"].Value)
 			if (PresetGui["SelectPreset"].enabled := presetList.length)
 				PresetGui["SelectPreset"].Value := 1
-			else PresetGui["OverwritePreset"].Enabled := 0, PresetGui["DeletePreset"].Enabled := 0, PresetGui["CopyPreset"].Enabled := 0, PresetGui["LoadPreset"].Enabled := 0, PresetGui["RenamePreset"].Enabled := 0, PresetGui["PresetTimed1"].Enabled := 0, PresetGui["PresetTimed2"].Enabled := 0, PresetGui["PresetInterval"].Enabled := 0, PresetGui["PresetRepeat"].Enabled := 0, PresetGui["PresetTimedEnable"].Enabled := 0, PresetGui["PresetTimedEnable"].Value := 0
+			else PresetGui["OverwritePreset"].Enabled := 0, PresetGui["DeletePreset"].Enabled := 0, PresetGui["CopyPreset"].Enabled := 0, PresetGui["LoadPreset"].Enabled := 0, PresetGui["RenamePreset"].Enabled := 0, PresetGui["PresetTimed1"].Enabled := 0, PresetGui["PresetTimed2"].Enabled := 0, PresetGui["PresetInterval"].Enabled := 0, PresetGui["PresetIntervalEdit"].Enabled := 0, PresetGui["PresetRepeat"].Enabled := 0, PresetGui["PresetTimedEnable"].Enabled := 0, PresetGui["PresetTimedEnable"].Value := 0
 			if PresetTimed1 = SelectPreset
 				PresetTimed1 := "", IniWrite(PresetTimed1, ".\settings\nm_config.ini", "Settings", "PresetTimed1")
 			if PresetTimed2 = SelectPreset
@@ -7778,7 +7779,7 @@ nm_includePresets() {
 }
 hideTimed(ctrl,*) {
 	global
-	For , v in ["PresetInterval", "PresetTimed2", "PresetRepeat"]
+	For , v in ["PresetInterval", "PresetTimed2", "PresetRepeat", "PresetIntervalEdit"]
 		PresetGui[v].enabled:=ctrl.Value
 	if PresetRepeat
 		PresetGui["PresetTimed1"].Enabled:=ctrl.Value
@@ -7823,7 +7824,7 @@ nm_PresetGUI(*){
 			PresetGui["PresetTimedEnable"].Value := 0, IniWrite(0, ".\settings\nm_config.ini", "Settings", "PresetTimedEnable") PresetTimedEnable := 0
 	}
 	if (!PresetTimedEnable || presetlist.Length=0)
-		For , v in ["PresetTimed1", "PresetInterval", "PresetTimed2", "PresetRepeat"]
+		For , v in ["PresetTimed1", "PresetInterval", "PresetTimed2", "PresetRepeat", "PresetIntervalEdit"]
 			PresetGui[v].enabled:=0
 	PresetGui.Add("GroupBox", "x4 y126 w308 h92", "Included Settings")
 	PresetGui.Add("Button", "x107 y127 w10 h15", "?").OnEvent("Click", (*) => MsgBox("The Included Settings, each checkbox represents a different tab in natro macro to save.`n`nThere are a few exceptions:`nPS Link is your private server Link, Discord is the discord settings (screenshots, pings), Token/Webhook is your Bot Token and Webhook along with all your channel IDs and UserID, and Field Defaults is your saved gather settings for each field.", "Help", "0x1040"))
@@ -9819,9 +9820,9 @@ nm_preset() {
 	PresetChangeTime += nowUnix() - now
 	if (PresetChangeTime > timeInterval) {
 		if (preset!="" && (PresetTimed1!=PresetTimed2 && LastPreset))
-			nm_loadPreset(preset), nm_setStatus("Preset", "Loaded preset '" preset "'. Changed from preset '" (LastPreset ? PresetTimed2 : PresetTimed1) "'.")
+			nm_loadPreset(preset), nm_setStatus("Preset", "Loaded preset '" preset "'. Changed from preset '" (LastPreset ? PresetTimed2 : PresetTimed1) "'. " timeInterval " hours remaining.")
 		else
-			nm_setStatus("Preset", "Failed to change presets. " (PresetTimed1=PresetTimed2 ? "Both slots have the same preset." : "No preset given for slot " (LastPreset ? "1" : "2")) ". Skipping preset change.")
+			nm_setStatus("Preset", "Failed to change presets. " (PresetTimed1=PresetTimed2 ? "Both slots have the same preset." : "No preset given for slot " (LastPreset ? "1" : "2")) ". Skipping preset change." timeInterval " hours remaining.")
 		PresetChangeTime := 0
 		LastPreset := PresetRepeat * !LastPreset || 1
 		IniWrite(LastPreset, ".\settings\nm_config.ini", "Settings", "LastPreset")
