@@ -7320,6 +7320,8 @@ nm_priorityListGui(*) {
 	#Include "%A_ScriptDir%\nm_image_assets\webhook_gui\bitmaps.ahk"
 	DetectHiddenWindows 1
 
+	OnExit(ExitFunc)
+
 	;;config
 	defaultList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 	priorityList := []
@@ -7415,17 +7417,55 @@ nm_priorityListGui(*) {
 				priorityGui.GetPos(,&wy)
 				index := SubStr(priorityGui[hCtrl].name,2)
 				offset := y - wy-(index*34+10)
+				ReplaceSystemCursors("IDC_HAND")
 				While GetKeyState("LButton", "P") {
 					MouseGetPos(,&y)
 					y-=offset + wy
 					nm_priorityGui(priorityList[index], y)
 				}
+				ReplaceSystemCursors()
 				nm_priorityGui(priorityList[index], y, 1)
 				for k,v in priorityList
 					out .= ObjHasValue(defaultList, v)
 				if WinExist("natro_macro.ahk ahk_class AutoHotkey")
 					SendMessage(0x5563, out)
 		}
+	}
+	ReplaceSystemCursors(IDC := "")
+	{
+		static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
+			, SysCursors := Map(  "IDC_APPSTARTING", 32650
+								, "IDC_ARROW"      , 32512
+								, "IDC_CROSS"      , 32515
+								, "IDC_HAND"       , 32649
+								, "IDC_HELP"       , 32651
+								, "IDC_IBEAM"      , 32513
+								, "IDC_NO"         , 32648
+								, "IDC_SIZEALL"    , 32646
+								, "IDC_SIZENESW"   , 32643
+								, "IDC_SIZENWSE"   , 32642
+								, "IDC_SIZEWE"     , 32644
+								, "IDC_SIZENS"     , 32645
+								, "IDC_UPARROW"    , 32516
+								, "IDC_WAIT"       , 32514 )
+		if !IDC
+			DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
+		else
+		{
+			hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
+			for k, v in SysCursors
+			{
+				hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
+				DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
+			}
+		}
+	}
+
+	ExitFunc(*)
+	{
+		PriorityGui.Destroy()
+		try Gdip_Shutdown(pToken)
+		ReplaceSystemCursors()
 	}
 	'
 	)
@@ -9646,7 +9686,6 @@ nm_Start(){
 		DisconnectCheck()
 		For i in priorityList
 			(%"nm_" i%)()
-		
 	}
 }
 
