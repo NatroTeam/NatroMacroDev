@@ -110,6 +110,7 @@ OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5562, nm_ReturnNectarPercentages)
 OnMessage(0x5563, nm_UpdatePriorityList)
+OnMessage(0x5564, (time, *) => PresetChangeTime+=time)
 
 ; set version identifier
 VersionID := "1.0.1"

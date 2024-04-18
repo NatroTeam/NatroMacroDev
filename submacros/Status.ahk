@@ -944,7 +944,7 @@ nm_command(command)
 						"inline": true
 					},
 					{
-						"name": "' commandPrefix 'preset [delete|list|load|upload|download] [preset]",
+						"name": "' commandPrefix 'preset [delete|list|load|upload|download|add|sub] [preset|h:m:s]",
 						"value": "Manages your presets",
 						"inline": true
 					}]
@@ -2365,7 +2365,7 @@ nm_command(command)
 				default:
 					discord.SendEmbed("Invalid parameter!\n``````?performance [cpu|ram|gpu]``````", 16711731, , , , id)
 			}
-		case "preset":
+		case "preset", "presets":
 			presets := []
 			Loop Files, "settings\presets\*.preset" {
 				SplitPath(A_LoopFileFullPath,,,,&name)
@@ -2386,7 +2386,7 @@ nm_command(command)
 						discord.SendEmbed("**No presets found!**", 16711731, , , , id)
 				case "load":
 					if !isSet(closestPreset)
-						discord.SendEmbed("No Parameter Given!\n``````?preset [delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [delete|list|load|upload|download|add|sub] [preset|h:m:s]``````", 16711731, , , , id)
 					else if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 						discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
 					else {
@@ -2401,7 +2401,7 @@ nm_command(command)
 					}
 				case "delete":
 					if !IsSet(closestPreset)
-						discord.SendEmbed("No Parameter Given!\n``````?preset [delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [delete|list|load|upload|download|add|sub] [preset|h:m:s]``````", 16711731, , , , id)
 					else {
 						if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
@@ -2412,7 +2412,7 @@ nm_command(command)
 					}
 				case "upload":
 					if !IsSet(closestPreset)
-						discord.SendEmbed("No Parameter Given!\n``````?preset [delete|list|load|upload|download] [preset]``````", 16711731, , , , id)
+						discord.SendEmbed("No Parameter Given!\n``````?preset [delete|list|load|upload|download|add|sub] [preset|h:m:s]``````", 16711731, , , , id)
 					else {
 						if (closestPreset.dist > 6 || not closestPreset.item || !FileExist(PresetPath))
 							discord.SendEmbed("Preset " params[3] " is not valid", 5066239, , , , id)
@@ -2439,8 +2439,12 @@ nm_command(command)
 						}
 					} 
 					else discord.SendEmbed("No attachment found to download!", 16711731, , , , id)
+				case "add":
+					timerAdjust(params[3], 1)
+				case "sub", "subtract":
+					timerAdjust(params[3])
 				default:
-					discord.SendEmbed(((StrLen(params[2])=0) ? "missing " : "Invalid ") "parameter!\n``````?preset [delete|list|load|upload|download] [preset]``````",0x2b2d31 + 0)
+					discord.SendEmbed(((StrLen(params[2])=0) ? "missing " : "Invalid ") "parameter!\n``````?preset [delete|list|load|upload|download|add|sub] [preset|h:m:s]``````",0x2b2d31 + 0)
 			}
 		case "nectar", "nectars","nec":
 		DetectHiddenWindows 1
@@ -2486,6 +2490,36 @@ nm_command(command)
 			if (v = value)
 			return k
 		return 0
+	}
+	timerAdjust(time, type:=0) {
+		global LastPreset, PresetRepeat, PresetTimedEnable
+		if !PresetTimedEnable || (!PresetRepeat && LastPreset = 1)
+			return discord.SendEmbed("PresetTimed is not running. Please either enable 'PresetRepeat' or 'PresetTimedEnable' first.", 16711731, , , , id)
+		times := []
+		Loop Parse time, ":"
+			if (A_LoopField != "")
+				times.InsertAt(1, A_LoopField)
+		t := nowUnix()
+		time_delta := 0
+		Loop (m := Min(times.Length, 3))
+		{
+			if ((times[A_Index] ~= "i)^[0-9]+$") && (times[A_Index] < 200*(3600/(60**(A_Index-1)))))
+				if type
+					time_delta += times[A_Index]*(60**(A_Index-1))
+				else
+					time_delta -= times[A_Index]*(60**(A_Index-1))
+			else
+			{
+				discord.SendEmbed("``" params[3] "`` is not a valid time!\nMake sure your time is in the form ``h:m:s`` and does not exceed 200 hours!", 16711731, , , , id)
+				break 2
+			}
+		}
+		DetectHiddenWindows 1
+		if WinExist("natro_macro ahk_class AutoHotkey")
+			SendMessage(0x5564, time_delta,,,,,,,2000)
+		DetectHiddenWindows 0
+		delta := hmsFromSeconds(time_delta)
+		discord.SendEmbed((type ? "Added " : "Subtracted ") delta " to preset timer!", 5066239, , , , id)
 	}
 }
 
