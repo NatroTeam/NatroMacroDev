@@ -2511,7 +2511,7 @@ nm_command(command)
 			else
 			{
 				discord.SendEmbed("``" params[3] "`` is not a valid time!\nMake sure your time is in the form ``h:m:s`` and does not exceed 200 hours!", 16711731, , , , id)
-				break 2
+				break
 			}
 		}
 		DetectHiddenWindows 1
