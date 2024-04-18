@@ -7809,10 +7809,11 @@ nm_PresetGUI(*){
 	PresetGui.Add("GroupBox", "x212 y2 w100 h120", "Timed")
 	(GuiCtrl := PresetGui.Add("CheckBox", "x217 y16 w55 h16 vPresetTimedEnable", "Enable")).Section := "Settings", GuiCtrl.Value := PresetTimedEnable, GuiCtrl.OnEvent("Click", nm_saveConfig), GuiCtrl.OnEvent("Click", hideTimed)
 	(GuiCtrl := PresetGui.Add("DropDownList", "x217 y33 w90 vPresetTimed1", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed1, GuiCtrl.OnEvent("Change", nm_saveConfig)
-	PresetGui.Add("Text", "x225 y59", "Hours:")
+	PresetGui.Add("Text", "x219 y59", "Hours:")
 	if !IsNumber(PresetInterval)
 		IniWrite(12, ".\settings\nm_config.ini", "Settings", "PresetInterval")
-	(GuiCtrl := PresetGui.Add("Edit", "x267 y59 w32 h18 limit3 Number vPresetInterval", ValidateNumber(&PresetInterval, 12))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	PresetGui.Add("Edit", "x258 y58 w49 h18 limit3 Number vPresetIntervalEdit").OnEvent("Change", (*)=>nm_saveConfig(PresetGui["PresetInterval"]))
+	(GuiCtrl := PresetGui.Add("UpDown", "vPresetInterval range0-999", ValidateNumber(&PresetInterval, 12))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 	(GuiCtrl := PresetGui.Add("DropDownList", "x217 y79 w90 vPresetTimed2", presetlist)).Section := "Settings", GuiCtrl.Text := PresetTimed2, GuiCtrl.OnEvent("Change", nm_saveConfig)
 	(GuiCtrl := PresetGui.Add("CheckBox", "x218 y103 w55 h16 vPresetRepeat", "Repeat")).Section := "Settings", GuiCtrl.Value := PresetRepeat, GuiCtrl.OnEvent("Click", nm_saveConfig), GuiCtrl.OnEvent("Click", (ctrl, *) => PresetGui["PresetTimed1"].Enabled := ctrl.Value)
 	if (presetlist.Length=0) {
@@ -8744,40 +8745,40 @@ nm_BondCalculatorButton(*)
 nm_AutoClickerButton(*)
 {
 	global
-  local GuiCtrl,GuiCtrlDuration, GuiCtrlDelay
-  GuiClose(*){
-    if (IsSet(AutoClickerGui) && IsObject(AutoClickerGui))
-      AutoClickerGui.Destroy(), AutoClickerGui := ""
-  }
-  GuiClose()
-  AutoClickerGui := Gui("+AlwaysOnTop +Border", "AutoClicker")
-  AutoClickerGui.OnEvent("Close", GuiClose)
-  AutoClickerGui.SetFont("s8 cDefault w700", "Tahoma")
-  AutoClickerGui.Add("GroupBox", "x5 y2 w161 h80", "Settings")
+	local GuiCtrl
+	GuiClose(*){
+	if (IsSet(AutoClickerGui) && IsObject(AutoClickerGui))
+		AutoClickerGui.Destroy(), AutoClickerGui := ""
+	}
+	GuiClose()
+	AutoClickerGui := Gui("+AlwaysOnTop +Border", "AutoClicker")
+	AutoClickerGui.OnEvent("Close", GuiClose)
+	AutoClickerGui.SetFont("s8 cDefault w700", "Tahoma")
+	AutoClickerGui.Add("GroupBox", "x5 y2 w161 h80", "Settings")
 	AutoClickerGui.SetFont("Norm")
-  AutoClickerGui.Add("CheckBox", "x76 y2 vClickMode Checked" ClickMode, "Infinite").OnEvent("Click", nm_ClickMode)
-  AutoClickerGui.Add("Text", "x13 y21", "Repeat")
-  AutoClickerGui.Add("Edit", "x50 y19 w80 h18 vClickCountEdit Number Limit7 Disabled" ClickMode)
-  (GuiCtrl := AutoClickerGui.Add("UpDown", "vClickCount Range0-9999999 Disabled" ClickMode, ClickCount)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-  AutoClickerGui.Add("Text", "x133 y21", "times")
-  AutoClickerGui.Add("Text", "x10 y41", "Click Interval (ms):")
-  AutoClickerGui.Add("Edit", "x100 y39 w61 h18 Number Limit5", ClickDelay).OnEvent("Change", (*) => nm_saveConfig(GuiCtrlDelay))
-  (GuiCtrlDelay := AutoClickerGui.Add("UpDown", "vClickDelay Range0-99999", ClickDelay)).Section := "Settings", GuiCtrlDelay.OnEvent("Change", nm_saveConfig)
-  AutoClickerGui.Add("Text", "x10 y61", "Click Duration (ms):")
-  AutoClickerGui.Add("Edit", "x104 y59 w57 h18 Number Limit4", ClickDuration).OnEvent("Change", (*) => nm_saveConfig(GuiCtrlDuration))
-  (GuiCtrlDuration := AutoClickerGui.Add("UpDown", "vClickDuration Range0-9999", ClickDuration)).Section := "Settings", GuiCtrlDuration.OnEvent("Change", nm_saveConfig)
-  AutoClickerGui.Add("Button", "x45 y88 w80 h20", "Start (" AutoClickerHotkey ")").OnEvent("Click", nm_StartAutoClicker)
-  AutoClickerGui.Show("w160 h104")
-  nm_StartAutoClicker(*){
-    GuiClose()
-    MainGui.Minimize()
-    autoclicker()
-  }
+	AutoClickerGui.Add("CheckBox", "x76 y2 vClickMode Checked" ClickMode, "Infinite").OnEvent("Click", nm_ClickMode)
+	AutoClickerGui.Add("Text", "x13 y21", "Repeat")
+	AutoClickerGui.Add("Edit", "x50 y19 w80 h18 vClickCountEdit Number Limit7 Disabled" ClickMode).OnEvent("Change", (*) => nm_saveConfig(AutoClickerGui["ClickCount"]))
+	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickCount Range0-9999999 Disabled" ClickMode, ClickCount)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	AutoClickerGui.Add("Text", "x133 y21", "times")
+	AutoClickerGui.Add("Text", "x10 y41", "Click Interval (ms):")
+	AutoClickerGui.Add("Edit", "x100 y39 w61 h18 Number Limit5", ClickDelay).OnEvent("Change", (*) => nm_saveConfig(AutoClickerGui["ClickDelay"]))
+	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickDelay Range0-99999", ClickDelay)).Section := "Settings", GuiCtrlDelay.OnEvent("Change", nm_saveConfig)
+	AutoClickerGui.Add("Text", "x10 y61", "Click Duration (ms):")
+	AutoClickerGui.Add("Edit", "x104 y59 w57 h18 Number Limit4", ClickDuration).OnEvent("Change", (*) => nm_saveConfig(AutoClickerGui["ClickDuration"]))
+	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickDuration Range0-9999", ClickDuration)).Section := "Settings", GuiCtrlDuration.OnEvent("Change", nm_saveConfig)
+	AutoClickerGui.Add("Button", "x45 y88 w80 h20", "Start (" AutoClickerHotkey ")").OnEvent("Click", nm_StartAutoClicker)
+	AutoClickerGui.Show("w160 h104")
+	nm_StartAutoClicker(*){
+		GuiClose()
+		MainGui.Minimize()
+		autoclicker()
+	}
 }
 nm_ClickMode(*){
 	global
 	IniWrite (ClickMode := AutoClickerGui["ClickMode"].Value), "settings\nm_config.ini", "Settings", "ClickMode"
-	AutoClickerGui["ClickCount"].Enabled := AutoClickerGui["ClickCountEdit"].Enabled := ClickMode
+	AutoClickerGui["ClickCount"].Enabled := AutoClickerGui["ClickCountEdit"].Enabled := !ClickMode
 }
 nm_saveKeyDelay(*){
 	global
@@ -9497,12 +9498,12 @@ nm_Start(){
 	global serverStart := nowUnix()
 	Loop {
 		DisconnectCheck()
-		;preset change
-		nm_preset()
 		;night
 		nm_Night()
 		;mondo
 		nm_Mondo()
+		;preset change
+		nm_preset()
 		;planters
 		mp_planter()
 		ba_planter()
@@ -9809,28 +9810,21 @@ nm_PlanterTimeUpdate(FieldName, SetStatus := 1)
 nm_preset() {
 	global
 	local timeInterval, preset
-	static now
-	if !PresetTimedEnable
+	static now := nowUnix()
+	if !PresetTimedEnable || (!PresetRepeat && LastPreset = 1)
 		return
-	if (!PresetRepeat && LastPreset = 1)
-		return
-	if !IsNumber(PresetInterval)
-		PresetInterval := 12, IniWrite(12, ".\settings\nm_config.ini", "Settings", "PresetInterval")
+	presetInterval := presetInterval || 12
 	timeInterval := PresetInterval * 1000 * 60 * 60
 	preset := (LastPreset) ? PresetTimed1 : PresetTimed2
-	PresetChangeTime += (IsSet(now) ? nowUnix()-now : 0)
+	PresetChangeTime += nowUnix() - now
 	if (PresetChangeTime > timeInterval) {
-		if (preset!="" || (PresetTimed1!=PresetTimed2 && LastPreset))
+		if (preset!="" && (PresetTimed1!=PresetTimed2 && LastPreset))
 			nm_loadPreset(preset), nm_setStatus("Preset", "Loaded preset '" preset "'. Changed from preset '" (LastPreset ? PresetTimed2 : PresetTimed1) "'.")
-		else {
+		else
 			nm_setStatus("Preset", "Failed to change presets. " (PresetTimed1=PresetTimed2 ? "Both slots have the same preset." : "No preset given for slot " (LastPreset ? "1" : "2")) ". Skipping preset change.")
-		}
 		PresetChangeTime := 0
-		LastPreset := (PresetRepeat ? (LastPreset ? 0 : 1) : 1)
+		LastPreset := PresetRepeat * !LastPreset || 1
 		IniWrite(LastPreset, ".\settings\nm_config.ini", "Settings", "LastPreset")
-	}
-	else {
-		nm_setStatus("Preset", "Hours remaining: " (timeInterval-PresetChangeTime) / 1000 / 60 / 60 " - To load preset '" preset "'.")
 	}
 	now := nowUnix()
 }
