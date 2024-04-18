@@ -7331,9 +7331,9 @@ nm_priorityListGui(*) {
 	priorityGui.OnEvent("Close", (*) => ExitApp()), priorityGui.OnEvent("Escape", (*) => ExitApp())
 	priorityGui.Show("NA")
 
-	for i in ["moveRegion", "close", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9"]
+	for i in ["moveRegion", "close", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "Reset"]
 		priorityGui.AddText("v" i)
-	w:=250, h:=priorityList.Length * 34 + 64
+	w:=250, h:=priorityList.Length * 34 + 94
 	hbm := CreateDIBSection(w, h)
 	hdc := CreateCompatibleDC()
 	obm := SelectObject(hdc, hbm)
@@ -7341,29 +7341,41 @@ nm_priorityListGui(*) {
 	Gdip_SetSmoothingMode(G, 2)
 	Gdip_SetInterpolationMode(G, 2)
 	UpdateLayeredWindow(priorityGui.hwnd, hdc, A_ScreenWidth//2-w//2,A_ScreenHeight//2-h//2, w, h)
+
+	;colors:
+	backgroundColor := "0xff131416"
+	textColor := "0xffffffff"
+	itemsColor := "0xff323942"
+	accentColors := [
+		"0xFFF24646", "0xFFF34F4F", "0xFFF45858", "0xFFF56161", 
+		"0xFFF66A6A", "0xFFF77373", "0xFFF87C7C", "0xFFF98585", 
+		"0xFFFA8E8E", "0xFFFB9797", "0xFFF9B5B5"
+	]
+
 	nm_priorityGui()
 
 	priorityGui["moveRegion"].move(0, 0, w-30, 30)
 	priorityGui["close"].move(w-30, 0, 30, 30)
 	for i,v in priorityList
 		priorityGui["p" i].move(15, (i)*34+10, w-30, 30)
+	priorityGui["Reset"].move(15, h-50, w-30, 30)
 	nm_priorityGui(movingItem?, mouseY?, drop?) {
 		global priorityList
 		local v,i
 		;;Title Bar
 		Gdip_GraphicsClear(G)
 		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_CreateLineBrushFromRect(0, 0, w, h, 0x00000000, 0x78000000), 14, 6, w-16, h-16, 12), Gdip_DeleteBrush(pBrush)
-		pBrush := Gdip_BrushCreateSolid("0xFFD9AB21"), Gdip_FillRoundedRectanglePath(G, pBrush, 8, 0, w-16, 30, 12), Gdip_FillRectangle(G, pBrush, 8, 13, w-16, 20), Gdip_DeleteBrush(pBrush)
+		pBrush := Gdip_BrushCreateSolid(accentColors[1]), Gdip_FillRoundedRectanglePath(G, pBrush, 8, 0, w-16, 30, 12), Gdip_FillRectangle(G, pBrush, 8, 13, w-16, 20), Gdip_DeleteBrush(pBrush)
 		Gdip_DrawImage(G, bitmaps["close"], w-42, 4)
-		Gdip_TextToGraphics(G, "Priority List", "x12 y8 s15 cffffffff Bolder","Arial", w-16, 30)
+		Gdip_TextToGraphics(G, "Priority List", "x23 y8 s15 cffffffff Bolder","Arial", w-16, 30)
 		
 		;;Background
-		Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0xff131416), 8, 32, w-16, h-80), Gdip_FillRoundedRectanglePath(G, pBrush, 8, h-100, w-16, 84, 12),Gdip_DeleteBrush(pBrush)
+		Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(backgroundColor), 8, 32, w-16, h-80), Gdip_FillRoundedRectanglePath(G, pBrush, 8, h-100, w-16, 84, 12),Gdip_DeleteBrush(pBrush)
 
 		;;Check for update in priority list
 		if IsSet(movingItem) && !IsSet(drop) {
 			index := ((mouseY > priorityList.Length * 34 + 10) ? priorityList.Length*34+10 : mouseY < 44 ? 44 : mouseY) // 34
-			Gdip_DrawLine(G , pPen:=Gdip_CreatePen("0xff5865f2", 2), 15, (index*34+10), w-15,  (index*34+10)), Gdip_DeletePen(pPen)
+			Gdip_DrawLine(G , pPen:=Gdip_CreatePen(accentColors[1], 2), 15, (index*34+10), w-15,  (index*34+10)), Gdip_DeletePen(pPen)
 		}
 		if IsSet(drop) {
 			index := ((mouseY > priorityList.Length * 34 + 10) ? priorityList.Length*34+10 : mouseY < 44 ? 44 : mouseY) // 34
@@ -7377,9 +7389,9 @@ nm_priorityListGui(*) {
 				continue
 			}
 			groupx := 15, groupy := ((i-=lower)*34)+10, groupw := w-30, grouph := 30
-			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid("0xff323942"), groupx, groupy, groupw, grouph, 8), Gdip_DeleteBrush(pBrush)
+			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid(itemsColor), groupx, groupy, groupw, grouph, 8), Gdip_DeleteBrush(pBrush)
 			Gdip_TextToGraphics(G, v, "x" groupx+8 " y" groupY + 7 " s15 cffffffff Bolder","Arial")
-			Gdip_DrawLine(G, pPen := Gdip_CreatePen("0xFFFFFFFF", 3), groupw-20, groupy + 10, groupw-5, groupy + 10)
+			Gdip_DrawLine(G, pPen := Gdip_CreatePen(accentColors[i+1], 3), groupw-20, groupy + 10, groupw-5, groupy + 10)
 			Gdip_DrawLine(G, pPen, groupw-20, groupy + 15, groupw-5, groupy + 15)
 			Gdip_DrawLine(G, pPen, groupw-20, groupy + 20, groupw-5, groupy + 20), Gdip_DeletePen(pPen)
 		}
@@ -7387,10 +7399,12 @@ nm_priorityListGui(*) {
 			groupy := (mouseY > priorityList.Length * 34 + 10) ? priorityList.Length * 34 + 10 : mouseY < 44 ? 44 : mouseY 
 			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid("0x99323942"), groupx, groupy, groupw, grouph, 8), Gdip_DeleteBrush(pBrush)
 			Gdip_TextToGraphics(G, movingItem, "x" groupx+8 " y" groupY + 7 " s15 c99ffffff Bolder","Arial")
-			Gdip_DrawLine(G, pPen := Gdip_CreatePen("0x99FFFFFF", 3), groupw-20, groupy + 10, groupw-5, groupy + 10)
+			Gdip_DrawLine(G, pPen := Gdip_CreatePen(accentColors[10], 3), groupw-20, groupy + 10, groupw-5, groupy + 10)
 			Gdip_DrawLine(G, pPen, groupw-20, groupy + 15, groupw-5, groupy + 15)
 			Gdip_DrawLine(G, pPen, groupw-20, groupy + 20, groupw-5, groupy + 20), Gdip_DeletePen(pPen)
 		}
+		Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid(accentColors[11]), 15, h-50, w-30, 30, 8), Gdip_DeleteBrush(pBrush)
+		Gdip_TextToGraphics(G, "Reset", "x15 y" h-43 " s15 c00000000 Bolder Center","Arial", w-30)
 
 		UpdateLayeredWindow(priorityGui.hwnd, hdc)
 		OnMessage(0x201, WM_LBUTTONDOWN)
@@ -7404,6 +7418,7 @@ nm_priorityListGui(*) {
 	}
 
 	WM_LBUTTONDOWN(*) {
+		global priorityList
 		MouseGetPos ,,,&hCtrl,2
 		if !hCtrl
 			return
@@ -7412,6 +7427,11 @@ nm_priorityListGui(*) {
 				PostMessage(0xA1, 2)
 			case "close":
 				ExitApp()
+			case "Reset":
+				priorityList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
+				if WinExist("natro_macro.ahk ahk_class AutoHotkey")
+					SendMessage(0x5563, 123456789)
+				nm_priorityGui()
 			default:
 				MouseGetPos(,&y)
 				priorityGui.GetPos(,&wy)
