@@ -109,9 +109,13 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5562, nm_ReturnNectarPercentages)
+OnMessage(0x5563, nm_UpdatePriorityList)
 
 ; set version identifier
 VersionID := "1.0.1"
+
+;set default priority list
+defaultPriorityList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
@@ -346,7 +350,8 @@ nm_importConfig()
 		, "SelectPreset", ""
 		, "LastPreset", 0
 		, "PresetRepeat", 0
-		, "PresetTimedEnable", 0)
+		, "PresetTimedEnable", 0
+		, "PriorityListNumeric", 123456789)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -7293,7 +7298,145 @@ nm_WebhookGUI(*){
 	exec := shell.Exec('"' exe_path64 '" /script /force *')
 	exec.StdIn.Write(script), exec.StdIn.Close()
 	
-	return (WGUIPID := exec.ProcessID)
+	return (PGUIPID := exec.ProcessID)
+}
+
+nm_priorityListGui(*) {
+	global
+	local script, exec
+
+	try ProcessClose(PGUIPID)
+
+	script := 
+	(
+	'
+	#NoTrayIcon
+	#SingleInstance Force
+	#MaxThreads 255
+	#Include lib
+	#Include Gdip_All.ahk
+	pToken := Gdip_Startup()
+	(bitmaps := Map()).CaseSense := 0
+	#Include "%A_ScriptDir%\nm_image_assets\webhook_gui\bitmaps.ahk"
+	DetectHiddenWindows 1
+
+	;;config
+	defaultList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
+	priorityList := []
+	for i in StrSplit(' priorityListNumeric ')
+		priorityList.push(defaultList[i])
+
+	priorityGui := Gui("-Caption +E0x80000 +E0x8000000 +LastFound +AlwaysOnTop +ToolWindow +OwnDialogs -DPIScale")
+	priorityGui.OnEvent("Close", (*) => ExitApp()), priorityGui.OnEvent("Escape", (*) => ExitApp())
+	priorityGui.Show("NA")
+
+	for i in ["moveRegion", "close", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9"]
+		priorityGui.AddText("v" i)
+	w:=250, h:=priorityList.Length * 34 + 64
+	hbm := CreateDIBSection(w, h)
+	hdc := CreateCompatibleDC()
+	obm := SelectObject(hdc, hbm)
+	G := Gdip_GraphicsFromHDC(hdc)
+	Gdip_SetSmoothingMode(G, 2)
+	Gdip_SetInterpolationMode(G, 2)
+	UpdateLayeredWindow(priorityGui.hwnd, hdc, A_ScreenWidth//2-w//2,A_ScreenHeight//2-h//2, w, h)
+	nm_priorityGui()
+	OnMessage(0x201, WM_LBUTTONDOWN)
+	priorityGui["moveRegion"].move(0, 0, w-30, 30)
+	priorityGui["close"].move(w-30, 0, 30, 30)
+	for i,v in priorityList
+		priorityGui["p" i].move(15, (i)*34+10, w-30, 30)
+	nm_priorityGui(movingItem?, mouseY?, drop?) {
+		global priorityList
+		local v,i
+		;;Title Bar
+		Gdip_GraphicsClear(G)
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_CreateLineBrushFromRect(0, 0, w, h, 0x00000000, 0x78000000), 14, 6, w-16, h-16, 12), Gdip_DeleteBrush(pBrush)
+		pBrush := Gdip_BrushCreateSolid("0xFFD9AB21"), Gdip_FillRoundedRectanglePath(G, pBrush, 8, 0, w-16, 30, 12), Gdip_FillRectangle(G, pBrush, 8, 13, w-16, 20), Gdip_DeleteBrush(pBrush)
+		Gdip_DrawImage(G, bitmaps["close"], w-42, 4)
+		Gdip_TextToGraphics(G, "Priority List", "x12 y8 s15 cffffffff Bolder","Arial", w-16, 30)
+		
+		;;Background
+		Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0xff131416), 8, 32, w-16, h-80), Gdip_FillRoundedRectanglePath(G, pBrush, 8, h-100, w-16, 84, 12),Gdip_DeleteBrush(pBrush)
+
+		;;Check for update in priority list
+		if IsSet(movingItem) && !IsSet(drop) {
+			index := ((mouseY > priorityList.Length * 34 + 10) ? priorityList.Length*34+10 : mouseY < 44 ? 44 : mouseY) // 34
+			Gdip_DrawLine(G , pPen:=Gdip_CreatePen("0xff5865f2", 2), 15, (index*34+10), w-15,  (index*34+10)), Gdip_DeletePen(pPen)
+		}
+		if IsSet(drop) {
+			index := ((mouseY > priorityList.Length * 34 + 10) ? priorityList.Length*34+10 : mouseY < 44 ? 44 : mouseY) // 34
+			priorityList.InsertAt(index, priorityList.RemoveAt(ObjHasValue(priorityList, movingItem)))
+		}
+		lower := 0
+		;;Priority List
+		for i, v in priorityList {
+			if IsSet(movingItem) && movingItem = v && !IsSet(drop) {
+				lower := 1
+				continue
+			}
+			groupx := 15, groupy := ((i-=lower)*34)+10, groupw := w-30, grouph := 30
+			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid("0xff323942"), groupx, groupy, groupw, grouph, 8), Gdip_DeleteBrush(pBrush)
+			Gdip_TextToGraphics(G, v, "x" groupx+8 " y" groupY + 7 " s15 cffffffff Bolder","Arial")
+			Gdip_DrawLine(G, pPen := Gdip_CreatePen("0xFFFFFFFF", 3), groupw-20, groupy + 10, groupw-5, groupy + 10)
+			Gdip_DrawLine(G, pPen, groupw-20, groupy + 15, groupw-5, groupy + 15)
+			Gdip_DrawLine(G, pPen, groupw-20, groupy + 20, groupw-5, groupy + 20), Gdip_DeletePen(pPen)
+		}
+		if IsSet(movingItem) && !IsSet(drop) {
+			groupy := (mouseY > priorityList.Length * 34 + 10) ? priorityList.Length * 34 + 10 : mouseY < 44 ? 44 : mouseY 
+			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid("0x99323942"), groupx, groupy, groupw, grouph, 8), Gdip_DeleteBrush(pBrush)
+			Gdip_TextToGraphics(G, movingItem, "x" groupx+8 " y" groupY + 7 " s15 c99ffffff Bolder","Arial")
+			Gdip_DrawLine(G, pPen := Gdip_CreatePen("0x99FFFFFF", 3), groupw-20, groupy + 10, groupw-5, groupy + 10)
+			Gdip_DrawLine(G, pPen, groupw-20, groupy + 15, groupw-5, groupy + 15)
+			Gdip_DrawLine(G, pPen, groupw-20, groupy + 20, groupw-5, groupy + 20), Gdip_DeletePen(pPen)
+		}
+
+		UpdateLayeredWindow(priorityGui.hwnd, hdc)
+
+	}
+	ObjHasValue(obj,value) {
+		for q,o in obj
+			if o = value
+				return q
+		return false
+	}
+
+	WM_LBUTTONDOWN(*) {
+		MouseGetPos ,,,&hCtrl,2
+		if !hCtrl
+			return
+		switch priorityGui[hCtrl].name, 0 {
+			case "moveRegion":
+				PostMessage(0xA1, 2)
+			case "close":
+				ExitApp()
+			default:
+				MouseGetPos(,&y)
+				priorityGui.GetPos(,&wy)
+				index := SubStr(priorityGui[hCtrl].name,2)
+				offset := y - wy-(index*34+10)
+				While GetKeyState("LButton", "P") {
+					MouseGetPos(,&y)
+					y-=offset + wy
+					nm_priorityGui(priorityList[index], y)
+				}
+				nm_priorityGui(priorityList[index], y, 1)
+				for k,v in priorityList
+					out .= ObjHasValue(defaultList, v)
+				if WinExist("natro_macro.ahk ahk_class AutoHotkey")
+					SendMessage(0x5563, out)
+		}
+	}
+	'
+	)
+	exec := ComObject("WScript.Shell").exec('"' exe_path64 '" /script /force *')
+	exec.StdIn.Write(script), exec.StdIn.Close()
+	return (PGUIPID := exec.ProcessID)
+}
+
+nm_UpdatePriorityList(wParam, * ) {
+	global
+	IniWrite(priorityListNumeric := wParam, '.\settings\nm_config.ini', 'settings', 'priorityListNumeric')
 }
 
 nm_createPresetFiles(presetName, *) {
@@ -9348,6 +9491,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	MainGui.SetFont("w700")
 	MainGui.Add("GroupBox", "x5 y24 w240 h90", "Fallback Private Servers")
+	MainGui.Add("GroupBox", "x5 y118 w240 h50", "Priority Settings")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -9377,6 +9521,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("CheckBox", "x362 y174 vTestReset Checked", "Reset")
 	MainGui.Add("CheckBox", "x413 y174 vTestMsgBox", "MsgBox")
 	MainGui.Add("Button", "x325 y197 w100 h24", "Start Test").OnEvent("Click", nm_testButton)
+	MainGui.Add("Button", "x15 y135 w220 h24", "Priority List").OnEvent("Click", nm_priorityListGui)
 	if (init = 1)
 	{
 		TabCtrl.Choose("Advanced")
@@ -9498,27 +9643,13 @@ nm_Start(){
 	global serverStart := nowUnix()
 	Loop {
 		DisconnectCheck()
-		;night
-		nm_Night()
-		;mondo
-		nm_Mondo()
-		;preset change
-		nm_preset()
-		;planters
-		mp_planter()
-		ba_planter()
-		;kill things
-		nm_Bugrun()
-		;collect things
-		nm_Collect()
-		;quests
-		nm_QuestRotate()
-		;boost
-		nm_Boost()
-		;gather
-		nm_GoGather()
+		For i in priorityList
+			(%"nm_" i%)()
+		
 	}
 }
+
+nm_planter() => mp_Planter() ba_planter()
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; FUNCTIONS
@@ -21426,6 +21557,9 @@ start(*){
 	Hotkey StartHotkey, "Off"
 	nm_setStatus("Begin", "Macro")
 	local ForceStart := (A_Args.Has(1) && (A_Args[1] = 1))
+	priorityList := []
+	for i in StrSplit(priorityListNumeric)
+		priorityList.push(defaultPriorityList[i])
 	;Auto Field Boost WARNING @ start
 	if(AutoFieldBoostActive){
 		if(AFBDiceEnable)
