@@ -7298,7 +7298,7 @@ nm_WebhookGUI(*){
 	exec := shell.Exec('"' exe_path64 '" /script /force *')
 	exec.StdIn.Write(script), exec.StdIn.Close()
 	
-	return (PGUIPID := exec.ProcessID)
+	return (WGUIPID := exec.ProcessID)
 }
 
 nm_priorityListGui(*) {
@@ -7316,11 +7316,10 @@ nm_priorityListGui(*) {
 	#Include lib
 	#Include Gdip_All.ahk
 	pToken := Gdip_Startup()
-	(bitmaps := Map()).CaseSense := 0
-	#Include "%A_ScriptDir%\nm_image_assets\webhook_gui\bitmaps.ahk"
 	DetectHiddenWindows 1
 
-	OnExit(ExitFunc)
+	(bitmaps := Map()).CaseSense := 0
+	#Include "%A_ScriptDir%\nm_image_assets\webhook_gui\bitmaps.ahk"
 
 	;;config
 	defaultList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
@@ -7343,7 +7342,7 @@ nm_priorityListGui(*) {
 	Gdip_SetInterpolationMode(G, 2)
 	UpdateLayeredWindow(priorityGui.hwnd, hdc, A_ScreenWidth//2-w//2,A_ScreenHeight//2-h//2, w, h)
 	nm_priorityGui()
-	OnMessage(0x201, WM_LBUTTONDOWN)
+
 	priorityGui["moveRegion"].move(0, 0, w-30, 30)
 	priorityGui["close"].move(w-30, 0, 30, 30)
 	for i,v in priorityList
@@ -7394,7 +7393,8 @@ nm_priorityListGui(*) {
 		}
 
 		UpdateLayeredWindow(priorityGui.hwnd, hdc)
-
+		OnMessage(0x201, WM_LBUTTONDOWN)
+		OnExit(ExitFunc)
 	}
 	ObjHasValue(obj,value) {
 		for q,o in obj
@@ -7469,8 +7469,10 @@ nm_priorityListGui(*) {
 	}
 	'
 	)
-	exec := ComObject("WScript.Shell").exec('"' exe_path64 '" /script /force *')
+	exec := ComObject("WScript.Shell")
+			.exec('"' exe_path64 '" /script /force *')
 	exec.StdIn.Write(script), exec.StdIn.Close()
+
 	return (PGUIPID := exec.ProcessID)
 }
 
