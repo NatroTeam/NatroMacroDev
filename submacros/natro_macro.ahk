@@ -3254,16 +3254,17 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;file drop
 nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
+	global FieldPattern1, FieldPattern2, FieldPattern3
     for k, v in fileArr {
         Content := fileRead(v)
-        If (!!regexmatch(content := FileRead(v), "im)patterns\[") | !!regexmatch(content, "im)paths\["))
+        If (regexmatch(content := FileRead(v), "im)patterns\[") | !!regexmatch(content, "im)paths\["))
             return msgbox(
                 (
                 'The file "' v '" seems to be deprecated!
      			Make sure to install a compatible version of the file.'
                 ), , 0x1010)
-			SplitPath(v,&FileName:="",,&Ext:="",&Name:="")
-			if not ObjHasValue(["ahk", "ini", "preset"], Ext)
+		SplitPath(v,&FileName:="",,&Ext:="",&Name:="")
+		if !RegExMatch(ext, "i)^(ini|preset|ahk)$")
 			return msgbox(
 				(
 				'The file "' v '" is not a valid file type!
@@ -3277,9 +3278,9 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 				), , 0x1010)
 		ReplaceSystemCursors("IDC_WAIT")
 		f := FileOpen(outputPath:=
-			(!!RegExMatch(name, "i)^(nm_config|field_config|manual_planter)$") ? "settings\" 
+			(RegExMatch(name, "i)^(nm_config|field_config|manual_planter)$") ? "settings\" 
 				: ext = "preset" ? "settings\presets\"
-					: !!RegExMatch(fileName, "i)^(wf|gt(b|c|p|q|f))-") ? (type='paths') "\"
+					: RegExMatch(fileName, "i)^(wf|gt(b|c|p|q|f))-") ? (type='paths') "\"
 						: ext = "ahk" ? (type := "patterns") "\"
 							: "")  FileName 
 			, "w"
@@ -3297,11 +3298,10 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
         (%'nm_import' type%)()
         ReplaceSystemCursors()
         if (type = "paths")
-            return msgbox('Successfully imported the ' SubStr(type, 1, -1) ' ' name '!')
+            return msgbox('Successfully imported the path ' name '!')
         if (tabCtrl.value = 1 && (copyTo := ((y > 53 && y < 115) || 2 * (y > 115 && y < 175 && mainGui["fieldName2"].enabled) || 3 * (y > 175 && y < 235 && mainGui["fieldName3"].enabled)))) {
-			msgboxOut := Msgbox('You dragged the pattern ' name '`r`non the ' (copyTo = 1 ? "first" : copyTo = 2 ? "second" : "third") ' gather settings!`r`nDo you want to use this pattern?', , 0x1044)
-			if (msgboxOut = "Yes") {
-				IniWrite name, "settings\nm_config.ini", "Gather", "FieldPattern" copyTo
+			if (Msgbox('You dragged the pattern ' name '`r`non the ' (copyTo = 1 ? "first" : copyTo = 2 ? "second" : "third") ' gather settings!`r`nDo you want to use this pattern?', , 0x1044) = "Yes") {
+				IniWrite (FieldPattern%copyTo% := name), "settings\nm_config.ini", "Gather", "FieldPattern" copyTo
 				MainGui["FieldPattern" copyTo].Text := name
 			}
 		}
