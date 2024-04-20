@@ -10492,13 +10492,13 @@ nm_FindItem(chosenItem, *){
 	GetRobloxClientPos()
 	DetectHiddenWindows 1
 	if windowWidth == 0
-		return WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 0, , , , , , 2000) :""
+		return WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 0, , , , , , 2000) DetectHiddenWindows(0) : DetectHiddenWindows(0)
 	Prev_ShiftLock := ShiftLockEnabled
 	yOffset := GetYOffset()
 	nm_setShiftLock(0)
 	ActivateRoblox()
 	if (nm_OpenMenu("itemmenu") = 0)
-		return WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 2, , , , , , 2000) : ""
+		return WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 2, , , , , , 2000) DetectHiddenWindows(0) nm_setShiftLock(Prev_ShiftLock) : DetectHiddenWindows(0) nm_setShiftLock(Prev_ShiftLock)
 	MouseMove windowX+46, windowY+yOffset+219
 	Loop 55 {
 		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-300)
