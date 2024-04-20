@@ -2379,11 +2379,11 @@ MainGui.Add("UpDown", "xp+14 yp h16 -16 Range1-5 Disabled vFieldPatternSize2UpDo
 MainGui.Add("Text", "x254 yp+60 h16 w12 0x201 +Center +BackgroundTrans vFieldPatternSize3", FieldPatternSize3)
 MainGui.Add("UpDown", "xp+14 yp h16 -16 Range1-5 Disabled vFieldPatternSize3UpDown", FieldPatternSizeArr[FieldPatternSize3]).OnEvent("Change", nm_FieldPatternSize)
 
-MainGui.Add("Text", "x294 y60 w28 h16 0x201 vFieldPatternRepsText1 +Center")
+MainGui.Add("Text", "x294 y60 w28 h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-9 Disabled vFieldPatternReps1", FieldPatternReps1)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldPatternRepsText2 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-9 Disabled vFieldPatternReps2", FieldPatternReps2)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldPatternRepsText3 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-9 Disabled vFieldPatternReps3", FieldPatternReps3)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 
 (GuiCtrl := MainGui.Add("CheckBox", "x129 y82 Disabled vFieldPatternShift1 Checked" FieldPatternShift1, "Gather w/Shift-Lock")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
@@ -2414,11 +2414,11 @@ MainGui.Add("Text", "x258 yp+61 w31 +Center +BackgroundTrans vFieldRotateDirecti
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 Disabled vFRD3Left", "<").OnEvent("Click", nm_FieldRotateDirection)
 MainGui.Add("Button", "xp+42 yp w12 h16 Disabled vFRD3Right", ">").OnEvent("Click", nm_FieldRotateDirection)
 
-MainGui.Add("Text", "x301 y95 w28 h16 0x201 vFieldRotateTimesText1 +Center")
+MainGui.Add("Text", "x301 y95 w28 h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-4 Disabled vFieldRotateTimes1", FieldRotateTimes1)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldRotateTimesText2 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-4 Disabled vFieldRotateTimes2", FieldRotateTimes2)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldRotateTimesText3 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-4 Disabled vFieldRotateTimes3", FieldRotateTimes3)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 
 (GuiCtrl := MainGui.Add("Edit", "x334 y58 w36 h20 limit4 number Disabled vFieldUntilMins1", ValidateInt(&FieldUntilMins1, 10))).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
@@ -2459,11 +2459,11 @@ MainGui.Add("Button", "xp+71 yp w12 h16 Disabled vFSL3Right", ">").OnEvent("Clic
 MainGui.Add("Text", "x415 y79 w86 +BackgroundTrans +Center", "Distance:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "Distance:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "Distance:")
-MainGui.Add("Text", "x440 y95 w32 h16 0x201 vFieldSprinklerDistText1 +Center")
+MainGui.Add("Text", "x440 y95 w32 h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-10 Disabled vFieldSprinklerDist1", FieldSprinklerDist1)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldSprinklerDistText2 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-10 Disabled vFieldSprinklerDist2", FieldSprinklerDist2)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "xp yp+60 wp h16 0x201 vFieldSprinklerDistText3 +Center")
+MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("UpDown", "Range1-10 Disabled vFieldSprinklerDist3", FieldSprinklerDist3)).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 SetLoadingProgress(26)
 
@@ -2550,7 +2550,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Text", "x255 y55 w119 h120 -Wrap vTotalStats")
 MainGui.Add("Text", "x375 y55 w119 h120 -Wrap vSessionStats")
 MainGui.Add("Button", "x290 y39 w50 h15 vResetTotalStats Disabled", "Reset").OnEvent("Click", nm_ResetTotalStats)
-MainGui.Add("Button", "x259 y202 w227 h24 vWebhookGUI Disabled", "Change Discord Settings").OnEvent("Click", nm_WebhookGUI)
+MainGui.Add("Button", "x265 y202 w215 h24 vWebhookGUI Disabled", "Change Discord Settings").OnEvent("Click", nm_WebhookGUI)
 nm_setStats()
 SetLoadingProgress(28)
 
@@ -21973,13 +21973,8 @@ nm_WM_COPYDATA(wParam, lParam, *){
 	global LastGuid, PMondoGuid, MondoAction, MondoBuffCheck, currentWalk, FwdKey, BackKey, LeftKey, RightKey, SC_Space
 	StringAddress := NumGet(lParam + 2*A_PtrSize, "Ptr")  ; Retrieves the CopyDataStruct's lpData member.
 	StringText := StrGet(StringAddress)  ; Copy the string out of the structure.
-	if (wParam = 2) {
-		DetectHiddenWindows 1
-		if WinExist("Status.ahk ahk_class AutoHotkey")
-			SendMessage(0x5554,nm_LoadPreset(StringText))
-		DetectHiddenWindows 0
-		return 0
-	}
+	if (wParam = 2)
+		return nm_loadPreset(StringText)
 	if(wParam=1){ ;guiding star detected
 		nm_setStatus("Detected", "Guiding Star in " . StringText)
 		;pause

@@ -2400,7 +2400,7 @@ nm_command(command)
 							  , CopyDataStruct , A_PtrSize )
 						DetectHiddenWindows 1
 						if WinExist("natro_macro ahk_class AutoHotkey")
-							SendMessage(0x4A, 2, CopyDataStruct,,,,,,2000)	
+							discord.SendEmbed((loadReturnValue:=SendMessage(0x4A, 2, CopyDataStruct,,,,,,2000) ? "Successfully loaded" : "Failed to load") " preset!", (loadReturnValue ? 0x2b2d31+0: 16711731),,,,id)
 						DetectHiddenWindows 0
 					}
 				case "delete":
@@ -2971,8 +2971,6 @@ nm_sendNectarImage(wParam,lParam,* ) {
     discord.SendEmbed("**Nectar Percentages**", 0x2b2d31+0,, pBitmap)
     Gdip_DisposeImage(pBitmap)
 }
-
-nm_sendPresetLoad(wParam, * ) => discord.SendEmbed((wParam ? "Successfully loaded" : "Failed to load") " preset!", (wParam ? 0x2b2d31+0: 16711731))
 
 ExitFunc(*)
 {
