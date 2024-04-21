@@ -91,11 +91,11 @@ OnMessage(0x5553, nm_setGlobalStr, 255)
 OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5559, nm_sendItemPicture)
 OnMessage(0xC, nm_sendNectarImage)
-OnMessage(0x5554, nm_sendPresetLoad)
 
 discord.SendEmbed("Connected to Discord!", 5066239)
 
-;nm_getCPUPercentage()
+;this is needed for the ?performance [cpu] command.
+;it initializes the statics in nm_getCPUPercentage()
 nm_getCPUPercentage()
 
 planters := Map(), planters.CaseSense := 0

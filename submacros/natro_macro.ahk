@@ -7598,7 +7598,7 @@ nm_createPresetFiles(presetName, *) {
 			"MoveSpeedNum", "MultiReset", "NewWalk",
 			"PublicFallback", "ReconnectHour", "ReconnectInterval",
 			"ReconnectMessage", "ReconnectMethod", "ReconnectMin",
-			"ShowOnPause", "SprinklerType"
+			"ShowOnPause", "SprinklerType", "PriorityListNumeric"
 		]
 		, DiscordSettings := [
 			"AmuletSSCheck", "BalloonSSCheck", "CriticalErrorPingCheck",
@@ -7893,7 +7893,7 @@ nm_loadPreset(presetName, * ) {
 	global
 	local f, preset, config, planters, fields, k,v, i, j
 	if !FileExist('.\settings\presets\' presetName '.preset')
-		return MsgBox("Preset appears to be missing: " presetName,"ERROR",0x1010)
+		return !MsgBox("Preset appears to be missing: " presetName,"ERROR","0x1010 T10")
 	ReplaceSystemCursors("IDC_WAIT")
 	f := FileOpen('.\settings\presets\' presetName '.preset', "r"), preset := JSON.parse(f.Read()), f.Close()
 	f := FileOpen('.\settings\nm_config.ini', "r"), config := configToObject(f.Read()), f.Close()
@@ -7919,6 +7919,7 @@ nm_loadPreset(presetName, * ) {
 	preset.Has('General') && (f := FileOpen('.\settings\manual_planters.ini', "w")) && f.Write(objectToIni(planters)) && f.Close()
 	preset.Has('Bamboo') && (f := FileOpen('.\settings\Field_Config.ini', "w")) && f.Write(objectToIni(fields)) && f.Close()
 	ReplaceSystemCursors()
+	return 1
 }
 
 nm_ImportPreset(*) {
