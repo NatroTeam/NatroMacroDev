@@ -32,6 +32,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "nowUnix.ahk"
 
 #Warn VarUnset, Off
+; TODO remove comment here!
 ;OnError (e, mode) => (mode = "Return") ? -1 : 0
 
 SetWorkingDir A_ScriptDir "\.."
@@ -109,7 +110,6 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5562, nm_ReturnNectarPercentages)
-OnMessage(0x5563, nm_UpdatePriorityList)
 OnMessage(0x5564, nm_updatePresetTime)
 
 ; set version identifier
@@ -215,7 +215,7 @@ nm_importPatterns()
 			nm_Walk(param1, param2, param3?) => ""
 			Gdip_ImageSearch(*) => ""
 			Gdip_BitmapFromBase64(*) => ""
-			CameraRot(Dir, Num) => ""
+			CameraRot(param1, param2) => ""
 			' pattern '
 
 			'
@@ -2026,7 +2026,7 @@ Run
 '"' WebhookEasterEgg '" "' ssCheck '" "' ssDebugging '" "' CriticalSSCheck '" "' AmuletSSCheck '" "' MachineSSCheck '" "' BalloonSSCheck '" "' ViciousSSCheck '" '
 '"' DeathSSCheck '" "' PlanterSSCheck '" "' HoneySSCheck '" "' HoneyUpdateSSCheck '" "' criticalCheck '" "' discordUID '" "' CriticalErrorPingCheck '" "' DisconnectPingCheck '" "' GameFrozenPingCheck '" '
 '"' PhantomPingCheck '" "' UnexpectedDeathPingCheck '" "' EmergencyBalloonPingCheck '" "' commandPrefix '" "' NightAnnouncementCheck '" "' NightAnnouncementName '" '
-'"' NightAnnouncementPingID '" "' NightAnnouncementWebhook '" "' PrivServer '" "' DebugLogEnabled '" "' MonsterRespawnTime '"'
+'"' NightAnnouncementPingID '" "' NightAnnouncementWebhook '" "' PrivServer '" "' DebugLogEnabled '" "' MonsterRespawnTime '" "' PriorityListNumeric '"'
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -7430,8 +7430,7 @@ nm_priorityListGui(*) {
 				ExitApp()
 			case "Reset":
 				priorityList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
-				if WinExist("natro_macro.ahk ahk_class AutoHotkey")
-					SendMessage(0x5563, 123456789)
+				updateInt("priorityListNumeric", 123456789)
 				nm_priorityGui()
 			default:
 				MouseGetPos(,&y)
@@ -7448,8 +7447,7 @@ nm_priorityListGui(*) {
 				nm_priorityGui(priorityList[index], y, 1)
 				for k,v in priorityList
 					out .= ObjHasValue(defaultList, v)
-				if WinExist("natro_macro.ahk ahk_class AutoHotkey")
-					SendMessage(0x5563, out)
+				updateInt("priorityListNumeric", out)
 		}
 	}
 	ReplaceSystemCursors(IDC := "")
@@ -7481,6 +7479,14 @@ nm_priorityListGui(*) {
 			}
 		}
 	}
+	UpdateInt(name, value)
+	{
+		IniWrite value, "settings\nm_config.ini", "Status", name
+		if WinExist("natro_macro.ahk ahk_class AutoHotkey")
+			PostMessage 0x5552, 368, value
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			PostMessage 0x5552, 368, value
+	}
 
 	ExitFunc(*)
 	{
@@ -7495,11 +7501,6 @@ nm_priorityListGui(*) {
 	exec.StdIn.Write(script), exec.StdIn.Close()
 
 	return (PGUIPID := exec.ProcessID)
-}
-
-nm_UpdatePriorityList(wParam, * ) {
-	global
-	IniWrite(priorityListNumeric := wParam, '.\settings\nm_config.ini', 'settings', 'priorityListNumeric')
 }
 
 nm_createPresetFiles(presetName, *) {
@@ -10493,19 +10494,28 @@ nm_AmuletPrompt(decision:=0, *){
 		return 0
 	}
 }
-nm_FindItem(chosenItem, *){
+nm_FindItem(chosenItem, *) {
 	global shiftLockEnabled, bitmaps
 	static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
 	GetRobloxClientPos()
 	DetectHiddenWindows 1
-	if windowWidth == 0
-		return WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 0, , , , , , 2000) DetectHiddenWindows(0) : DetectHiddenWindows(0)
+	if windowWidth == 0 {
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			sendMessage 0x5559
+		DetectHiddenWindows 0
+		return 0
+	}
 	Prev_ShiftLock := ShiftLockEnabled
 	yOffset := GetYOffset()
 	nm_setShiftLock(0)
 	ActivateRoblox()
-	if (nm_OpenMenu("itemmenu") = 0)
-		return WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 2, , , , , , 2000) DetectHiddenWindows(0) nm_setShiftLock(Prev_ShiftLock) : DetectHiddenWindows(0) nm_setShiftLock(Prev_ShiftLock)
+	if (nm_OpenMenu("itemmenu") = 0) {
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			SendMessage 0x5559,, 2
+		DetectHiddenWindows 0
+		nm_setShiftLock(Prev_ShiftLock)
+		return 0
+	}
 	MouseMove windowX+46, windowY+yOffset+219
 	Loop 55 {
 		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-300)
@@ -22096,6 +22106,11 @@ nm_setGlobalInt(wParam, lParam, *)
 	local var := arr[wParam]
 	try %var% := lParam
 	nm_UpdateGUIVar(var)
+	if var = priorityListNumeric {
+		priorityList := []
+		for i in StrSplit(prioritylistnumeric)
+			priorityList.push(defaultpriorityList[i])
+	}
 	return 0
 }
 nm_UpdateGUIVar(var)
@@ -22227,11 +22242,12 @@ nm_ReturnNectarPercentages(*) {
 	critical
 	global nectarnames
 	if !GetRobloxHWND()
-		return
+		return 0
 	for k,v in nectarNames
 		str .= ba_GetNectarPercent(v) ","
 	DetectHiddenWindows 1
 	if WinExist("Status.ahk ahk_class AutoHotkey")
 		SendMessage 0xc,, StrPtr(SubStr(str,1,-1))
 	DetectHiddenWindows 0
+	return 1
 }

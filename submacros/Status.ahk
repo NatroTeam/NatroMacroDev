@@ -22,7 +22,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "JSON.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "Roblox.ahk"
-
+;TODO remove comment here!
 ;OnError (e, mode) => (mode = "Return") ? -1 : 0
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
@@ -82,7 +82,10 @@ DebugLogEnabled := A_Args[35]
 
 MonsterRespawnTime := A_Args[36]
 
+priorityListNumeric := A_Args[37]
+
 pToken := Gdip_Startup()
+
 OnExit(ExitFunc)
 OnMessage(0x004A, nm_sendPostData, 255)
 OnMessage(0xC2, nm_setStatus, 255)
@@ -648,7 +651,7 @@ settings["PresetInterval"] := {enum: 364, type: "int", section: "Settings", rege
 settings["LastPreset"] := {enum: 365, type: "int", section: "Settings", regex: "i)^(0|1)$"}
 settings["PresetRepeat"] := {enum: 366, type: "int", section: "Settings", regex: "i)^(0|1)$"}
 settings["PresetTimedEnable"] := {enum: 367, type: "int", section: "Settings", regex: "i)^(0|1)$"}
-
+settings["PriorityListNumeric"] := {enum: 368, type: "int", section: "Settings", regex: "i)^\d{9}$"}
 bitmaps := Map()
 bitmaps["moon"] := Gdip_BitmapFromBase64("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")
 #Include "%A_ScriptDir%\..\nm_image_assets\offset\bitmaps.ahk"
@@ -805,7 +808,7 @@ CreateHoneyBitmap(honey := 1, backpack := 1)
 nm_command(command)
 {
 	global commandPrefix, MacroState, planters, timers, settings, blender, shrine
-	static ssmode := "All"
+	static ssmode := "All", defaultPriorityList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 
 	id := command.id, params := []
 	Loop Parse SubStr(command.content, StrLen(commandPrefix)+1), A_Space
@@ -963,7 +966,28 @@ nm_command(command)
 			}
 			'
 			)
-
+			case "priority":
+			postdata :=
+			(
+			'
+			{
+				"embeds": [
+				  {
+					"title": "Priority List",
+					"color": 2829617,
+					"description": "To change the priority list, use the following command:\n``````\n' commandPrefix 'set priorityListNumeric [numbers|default]\n``````\nEach digit represents its slot in the default priority list.\nFor example:\n``````\n' commandPrefix 'set priorityListNumeric 123456789\n``````\n\n**Default Priority List**\n1 - Night\n2 - Mondo\n3 - Preset\n4 - Planter\n5 - Bugrun\n6 - Collect\n7 - Quest Rotate\n8 - Boost\n9 - Go Gather"
+				  }
+				],
+				"allowed_mentions": {
+				  "parse": []
+				},
+				"message_reference": {
+				  "message_id": "' id '",
+				  "fail_if_not_exists": false
+				}
+			  }			  
+			'
+			)
 			default:
 			postdata :=
 			(
@@ -1814,6 +1838,20 @@ nm_command(command)
 				default:
 				discord.SendEmbed("``" ((StrLen(params[3]) > 0) ? params[3] : "<blank>") "`` is not a valid setting!\n``?set bugrun`` must be followed by ``on``, ``off``, ``1``, or ``0``", 16711731, , , , id)
 			}
+			case "priority", "priorityList", "priorityListNumeric":
+			value:=((params[3] = "default") ? 123456789 : params[3]),v := Settings["PriorityListNumeric"]
+			if (value ~= v.regex)
+			{
+				UpdateInt("PriorityListNumeric", value, "Settings")
+				for i,j in StrSplit(value) {
+					if !defaultPriorityList.Has(i)
+						continue
+					newList .= "\n" i " - " defaultPriorityList[j]
+				}
+				discord.SendEmbed("**New Priority List**: ``````" newList "``````\nnumeric: ``" priorityListNumeric "``", 2829617, , , , id)
+			}
+			else
+				discord.SendEmbed("``" ((StrLen(value) > 0) ? value : "<blank>") "`` is not an acceptable value for ``PriorityListNumeric``!\n``" commandPrefix "help priority`` for help", 16711731, , , , id)
 
 			default:
 			Loop 1
@@ -1857,7 +1895,13 @@ nm_command(command)
 				}
 			}
 		}
-		if IsSet(s)
+		if (params[2] = "PriorityListNumeric" or params[2] = "priorityList" or params[2] = "priority")
+		{
+			for i,j in StrSplit(priorityListNumeric)
+				oldList .= "\n" i " - " defaultPriorityList[j]
+			discord.SendEmbed("**Priority List**: ``````" oldList "``````\nnumeric: ``" priorityListNumeric "``", 2829617, , , , id)
+		}
+		else if IsSet(s)
 		{
 			postdata :=
 			(
@@ -2453,7 +2497,8 @@ nm_command(command)
 		case "nectar", "nectars","nec":
 		DetectHiddenWindows 1
 		if WinExist("natro_macro ahk_class AutoHotkey")
-			SendMessage(0x5562, , , , , , , , 2000)
+			if !SendMessage(0x5562, , , , , , , , 2000)
+				discord.SendEmbed("No Roblox window found", 16711731, , , , id)
 		DetectHiddenWindows 0
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
@@ -2908,7 +2953,7 @@ nm_sendItemPicture(wParam, lParam,*) {
 		case 0:
 			switch lParam {
 				case 0:
-					discord.SendEmbed("No Roblox found!", 16711731)
+					discord.SendEmbed("No Roblox window found!", 16711731)
 				case 1:
 					discord.SendEmbed("Item was not found.", 16711731)
 				case 2:
