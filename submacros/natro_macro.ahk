@@ -10005,9 +10005,8 @@ nm_PlanterTimeUpdate(FieldName, SetStatus := 1)
 nm_preset() {
 	global
 	local preset
-	static startup:=true
-	if (startup)
-		lastPresetChange:=nowUnix(),startup:=false
+	if (lastPresetChange=0)
+		lastPresetChange:=nowUnix(),IniWrite(lastPresetChange, ".\settings\nm_config.ini", "Settings", "lastPresetChange")
 	if !PresetTimedEnable || (!PresetRepeat && LastPreset = 1)
 		return
 	preset := (LastPreset) ? PresetTimed1 : PresetTimed2
