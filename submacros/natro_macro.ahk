@@ -10009,11 +10009,9 @@ nm_preset() {
 	static now := nowUnix()
 	if !PresetTimedEnable || (!PresetRepeat && LastPreset = 1)
 		return
-	presetInterval := presetInterval || 12
-	timeInterval := PresetInterval * 1000 * 60 * 60
 	preset := (LastPreset) ? PresetTimed1 : PresetTimed2
 	PresetChangeTime += nowUnix() - now
-	if (PresetChangeTime > timeInterval) {
+	if (PresetChangeTime > (presetInterval || 12) * 3600000) {
 		if (preset!="" && (PresetTimed1!=PresetTimed2 && LastPreset))
 			nm_loadPreset(preset), nm_setStatus("Preset", "Loaded preset '" preset "'. Changed from preset '" (LastPreset ? PresetTimed2 : PresetTimed1) "'. " timeInterval " hours remaining.")
 		else
