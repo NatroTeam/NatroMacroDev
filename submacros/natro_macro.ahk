@@ -10005,7 +10005,8 @@ nm_PlanterTimeUpdate(FieldName, SetStatus := 1)
 nm_preset() {
 	global
 	local preset
-	if (static startup:=true)
+	static startup:=true
+	if (startup)
 		lastPresetChange:=nowUnix(),startup:=false
 	if !PresetTimedEnable || (!PresetRepeat && LastPreset = 1)
 		return
