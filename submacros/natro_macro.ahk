@@ -110,7 +110,6 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5562, nm_ReturnNectarPercentages)
-OnMessage(0x5564, nm_updatePresetTime)
 
 ; set version identifier
 VersionID := "1.0.1"
@@ -352,6 +351,7 @@ nm_importConfig()
 		, "LastPreset", 0
 		, "PresetRepeat", 0
 		, "PresetTimedEnable", 0
+		, "lastPresetChange", 0
 		, "PriorityListNumeric", 123456789)
 
 	config["Status"] := Map("StatusLogReverse", 0
@@ -1997,7 +1997,6 @@ QuestBlueBoost := 0
 QuestRedBoost := 0
 HiveConfirmed := 0
 ShiftLockEnabled := 0
-PresetChangeTime := 0
 
 ;ensure Gui will be visible
 if (GuiX && GuiY)
@@ -10005,29 +10004,23 @@ nm_PlanterTimeUpdate(FieldName, SetStatus := 1)
 }
 nm_preset() {
 	global
-	local timeInterval, preset
-	static now := nowUnix()
+	local preset
+	if (static startup:=true)
+		lastPresetChange:=nowUnix(),startup:=false
 	if !PresetTimedEnable || (!PresetRepeat && LastPreset = 1)
 		return
 	preset := (LastPreset) ? PresetTimed1 : PresetTimed2
-	PresetChangeTime += nowUnix() - now
-	if (PresetChangeTime > (presetInterval || 12) * 3600000) {
+	if (nowUnix() - lastPresetChange > (presetInterval || 12) * 3600000) {
 		if (preset!="" && (PresetTimed1!=PresetTimed2 && LastPreset))
-			nm_loadPreset(preset), nm_setStatus("Preset", "Loaded preset '" preset "'. Changed from preset '" (LastPreset ? PresetTimed2 : PresetTimed1) "'. " timeInterval " hours remaining.")
+			nm_loadPreset(preset), nm_setStatus("Preset", "Loaded preset '" preset "'. Changed from preset '" (LastPreset ? PresetTimed2 : PresetTimed1) "'. " presetInterval " hours remaining.")
 		else
-			nm_setStatus("Preset", "Failed to change presets. " (PresetTimed1=PresetTimed2 ? "Both slots have the same preset." : "No preset given for slot " (LastPreset ? "1" : "2")) ". Skipping preset change." timeInterval " hours remaining.")
-		PresetChangeTime := 0
+			nm_setStatus("Preset", "Failed to change presets. " (PresetTimed1=PresetTimed2 ? "Both slots have the same preset." : "No preset given for slot " (LastPreset ? "1" : "2")) ". Skipping preset change." presetInterval " hours remaining.")
+		lastPresetChange := nowUnix()
 		LastPreset := PresetRepeat * !LastPreset || 1
 		IniWrite(LastPreset, ".\settings\nm_config.ini", "Settings", "LastPreset")
+		IniWrite(lastPresetChange, ".\settings\nm_config.ini", "Settings", "lastPresetChange")
 	}
-	now := nowUnix()
 }
-
-nm_updatePresetTime(time, * ) {
-	global presetChangeTime += time
-	return presetChangeTime
-}
-
 ;syspalk if you're reading this hi
 ;(+) Keep this in for the final
 nm_HealthDetection()

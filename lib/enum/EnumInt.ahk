@@ -365,4 +365,5 @@
 	, "LastPreset"
 	, "PresetRepeat"
 	, "PresetTimedEnable"
-	, "PriorityListNumeric"]
+	, "PriorityListNumeric"
+	, "lastPresetChange"]
