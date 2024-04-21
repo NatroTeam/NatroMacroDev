@@ -7905,7 +7905,7 @@ nm_loadPreset(presetName, * ) {
 				for i,j in v {
 					config[k][i] := j
 					%i% := j
-					nm_updateGuiVar(i)
+					try nm_updateGuiVar(i)
 				}			
 			case "general", "Slot 1", "Slot 2", "Slot 3":
 				for i,j in v
