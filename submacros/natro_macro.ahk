@@ -110,7 +110,7 @@ OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5562, nm_ReturnNectarPercentages)
 OnMessage(0x5563, nm_UpdatePriorityList)
-OnMessage(0x5564, (time, *) => PresetChangeTime+=time)
+OnMessage(0x5564, nm_updatePresetTime)
 
 ; set version identifier
 VersionID := "1.0.1"
@@ -10023,6 +10023,12 @@ nm_preset() {
 	}
 	now := nowUnix()
 }
+
+nm_updatePresetTime(time, * ) {
+	global presetChangeTime += time
+	return presetChangeTime
+}
+
 ;syspalk if you're reading this hi
 ;(+) Keep this in for the final
 nm_HealthDetection()
