@@ -230,6 +230,7 @@ nm_ManualHotbar(num, *){
 
 nm_ToggleManualAll(GuiCtrl, *){
     ;toggle on
+    global
     if(GuiCtrl.Text = "Start`nAll" && ((ManualHotbarButton1=0 && ManualHotbarArmed1) || (ManualHotbarButton2=0 && ManualHotbarArmed2) || (ManualHotbarButton3=0 && ManualHotbarArmed3) || (ManualHotbarButton4=0 && ManualHotbarArmed4) || (ManualHotbarButton5=0 && ManualHotbarArmed5) || (ManualHotbarButton6=0 && ManualHotbarArmed6) || (ManualHotbarButton7=0 && ManualHotbarArmed7))) {
         GuiCtrl.Text := "Stop`nAll"
         loop 7 {
@@ -245,7 +246,7 @@ nm_ToggleManualAll(GuiCtrl, *){
                 nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index])
         }
     }
-    if WinExist("ahk_id" GetRobloxHWND) {
+    if WinExist("ahk_id" GetRobloxHWND()) {
         WinActivate
     }
 }
@@ -283,7 +284,7 @@ nm_ToggleManualHotbar(GuiCtrl, *){
             ManualHotbar["ToggleManualAll"].Text := "Start`nAll"
         }
     }
-    if WinExist("Roblox ahk_exe RobloxPlayerBeta.exe") {
+    if WinExist("ahk_id" GetRobloxHWND()) {
         WinActivate
     }
 }
@@ -309,11 +310,10 @@ nm_armManualHotbar(GuiCtrl, *){
 
     if(ManualHotbarArmed%num%=1){
         ManualHotbar["ManualHotbarTimer" num].Opt("-Hidden")
-        ;ManualHotbar["ManualHotbarTimer" num].Visible := 1
     } else {
         ManualHotbar["ManualHotbarTimer" num].Opt("+Hidden")
         if(ManualHotbarButton%num%) {
-            ManualHotbar["ManualHotbarButton" num].Text := "Start"
+            ManualHotbar["ManualHotbarButton" num].Text := "Start " num
             ManualHotbarButton%num% := 0
             ManualHotbarCountdown%num%:=ManualHotbarTimer%num%
             ManualHotbar["ManualHotbarTimer" num].Text := ManualHotbarTimer%num%
