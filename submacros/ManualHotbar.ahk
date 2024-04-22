@@ -221,14 +221,11 @@ nm_ManualHotbar(num, *){
 
     ManualHotbar["ManualHotbarTimer" num].Text := ManualHotbarCountdown%num%
 
-    if(ManualHotbarCountdown%num%=1) {
-        ManualHotbarCountdown%num% := ManualHotbarTimer%num%
+    if(ManualHotbarCountdown%num%=0) {
+        ManualHotbarCountdown%num% := ManualHotbarTimer%num%-1
         send "{sc00" num+1 "}"
-;msgbox "send: " num
-    } else {
-        ManualHotbarCountdown%num% := ManualHotbarCountdown%num%-1
-;msgbox num
-    }
+    } else
+        ManualHotbarCountdown%num%--
 }
 
 nm_ToggleManualAll(GuiCtrl, *){
