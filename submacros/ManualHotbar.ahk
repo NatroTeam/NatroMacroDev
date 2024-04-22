@@ -137,8 +137,9 @@ OnExit(nm_ManualHotbarExit)
 
 ;GUI
 ManualHotbar := Gui("+AlwaysOnTop -Caption +Border +minsize30x15 +E0x00040000 +lastfound -MinimizeBox", "Manual Hotbar")
-ManualHotbar.Show("x" ManualHBX " y" ManualHBY " h30 w570")
+ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w570 h30")
 (GuiCtrl := ManualHotbar.Add("Picture", "x0 y0 w15 h15", ".\nm_image_assets\auryn.ico")).OnEvent("Click", (*) => SendMessage(0xA1, 2))
+GuiCtrl.OnEvent("ContextMenu", nm_toggleGuiMode)
 ManualHotbar.Add("Button", "x15 y0 w30 h30 vToggleManualAll", "Start`nALL").OnEvent("Click", nm_ToggleManualAll)
 
 ManualHotbar.Add("GroupBox", "x45 y-6 w75 h36 Section")
@@ -228,7 +229,6 @@ nm_ManualHotbar(num, *){
         ManualHotbarCountdown%num% := ManualHotbarCountdown%num%-1
 ;msgbox num
     }
-
 }
 
 nm_ToggleManualAll(GuiCtrl, *){
@@ -248,7 +248,7 @@ nm_ToggleManualAll(GuiCtrl, *){
                 nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index])
         }
     }
-    if WinExist("Roblox ahk_exe RobloxPlayerBeta.exe") {
+    if WinExist("ahk_id" GetRobloxHWND) {
         WinActivate
     }
 }
@@ -334,4 +334,11 @@ nm_saveManualHotbar(GuiCtrl, *) {
 nm_saveManualHotbarDDL(GuiCtrl, *) {
 	global
 	IniWrite ManualHotbar[GuiCtrl.Name].Text, "settings\manual_hotbar.ini", "ManualHotbar", GuiCtrl.Name
+}
+nm_toggleGuiMode(*) {
+    static GuiHidden := 0
+    if GuiHidden := !GuiHidden
+        ManualHotbar.Show("h15 w15")
+    else
+        ManualHotbar.Show("h30 w570")
 }
