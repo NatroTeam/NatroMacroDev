@@ -186,7 +186,7 @@ nm_importPatterns()
 	Loop Files A_WorkingDir "\patterns\*.ahk"
 	{
 		file := FileOpen(A_LoopFilePath, "r"), pattern := file.Read(), file.Close()
-		if !!RegexMatch(pattern, "im)patterns\[")
+		if RegexMatch(pattern, "im)patterns\[")
 			MsgBox
 			(
 			"Pattern '" A_LoopFileName "' seems to be deprecated!
@@ -272,7 +272,7 @@ nm_importPaths()
 		{
 			try {
 				file := FileOpen(A_WorkingDir "\paths\" k "-" v ".ahk", "r"), paths[k][v] := file.Read(), file.Close()
-				if !!regexMatch(paths[k][v], "im)paths\[")
+				if regexMatch(paths[k][v], "im)paths\[")
     				MsgBox
 					(
 					"Path '" k '-' v "' seems to be deprecated!
@@ -341,6 +341,8 @@ nm_importConfig()
 		, "StopHotkey", "F3"
 		, "AutoClickerHotkey", "F4"
 		, "TimersHotkey", "F5"
+		, "ManualHotbarHotkey", "F6"
+		, "ManualHotbarOpen", 0
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
 		, "FDCWarn", 1
@@ -2945,6 +2947,7 @@ Loop 6
 	SetLoadingProgress(31+A_Index)
 }
 nm_HotbarWhile()
+MainGui.Add("Button", "x200 y109 w90 h30 vManualHotbarButton", "Manual Hotbar`n(" ManualHotbarHotkey ")").OnEvent("Click", nm_showManualHotbar)
 MainGui.Add("Button", "x200 y34 w90 h30 vAutoFieldBoostButton Disabled", (AutoFieldBoostActive ? "Auto Field Boost`n[ON]" : "Auto Field Boost`n[OFF]")).OnEvent("Click", nm_autoFieldBoostGui)
 MainGui.SetFont("w700")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -3224,6 +3227,8 @@ SetLoadingProgress(99)
 if (BuffDetectReset = 1)
 	nm_AdvancedGUI()
 SetLoadingProgress(100)
+
+;unlock tabs
 nm_LockTabs(0)
 ;nm_LockTabs(0)
 nm_setStatus("Startup", "UI")
@@ -3239,8 +3244,21 @@ try {
 	Hotkey PauseHotkey, nm_pause, "On"
 	Hotkey AutoClickerHotkey, autoclicker, "On T2"
 	Hotkey TimersHotkey, timers, "On"
+	Hotkey ManualHotbarHotkey, nm_showManualHotbar, "On"
 	Hotkey "~*^v", nm_PasteSettings, "On"
 	Hotkey "~*^c", nm_CopySettings, "On"
+}
+
+if manualHotbarOpen
+	nm_showManualHotbar
+
+nm_showManualHotbar(*) {
+	DetectHiddenWindows 1
+	if WinExist("ManualHotbar.ahk ahk_class AutoHotkey")
+		return WinClose() IniWrite(0, ".\settings\nm_config.ini", "Settings", "ManualHotbarOpen")
+	Run '"' exe_path32 '" /script "' A_WorkingDir '\submacros\ManualHotbar.ahk"'
+	IniWrite(1, ".\settings\nm_config.ini", "Settings", "ManualHotbarOpen")
+	DetectHiddenWindows 0
 }
 
 SetTimer Background, 2000
@@ -4767,7 +4785,7 @@ nm_CollectKillButton(GuiCtrl, *){
 		,"MALeft","MARight","APALeft","APARight"
 		,"BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"
 		,"MemoryMatchGroupBox","NormalMemoryMatchCheck","MegaMemoryMatchCheck","NightMemoryMatchCheck","ExtremeMemoryMatchCheck","MemoryMatchOptions", "MeteorShowerCheck"]
-	, KillControls := ["BugRunGroupBox","MonsterRespawnTime","TextMonsterRespawnPercent","TextMonsterRespawn","MonsterRespawnTimeHelp"
+	, KillControls := ["BugRunGroupBox","BugRunCheck","MonsterRespawnTime","TextMonsterRespawnPercent","TextMonsterRespawn","MonsterRespawnTimeHelp"
 		,"BugrunInterruptCheck","TextLoot","TextKill","TextLineBugRun1","TextLineBugRun2"
 		,"BugrunLadybugsLoot","BugrunRhinoBeetlesLoot","BugrunSpiderLoot","BugrunMantisLoot","BugrunScorpionsLoot","BugrunWerewolfLoot"
 		,"BugrunLadybugsCheck","BugrunRhinoBeetlesCheck","BugrunSpiderCheck","BugrunMantisCheck","BugrunScorpionsCheck","BugrunWerewolfCheck"
@@ -8971,10 +8989,10 @@ nm_AutoClickerButton(*)
 	AutoClickerGui.Add("Text", "x133 y21", "times")
 	AutoClickerGui.Add("Text", "x10 y41", "Click Interval (ms):")
 	AutoClickerGui.Add("Edit", "x100 y39 w61 h18 Number Limit5", ClickDelay).OnEvent("Change", (*) => nm_saveConfig(AutoClickerGui["ClickDelay"]))
-	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickDelay Range0-99999", ClickDelay)).Section := "Settings", GuiCtrlDelay.OnEvent("Change", nm_saveConfig)
+	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickDelay Range0-99999", ClickDelay)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 	AutoClickerGui.Add("Text", "x10 y61", "Click Duration (ms):")
 	AutoClickerGui.Add("Edit", "x104 y59 w57 h18 Number Limit4", ClickDuration).OnEvent("Change", (*) => nm_saveConfig(AutoClickerGui["ClickDuration"]))
-	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickDuration Range0-9999", ClickDuration)).Section := "Settings", GuiCtrlDuration.OnEvent("Change", nm_saveConfig)
+	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickDuration Range0-9999", ClickDuration)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 	AutoClickerGui.Add("Button", "x45 y88 w80 h20", "Start (" AutoClickerHotkey ")").OnEvent("Click", nm_StartAutoClicker)
 	AutoClickerGui.Show("w160 h104")
 	nm_StartAutoClicker(*){
@@ -9004,22 +9022,24 @@ nm_HotkeyGUI(*){
 	HotkeyGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Hotkeys")
 	HotkeyGui.OnEvent("Close", GuiClose)
 	HotkeyGui.SetFont("s8 cDefault Bold", "Tahoma")
-	HotkeyGui.Add("GroupBox", "x5 y2 w190 h144", "Change Hotkeys")
-	HotkeyGui.Add("GroupBox", "x5 y146 w190 h34", "Settings")
+	HotkeyGui.Add("GroupBox", "x5 y2 w190 h163", "Change Hotkeys")
+	HotkeyGui.Add("GroupBox", "x5 y165 w190 h34", "Settings")
 	HotkeyGui.SetFont("Norm")
 	HotkeyGui.Add("Text", "x10 y23 w60 +BackgroundTrans", "Start:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Pause:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Stop:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "AutoClicker:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Timers:")
+	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Manual HB:")
 	HotkeyGui.Add("Hotkey", "x70 y20 w120 h18 vStartHotkeyEdit", StartHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vPauseHotkeyEdit", PauseHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vStopHotkeyEdit", StopHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vAutoClickerHotkeyEdit", AutoClickerHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vTimersHotkeyEdit", TimersHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vManualHotbarHotkeyEdit", ManualHotbarHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Button", "x30 yp+24 w140 h20", "Restore Defaults").OnEvent("Click", nm_ResetHotkeys)
-	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 y162 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
-	HotkeyGui.Show("w190 h175")
+	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 y171 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	HotkeyGui.Show("w190 h194")
 }
 nm_ResetHotkeys(*){
 	global
@@ -9055,7 +9075,7 @@ nm_ResetHotkeys(*){
 }
 nm_saveHotkey(GuiCtrl, *){
 	global
-	local k, v, l, NewHotkey, StartHotkeyEdit, PauseHotkeyEdit, StopHotkeyEdit, TimersHotkeyEdit, AutoClickerHotkeyEdit
+	local k, v, l, NewHotkey, StartHotkeyEdit, PauseHotkeyEdit, StopHotkeyEdit, TimersHotkeyEdit, AutoClickerHotkeyEdit, ManualHotbarHotkeyEdit
 	k := GuiCtrl.Name, %k% := GuiCtrl.Value
 
 	v := StrReplace(k, "Edit")
@@ -9075,14 +9095,14 @@ nm_saveHotkey(GuiCtrl, *){
 			return
 		}
 
-		if ((StrLen(%k%) = 0) || (%k% = StartHotkey) || (%k% = PauseHotkey) || (%k% = StopHotkey) || (%k% = AutoClickerHotkey) || (%k% = TimersHotkey)) ; do not allow empty or already used hotkey (not necessary in most cases)
+		if ((StrLen(%k%) = 0) || (%k% = StartHotkey) || (%k% = PauseHotkey) || (%k% = StopHotkey) || (%k% = AutoClickerHotkey) || (%k% = TimersHotkey) || (%k% = ManualHotbarHotkey)) ; do not allow empty or already used hotkey (not necessary in most cases)
 			GuiCtrl.Value := %v%
 		else ; update the hotkey
 		{
 			l := StrReplace(v, "Hotkey")
 			try Hotkey %v%, (l = "Pause") ? nm_Pause : %l%, "Off"
 			IniWrite (%v% := %k%), "settings\nm_config.ini", "Settings", v
-			MainGui[l "Button"].Text := ((l = "Timers") ? " Show " : (l = "AutoClicker") ? "" : " ") l " (" %v% ")"
+			MainGui[l "Button"].Text := ((l = "Timers") ? " Show " : (l = "AutoClicker") ? "" : " ") (l = "ManualHotbar" ? "Manual Hotbar" : l) " (" %v% ")"
 			try Hotkey %v%, (l = "Pause") ? nm_Pause : %l%, (v = "AutoClickerHotkey") ? "On T2" : "On"
 		}
 	}
