@@ -7372,8 +7372,8 @@ nm_priorityListGui(*) {
 
 	nm_priorityGui()
 
-	priorityGui["moveRegion"].move(0, 0, w-30, 30)
-	priorityGui["close"].move(w-30, 0, 30, 30)
+	priorityGui["moveRegion"].move(0, 0, w-42, 30)
+	priorityGui["close"].move(w-42, 4, 28, 28)
 	for i,v in priorityList
 		priorityGui["p" i].move(15, (i)*34+10, w-30, 30)
 	priorityGui["Reset"].move(15, h-50, w-30, 30)
