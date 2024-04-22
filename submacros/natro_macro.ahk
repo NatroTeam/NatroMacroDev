@@ -3273,8 +3273,8 @@ return
 nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 	global FieldPattern1, FieldPattern2, FieldPattern3
     for k, v in fileArr {
-        Content := fileRead(v)
-        If (regexmatch(content := FileRead(v), "im)patterns\[") | !!regexmatch(content, "im)paths\["))
+        f := FileOpen(v,"r"), content := f.read(), f.close()
+        If (regexmatch(content, "im)patterns\[") || regexmatch(content, "im)paths\["))
             return msgbox(
                 (
                 'The file "' v '" seems to be deprecated!
@@ -3295,7 +3295,7 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 				), , 0x1010)
 		ReplaceSystemCursors("IDC_WAIT")
 		f := FileOpen(outputPath:=
-			(RegExMatch(name, "i)^(nm_config|field_config|manual_planter)$") ? "settings\" 
+			(RegExMatch(name, "i)^(nm_config|field_config|manual_planter|manual_hotbar)$") ? "settings\" 
 				: ext = "preset" ? "settings\presets\"
 					: RegExMatch(fileName, "i)^(wf|gt(b|c|p|q|f))-") ? (type='paths') "\"
 						: ext = "ahk" ? (type := "patterns") "\"
@@ -3304,11 +3304,21 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 		)
         f.write(content)
         f.close()
-		if ext = "ini" or ext = "preset"
-			return ReplaceSystemCursors() msgbox(
+		if ext = "ini" or ext = "preset" {
+			ReplaceSystemCursors()
+			msgbox(
 					(
 					(FileExist(outputPath) ? 'Successfully imported ' : 'Could not import ') (ext = "ini" ? "config " : "preset ") filename '!'
 					),,0x1040)
+			if fileName = "nm_config.ini" || fileName = "manual_planter.ini"
+				if msgbox(
+				(
+				'To apply the imported settings you need to reload the macro.
+				Reload now?'
+				),"Imported Config", 0x1044) = "yes"
+					reload()
+			return
+		}
 		if type = "patterns" && !ObjHasValue(patternlist,name)
 			For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
 				MainGui[i].add([name])
