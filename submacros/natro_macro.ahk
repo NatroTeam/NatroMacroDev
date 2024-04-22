@@ -3273,8 +3273,7 @@ return
 nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 	global FieldPattern1, FieldPattern2, FieldPattern3
     for k, v in fileArr {
-        f := FileOpen(v,"r"), content := f.read(), f.close()
-        If (regexmatch(content, "im)patterns\[") || regexmatch(content, "im)paths\["))
+        If (regexmatch(content:=FileRead(v), "im)patterns\[") || regexmatch(content, "im)paths\["))
             return msgbox(
                 (
                 'The file "' v '" seems to be deprecated!

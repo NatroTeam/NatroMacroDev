@@ -140,6 +140,8 @@ ManualHotbar := Gui("+AlwaysOnTop -Caption +Border +minsize30x15 +E0x00040000 +l
 ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w570 h30")
 (GuiCtrl := ManualHotbar.Add("Picture", "x0 y0 w15 h15", ".\nm_image_assets\auryn.ico")).OnEvent("Click", (*) => SendMessage(0xA1, 2))
 GuiCtrl.OnEvent("ContextMenu", nm_toggleGuiMode)
+;TODO: needs help button text
+ManualHotbar.Add("Button", "xp yp+15 w15 h15", "?").OnEvent("Click", (*) => MsgBox("Help arrives soon!"))
 ManualHotbar.Add("Button", "x15 y0 w30 h30 vToggleManualAll", "Start`nALL").OnEvent("Click", nm_ToggleManualAll)
 
 ManualHotbar.Add("GroupBox", "x45 y-6 w75 h36 Section")
