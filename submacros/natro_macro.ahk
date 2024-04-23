@@ -8867,7 +8867,7 @@ nm_MemoryMatchInterrupt() {
 nm_CloseChat() {
 
 	loop 5 {
-		MouseMove windowWidth-200, windowY+offsetY+160, 1   ; move mouse over chat to show it on screen
+		MouseMove windowWidth-50, windowY+offsetY+70, 1   ; move mouse over chat to show it on screen
 	    sleep 1000
 	    if(PixelSearch(&outX, &outY, windowWidth-570,0, windowWidth, 300, 0xE3E500, 5)) {
 			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|500|150")
