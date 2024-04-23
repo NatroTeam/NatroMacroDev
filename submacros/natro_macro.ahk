@@ -8870,12 +8870,16 @@ nm_CloseChat() {
 		MouseMove windowWidth-200, windowY+offsetY+160, 1   ; move mouse over chat to show it on screen
 	    sleep 1000
 	    if(PixelSearch(&outX, &outY, windowWidth-570,0, windowWidth, 300, 0xE3E500, 5)) {
-	        MouseMove windowX+78, windowY+offsetY+17, 1   ; click chat to close.
-	        sleep 200
-	        click "down"
-	        sleep 100
-	        click "up"
-	        sleep 200
+			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|500|150")
+			if (Gdip_ImageSearch(pBMScreen, bitmaps["chatbutton"], &pos, , , , , 2, , 2) = 1) {
+				MouseMove windowX+SubStr(pos, 1, InStr(pos, ",")-1)+10, windowY+SubStr(pos, InStr(pos, ",")+1)+10
+	        	sleep 200
+	        	click "down"
+	        	sleep 100
+	        	click "up"
+	        	sleep 200
+			}
+			Gdip_DisposeImage(pBMScreen)	
 	    }
 	    else
 	        break
