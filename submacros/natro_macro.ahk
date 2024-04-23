@@ -8864,7 +8864,25 @@ nm_MemoryMatchInterrupt() {
 		|| ((beesmasActive = 1) && WinterMemoryMatchCheck && (now-LastWinterMemoryMatch)>14400))
 	)
 }
+nm_CloseChat() {
 
+	loop 5 {
+		MouseMove windowWidth-200, windowY+offsetY+160, 1   ; move mouse over chat to show it on screen
+	    sleep 1000
+	    if(PixelSearch(&outX, &outY, windowWidth-570,0, windowWidth, 300, 0xE3E500, 5)) {
+	        MouseMove windowX+78, windowY+offsetY+17, 1   ; click chat to close.
+	        sleep 200
+	        click "down"
+	        sleep 100
+	        click "up"
+	        sleep 200
+	    }
+	    else
+	        break
+	} 
+	MouseMove windowX+350, windowY+offsetY+110, 1
+	return
+}
 ;stats/status
 nm_setStats(){
 	global
@@ -10829,6 +10847,8 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 	middleX := windowX+(windowWidth//2)
 	middleY := windowY+(windowHeight//2)
 
+	nm_CloseChat()
+
 	switch MemoryMatchGame {
 		case "Extreme","Winter":
 		Xoffset := 40, Tiles := 20
@@ -11062,6 +11082,9 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 		Gdip_DisposeImage(pBMScreen)
 		Sleep 250
 	}
+
+	;Open Chat
+	Send "{Text}/`n" 
 }
 nm_Honeystorm(fromSnowMachine:=0){
 	global HoneystormCheck, LastHoneyStorm
