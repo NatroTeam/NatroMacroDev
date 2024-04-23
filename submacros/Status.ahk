@@ -23,7 +23,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "DurationFromSeconds.ahk"
 #Include "Roblox.ahk"
 
-OnError (e, *) => (HasProp(e, "Number") && (e.Number = 32)) ? -1 : 0
+OnError (e, mode) => (mode = "Return") ? -1 : 0
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
 
@@ -714,7 +714,7 @@ nm_status(status)
 		}
 
 		status_buffer.RemoveAt(1)
-		discord.SendEmbed(message, color, content, pBM?, channel?), IsSet(pBM) && Gdip_DisposeImage(pBM)
+		discord.SendEmbed(message, color, content, pBM?, channel?), IsSet(pBM) && pBM > 0 && Gdip_DisposeImage(pBM)
 
 		; extra: honey update
 		if (ssCheck = 1)
@@ -766,6 +766,8 @@ nm_honey()
 		discord.CreateFormData(&postdata, &contentType
 			, [Map("name","payload_json", "content-type","application/json", "content",payload_json)
 			, Map("name","files[0]", "filename","honey.png", "content-type","image/png", "pBitmap",pBM:=CreateHoneyBitmap())])
+		if pBM <= 0
+			return
 		Gdip_DisposeImage(pBM)
 		try id ? discord.EditMessageAPI(id, postdata, contentType) : ((message := JSON.parse(discord.SendMessageAPI(postdata, contentType))).Has("id") && (id := message["id"]))
 	}
@@ -1869,20 +1871,31 @@ nm_command(command)
 		case "download":
 		if (url := command.url)
 		{
-			if InStr(FileExist(path := Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name)))), "D")
+			path := StrReplace(RTrim(StrReplace(Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name))), "/", "\"), "\"), "\\", "\"), message := ""
+			if (StrLen(path) > 0)
 			{
-				SplitPath url, &filename
-				(pos := InStr(filename, "?")) && (filename := SubStr(filename, 1, pos-1))
-				try
+				if !FileExist(path)
 				{
-					Download url, (path := (RTrim(path, "/\") "\" filename))
-					discord.SendEmbed('Downloaded ``' StrReplace(StrReplace(path, "\", "\\"), '"', '\"') '``', 5066239, , , , id)
+					try
+						DirCreate(path), message .= 'Created folder ``' StrReplace(StrReplace(path, "\", "\\"), '"', '\"') '``\n'
+					catch as e
+						message .= "DirCreate Error:\n" e.Message " " e.What "\n\n"
 				}
-				catch as e
-					discord.SendEmbed("Download Error:\n" e.Message " " e.What, 16711731, , , , id)
+				if InStr(FileExist(path), "D")
+				{
+					SplitPath url, &filename
+					(pos := InStr(filename, "?")) && (filename := SubStr(filename, 1, pos-1))
+					try
+					{
+						Download url, (path .= "\" filename)
+						discord.SendEmbed(message .= 'Downloaded ``' StrReplace(StrReplace(path, "\", "\\"), '"', '\"') '``', 5066239, , , , id)
+					}
+					catch as e
+						discord.SendEmbed(message .= "Download Error:\n" e.Message " " e.What, 16711731, , , , id)
+				}
 			}
 			else
-				discord.SendEmbed("``" (path ? path : "<blank>") "`` is not a valid directory!", 16711731, , , , id)
+				discord.SendEmbed("You must specify a valid directory!", 16711731, , , , id)
 		}
 		else
 			discord.SendEmbed("No attachment found to download!", 16711731, , , , id)

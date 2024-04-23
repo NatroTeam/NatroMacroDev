@@ -32,7 +32,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "nowUnix.ahk"
 
 #Warn VarUnset, Off
-OnError (e, *) => (HasProp(e, "Number") && (e.Number = 32)) ? -1 : 0
+OnError (e, mode) => (mode = "Return") ? -1 : 0
 
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Screen"
@@ -109,7 +109,7 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 
 ; set version identifier
-VersionID := "1.0.0-A"
+VersionID := "1.0.0"
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
@@ -180,7 +180,15 @@ nm_importPatterns()
 	Loop Files A_WorkingDir "\patterns\*.ahk"
 	{
 		file := FileOpen(A_LoopFilePath, "r"), pattern := file.Read(), file.Close()
-		if !InStr(imported, imported_pattern := '("' (pattern_name := StrReplace(A_LoopFileName, ".ahk")) '")`r`n' pattern '`r`n`r`n')
+		if RegexMatch(pattern, "im)patterns\[")
+    		MsgBox
+			(
+			"Pattern '" A_LoopFileName "' seems to be deprecated!
+			This means the pattern will NOT work!
+			Check for an updated version of the pattern
+			or ask the creator to update it"
+			), "Error", 0x40010 " T60"
+		if !InStr(imported, imported_pattern := '("' (pattern_name := StrReplace(A_LoopFileName, "." A_LoopFileExt)) '")`r`n' pattern '`r`n`r`n')
 		{
 			script :=
 			(
@@ -256,8 +264,17 @@ nm_importPaths()
 		(paths[k] := Map()).CaseSense := 0
 		for v in list
 		{
-			try
+			try {
 				file := FileOpen(A_WorkingDir "\paths\" k "-" v ".ahk", "r"), paths[k][v] := file.Read(), file.Close()
+				if regexMatch(paths[k][v], "im)paths\[")
+    				MsgBox
+					(
+					"Path '" k '-' v "' seems to be deprecated!
+					This means the macro will NOT work correctly!
+					Check for an updated version of the path or
+					restore the default path"
+					), "Error", 0x40010 " T60"
+			}
 			catch
 				MsgBox
 				(
@@ -1718,10 +1735,12 @@ nm_importFieldDefaults()
 	global FieldPattern1, FieldPattern2, FieldPattern3
 	loop 3 {
 		i := A_Index
-		for pattern in patternlist
-			if (pattern = FieldPattern%i%)
-				continue 2
-		FieldPattern%i% := FieldDefault[FieldName%i%]["pattern"]
+		if (FieldName%i% != "None") {
+			for pattern in patternlist
+				if (pattern = FieldPattern%i%)
+					continue 2
+			FieldPattern%i% := FieldDefault[FieldName%i%]["pattern"]
+		}
 	}
 
 	ini := ""
@@ -8008,7 +8027,7 @@ nm_BondCalculatorButton(*)
 nm_AutoClickerButton(*)
 {
 	global
-	local GuiCtrl
+	local GuiCtrl,GuiCtrlDuration, GuiCtrlDelay
 	GuiClose(*){
 		if (IsSet(AutoClickerGui) && IsObject(AutoClickerGui))
 			AutoClickerGui.Destroy(), AutoClickerGui := ""
@@ -8025,11 +8044,11 @@ nm_AutoClickerButton(*)
 	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickCount Range0-9999999 Disabled" ClickMode, ClickCount)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 	AutoClickerGui.Add("Text", "x133 y21", "times")
 	AutoClickerGui.Add("Text", "x10 y41", "Click Interval (ms):")
-	AutoClickerGui.Add("Edit", "x100 y39 w61 h18 Number Limit5", ClickDelay)
-	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickDelay Range0-99999", ClickDelay)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	AutoClickerGui.Add("Edit", "x100 y39 w61 h18 Number Limit5", ClickDelay).OnEvent("Change", (*) => nm_saveConfig(GuiCtrlDelay))
+	(GuiCtrlDelay := AutoClickerGui.Add("UpDown", "vClickDelay Range0-99999", ClickDelay)).Section := "Settings", GuiCtrlDelay.OnEvent("Change", nm_saveConfig)
 	AutoClickerGui.Add("Text", "x10 y61", "Click Duration (ms):")
-	AutoClickerGui.Add("Edit", "x104 y59 w57 h18 Number Limit4", ClickDuration)
-	(GuiCtrl := AutoClickerGui.Add("UpDown", "vClickDuration Range0-9999", ClickDuration)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	AutoClickerGui.Add("Edit", "x104 y59 w57 h18 Number Limit4", ClickDuration).OnEvent("Change", (*) => nm_saveConfig(GuiCtrlDuration))
+	(GuiCtrlDuration := AutoClickerGui.Add("UpDown", "vClickDuration Range0-9999", ClickDuration)).Section := "Settings", GuiCtrlDuration.OnEvent("Change", nm_saveConfig)
 	AutoClickerGui.Add("Button", "x45 y88 w80 h20", "Start (" AutoClickerHotkey ")").OnEvent("Click", nm_StartAutoClicker)
 	AutoClickerGui.Show("w160 h104")
 	nm_StartAutoClicker(*){
@@ -10856,8 +10875,6 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 	Chances:=8
 	LastChance:=0
 
-	Gdip_DisposeImage(pBMScreen)
-
 	Loop 10 { ; Numer of available Chances.
 		if(Chances=2) {
 			Loop 1000 {
@@ -10981,7 +10998,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 
 			if(MMItemOAC=1 && PairFoundOAC!=1 && (A_Index=1 || (A_Index=2 && MatchFoundOAC!=1))) {
 				StoreItemOAC[Tile] := Gdip_BitmapFromScreen(TileXCordOAC-25 "|" TileYCordOAC-25 "|50|50") ; Detect Clicked Item
-				nm_CreateFolder(path := A_WorkingDir "\MMScreenshots"), Gdip_SaveBitmapToFile(StoreItemOAC[Tile], path "\image" Tile ".png") ; comment out this line for public release
+				;nm_CreateFolder(path := A_WorkingDir "\MMScreenshots"), Gdip_SaveBitmapToFile(StoreItemOAC[Tile], path "\image" Tile ".png") ; comment out this line for public release
 				for item, data in MemoryMatch {
   					if ((MemoryMatchGame && (%item%MatchIgnore & MemoryMatchGames[MemoryMatchGame].bit)) || (!MemoryMatchGame && (%item%MatchIgnore = data.games))) {
 						loop 2 {
@@ -11503,13 +11520,13 @@ nm_ShrineRotation() {
 	}
 }
 nm_toAnyBooster(){
-	global LastBlueBoost, QuestBlueBoost, LastRedBoost, QuestRedBoost, LastMountainBoost, LastCoconutDis, CoconutBoosterCheck, CoconutDisCheck
+	global LastBlueBoost, QuestBlueBoost, LastRedBoost, QuestRedBoost, LastMountainBoost, LastCoconutDis, CoconutBoosterCheck, CoconutDisCheck, BoostChaserCheck
 		, FieldBooster1, FieldBooster2, FieldBooster3, FieldBoosterMins
 	static blueBoosterFields:=["Pine Tree", "Bamboo", "Blue Flower"], redBoosterFields:=["Rose", "Strawberry", "Mushroom"], mountainBoosterfields:=["Cactus", "Pumpkin", "Pineapple", "Spider", "Clover", "Dandelion", "Sunflower"], coconutBoosterfields:=["Coconut"]
 
 	;Coconut field booster; prioritise every 4 hours if enabled
-	LastBooster:=max(LastBlueBoost, LastRedBoost, LastMountainBoost, LastCoconutDis)
-	if((CoconutDisCheck && CoconutBoosterCheck && (nowUnix()-LastCoconutDis)>14400) && (nowUnix()-LastBooster)>(FieldBoosterMins*60)) {
+	LastBooster:=max(LastBlueBoost, LastRedBoost, LastMountainBoost, (BoostChaserCheck && CoconutBoosterCheck && CoconutDisCheck) ? LastCoconutDis : 1)
+	if(BoostChaserCheck && CoconutBoosterCheck && CoconutDisCheck && (nowUnix()-LastCoconutDis)>14400 && (nowUnix()-LastBooster)>(FieldBoosterMins*60)) {
 		nm_updateAction("Booster")
 		nm_toBooster("coconut")
 	}
@@ -11518,7 +11535,7 @@ nm_toAnyBooster(){
 	loop 3 {
 		if(FieldBooster%A_Index%="none" && QuestBlueBoost=0 && QuestRedBoost=0)
 			break
-		LastBooster:=max(LastBlueBoost, LastRedBoost, LastMountainBoost, LastCoconutDis)
+		LastBooster:=max(LastBlueBoost, LastRedBoost, LastMountainBoost, (BoostChaserCheck && CoconutBoosterCheck && CoconutDisCheck) ? LastCoconutDis : 1)
 		;Blue Field Booster
 		if((FieldBooster%A_Index%="blue" && (nowUnix()-LastBlueBoost)>3600 && (nowUnix()-LastBooster)>(FieldBoosterMins*60)) || (QuestBlueBoost && (nowUnix()-LastBlueBoost)>3600)){
 			nm_updateAction("Booster")
@@ -14555,7 +14572,8 @@ nm_GoGather(){
 		nm_setShiftLock(1)
 	}
 	while(((nowUnix()-gatherStart)<(FieldUntilMins*60)) || (PFieldBoosted && (nowUnix()-GatherFieldBoostedStart)<840) || (PFieldBoostExtend && (nowUnix()-GatherFieldBoostedStart)<1800 && (nowUnix()-LastGlitter)<900) || (PFieldGuidExtend && FieldGuidDetected && (nowUnix()-gatherStart)<(FieldUntilMins*60+PFieldGuidExtend*60) && (nowUnix()-GatherFieldBoostedStart)>900 && (nowUnix()-LastGlitter)>900) || (PPopStarExtend && HasPopStar && PopStarActive)){
-		MouseMove windowX+350, windowY+GetYOffset()+100
+		if !fieldPatternShift
+			MouseMove windowX+350, windowY+GetYOffset()+100
 		if(!DisableToolUse)
 			Click "Down"
 		nm_gather(FieldPattern, A_Index, FieldPatternSize, FieldPatternReps, FacingFieldCorner)
@@ -15058,7 +15076,14 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	gifted_hasty := ((Mod(base_movespeed*10, 12) = 0) && base_movespeed != 18 && base_movespeed != 24 && base_movespeed != 30) ? 1 : 0
 	base_movespeed /= (gifted_hasty ? 1.2 : 1)
 	'
-	) : '(bitmaps := Map()).CaseSense := 0')
+	) :
+	(
+	'
+	(bitmaps := Map()).CaseSense := 0
+	pToken := Gdip_Startup()
+	Walk(param, *) => HyperSleep(4000/' MoveSpeedNum '*param)
+	'
+	))
 
 	. (
 	(
@@ -15074,7 +15099,7 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	nm_Walk(tiles, MoveKey1, MoveKey2:=0)
 	{
 		Send "{" MoveKey1 " down}" (MoveKey2 ? "{" MoveKey2 " down}" : "")
-		' (NewWalk ? 'Walk(tiles)' : ('HyperSleep(4000/' MoveSpeedNum '*tiles')) '
+		' (NewWalk ? 'Walk(tiles)' : ('HyperSleep(4000/' MoveSpeedNum '*tiles)')) '
 		Send "{" MoveKey1 " up}" (MoveKey2 ? "{" MoveKey2 " up}" : "")
 	}
 
@@ -15082,7 +15107,7 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 		start(hk?)
 		{
 			Send "{F14 down}"
-			' (NewWalk ? movement : RegExReplace(movement, "im)Walk\((?<param>.+?)(?:\,|\)(?=[^()]*(?:\(|$)))(?:.*\))?", "HyperSleep(4000/" MoveSpeedNum "*(${param}))")) '
+			' movement '
 			Send "{F14 up}"
 		}
 
@@ -16724,7 +16749,7 @@ nm_locateVB(){
 			;battle pattern
 			if (VBState=2) {
 				nm_setStatus("Attacking", "Vicious Bee (" v ")" ((A_Index > 1) ? " - Round " A_Index : ""))
-				startBattle := (A_Index = 1) ? nowUnix() : startBattle
+				(!IsSet(startBattle)) && (startBattle := nowUnix())
 
 				;configure
 				breps := 1
@@ -18581,10 +18606,9 @@ nm_PathVars(){
 			Send "{" SC_Space " down}{" RightKey " down}"
 			Sleep 100
 			Send "{" SC_Space " up}"
-			Walk(2)
-			Send "{" FwdKey " down}"
-			Walk(1.5)
-			Send "{" FwdKey " up}"
+			nm_Walk(2, RightKey)
+			nm_Walk(1.5, FwdKey, RightKey)
+			Send "{" RightKey " down}"
 
 			DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
 			n := s, f := s+100000000
@@ -20401,10 +20425,14 @@ mp_HarvestPlanter(PlanterIndex) {
 	else if ((MPuffModeA = 1) && (MPuffMode%PlanterIndex% = 1) && (PlanterHarvestNow%PlanterIndex% != 1)) {
 		; screenshot and set to hold instead of harvest, if auto harvest is disabled for the slot, and the user hasn't selected to release it by remote control
 		Sleep 200 ; wait for game to update frame
-		nm_setStatus("Holding", (MPlanterName . " (" . MFieldName . ")"))
-		Sleep 2000
-		MPlanterHold%PlanterIndex% := 1
-		IniWrite MPlanterHold%PlanterIndex%, "settings\nm_config.ini", "Planters", "MPlanterHold" PlanterIndex
+		nm_PlanterTimeUpdate(MFieldName)
+		sleep 1000
+		If (nowUnix() >= PlanterHarvestTime%PlanterIndex%) {
+			nm_setStatus("Holding", (MPlanterName . " (" . MFieldName . ")"))
+			Sleep 2000
+			MPlanterHold%PlanterIndex% := 1
+			IniWrite MPlanterHold%PlanterIndex%, "settings\nm_config.ini", "Planters", "MPlanterHold" PlanterIndex
+		}
 		return 1
 	}
 	else {
@@ -20836,7 +20864,6 @@ nm_Pause(*){
 			if(SpaceKeyState)
 				sendinput "{" SC_Space " down}"
 		}
-		nm_setStatus(PauseState, PauseObjective)
 		MacroState:=2
 		if WinExist("Status.ahk ahk_class AutoHotkey")
 			try PostMessage 0x5552, 23, MacroState
@@ -20849,6 +20876,7 @@ nm_Pause(*){
 		MacroStartTime:=nowUnix()
 		GatherStartTime:=nowUnix()
 		DetectHiddenWindows 0
+		nm_setStatus(PauseState, PauseObjective)
 	} else {
 		if (ShowOnPause = 1)
 			WinActivate "ahk_id " MainGui.Hwnd

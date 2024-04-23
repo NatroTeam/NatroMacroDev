@@ -19,7 +19,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
 
-OnError (e, *) => (HasProp(e, "Number") && (e.Number = 32)) ? -1 : 0
+OnError (e, mode) => (mode = "Return") ? -1 : 0
 DetectHiddenWindows 1
 SetWorkingDir A_ScriptDir "\.."
 
@@ -318,7 +318,7 @@ Loop {
 	}
 
     TimersGui["dayOrNight"].Text := IniRead("settings\nm_config.ini", "Planters", "dayOrNight") " Detected"
-    TimersGui["pstatus"].Text := ControlGetText("Static4", "Natro ahk_class AutoHotkeyGUI")
+    try TimersGui["pstatus"].Text := ControlGetText("Static4", "Natro ahk_class AutoHotkeyGUI")
 
 	Sleep (1100 - A_MSec)
 }
