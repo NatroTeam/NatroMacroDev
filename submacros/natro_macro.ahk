@@ -3294,28 +3294,32 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 				), , 0x1010)
 		ReplaceSystemCursors("IDC_WAIT")
 		f := FileOpen(outputPath:=
-			(RegExMatch(name, "i)^(nm_config|field_config|manual_planter|manual_hotbar)$") ? "settings\" 
+			(RegExMatch(name, "i)^(nm_config|field_config|manual_planters|manual_hotbar)$") ? "settings\" 
 				: ext = "preset" ? "settings\presets\"
 					: RegExMatch(fileName, "i)^(wf|gt(b|c|p|q|f))-") ? (type='paths') "\"
 						: ext = "ahk" ? (type := "patterns") "\"
-							: "")  FileName 
+							: "") FileName
 			, "w"
 		)
         f.write(content)
         f.close()
-		if ext = "ini" or ext = "preset" {
+		if ext = "ini" {
+			ReplaceSystemCursors()
+			if msgbox(
+			(
+			'Successfully imported config!
+			To apply the imported settings you need to reload the macro.
+			Reload now?'
+			),"Imported Config", 0x1044) = "yes"
+				reload()
+			return
+		}
+		if ext = "preset" {
 			ReplaceSystemCursors()
 			msgbox(
 					(
 					(FileExist(outputPath) ? 'Successfully imported ' : 'Could not import ') (ext = "ini" ? "config " : "preset ") filename '!'
 					),,0x1040)
-			if fileName = "nm_config.ini" || fileName = "manual_planter.ini"
-				if msgbox(
-				(
-				'To apply the imported settings you need to reload the macro.
-				Reload now?'
-				),"Imported Config", 0x1044) = "yes"
-					reload()
 			return
 		}
 		if type = "patterns" && !ObjHasValue(patternlist,name)
