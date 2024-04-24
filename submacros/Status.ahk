@@ -2501,6 +2501,14 @@ nm_command(command)
 			if !SendMessage(0x5562, , , , , , , , 2000)
 				discord.SendEmbed("No Roblox window found", 16711731, , , , id)
 		DetectHiddenWindows 0
+		case "closeChat":
+		DetectHiddenWindows 1
+		if WinExist("natro_macro ahk_class AutoHotkey")
+			if SendMessage(0x5560)
+				discord.SendEmbed("Chat closed", 5066239, , , , id)
+			else
+				discord.SendEmbed("Failed to close chat", 16711731, , , , id)
+		DetectHiddenWindows 0
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
 		default:

@@ -109,6 +109,7 @@ OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
+OnMessage(0x5560, nm_closeChat)
 OnMessage(0x5562, nm_ReturnNectarPercentages)
 
 ; set version identifier
@@ -214,7 +215,7 @@ nm_importPatterns()
 			nm_Walk(param1, param2, param3?) => ""
 			Gdip_ImageSearch(*) => ""
 			Gdip_BitmapFromBase64(*) => ""
-			CameraRot(param1, param2) => ""
+			nm_CameraRotation(param1, param2) => ""
 			' pattern '
 
 			'
@@ -9718,7 +9719,7 @@ nm_testButton(*){
 		FieldName:=FieldPattern:=FieldPatternSize:=FieldReturnType:=FieldSprinklerLoc:=FieldRotateDirection:=""
 		FieldUntilPack:=FieldPatternReps:=FieldPatternShift:=FieldSprinklerDist:=FieldRotateTimes:=FieldDriftCheck:=FieldPatternInvertFB:=FieldPatternInvertLR:=FieldUntilMins:=0
 		
-		CameraRot(Dir, count) {
+		nm_CameraRotation(Dir, count) {
 			Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Abs(LR) "}{" Rot%(UD > 0 ? "Down" : "Up")% " " Abs(UD) "}"), -1)
 			send "{" Rot%Dir% " " count "}"
 			Switch Dir,0 {
@@ -11856,6 +11857,8 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 	GetRobloxClientPos()
 	middleX := windowX+(windowWidth//2)
 	middleY := windowY+(windowHeight//2)
+
+	nm_closeChat()
 
 	switch MemoryMatchGame {
 		case "Extreme","Winter":
@@ -16043,7 +16046,7 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 			FieldRotateDirection:="' FieldRotateDirection '"
 			FieldRotateTimes:=' FieldRotateTimes '
 			FieldDriftCheck:=' FieldDriftCheck '
-			CameraRot(Dir, count) {
+			nm_CameraRotation(Dir, count) {
 				Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Abs(LR) "}{" Rot%(UD > 0 ? "Down" : "Up")% " " Abs(UD) "}"), -1)
 				send "{" Rot%Dir% " " count "}"
 				Switch Dir,0 {
@@ -22274,4 +22277,19 @@ nm_ReturnNectarPercentages(*) {
 		SendMessage 0xc,, StrPtr(SubStr(str,1,-1))
 	DetectHiddenWindows 0
 	return 1
+}
+nm_closeChat(*) {
+	critical
+    prevShiftLock := ShiftLockEnabled
+    nm_setShiftLock(0)
+    if !GetRobloxClientPos()
+    	return 0
+    ActivateRoblox()
+	yOffset := GetYOffset()
+    pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + yOffset "|90|90")
+    if Gdip_ImageSearch(pBMScreen, bitmaps["Chat"], &pos,,,,,3)
+        Click (pos:=StrSplit(pos, ","))[1] " " pos[2]
+    Gdip_DisposeImage(pBMScreen)
+    nm_setShiftLock(prevShiftLock)
+    return 1
 }
