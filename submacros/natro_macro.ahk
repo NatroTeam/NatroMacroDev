@@ -22287,7 +22287,7 @@ nm_closeChat(*) {
     ActivateRoblox()
 	yOffset := GetYOffset()
     pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + yOffset "|90|90")
-    if Gdip_ImageSearch(pBMScreen, bitmaps["Chat"], &pos,,,,,3)
+    if Gdip_ImageSearch(pBMScreen, bitmaps["chatbutton"], &pos,,,,,3)
         Click (pos:=StrSplit(pos, ","))[1] " " pos[2]
     Gdip_DisposeImage(pBMScreen)
     nm_setShiftLock(prevShiftLock)
