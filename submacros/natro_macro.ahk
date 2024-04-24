@@ -32,8 +32,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "nowUnix.ahk"
 
 #Warn VarUnset, Off
-; TODO remove comment here!
-;OnError (e, mode) => (mode = "Return") ? -1 : 0
+OnError (e, mode) => (mode = "Return") ? -1 : 0
 
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Screen"
@@ -22282,7 +22281,6 @@ nm_ReturnNectarPercentages(*) {
 	return 1
 }
 nm_closeChat(*) {
-	critical
     prevShiftLock := ShiftLockEnabled
     nm_setShiftLock(0)
     if !GetRobloxClientPos()
@@ -22291,7 +22289,7 @@ nm_closeChat(*) {
 	yOffset := GetYOffset()
     pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + yOffset "|90|90")
     if Gdip_ImageSearch(pBMScreen, bitmaps["chatbutton"], &pos,,,,,3)
-        Click (pos:=StrSplit(pos, ","))[1] " " pos[2]
+        Click windowX + (pos:=StrSplit(pos, ","))[1] " " windowY + yOffset + pos[2]
     Gdip_DisposeImage(pBMScreen)
     nm_setShiftLock(prevShiftLock)
     return 1

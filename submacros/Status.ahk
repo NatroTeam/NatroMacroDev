@@ -22,8 +22,8 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "JSON.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "Roblox.ahk"
-;TODO remove comment here!
-;OnError (e, mode) => (mode = "Return") ? -1 : 0
+
+OnError (e, mode) => (mode = "Return") ? -1 : 0
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
 
@@ -2504,7 +2504,7 @@ nm_command(command)
 		case "closeChat":
 		DetectHiddenWindows 1
 		if WinExist("natro_macro ahk_class AutoHotkey")
-			if SendMessage(0x5560)
+			if SendMessage(0x5560,,,,,,,,2000)
 				discord.SendEmbed("Chat closed", 5066239, , , , id)
 			else
 				discord.SendEmbed("Failed to close chat", 16711731, , , , id)
