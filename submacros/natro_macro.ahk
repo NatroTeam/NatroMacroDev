@@ -12093,6 +12093,9 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 		Gdip_DisposeImage(pBMScreen)
 		Sleep 250
 	}
+
+	;Open Chat
+	Send "{Text}/`n"
 }
 nm_Honeystorm(fromSnowMachine:=0){
 	global HoneystormCheck, LastHoneyStorm
