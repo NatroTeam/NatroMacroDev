@@ -22289,7 +22289,7 @@ nm_closeChat(*) {
 	yOffset := GetYOffset()
     pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + yOffset "|90|90")
     if Gdip_ImageSearch(pBMScreen, bitmaps["chatbutton"], &pos,,,,,3)
-        Click windowX+SubStr(pos, 1, InStr(pos, ",")-1)+10, windowY+SubStr(pos, InStr(pos, ",")+1)+10
+        Click windowX + SubStr(pos, 1, InStr(pos, ",")-1 ) + 10, windowY + yOffset + SubStr(pos, InStr(pos, ",")+1 ) + 10
     Gdip_DisposeImage(pBMScreen)
 	MouseMove windowX+350, windowY+yOffset+100
     nm_setShiftLock(prevShiftLock)
