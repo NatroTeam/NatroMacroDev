@@ -22281,17 +22281,23 @@ nm_ReturnNectarPercentages(*) {
 	return 1
 }
 nm_closeChat(*) {
+    if !GetRobloxClientPos()
+    	return 0	
     prevShiftLock := ShiftLockEnabled
     nm_setShiftLock(0)
-    if !GetRobloxClientPos()
-    	return 0
     ActivateRoblox()
 	yOffset := GetYOffset()
-    pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + yOffset "|90|90")
-    if Gdip_ImageSearch(pBMScreen, bitmaps["chatbutton"], &pos,,,,,3)
-        Click windowX + SubStr(pos, 1, InStr(pos, ",")-1 ) + 10, windowY + yOffset + SubStr(pos, InStr(pos, ",")+1 ) + 10
-    Gdip_DisposeImage(pBMScreen)
-	MouseMove windowX+350, windowY+yOffset+100
+	loop 5 {
+    	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|90|90")
+    	if Gdip_ImageSearch(pBMScreen, bitmaps["chatbutton"], &pos,,,,,3) {
+			Click windowX + (pos:=StrSplit(pos, ","))[1]+10 " " windowY + pos[2]+10
+    	    sleep 500
+		} else {
+			break
+		}
+    	Gdip_DisposeImage(pBMScreen)
+		MouseMove windowX+350, windowY+yOffset+100
+	}	
     nm_setShiftLock(prevShiftLock)
     return 1
 }
