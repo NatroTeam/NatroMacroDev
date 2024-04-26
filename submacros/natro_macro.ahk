@@ -11857,8 +11857,6 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 	middleX := windowX+(windowWidth//2)
 	middleY := windowY+(windowHeight//2)
 
-	nm_closeChat()
-
 	switch MemoryMatchGame {
 		case "Extreme","Winter":
 		Xoffset := 40, Tiles := 20
@@ -11878,6 +11876,8 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 		}
 		Gdip_DisposeImage(pBMScreen)
 	}
+
+	nm_closeChat()
 
 	StoreItemOAC := [], StoreItemOAC.Default := "", StoreItemOAC.Length := 20
 	IgnoreItemOAC := [], IgnoreItemOAC.Default := 0, IgnoreItemOAC.Length := 20
@@ -12049,6 +12049,11 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 				Gdip_DisposeImage(pBMScreen)
 			}
 
+			pBMScreen := Gdip_BitmapFromScreen(middleX-275-Xoffset "|" middleY-146 "|100|100") ; Detect Number of Chances
+			if(Gdip_ImageSearch(pBMScreen, bitmaps["Chances1"], , , , , , 10, , 2) = 1)  
+				LastChance := 1
+			Gdip_DisposeImage(pBMScreen)	
+
 			if(A_Index=1) {
 				Click1Tile:=Tile
 				if(PairFoundOAC) {
@@ -12071,6 +12076,14 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 
 			if(A_Index=2 && LastChance=1)
 				break 2
+
+			pBMScreen := Gdip_BitmapFromScreen(middleX-250 "|" middleY-210 "|500|50")
+			if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitle"], , , , , , 8) = 0) {
+				Gdip_DisposeImage(pBMScreen)
+				break 2
+			}
+			Gdip_DisposeImage(pBMScreen)
+
 		} ;Close loop 2 Click tile, store item, and compare
 	} ;close Chances Loop
 
