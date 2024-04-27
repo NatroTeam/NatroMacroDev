@@ -136,12 +136,16 @@ else
 OnExit(nm_ManualHotbarExit)
 
 ;GUI
-ManualHotbar := Gui("+AlwaysOnTop -Caption +Border +minsize30x15 +E0x00040000 +lastfound -MinimizeBox", "Manual Hotbar")
-ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w570 h30")
+ManualHotbar := Gui("+AlwaysOnTop -Caption +Border +minsize30x15 +E0x08040000 +lastfound -MinimizeBox", "Manual Hotbar")
+ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w585 h30")
 (GuiCtrl := ManualHotbar.Add("Picture", "x0 y0 w15 h15", ".\nm_image_assets\auryn.ico")).OnEvent("Click", (*) => SendMessage(0xA1, 2))
 GuiCtrl.OnEvent("ContextMenu", nm_toggleGuiMode)
 ;TODO: needs help button text
-ManualHotbar.Add("Button", "xp yp+15 w15 h15", "?").OnEvent("Click", (*) => MsgBox("Help arrives soon!"))
+ManualHotbar.Add("Button", "xp yp+15 w15 h15", "?").OnEvent("Click", nm_ManualHotbarHelp)
+(GuiCtrl := ManualHotbar.Add("Picture", "x570 y0 w15 h15 vUnlockButton", ".\nm_image_assets\unlock_icon.png")).OnEvent("Click", nm_LockHotbar)
+GuiCtrl.Visible :=0
+(GuiCtrl := ManualHotbar.Add("Picture", "x570 y0 w15 h15 vLockButton", ".\nm_image_assets\lock_icon.png")).OnEvent("Click", nm_UnlockHotbar)
+GuiCtrl.Visible :=1
 ManualHotbar.Add("Button", "x15 y0 w30 h30 vToggleManualAll", "Start`nALL").OnEvent("Click", nm_ToggleManualAll)
 
 ManualHotbar.Add("GroupBox", "x45 y-6 w75 h36 Section")
@@ -166,13 +170,13 @@ ManualHotbar.Add("CheckBox", "xp+75 y0 w13 h13 vManualHotbarArmed5 Checked" Manu
 ManualHotbar.Add("CheckBox", "xp+75 y0 w13 h13 vManualHotbarArmed6 Checked" ManualHotbarArmed6).OnEvent("Click", nm_armManualHotbar)
 ManualHotbar.Add("CheckBox", "xp+75 y0 w13 h13 vManualHotbarArmed7 Checked" ManualHotbarArmed7).OnEvent("Click", nm_armManualHotbar)
 ManualHotbar.SetFont("w700")
-ManualHotbar.Add("Edit", "x60 y0 w58 h15 vManualHotbarTimer1 Number Limit7 Center " (ManualHotbarArmed1 = 0 ? "Hidden" : ""), ManualHotbarTimer1).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer2 Number Limit7 Center " (ManualHotbarArmed2 = 0 ? "Hidden" : ""), ManualHotbarTimer2).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer3 Number Limit7 Center " (ManualHotbarArmed3 = 0 ? "Hidden" : ""), ManualHotbarTimer3).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer4 Number Limit7 Center " (ManualHotbarArmed4 = 0 ? "Hidden" : ""), ManualHotbarTimer4).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer5 Number Limit7 Center " (ManualHotbarArmed5 = 0 ? "Hidden" : ""), ManualHotbarTimer5).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer6 Number Limit7 Center " (ManualHotbarArmed6 = 0 ? "Hidden" : ""), ManualHotbarTimer6).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer7 Number Limit7 Center " (ManualHotbarArmed7 = 0 ? "Hidden" : ""), ManualHotbarTimer7).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "x60 y0 w58 h15 vManualHotbarTimer1 Number Limit7 Center Disabled " (ManualHotbarArmed1 = 0 ? "Hidden" : ""), ManualHotbarTimer1).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer2 Number Limit7 Center Disabled " (ManualHotbarArmed2 = 0 ? "Hidden" : ""), ManualHotbarTimer2).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer3 Number Limit7 Center Disabled " (ManualHotbarArmed3 = 0 ? "Hidden" : ""), ManualHotbarTimer3).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer4 Number Limit7 Center Disabled " (ManualHotbarArmed4 = 0 ? "Hidden" : ""), ManualHotbarTimer4).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer5 Number Limit7 Center Disabled " (ManualHotbarArmed5 = 0 ? "Hidden" : ""), ManualHotbarTimer5).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer6 Number Limit7 Center Disabled " (ManualHotbarArmed6 = 0 ? "Hidden" : ""), ManualHotbarTimer6).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer7 Number Limit7 Center Disabled " (ManualHotbarArmed7 = 0 ? "Hidden" : ""), ManualHotbarTimer7).OnEvent("Change", nm_saveManualHotbar)
 ManualHotbar.SetFont("Norm")
 ManualHotbar.Add("Button", "x46 y15 w73 h15 vManualHotbarButton1", "Start 1").OnEvent("Click", nm_toggleManualHotbar)
 ManualHotbar.Add("Button", "xp+75 y15 w73 h15 vManualHotbarButton2", "Start 2").OnEvent("Click", nm_toggleManualHotbar)
@@ -197,9 +201,50 @@ ManualHotbarCountdown7:=ManualHotbarTimer7
 
 ;main loop
 loop {
-    loop 7 
+    loop 7
         ManualHotbarArmed%A_Index% && ManualHotbarButton%A_Index% && nm_ManualHotbar(A_Index)
     sleep 1000
+}
+
+nm_ManualHotbarHelp(*){
+;msgbox "DESCRIPTION:`nThe Manual Hotbar will automatically press hotbar buttons at the specified interval (in seconds)`n", "Manual Hotbar Help"
+MsgBox "
+(
+DESCRIPTION:
+The Manual Hotbar will automatically press your actionbar buttons at the specified interval (in seconds).
+
+HOW TO CONFIGURE:
+1) Click on the cooresponding checkbox for each key that is to be pressed automatically.
+2) Unlock/Lock the interval settings by pressing the padlock icon in the upper right corner.
+3) Enter the interval (in seconds) for each actionbar key.
+
+HOW TO START/STOP:
+* Individual buttons can be start/stopped by pressing the corresponding button below.
+* Alternatively, ALL checked buttons can be start/stopped by pressing the "Start ALL" button on the left side of the GUI.
+
+HOW TO MOVE GUI:
+Click-and-hold on the Auryn icon in the upper left corner.
+
+RECOMMENDED PLACEMENT:
+The GUI is designed to fit just under your actionbar buttons.
+)", "Manual Hotbar Help", 0x40000
+}
+
+nm_LockHotbar(*){
+    ManualHotbar["UnlockButton"].Visible :=0
+    ManualHotbar["LockButton"].Visible :=1
+    loop 7 {
+        ManualHotbar["ManualHotbarTimer" a_Index].Enabled := 0
+    }
+
+}
+nm_UnlockHotbar(*){
+    ManualHotbar["LockButton"].Visible :=0
+    ManualHotbar["UnlockButton"].Visible :=1
+    loop 7 {
+        ManualHotbar["ManualHotbarTimer" a_Index].Enabled := 1
+    }
+    WinActivate "Manual Hotbar"
 }
 
 nm_saveManualHotbarGui(*){
@@ -248,6 +293,7 @@ nm_ToggleManualAll(GuiCtrl, *){
                 nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index])
         }
     }
+    nm_LockHotbar()
     if WinExist("ahk_id" GetRobloxHWND()) {
         WinActivate
     }
@@ -275,17 +321,18 @@ nm_ToggleManualHotbar(GuiCtrl, *){
         ManualHotbar["ManualHotbarButton" num].Text := ("Stop " . num)
         ManualHotbar["ToggleManualAll"].Text := "Stop`nAll"
         ManualHotbarButton%num% := 1
-        ManualHotbar["ManualHotbarTimer" num].Enabled := 0
+        ;ManualHotbar["ManualHotbarTimer" num].Enabled := 0
         ManualHotbarCountdown%num%:=ManualHotbarTimer%num%
     } else {
         ManualHotbar["ManualHotbarButton" num].Text := ("Start " . num)
         ManualHotbarButton%num% := 0
-        ManualHotbar["ManualHotbarTimer" num].Enabled := 1
+        ;ManualHotbar["ManualHotbarTimer" num].Enabled := 1
         ManualHotbar["ManualHotbarTimer" num].Text := ManualHotbarTimer%num%
         if(!ManualHotbarButton1 && !ManualHotbarButton2 && !ManualHotbarButton3 && !ManualHotbarButton4 && !ManualHotbarButton5 && !ManualHotbarButton6 && !ManualHotbarButton7){
             ManualHotbar["ToggleManualAll"].Text := "Start`nAll"
         }
     }
+    nm_LockHotbar()
     if WinExist("ahk_id" GetRobloxHWND()) {
         WinActivate
     }
