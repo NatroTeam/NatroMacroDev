@@ -16,7 +16,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "%A_ScriptDir%\..\lib\Roblox.ahk"
 #Warn VarUnset, Off
 
-OnError (e, mode) => (mode = "Return") ? -1 : 0
+;OnError (e, mode) => (mode = "Return") ? -1 : 0
 DetectHiddenWindows 1
 SetWorkingDir A_ScriptDir "\.."
 TraySetIcon "nm_image_assets\auryn.ico"
@@ -136,7 +136,7 @@ else
 OnExit(nm_ManualHotbarExit)
 
 ;GUI
-ManualHotbar := Gui("+AlwaysOnTop -Caption +Border +minsize30x15 +E0x08040000 +lastfound -MinimizeBox", "Manual Hotbar")
+ManualHotbar := Gui("+ToolWindow +AlwaysOnTop -Caption +Border +E0x8000000", "Manual Hotbar")
 ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w585 h30")
 (GuiCtrl := ManualHotbar.Add("Picture", "x0 y0 w15 h15", ".\nm_image_assets\auryn.ico")).OnEvent("Click", (*) => SendMessage(0xA1, 2))
 GuiCtrl.OnEvent("ContextMenu", nm_toggleGuiMode)
@@ -199,7 +199,7 @@ ManualHotbarCountdown7:=ManualHotbarTimer7
 ;main loop
 loop {
     loop 7
-        ManualHotbarArmed%A_Index% && ManualHotbarButton%A_Index% && nm_ManualHotbar(A_Index)
+        ManualHotbarArmed%A_Index% && MAnualHotbarButton%A_Index% && nm_ManualHotbar(A_Index)
     sleep 1000
 }
 
@@ -235,10 +235,14 @@ nm_LockHotbar(*){
         ManualHotbar["ManualHotbarTimer" A_Index].Enabled := 0
 }
 nm_UnlockHotbar(*){
+    global
+    if ManualHotbarButton1 && ManualHotbarButton2 && ManualHotbarButton3 && ManualHotbarButton4 && ManualHotbarButton5 && ManualHotbarButton6 && ManualHotbarButton7
+        return
     ManualHotbar["LockButton"].Visible :=0
     ManualHotbar["UnlockButton"].Visible :=1
     loop 7
-        ManualHotbar["ManualHotbarTimer" A_Index].Enabled := 1
+        if !ManualHotbarButton%A_Index%
+            ManualHotbar["ManualHotbarTimer" A_Index].Enabled := 1
     WinActivate "Manual Hotbar"
 }
 
@@ -337,6 +341,8 @@ nm_armManualHotbar(GuiCtrl, *){
 
 nm_saveManualHotbar(GuiCtrl, *) {
 	global
+    if GuiCtrl.type = "Edit" && !GuiCtrl.value
+        GuiCtrl.value := 1
     %GuiCtrl.Name% := GuiCtrl.Value
 	IniWrite GuiCtrl.Value, "settings\manual_hotbar.ini", "ManualHotbar", GuiCtrl.Name
 ;msgbox GuiCtrl.Name " =" GuiCtrl.Value
