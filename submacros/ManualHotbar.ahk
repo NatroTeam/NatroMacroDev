@@ -16,7 +16,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "%A_ScriptDir%\..\lib\Roblox.ahk"
 #Warn VarUnset, Off
 
-;OnError (e, mode) => (mode = "Return") ? -1 : 0
+OnError (e, mode) => (mode = "Return") ? -1 : 0
 DetectHiddenWindows 1
 SetWorkingDir A_ScriptDir "\.."
 TraySetIcon "nm_image_assets\auryn.ico"
@@ -140,12 +140,9 @@ ManualHotbar := Gui("+AlwaysOnTop -Caption +Border +minsize30x15 +E0x08040000 +l
 ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w585 h30")
 (GuiCtrl := ManualHotbar.Add("Picture", "x0 y0 w15 h15", ".\nm_image_assets\auryn.ico")).OnEvent("Click", (*) => SendMessage(0xA1, 2))
 GuiCtrl.OnEvent("ContextMenu", nm_toggleGuiMode)
-;TODO: needs help button text
-ManualHotbar.Add("Button", "xp yp+15 w15 h15", "?").OnEvent("Click", nm_ManualHotbarHelp)
-(GuiCtrl := ManualHotbar.Add("Picture", "x570 y0 w15 h15 vUnlockButton", ".\nm_image_assets\unlock_icon.png")).OnEvent("Click", nm_LockHotbar)
-GuiCtrl.Visible :=0
-(GuiCtrl := ManualHotbar.Add("Picture", "x570 y0 w15 h15 vLockButton", ".\nm_image_assets\lock_icon.png")).OnEvent("Click", nm_UnlockHotbar)
-GuiCtrl.Visible :=1
+ManualHotbar.Add("Button", "xp yp+15 w15 h15 vHelpButton", "?").OnEvent("Click", nm_ManualHotbarHelp)
+ManualHotbar.Add("Picture", "x570 y0 w15 h15 vUnlockButton", ".\nm_image_assets\unlock_icon.png").OnEvent("Click", nm_LockHotbar)
+ManualHotbar.Add("Picture", "x570 y0 w15 h15 vLockButton Hidden", ".\nm_image_assets\lock_icon.png").OnEvent("Click", nm_UnlockHotbar)
 ManualHotbar.Add("Button", "x15 y0 w30 h30 vToggleManualAll", "Start`nALL").OnEvent("Click", nm_ToggleManualAll)
 
 ManualHotbar.Add("GroupBox", "x45 y-6 w75 h36 Section")
@@ -224,6 +221,7 @@ HOW TO START/STOP:
 
 HOW TO MOVE GUI:
 Click-and-hold on the Auryn icon in the upper left corner.
+Right-click on the Auryn icon to hide the GUI.
 
 RECOMMENDED PLACEMENT:
 The GUI is designed to fit just under your actionbar buttons.
@@ -233,22 +231,18 @@ The GUI is designed to fit just under your actionbar buttons.
 nm_LockHotbar(*){
     ManualHotbar["UnlockButton"].Visible :=0
     ManualHotbar["LockButton"].Visible :=1
-    loop 7 {
-        ManualHotbar["ManualHotbarTimer" a_Index].Enabled := 0
-    }
-
+    loop 7
+        ManualHotbar["ManualHotbarTimer" A_Index].Enabled := 0
 }
 nm_UnlockHotbar(*){
     ManualHotbar["LockButton"].Visible :=0
     ManualHotbar["UnlockButton"].Visible :=1
-    loop 7 {
-        ManualHotbar["ManualHotbarTimer" a_Index].Enabled := 1
-    }
+    loop 7
+        ManualHotbar["ManualHotbarTimer" A_Index].Enabled := 1
     WinActivate "Manual Hotbar"
 }
 
 nm_saveManualHotbarGui(*){
-	global TimerX, TimerY
 	wp := Buffer(44)
     DllCall("GetWindowPlacement", "UInt", ManualHotbar.Hwnd, "Ptr", wp)
 	x := NumGet(wp, 28, "Int"), y := NumGet(wp, 32, "Int")
@@ -301,22 +295,7 @@ nm_ToggleManualAll(GuiCtrl, *){
 
 nm_ToggleManualHotbar(GuiCtrl, *){
     global
-    switch GuiCtrl.Name, 0 {
-        case "ManualHotbarButton1":
-        num := 1
-        case "ManualHotbarButton2":
-        num := 2
-        case "ManualHotbarButton3":
-        num := 3
-        case "ManualHotbarButton4":
-        num := 4
-        case "ManualHotbarButton5":
-        num := 5
-        case "ManualHotbarButton6":
-        num := 6
-        case "ManualHotbarButton7":
-        num := 7
-    }
+    num := SubStr(GuiCtrl.Name, -1)
     if(ManualHotbar["ManualHotbarButton" num].Text = ("Start " . num) && ManualHotbarArmed%num%) {
         ManualHotbar["ManualHotbarButton" num].Text := ("Stop " . num)
         ManualHotbar["ToggleManualAll"].Text := "Stop`nAll"
@@ -339,22 +318,7 @@ nm_ToggleManualHotbar(GuiCtrl, *){
 }
 nm_armManualHotbar(GuiCtrl, *){
     global
-    switch GuiCtrl.Name, 0 {
-        case "ManualHotbarArmed1":
-        num := 1
-        case "ManualHotbarArmed2":
-        num := 2
-        case "ManualHotbarArmed3":
-        num := 3
-        case "ManualHotbarArmed4":
-        num := 4
-        case "ManualHotbarArmed5":
-        num := 5
-        case "ManualHotbarArmed6":
-        num := 6
-        case "ManualHotbarArmed7":
-        num := 7
-    }
+    num := SubStr(GuiCtrl.Name, -1)
     nm_saveManualHotbar(GuiCtrl)
 
     if(ManualHotbarArmed%num%=1){
@@ -373,18 +337,14 @@ nm_armManualHotbar(GuiCtrl, *){
 
 nm_saveManualHotbar(GuiCtrl, *) {
 	global
-    %GuiCtrl.Name% := ManualHotbar[GuiCtrl.Name].Value
-	IniWrite ManualHotbar[GuiCtrl.Name].Value, "settings\manual_hotbar.ini", "ManualHotbar", GuiCtrl.Name
+    %GuiCtrl.Name% := GuiCtrl.Value
+	IniWrite GuiCtrl.Value, "settings\manual_hotbar.ini", "ManualHotbar", GuiCtrl.Name
 ;msgbox GuiCtrl.Name " =" GuiCtrl.Value
-}
-nm_saveManualHotbarDDL(GuiCtrl, *) {
-	global
-	IniWrite ManualHotbar[GuiCtrl.Name].Text, "settings\manual_hotbar.ini", "ManualHotbar", GuiCtrl.Name
 }
 nm_toggleGuiMode(*) {
     static GuiHidden := 0
     if GuiHidden := !GuiHidden
         ManualHotbar.Show("h15 w15")
     else
-        ManualHotbar.Show("h30 w570")
+        ManualHotbar.Show("h30 w585")
 }
