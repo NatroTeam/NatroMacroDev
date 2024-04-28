@@ -300,12 +300,12 @@ nm_ToggleManualAll(GuiCtrl, *){
 nm_ToggleManualHotbar(GuiCtrl, *){
     global
     num := SubStr(GuiCtrl.Name, -1)
-    if(ManualHotbar["ManualHotbarButton" num].Text = ("Start " . num) && ManualHotbarArmed%num%) {
+    if(!ManualHotbarButton%num% && ManualHotbarArmed%num%) {
         ManualHotbar["ManualHotbarButton" num].Text := ("Stop " . num)
         ManualHotbar["ToggleManualAll"].Text := "Stop`nAll"
         ManualHotbarButton%num% := 1
         ;ManualHotbar["ManualHotbarTimer" num].Enabled := 0
-        ManualHotbarCountdown%num%:=ManualHotbarTimer%num%
+        ManualHotbarCountdown%num%:=ManualHotbarTimer%num%-1
     } else {
         ManualHotbar["ManualHotbarButton" num].Text := ("Start " . num)
         ManualHotbarButton%num% := 0
