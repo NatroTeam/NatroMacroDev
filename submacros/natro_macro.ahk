@@ -2070,6 +2070,8 @@ A_TrayMenu.Add()
 A_TrayMenu.Add("Open Logs", (*) => ListLines())
 A_TrayMenu.Add("Copy Logs", (*) => FileExist("settings\debug_log.txt") ? FileToClipboard("settings\debug_log.txt") : Msgbox("No logs found!"))
 A_TrayMenu.Add()
+A_TrayMenu.Add("Edit Roblox FPS", robloxFPSGui)
+A_TrayMenu.Add()
 A_TrayMenu.Add("Edit This Script", (*) => Edit())
 A_TrayMenu.Add("Suspend Hotkeys", (*) => (A_TrayMenu.ToggleCheck("Suspend Hotkeys"), Suspend()))
 A_TrayMenu.Add()
@@ -22314,4 +22316,40 @@ nm_closeChat(*) {
 	}	
     nm_setShiftLock(prevShiftLock)
     return 1
+}
+robloxFPSGui(*) {
+	global fpsUnlockerGui
+	static path := DirExist(A_AppData "\..\local\roblox\versions") ? A_AppData "\..\local\roblox\versions" : DirExist("C:\Program Files\Roblox\Versions") ? "C:\Program Files\Roblox\Versions" : "", RobloxPath := ""
+    if !path {
+        MsgBox
+        (
+        'Unable to find Roblox Path.
+        Please select the Roblox path manually.'
+        ),,0x40030
+        path := FileSelect("D2", A_AppData "\..\local", "Select Roblox Path")
+		if !path
+			return
+    }
+	if !RobloxPath
+		loop files path "\*", "D" {
+			if FileExist(A_LoopFileFullPath "\RobloxPlayerBeta.exe")
+				RobloxPath := A_LoopFileFullPath
+		}
+	prevFPS := FileExist(RobloxPath "\ClientSettings\ClientAppSettings.json") ? ((clientAppSettings:=JSON.Parse(FileRead(RobloxPath "\ClientSettings\ClientAppSettings.json"))) && clientAppSettings.has("DFIntTaskSchedulerTargetFps") ? clientAppSettings["DFIntTaskSchedulerTargetFps"] : 25) : 25
+	fpsUnlockerGui := Gui("+E0x8000008 -MinimizeBox", "FPS")
+	fpsUnlockerGui.Show("w70 h40")
+	fpsUnlockerGui.AddText("vFPSCountLabel w35 x5", "FPS")
+	fpsUnlockerGui.AddText("vFPSCountEdit yp xp+20 w50 Right")
+	fpsUnlockerGui.AddUpDown("vFPSCount Range1-500", prevFPS)
+	fpsUnlockerGui.AddButton("x5 yp+20 w70","Apply").OnEvent("Click",(*) => WriteFPSCount(fpsUnlockerGui["FPSCount"].value))
+	WriteFPSCount(fpsCount) {
+		if !DirExist(RobloxPath "\ClientSettings")
+			DirCreate(RobloxPath "\ClientSettings")
+		f := FileOpen(RobloxPath "\ClientSettings\ClientAppSettings.json", "rw")
+		ClientAppSettings := JSON.parse(f.Read(),true,false), f.Close()
+		f := FileOpen(RobloxPath "\ClientSettings\ClientAppSettings.json", "w")
+		ClientAppSettings.DFIntTaskSchedulerTargetFps := fpsCount
+		f.Write(JSON.stringify(ClientAppSettings))
+		f.Close()
+	}
 }
