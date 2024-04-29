@@ -114,9 +114,6 @@ OnMessage(0x5562, nm_ReturnNectarPercentages)
 ; set version identifier
 VersionID := "1.0.1"
 
-;set default priority list
-defaultPriorityList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
-
 ;initial load warnings
 if (A_ScreenDPI != 96)
 	MsgBox "
@@ -1999,6 +1996,7 @@ QuestBlueBoost := 0
 QuestRedBoost := 0
 HiveConfirmed := 0
 ShiftLockEnabled := 0
+defaultPriorityList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 
 ;ensure Gui will be visible
 if (GuiX && GuiY)
@@ -2059,7 +2057,6 @@ hBitmapsSB := Map()
 for x,y in hBitmapsSBT
 	hBitmapsSB[x] := Gdip_CreateHBITMAPFromBitmap(y), Gdip_DisposeImage(y)
 hBitmapsSB["None"] := 0
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; SYSTEM TRAY
@@ -2509,17 +2506,11 @@ MainGui.Add("Button", "x10 y124 w150 h40 Disabled", "Auto-Mutator`n(coming soon!
 ;other tools
 MainGui.Add("Button", "x10 y184 w150 h42 vGenerateBeeListButton Disabled", "Export Hive Bee List`n(for Hive Builder)").OnEvent("Click", nm_GenerateBeeList)
 ;calculators
-/**
- * @author xspx
- */
 MainGui.Add("Button", "x175 y40 w150 h23 vTicketShopCalculatorButton Disabled", "Ticket Shop Calculator").OnEvent("Click", nm_TicketShopCalculatorButton)
-/**
- * @author gyhkijffk
- */
-MainGui.Add("Button", "x175 yp+25 w150 h23 vSSACalculatorButton Disabled", "SSA Calculator").OnEvent("Click", nm_SSACalculatorButton)
-MainGui.Add("Button", "x175 yp+25 w150 h23 vBondCalculatorButton Disabled", "Bond Calculator").OnEvent("Click", nm_BondCalculatorButton)
-MainGui.Add("Button", "x175 yp+25 w150 h23 vStickerPricesButton Disabled", "Sticker Prices").OnEvent("Click", (*) => Run("https://docs.google.com/spreadsheets/d/13rin_Z_tyDdFm3F1nhnVUywtp5hjFFuAB32iBY14mbE/edit?usp=sharing"))
-MainGui.Add("Button", "x175 yp+25 w150 h23 vBeequipChancesButton Disabled", "Beequip Chances").OnEvent("Click", (*) => Run("https://docs.google.com/spreadsheets/d/10_7oay1yHgykAccrhqYp5gr-P_0jpEKMbTJS9ty4JA8/edit?usp=sharing"))
+MainGui.Add("Button", "x175 yp+25 w150 h23 vSSACalculatorButton Disabled", "SSA Calculator").OnEvent("Click", nm_SSACalculatorButton) ; by gyhkijffk
+MainGui.Add("Button", "x175 yp+25 w150 h23 vBondCalculatorButton Disabled", "Bond Calculator").OnEvent("Click", nm_BondCalculatorButton) ; by gyhkijffk
+MainGui.Add("Button", "x175 yp+25 w150 h23 vStickerPricesButton Disabled", "Sticker Prices").OnEvent("Click", (*) => Run("https://docs.google.com/spreadsheets/d/13rin_Z_tyDdFm3F1nhnVUywtp5hjFFuAB32iBY14mbE/edit?usp=sharing")) ; by gyhkijffk
+MainGui.Add("Button", "x175 yp+25 w150 h23 vBeequipChancesButton Disabled", "Beequip Chances").OnEvent("Click", (*) => Run("https://docs.google.com/spreadsheets/d/10_7oay1yHgykAccrhqYp5gr-P_0jpEKMbTJS9ty4JA8/edit?usp=sharing")) ; by gyhkijffk
 ;autoclicker
 MainGui.Add("Button", "x175 y184 w150 h42 vAutoClickerGUI Disabled", "AutoClicker`nSettings").OnEvent("Click", nm_AutoClickerButton)
 ;macro tools
@@ -3232,7 +3223,6 @@ SetLoadingProgress(100)
 
 ;unlock tabs
 nm_LockTabs(0)
-;nm_LockTabs(0)
 nm_setStatus("Startup", "UI")
 TabCtrl.Focus()
 MainGui.Title := "Natro Macro"
@@ -3257,15 +3247,16 @@ if manualHotbarOpen
 nm_showManualHotbar(*) {
 	DetectHiddenWindows 1
 	if WinExist("ManualHotbar.ahk ahk_class AutoHotkey")
-		return WinClose() IniWrite(0, ".\settings\nm_config.ini", "Settings", "ManualHotbarOpen")
+		return WinClose() IniWrite(manualHotbarOpen:=0, ".\settings\nm_config.ini", "Settings", "ManualHotbarOpen")
 	Run '"' exe_path32 '" /script "' A_WorkingDir '\submacros\ManualHotbar.ahk"'
-	IniWrite(1, ".\settings\nm_config.ini", "Settings", "ManualHotbarOpen")
+	IniWrite(manualHotbarOpen:=1, ".\settings\nm_config.ini", "Settings", "ManualHotbarOpen")
 	DetectHiddenWindows 0
 }
 
 SetTimer Background, 2000
 if (A_Args.Has(1) && (A_Args[1] = 1))
 	SetTimer start, -1000
+
 return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6991,7 +6982,7 @@ nm_WebhookGUI(*){
 		local k,v,x,y,w,h,str
 		static ss_list := ["critical","amulet","machine","balloon","vicious","death","planter","honey", "honeyUpdate"]
 		static ping_list := ["criticalerror","disconnect","gamefrozen","phantom","unexpecteddeath","emergencyballoon"]
-		
+
 		Gdip_GraphicsClear(G)
 		w := 500, h := 420 + discordMode * 80
 
@@ -7331,7 +7322,7 @@ nm_WebhookGUI(*){
 	shell := ComObject("WScript.Shell")
 	exec := shell.Exec('"' exe_path64 '" /script /force *')
 	exec.StdIn.Write(script), exec.StdIn.Close()
-	
+
 	return (WGUIPID := exec.ProcessID)
 }
 
@@ -7402,7 +7393,7 @@ nm_priorityListGui(*) {
 		pBrush := Gdip_BrushCreateSolid(accentColors[1]), Gdip_FillRoundedRectanglePath(G, pBrush, 8, 0, w-16, 30, 12), Gdip_FillRectangle(G, pBrush, 8, 13, w-16, 20), Gdip_DeleteBrush(pBrush)
 		Gdip_DrawImage(G, bitmaps["close"], w-42, 4)
 		Gdip_TextToGraphics(G, "Priority List", "x23 y8 s15 cffffffff Bolder","Arial", w-16, 30)
-		
+
 		;;Background
 		Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(backgroundColor), 8, 32, w-16, h-80), Gdip_FillRoundedRectanglePath(G, pBrush, 8, h-100, w-16, 84, 12),Gdip_DeleteBrush(pBrush)
 
@@ -7980,9 +7971,31 @@ nm_ImportPreset(*) {
     for i in presetsImported
 		finalMsg .= "`n" i
 	nm_includePresets()
-	if (PresetGui["SelectPreset"].enabled := presetList.length)
-		PresetGui["SelectPreset"].Value := 1
+	if PresetGui["SelectPreset"].Enabled := !!presetList.length
+		PresetGui["SelectPreset"].Text := filename
+		, SelectPreset := filename
+		, IniWrite(filename, ".\settings\nm_config.ini", "Settings", "SelectPreset")
+		, PresetGui["OverwritePreset"].Enabled := 1
+		, PresetGui["DeletePreset"].Enabled := 1
+		, PresetGui["CopyPreset"].Enabled := 1
+		, PresetGui["LoadPreset"].Enabled := 1
+		, PresetGui["RenamePreset"].Enabled := 1
+		, PresetGui["PresetTimedEnable"].Enabled := 1
+	else
+		PresetGui["OverwritePreset"].Enabled := 0
+		, PresetGui["DeletePreset"].Enabled := 0
+		, PresetGui["CopyPreset"].Enabled := 0
+		, PresetGui["LoadPreset"].Enabled := 0
+		, PresetGui["RenamePreset"].Enabled := 0
+		, PresetGui["PresetTimed1"].Enabled := 0
+		, PresetGui["PresetTimed2"].Enabled := 0
+		, PresetGui["PresetInterval"].Enabled := 0
+		, PresetGui["PresetIntervalEdit"].Enabled := 0
+		, PresetGui["PresetRepeat"].Enabled := 0
+		, PresetGui["PresetTimedEnable"].Enabled := 0
+		, PresetGui["PresetTimedEnable"].Value := 0
 	MsgBox("Presets imported:" finalMsg)
+	return !!presetList.length
 }
 FileNameCleanup(*) {
 	global PresetGui
@@ -9720,7 +9733,7 @@ nm_testButton(*){
 		size:=1, reps:=1, facingcorner:=0
 		FieldName:=FieldPattern:=FieldPatternSize:=FieldReturnType:=FieldSprinklerLoc:=FieldRotateDirection:=""
 		FieldUntilPack:=FieldPatternReps:=FieldPatternShift:=FieldSprinklerDist:=FieldRotateTimes:=FieldDriftCheck:=FieldPatternInvertFB:=FieldPatternInvertLR:=FieldUntilMins:=0
-		
+
 		nm_CameraRotation(Dir, count) {
 			Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Abs(LR) "}{" Rot%(UD > 0 ? "Down" : "Up")% " " Abs(UD) "}"), -1)
 			send "{" Rot%Dir% " " count "}"
@@ -16190,6 +16203,7 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 		' (NewWalk ? 'Walk(tiles)' : ('HyperSleep(4000/' MoveSpeedNum '*tiles)')) '
 		Send "{" MoveKey1 " up}" (MoveKey2 ? "{" MoveKey2 " up}" : "")
 	}
+
 	F13::
 		start(hk?)
 		{
@@ -22024,12 +22038,7 @@ autoclicker(*){
 }
 ;TIMERS
 timers(*) => ba_showPlanterTimers()
-/**
- * @param wParam
- * 0	-	Set Status
- * 1	-	Guiding Star Detected
- * 2	-	Load Preset
- */
+
 nm_WM_COPYDATA(wParam, lParam, *){
 	Critical
 	global LastGuid, PMondoGuid, MondoAction, MondoBuffCheck, currentWalk, FwdKey, BackKey, LeftKey, RightKey, SC_Space
