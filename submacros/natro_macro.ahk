@@ -3230,6 +3230,7 @@ MainGui["StartButton"].Enabled := 1
 MainGui["PauseButton"].Enabled := 1
 MainGui["StopButton"].Enabled := 1
 MainGui.OnEvent("DropFiles", nm_fileDrop)
+OnMessage(0x102, nm_WM_CHAR)
 ;enable hotkeys
 try {
 	Hotkey StartHotkey, start, "On"
@@ -22361,4 +22362,9 @@ robloxFPSGui(*) {
 		f.Write(JSON.stringify(ClientAppSettings))
 		f.Close()
 	}
+}
+nm_WM_CHAR(p*) {
+	if (tabCtrl.value == 1 and MainGui[p[4]].type = "DDL" and GetKeyState("Control", "P"))
+		return 0
+	PostMessage(0x102, p*)
 }
