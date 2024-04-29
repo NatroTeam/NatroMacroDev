@@ -12,11 +12,9 @@ You should have received a copy of the license along with Natro Macro. If not, p
 */
 
 #SingleInstance Force
-
-#Include "%A_ScriptDir%\..\lib\Roblox.ahk"
 #Warn VarUnset, Off
 
-;OnError (e, mode) => (mode = "Return") ? -1 : 0
+OnError (e, mode) => (mode = "Return") ? -1 : 0
 DetectHiddenWindows 1
 SetWorkingDir A_ScriptDir "\.."
 TraySetIcon "nm_image_assets\auryn.ico"
@@ -117,7 +115,6 @@ nm_ReadMHBIni(path)
 		}
 	}
 }
-
 ; GUI position
 if (ManualHBX && ManualHBY)
 {
@@ -134,10 +131,9 @@ else
 	ManualHBX:=ManualHBY:=20
 
 OnExit(nm_ManualHotbarExit)
-
 ;GUI
-ManualHotbar := Gui("+ToolWindow +AlwaysOnTop -Caption +Border +E0x8000000", "Manual Hotbar")
-ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w585 h30")
+ManualHotbar := Gui("+ToolWindow +AlwaysOnTop -Caption +Border +E0x08000000", "Manual Hotbar")
+ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w585 h30 NA")
 (GuiCtrl := ManualHotbar.Add("Picture", "x0 y0 w15 h15", ".\nm_image_assets\auryn.ico")).OnEvent("Click", (*) => SendMessage(0xA1, 2))
 GuiCtrl.OnEvent("ContextMenu", nm_toggleGuiMode)
 ManualHotbar.Add("Button", "xp yp+15 w15 h15 vHelpButton", "?").OnEvent("Click", nm_ManualHotbarHelp)
@@ -229,6 +225,9 @@ The GUI is designed to fit just under your actionbar buttons.
 }
 
 nm_LockHotbar(*){
+    global
+    if (ManualHotbarButton1 && ManualHotbarButton2 && ManualHotbarButton3 && ManualHotbarButton4 && ManualHotbarButton5 && ManualHotbarButton6 && ManualHotbarButton7) or (!ManualHotbarArmed1 && !ManualHotbarArmed2 && !ManualHotbarArmed3 && !ManualHotbarArmed4 && !ManualHotbarArmed5 && !ManualHotbarArmed6 && !ManualHotbarArmed7)
+        return
     ManualHotbar["UnlockButton"].Visible :=0
     ManualHotbar["LockButton"].Visible :=1
     loop 7
@@ -236,7 +235,7 @@ nm_LockHotbar(*){
 }
 nm_UnlockHotbar(*){
     global
-    if ManualHotbarButton1 && ManualHotbarButton2 && ManualHotbarButton3 && ManualHotbarButton4 && ManualHotbarButton5 && ManualHotbarButton6 && ManualHotbarButton7
+    if (ManualHotbarButton1 && ManualHotbarButton2 && ManualHotbarButton3 && ManualHotbarButton4 && ManualHotbarButton5 && ManualHotbarButton6 && ManualHotbarButton7) or (!ManualHotbarArmed1 && !ManualHotbarArmed2 && !ManualHotbarArmed3 && !ManualHotbarArmed4 && !ManualHotbarArmed5 && !ManualHotbarArmed6 && !ManualHotbarArmed7)
         return
     ManualHotbar["LockButton"].Visible :=0
     ManualHotbar["UnlockButton"].Visible :=1
@@ -325,10 +324,10 @@ nm_armManualHotbar(GuiCtrl, *){
     num := SubStr(GuiCtrl.Name, -1)
     nm_saveManualHotbar(GuiCtrl)
 
-    if(ManualHotbarArmed%num%=1){
-        ManualHotbar["ManualHotbarTimer" num].Opt("-Hidden")
-    } else {
-        ManualHotbar["ManualHotbarTimer" num].Opt("+Hidden")
+    if(ManualHotbarArmed%num%=1) 
+        ManualHotbar["ManualHotbarTimer" num].Visible := 1
+    else {
+        ManualHotbar["ManualHotbarTimer" num].Visible := 0
         if(ManualHotbarButton%num%) {
             ManualHotbar["ManualHotbarButton" num].Text := "Start " num
             ManualHotbarButton%num% := 0
@@ -345,12 +344,23 @@ nm_saveManualHotbar(GuiCtrl, *) {
         GuiCtrl.value := 1
     %GuiCtrl.Name% := GuiCtrl.Value
 	IniWrite GuiCtrl.Value, "settings\manual_hotbar.ini", "ManualHotbar", GuiCtrl.Name
-;msgbox GuiCtrl.Name " =" GuiCtrl.Value
 }
 nm_toggleGuiMode(*) {
     static GuiHidden := 0
-    if GuiHidden := !GuiHidden
-        ManualHotbar.Show("h15 w15")
-    else
-        ManualHotbar.Show("h30 w585")
+    ManualHotbar.Show((GuiHidden := !GuiHidden) ? "w15 h15" : "w585 h30")
+}
+GetRobloxHWND()
+{
+	if (hwnd := WinExist("Roblox ahk_exe RobloxPlayerBeta.exe"))
+		return hwnd
+	else if (WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
+    {
+        try
+            hwnd := ControlGetHwnd("ApplicationFrameInputSinkWindow1")
+        catch TargetError
+		    hwnd := 0
+        return hwnd
+    }
+	else
+		return 0
 }
