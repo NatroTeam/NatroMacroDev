@@ -7358,7 +7358,7 @@ nm_priorityListGui(*) {
 
 	for i in ["moveRegion", "close", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "Reset"]
 		priorityGui.AddText("v" i)
-	w:=250, h:=priorityList.Length * 34 + 94
+	w:=250, h:=priorityList.Length * 34 + 87
 	hbm := CreateDIBSection(w, h)
 	hdc := CreateCompatibleDC()
 	obm := SelectObject(hdc, hbm)
@@ -7382,7 +7382,7 @@ nm_priorityListGui(*) {
 	priorityGui["moveRegion"].move(0, 0, w-42, 30)
 	priorityGui["close"].move(w-42, 4, 28, 28)
 	for i,v in priorityList
-		priorityGui["p" i].move(15, (i)*34+10, w-30, 30)
+		priorityGui["p" i].move(15, i*34+3, w-30, 30)
 	priorityGui["Reset"].move(15, h-50, w-30, 30)
 	nm_priorityGui(movingItem?, mouseY?, drop?) {
 		global priorityList
@@ -7399,11 +7399,11 @@ nm_priorityListGui(*) {
 
 		;;Check for update in priority list
 		if IsSet(movingItem) && !IsSet(drop) {
-			index := ((mouseY > priorityList.Length * 34 + 10) ? priorityList.Length*34+10 : mouseY < 44 ? 44 : mouseY) // 34
-			Gdip_DrawLine(G , pPen:=Gdip_CreatePen(accentColors[1], 2), 15, (index*34+10), w-15,  (index*34+10)), Gdip_DeletePen(pPen)
+			index := ((mouseY > priorityList.Length * 34+3) ? priorityList.Length*34+3 : mouseY < 44 ? 44 : mouseY) // 34
+			Gdip_DrawLine(G , pPen:=Gdip_CreatePen(accentColors[1], 2), 15, (index*34+3), w-15,  (index*34+3)), Gdip_DeletePen(pPen)
 		}
 		if IsSet(drop) {
-			index := ((mouseY > priorityList.Length * 34 + 10) ? priorityList.Length*34+10 : mouseY < 44 ? 44 : mouseY) // 34
+			index := ((mouseY > priorityList.Length * 34 + 3) ? priorityList.Length*34+3 : mouseY < 44 ? 44 : mouseY) // 34
 			priorityList.InsertAt(index, priorityList.RemoveAt(ObjHasValue(priorityList, movingItem)))
 		}
 		lower := 0
@@ -7413,7 +7413,7 @@ nm_priorityListGui(*) {
 				lower := 1
 				continue
 			}
-			groupx := 15, groupy := ((i-=lower)*34)+10, groupw := w-30, grouph := 30
+			groupx := 15, groupy := ((i-=lower)*34)+3, groupw := w-30, grouph := 30
 			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid(itemsColor), groupx, groupy, groupw, grouph, 8), Gdip_DeleteBrush(pBrush)
 			Gdip_TextToGraphics(G, v, "x" groupx+8 " y" groupY + 7 " s15 cffffffff Bolder","Arial")
 			Gdip_DrawLine(G, pPen := Gdip_CreatePen(accentColors[i+1], 3), groupw-20, groupy + 10, groupw-5, groupy + 10)
@@ -7421,7 +7421,7 @@ nm_priorityListGui(*) {
 			Gdip_DrawLine(G, pPen, groupw-20, groupy + 20, groupw-5, groupy + 20), Gdip_DeletePen(pPen)
 		}
 		if IsSet(movingItem) && !IsSet(drop) {
-			groupy := (mouseY > priorityList.Length * 34 + 10) ? priorityList.Length * 34 + 10 : mouseY < 44 ? 44 : mouseY 
+			groupy := (mouseY > priorityList.Length * 34+3) ? priorityList.Length * 34+3 : mouseY < 44 ? 44 : mouseY 
 			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid("0x99323942"), groupx, groupy, groupw, grouph, 8), Gdip_DeleteBrush(pBrush)
 			Gdip_TextToGraphics(G, movingItem, "x" groupx+8 " y" groupY + 7 " s15 c99ffffff Bolder","Arial")
 			Gdip_DrawLine(G, pPen := Gdip_CreatePen(accentColors[10], 3), groupw-20, groupy + 10, groupw-5, groupy + 10)
@@ -7460,7 +7460,7 @@ nm_priorityListGui(*) {
 				MouseGetPos(,&y)
 				priorityGui.GetPos(,&wy)
 				index := SubStr(priorityGui[hCtrl].name,2)
-				offset := y - wy-(index*34+10)
+				offset := y - wy-(index*34+3)
 				ReplaceSystemCursors("IDC_HAND")
 				While GetKeyState("LButton", "P") {
 					MouseGetPos(,&y)
