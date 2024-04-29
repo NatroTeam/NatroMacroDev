@@ -5481,7 +5481,7 @@ ba_AddShrineItemButton(GuiCtrl?, *){
 		, "Sunflower", "Enzymes", "Oil", "Glue", "TropicalDrink", "Gumdrops", "MoonCharms"
 		, "Glitter", "StarJelly", "PurplePotion", "CloudVial", "AntPass", "SoftWax"
 		, "HardWax", "SwirledWax", "CausticWax", "FieldDice", "SmoothDice", "LoadedDice", "Turpentine"
-		, "Silver", "Gold", "Diamond", "Mythic", "Star", "GiftedSilver", "GiftedGold", "GiftedDiamond", "GiftedMythic"], i := 0, h := 0
+		, "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg"], i := 0, h := 0
 
 	if (h != ShrineAdd)
 		i := 0, h := ShrineAdd
@@ -9068,7 +9068,7 @@ nm_HotkeyGUI(*){
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vTimersHotkeyEdit", TimersHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vManualHotbarHotkeyEdit", ManualHotbarHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Button", "x30 yp+24 w140 h20", "Restore Defaults").OnEvent("Click", nm_ResetHotkeys)
-	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 y171 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 y180 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	HotkeyGui.Show("w190 h194")
 }
 nm_ResetHotkeys(*){
