@@ -132,7 +132,7 @@ else
 
 OnExit(nm_ManualHotbarExit)
 ;GUI
-ManualHotbar := Gui("+ToolWindow +AlwaysOnTop -Caption +Border +E0x08000000", "Manual Hotbar")
+ManualHotbar := Gui("-Caption +Border +E0x08000088", "Manual Hotbar")
 ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w585 h30 NA")
 (GuiCtrl := ManualHotbar.Add("Picture", "x0 y0 w15 h15", ".\nm_image_assets\auryn.ico")).OnEvent("Click", (*) => SendMessage(0xA1, 2))
 GuiCtrl.OnEvent("ContextMenu", nm_toggleGuiMode)
@@ -200,7 +200,6 @@ loop {
 }
 
 nm_ManualHotbarHelp(*){
-;msgbox "DESCRIPTION:`nThe Manual Hotbar will automatically press hotbar buttons at the specified interval (in seconds)`n", "Manual Hotbar Help"
 MsgBox "
 (
 DESCRIPTION:
