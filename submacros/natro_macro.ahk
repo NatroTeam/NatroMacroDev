@@ -22345,6 +22345,8 @@ robloxFPSGui(*) {
 			if FileExist(A_LoopFileFullPath "\RobloxPlayerBeta.exe")
 				RobloxPath := A_LoopFileFullPath
 		}
+	if isSet(fpsUnlockerGui) && fpsUnlockerGui is Gui
+		fpsUnlockerGui.destroy()
 	prevFPS := FileExist(RobloxPath "\ClientSettings\ClientAppSettings.json") ? ((clientAppSettings:=JSON.Parse(FileRead(RobloxPath "\ClientSettings\ClientAppSettings.json"))) && clientAppSettings.has("DFIntTaskSchedulerTargetFps") ? clientAppSettings["DFIntTaskSchedulerTargetFps"] : 25) : 25
 	fpsUnlockerGui := Gui("+E0x8000008 -MinimizeBox", "FPS")
 	fpsUnlockerGui.Show("w70 h40")
