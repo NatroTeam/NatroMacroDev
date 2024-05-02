@@ -183,6 +183,10 @@ ManualHotbar.Add("Button", "xp+75 y15 w73 h15 vManualHotbarButton7", "Start 7").
 ManualHotbar.OnEvent("Close", (*) => ExitApp())
 ManualHotbar.SetFont("s8 cDefault w1000", "Tahoma")
 
+;; Add Placeholders "Delay"
+loop 7
+    PostMessage 0x1501 , 1 , StrPtr("Delay") , ManualHotbar["ManualHotbarTimer" A_Index]
+
 ;initialize countdown timers
 ManualHotbarCountdown1:=ManualHotbarTimer1
 ManualHotbarCountdown2:=ManualHotbarTimer2
@@ -274,12 +278,15 @@ nm_ManualHotbar(num, *){
 nm_ToggleManualAll(GuiCtrl, *){
     ;toggle on
     global
+    local startNum := 0
     if(GuiCtrl.Text = "Start`nAll" && ((ManualHotbarButton1=0 && ManualHotbarArmed1) || (ManualHotbarButton2=0 && ManualHotbarArmed2) || (ManualHotbarButton3=0 && ManualHotbarArmed3) || (ManualHotbarButton4=0 && ManualHotbarArmed4) || (ManualHotbarButton5=0 && ManualHotbarArmed5) || (ManualHotbarButton6=0 && ManualHotbarArmed6) || (ManualHotbarButton7=0 && ManualHotbarArmed7))) {
         GuiCtrl.Text := "Stop`nAll"
         loop 7 {
             if(!ManualHotbarButton%A_Index% && ManualHotbarArmed%A_Index%)
-                nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index])
+                startNum += nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index], -1)
         }
+        if !startNum
+            GuiCtrl.Text := "Start`nAll"
     }
     ;toggle off
     else if (GuiCtrl.Text = "Stop`nAll") {
@@ -295,15 +302,20 @@ nm_ToggleManualAll(GuiCtrl, *){
     }
 }
 
-nm_ToggleManualHotbar(GuiCtrl, *){
+nm_ToggleManualHotbar(GuiCtrl, param?,*){
     global
     num := SubStr(GuiCtrl.Name, -1)
     if(!ManualHotbarButton%num% && ManualHotbarArmed%num%) {
+        if !ManualHotbar["ManualHotbarTimer" num].Value
+            if IsSet(param) && param == -1
+                return 0
+            else return msgbox("Cant start a timer with 0 seconds",,0x40010)
         ManualHotbar["ManualHotbarButton" num].Text := ("Stop " . num)
         ManualHotbar["ToggleManualAll"].Text := "Stop`nAll"
         ManualHotbarButton%num% := 1
         ;ManualHotbar["ManualHotbarTimer" num].Enabled := 0
         ManualHotbarCountdown%num%:=ManualHotbarTimer%num%-1
+        return 1
     } else {
         ManualHotbar["ManualHotbarButton" num].Text := ("Start " . num)
         ManualHotbarButton%num% := 0
@@ -339,8 +351,6 @@ nm_armManualHotbar(GuiCtrl, *){
 
 nm_saveManualHotbar(GuiCtrl, *) {
 	global
-    if GuiCtrl.type = "Edit" && !GuiCtrl.value
-        GuiCtrl.value := 1
     %GuiCtrl.Name% := GuiCtrl.Value
 	IniWrite GuiCtrl.Value, "settings\manual_hotbar.ini", "ManualHotbar", GuiCtrl.Name
 }
