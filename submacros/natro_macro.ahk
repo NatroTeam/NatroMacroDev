@@ -22349,7 +22349,7 @@ robloxFPSGui(*) {
 		fpsUnlockerGui.destroy()
 	prevFPS := FileExist(RobloxPath "\ClientSettings\ClientAppSettings.json") ? ((clientAppSettings:=JSON.Parse(FileRead(RobloxPath "\ClientSettings\ClientAppSettings.json"))) && clientAppSettings.has("DFIntTaskSchedulerTargetFps") ? clientAppSettings["DFIntTaskSchedulerTargetFps"] : 25) : 25
 	fpsUnlockerGui := Gui("+E0x8000008 -MinimizeBox", "FPS")
-	fpsUnlockerGui.Show("w70 h40")
+	fpsUnlockerGui.Show("w70 h45")
 	fpsUnlockerGui.AddText("vFPSCountLabel w35 x5", "FPS")
 	fpsUnlockerGui.AddText("vFPSCountEdit yp xp+20 w50 Right")
 	fpsUnlockerGui.AddUpDown("vFPSCount Range1-500", prevFPS)
