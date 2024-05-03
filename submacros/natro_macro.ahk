@@ -9608,7 +9608,8 @@ nm_AdvancedGUI(init:=0){
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	MainGui.SetFont("w700")
 	MainGui.Add("GroupBox", "x5 y24 w240 h90", "Fallback Private Servers")
-	MainGui.Add("GroupBox", "x5 y118 w240 h50", "Priority Settings")
+	MainGui.Add("GroupBox", "x5 y118 w120 h50", "Priority Settings")
+	MainGui.Add("GroupBox", "x125 yp wp hp", "Roblox FPS")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -9638,7 +9639,8 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("CheckBox", "x362 y174 vTestReset Checked", "Reset")
 	MainGui.Add("CheckBox", "x413 y174 vTestMsgBox", "MsgBox")
 	MainGui.Add("Button", "x325 y197 w100 h24", "Start Test").OnEvent("Click", nm_testButton)
-	MainGui.Add("Button", "x15 y135 w220 h24", "Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "x15 y135 w100 h24", "Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "x135 yp wp hp", "Edit FPS").OnEvent("Click", robloxFPSGui)
 	if (init = 1)
 	{
 		TabCtrl.Choose("Advanced")
@@ -22357,6 +22359,14 @@ robloxFPSGui(*) {
 	fpsUnlockerGui.AddUpDown("vFPSCount Range1-500", prevFPS)
 	fpsUnlockerGui.AddButton("x5 yp+20 w70","Apply").OnEvent("Click",(*) => WriteFPSCount(fpsUnlockerGui["FPSCount"].value))
 	WriteFPSCount(fpsCount) {
+		if fpsCount < 25
+			if msgbox(
+				(
+				'An FPS count of less than 25 is not recommended
+				Are you sure you want to proceed?'
+				),,0x40134
+			) != "Yes"
+				return fpsUnlockerGui["FPSCount"].Value := prevFPS
 		if !DirExist(RobloxPath "\ClientSettings")
 			DirCreate(RobloxPath "\ClientSettings")
 		f := FileOpen(RobloxPath "\ClientSettings\ClientAppSettings.json", "rw")
@@ -22365,6 +22375,7 @@ robloxFPSGui(*) {
 		ClientAppSettings.DFIntTaskSchedulerTargetFps := fpsCount
 		f.Write(JSON.stringify(ClientAppSettings))
 		f.Close()
+		fpsUnlockerGui.Destroy()
 	}
 }
 nm_WM_CHAR(p*) {
