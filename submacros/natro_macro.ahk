@@ -7430,6 +7430,8 @@ nm_priorityListGui(*) {
 			Gdip_DrawLine(G, pPen, groupw-20, groupy + 20, groupw-5, groupy + 20), Gdip_DeletePen(pPen)
 		}
 		Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid(accentColors[11]), 15, h-50, w-30, 30, 8), Gdip_DeleteBrush(pBrush)
+		if priorityList[1] == defaultList[1] && priorityList[2] == defaultList[2] && priorityList[3] == defaultList[3] && priorityList[4] == defaultList[4] && priorityList[5] == defaultList[5] && priorityList[6] == defaultList[6] && priorityList[7] == defaultList[7] && priorityList[8] == defaultList[8] && priorityList[9] == defaultList[9]
+			Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid("0xBB131416"), 13, h-52, w-26, 34), Gdip_DeleteBrush(pBrush)
 		Gdip_TextToGraphics(G, "Reset", "x15 y" h-43 " s15 c00000000 Bolder Center","Arial", w-30)
 
 		UpdateLayeredWindow(priorityGui.hwnd, hdc)
