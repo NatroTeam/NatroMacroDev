@@ -3286,11 +3286,12 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 					'ct- paths are no longer supported!
 					Use gtf- instead.'
 				), , 0x1010)
-		ReplaceSystemCursors("IDC_WAIT")
+		hCursor := DllCall("LoadCursor", "ptr", 0, "int", 0x7F02, "Ptr")
+		DllCall("SetCursor", "Ptr", hCursor)
 		f := FileOpen(outputPath:=
 			(RegExMatch(name, "i)^(nm_config|field_config|manual_planters|manual_hotbar)$") ? "settings\" 
 				: ext = "preset" ? "settings\presets\"
-					: RegExMatch(fileName, "i)^(wf|gt(b|c|p|q|f))-") ? (type='paths') "\"
+					: fileName ~= "i)^(wf|gt(b|c|p|q|f))-" ? (type :='paths') "\"
 						: ext = "ahk" ? (type := "patterns") "\"
 							: "") FileName
 			, "w"
@@ -3298,7 +3299,6 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
         f.write(content)
         f.close()
 		if ext = "ini" {
-			ReplaceSystemCursors()
 			if msgbox(
 			(
 			'Successfully imported config!
@@ -3309,7 +3309,6 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 			return
 		}
 		if ext = "preset" {
-			ReplaceSystemCursors()
 			msgbox(
 					(
 					(FileExist(outputPath) ? 'Successfully imported ' : 'Could not import ') (ext = "ini" ? "config " : "preset ") filename '!'
@@ -3320,7 +3319,6 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 			For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
 				MainGui[i].add([name])
         (%'nm_import' type%)()
-        ReplaceSystemCursors()
         if (type = "paths")
             return msgbox('Successfully imported the path ' name '!')
         if (tabCtrl.value = 1 && (copyTo := ((y > 53 && y < 115) || 2 * (y > 115 && y < 175 && mainGui["fieldName2"].enabled) || 3 * (y > 175 && y < 235 && mainGui["fieldName3"].enabled)))) {
@@ -3335,35 +3333,6 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 			Paste the gather settings by clicking on the paste button'
 		),,0x1040
     }
-}
-ReplaceSystemCursors(IDC := "")
-{
-	static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
-		, SysCursors := Map("IDC_APPSTARTING", 32650
-			, "IDC_ARROW", 32512
-			, "IDC_CROSS", 32515
-			, "IDC_HAND", 32649
-			, "IDC_HELP", 32651
-			, "IDC_IBEAM", 32513
-			, "IDC_NO", 32648
-			, "IDC_SIZEALL", 32646
-			, "IDC_SIZENESW", 32643
-			, "IDC_SIZENWSE", 32642
-			, "IDC_SIZEWE", 32644
-			, "IDC_SIZENS", 32645
-			, "IDC_UPARROW", 32516
-			, "IDC_WAIT", 32514)
-	if !IDC
-		DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
-	else
-	{
-		hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
-		for k, v in SysCursors
-		{
-			hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
-			DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
-		}
-	}
 }
 ;buttons
 nm_StartButton(GuiCtrl, *){
@@ -7922,7 +7891,8 @@ nm_loadPreset(presetName, * ) {
 	local f, preset, config, planters, fields, k,v, i, j
 	if !FileExist('.\settings\presets\' presetName '.preset')
 		return !MsgBox("Preset appears to be missing: " presetName,"ERROR","0x1010 T10")
-	ReplaceSystemCursors("IDC_WAIT")
+	hCursor := DllCall("LoadCursor", "ptr", 0, "int", 0x7F02, "Ptr")
+	DllCall("SetCursor", "Ptr", hCursor)
 	f := FileOpen('.\settings\presets\' presetName '.preset', "r"), preset := JSON.parse(f.Read()), f.Close()
 	f := FileOpen('.\settings\nm_config.ini', "r"), config := configToObject(f.Read()), f.Close()
 	preset.has('General') && (f := FileOpen('.\settings\manual_planters.ini', "r")) && (planters := configToObject(f.Read())) && f.Close()
@@ -7946,7 +7916,6 @@ nm_loadPreset(presetName, * ) {
 	f := FileOpen('.\settings\nm_config.ini', "w"), f.Write(objectToIni(config)), f.Close()
 	preset.Has('General') && (f := FileOpen('.\settings\manual_planters.ini', "w")) && f.Write(objectToIni(planters)) && f.Close()
 	preset.Has('Bamboo') && (f := FileOpen('.\settings\Field_Config.ini', "w")) && f.Write(objectToIni(fields)) && f.Close()
-	ReplaceSystemCursors()
 	return 1
 }
 
@@ -21662,7 +21631,6 @@ mp_HarvestPlanter(PlanterIndex) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 getout(*){
 	global
-	ReplaceSystemCursors()
 	nm_saveGUIPos()
 	nm_endWalk()
 	DetectHiddenWindows 1
