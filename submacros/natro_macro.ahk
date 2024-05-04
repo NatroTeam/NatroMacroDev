@@ -9740,7 +9740,7 @@ nm_testButton(*){
 		FieldUntilPack:=FieldPatternReps:=FieldPatternShift:=FieldSprinklerDist:=FieldRotateTimes:=FieldDriftCheck:=FieldPatternInvertFB:=FieldPatternInvertLR:=FieldUntilMins:=0
 
 		nm_CameraRotation(Dir, count) {
-			Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Abs(LR) "}{" Rot%(UD > 0 ? "Up" : "Down")% " " Abs(UD) "}"), -1)
+			Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Mod(Abs(LR), 8) "}{" Rot%(UD > 0 ? "Up" : "Down")% " " Abs(UD) "}"), -1)
 			send "{" Rot%Dir% " " count "}"
 			Switch Dir,0 {
 				Case "Left": LR -= count
@@ -16083,7 +16083,7 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 			FieldRotateTimes:=' FieldRotateTimes '
 			FieldDriftCheck:=' FieldDriftCheck '
 			nm_CameraRotation(Dir, count) {
-				Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Abs(LR) "}{" Rot%(UD > 0 ? "Up" : "Down")% " " Abs(UD) "}"), -1)
+				Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Mod(Abs(LR), 8) "}{" Rot%(UD > 0 ? "Up" : "Down")% " " Abs(UD) "}"), -1)
 				send "{" Rot%Dir% " " count "}"
 				Switch Dir,0 {
 					Case "Left": LR -= count
