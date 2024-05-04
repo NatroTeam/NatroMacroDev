@@ -938,7 +938,7 @@ nm_command(command)
 						"inline": true
 					},
 					{
-						"name": "' commandPrefix 'performance [ram|cpu|gpu]",
+						"name": "' commandPrefix 'performance [ram|cpu]",
 						"value": "returns the usage of your selected hardware",
 						"inline": true
 					},
@@ -2404,17 +2404,15 @@ nm_command(command)
 		case "performance":
 			if not params.Has(2) or not params[2]{
 				command_buffer.RemoveAt(1)
-				return discord.SendEmbed("Missing required parameter!\n``````?performance [cpu|ram|gpu]``````", 16711731, , , , id)
+				return discord.SendEmbed("Missing required parameter!\n``````?performance [cpu|ram]``````", 16711731, , , , id)
 			}
 			switch params[2],0 {
 				case "cpu":
 					discord.SendEmbed("CPU Usage: " nm_getCPUPercentage() "%", 5066239, , , , id)
 				case "ram":
 					discord.SendEmbed("RAM Usage: " nm_getRAMPercentage() "%", 5066239, , , , id)
-				case "gpu":
-					discord.SendEmbed("GPU Usage: " nm_getGPUPercentage() "%", 5066239, , , , id)
 				default:
-					discord.SendEmbed("Invalid parameter!\n``````?performance [cpu|ram|gpu]``````", 16711731, , , , id)
+					discord.SendEmbed("Invalid parameter!\n``````?performance [cpu|ram]``````", 16711731, , , , id)
 			}
 		case "preset", "presets":
 			presets := []
@@ -2993,12 +2991,6 @@ nm_getRAMPercentage() {
 	totalMemory := NumGet(MEMORYSTATUSEX,8,"int64")
 	freeMemory := NumGet(MEMORYSTATUSEX, 16, "int64")
 	return (totalMemory - freeMemory) * 100 // totalMemory
-}
-
-nm_getGPUPercentage() {
-    gpuUsage := ComObjGet("winmgmts:").ExecQuery("Select * from Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine")
-    for gpu in gpuUsage
-        return gpu.UtilizationPercentage
 }
 
 nm_sendNectarImage(wParam,lParam,* ) {
