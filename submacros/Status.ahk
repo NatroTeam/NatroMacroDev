@@ -2618,7 +2618,8 @@ class discord
 			, "GIF", "image/gif"
 			, "WEBP", "image/webp"
 			, "TXT", "text/plain"
-			, "INI", "text/plain")
+			, "INI", "text/plain"
+			, "PRESET", "text/plain")
 
 		if (attr := FileExist(filepath))
 		{
