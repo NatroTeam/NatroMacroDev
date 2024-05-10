@@ -610,7 +610,15 @@ nm_importConfig()
 		, "MemoryMatchInterruptCheck", 0
 		, "StickerPrinterCheck", 0
 		, "LastStickerPrinter", 1
-		, "StickerPrinterEgg", "Basic")
+		, "PrinterIndex", 1
+		, "PrinterItem1", "None"
+		, "PrinterItem2", "None"
+		, "PrinterInterval1", 0
+		, "PrinterInterval2", 0
+		, "PrinterAmount1", 0
+		, "PrinterAmount2", 0
+		, "PrinterTimer1", 0
+		, "PrinterTimer2", 0)
 
 	config["Shrine"] := Map("ShrineCheck", 0
 		, "LastShrine", 1
@@ -2966,11 +2974,7 @@ MainGui.Add("Text", "xs yp+17 w36 +Center +BackgroundTrans", "Skins:")
 MainGui.Add("CheckBox", "x+14 yp vStickerStackHive Disabled Checked" StickerStackHive, "Hive").OnEvent("Click", nm_StickerStackSkins)
 MainGui.Add("CheckBox", "x+2 yp vStickerStackCub Disabled Checked" StickerStackCub, "Cub").OnEvent("Click", nm_StickerStackSkins)
 MainGui.Add("Button", "xs+146 yp w12 h14 vStickerStackSkinsHelp Disabled", "?").OnEvent("Click", nm_StickerStackSkinsHelp)
-MainGui.Add("CheckBox", "x305 yp+19 w86 h13 vStickerPrinterCheck Disabled Checked" StickerPrinterCheck, "Sticker Printer").OnEvent("Click", nm_StickerPrinterCheck)
-MainGui.Add("Text", "x+0 yp w24 +Center +BackgroundTrans", "Egg:")
-MainGui.Add("Text", "x+12 yp w48 vStickerPrinterEgg +Center +BackgroundTrans", StickerPrinterEgg)
-MainGui.Add("Button", "xp-12 yp-1 w12 h16 vSPELeft Disabled", "<").OnEvent("Click", nm_StickerPrinterEgg)
-MainGui.Add("Button", "xp+59 yp w12 h16 vSPERight Disabled", ">").OnEvent("Click", nm_StickerPrinterEgg)
+MainGui.Add("Button", "x305 yp+19 w80 h16 vStickerPrinter Disabled", "Sticker Printer").OnEvent("Click", nm_StickerPrinterGui)
 
 ;QUESTS TAB
 ;------------------------
@@ -3789,9 +3793,7 @@ nm_TabBoostLock(){
 	MainGui["StickerStackHive"].Enabled := 0
 	MainGui["StickerStackCub"].Enabled := 0
 	MainGui["StickerStackSkinsHelp"].Enabled := 0
-	MainGui["StickerPrinterCheck"].Enabled := 0
-	MainGui["SPELeft"].Enabled := 0
-	MainGui["SPERight"].Enabled := 0
+	MainGui["StickerPrinter"].Enable := 0
 }
 nm_TabBoostUnLock(){
 	global
@@ -3843,11 +3845,7 @@ nm_TabBoostUnLock(){
 			MainGui["StickerStackCub"].Enabled := 1
 		}
 	}
-	MainGui["StickerPrinterCheck"].Enabled := 1
-	if (StickerPrinterCheck = 1) {
-		MainGui["SPELeft"].Enabled := 1
-		MainGui["SPERight"].Enabled := 1
-	}
+	MainGui["StickerPrinter"].Enabled := 1
 }
 nm_TabQuestsLock(){
 	global
@@ -4878,7 +4876,7 @@ nm_setBlenderData(GuiCtrl, *){
 		, "blenderline1", "blendertitle1", "blenderline2", "blenderline3", "blenderline4"]
 
 	if (BlenderItem%i% = "None") {
-		BlenderaddIndex := i, BlenderAdd := i
+		BlenderAdd := i
 		loop 3 {
 			MainGui["BlenderAdd" A_Index].Visible := 0
 			MainGui["BlenderData" A_Index].Visible := 0
@@ -5606,17 +5604,11 @@ nm_StickerStackSkinsHelp(*){
 	If 'Cub' is checked, the macro will donate Cub Skins to the Sticker Stack after all normal Stickers and Hive Skins have been used up. Otherwise, these will not be used.
 	)", "Sticker Stack Skins", 0x40000 " T60"
 }
-nm_StickerPrinterCheck(*){
-	global
-	StickerPrinterCheck := MainGui["StickerPrinterCheck"].Value
-	MainGui["SPELeft"].Enabled := MainGui["SPERight"].Enabled := (StickerPrinterCheck = 1)
-	IniWrite StickerPrinterCheck, "settings\nm_config.ini", "Collect", "StickerPrinterCheck"
-}
 nm_StickerPrinterEgg(GuiCtrl, *){
-	global StickerPrinterEgg
+	global
 	static val := ["Basic", "Silver", "Gold", "Diamond", "Mythic"], l := val.Length
-
-	switch StickerPrinterEgg, 0
+	local i
+	switch StickerPrinter["StickerPrinterEgg"].Text, 0
 	{
 		case "Basic":
 		i := 1
@@ -5629,9 +5621,107 @@ nm_StickerPrinterEgg(GuiCtrl, *){
 		default:
 		i := 5
 	}
-
-	MainGui["StickerPrinterEgg"].Text := StickerPrinterEgg := val[(GuiCtrl.Name = "SPERight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
-	IniWrite StickerPrinterEgg, "settings\nm_config.ini", "Collect", "StickerPrinterEgg"
+	StickerPrinter["StickerPrinterEgg"].Text := val[(GuiCtrl.Name = "SPERight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+}
+nm_PrinterTimer(GuiCtrl, *){
+	global
+	static val := ["auto", "Daily"], l := val.Length
+	local i
+	switch StickerPrinter["PrinterTimer"].Text, 0
+	{
+		case "Daily":
+		i := 2
+		default:
+		i := 1
+	}
+	StickerPrinter["PrinterTimer"].Text := val[(GuiCtrl.Name = "OptRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+}
+nm_StickerPrinterGui(*) {
+	global
+	if IsSet(StickerPrinter) && IsObject(StickerPrinter)
+		StickerPrinter.Destroy()
+	MainGui.GetPos(&gx, &gy, &gw, &gh)
+	StickerPrinter:=Gui("-MinimizeBox +Owner" MainGui.Hwnd, "Sticker Printer")
+	StickerPrinter.Show("x" gx+80 " y" gy+35 " w170 h85")
+	if (StickerPrinter["StickerPrinterCheck"])
+		StickerPrinter["SPELeft"].Enabled:=1, StickerPrinter["SPERight"].Enabled:=1
+	PrinterItem1:=PrinterItem1
+	PrinterItem2:=PrinterItem2
+	PrinterInterval1:=PrinterInterval1
+	PrinterInterval2:=PrinterInterval2
+	loop 2 {
+		xCoords := 13 + (A_Index=2 ? 62 : 0)
+		StickerPrinter.Add("Button", "x" xCoords " y74 w40 h15 vPrinterAdd" A_index, (PrinterItem%A_index% = "None") ? "Add" : "Clear").OnEvent("Click", nm_setPrinterData)
+		StickerPrinter.Add("Text", "x" 3 + (A_Index=2 ? 62 : 0) " y8 w60 +Center vPrinterData" A_index, "[" ((PrinterInterval%A_index% = "Infinite") ? "∞" : PrinterInterval%A_index%) "]")
+		StickerPrinter.Add("Text", "x" xCoords-3 " y39 w50 +Center vStickerPrinterEgg" A_Index " +BackGroundTrans", PrinterItem%A_Index%)
+	}
+	PrinterAddIndex := 0
+	StickerPrinter.Add("Text", "x133 y8 w30 h15 vPrinterTimer +Center +BackgroundTrans Hidden Disabled", "Test")
+	StickerPrinter.Add("Button", "xp-13 yp-1 w15 h15 vOptLeft Hidden Disabled", "<").OnEvent("Click", nm_PrinterTimer)
+	StickerPrinter.Add("Button", "xp+40 yp w15 h15 vOptRight Hidden Disabled", ">").OnEvent("Click", nm_PrinterTimer)
+	StickerPrinter.Add("Text", "x40 y30 w48 vStickerPrinterEgg +Center +BackgroundTrans")
+	StickerPrinter.Add("Button", "xp-30 yp-1 w18 h18 vSPELeft Disabled Hidden", "<").OnEvent("Click", nm_StickerPrinterEgg)
+	StickerPrinter.Add("Button", "xp+90 yp w18 h18 vSPERight Disabled Hidden", ">").OnEvent("Click", nm_StickerPrinterEgg)
+	StickerPrinter.Add("CheckBox", "xp+10 yp+23 w70 h13 vPrinterOption Disabled Hidden", "Infinite").OnEvent("Click", nm_PrinterIndexOption)
+	StickerPrinter.Add("Edit", "xp yp+15 w49 h18 limit3 Number vPrinterInt Disabled Hidden")
+	StickerPrinter.Add("UpDown", "vPrinterInterval range1-999 Disabled Hidden", 1)
+	StickerPrinter.Add("Button", "x23 y70 w80 h16 +Center vPrinterAddSlot Disabled Hidden").OnEvent("Click", nm_AddPrinterItem)
+	;StickerPrinter.Add("GroupBox", "x5 y2 h105 w304","Daily Eggs")
+}
+nm_PrinterIndexOption(*) {
+	global
+	local PrinterInterval
+	PrinterOption := StickerPrinter["PrinterOption"].Value
+	if (PrinterOption)
+		StickerPrinter["PrinterInterval"].Enabled:=0, StickerPrinter["PrinterInt"].Enabled:=0
+	else
+		StickerPrinter["PrinterInterval"].Enabled:=1, StickerPrinter["PrinterInt"].Enabled:=1
+}
+nm_setPrinterData(GuiCtrl, *){
+	global
+	local i := SubStr(GuiCtrl.Name, -1)
+	if (PrinterItem%i% = "None") {
+		PrinterAddIndex := i
+		loop 2 {
+			StickerPrinter["PrinterAdd" A_Index].Visible := 0, StickerPrinter["PrinterAdd" A_Index].Enabled := 0
+			StickerPrinter["PrinterData" A_Index].Visible := 0, StickerPrinter["PrinterData" A_Index].Enabled := 0
+			StickerPrinter["StickerPrinterEgg" A_Index].Visible := 0, StickerPrinter["StickerPrinterEgg" A_Index].Enabled := 0
+		}
+		StickerPrinter["PrinterInterval"].Value := 1
+		StickerPrinter["PrinterOption"].Value := 0
+		StickerPrinter["PrinterTimer"].Text := "auto"
+		StickerPrinter["PrinterAddSlot"].Text := "Add to Slot " i
+		StickerPrinter["StickerPrinterEgg"].Text := "Basic"
+		for v in ["PrinterOption", "PrinterInt", "PrinterInterval", "PrinterAddSlot", "StickerPrinterEgg", "SPELeft", "SPERight", "OptLeft", "OptRight", "PrinterTimer"]
+			StickerPrinter[v].Enabled := 1, StickerPrinter[v].Visible := 1
+	} else {
+		PrinterItem%i% := "None", PrinterInterval%i% := 0
+		IniWrite "None", "settings\nm_config.ini", "Collect", "PrinterItem" i
+		IniWrite 0, "settings\nm_config.ini", "Collect", "PrinterInterval" i
+		StickerPrinter["PrinterAdd" i].Text := ((PrinterItem%i% = "None" || PrinterItem%i% = "") ? "Add" : "Clear")
+		StickerPrinter["PrinterData" i].Text := "[" ((PrinterInterval%i% = "Infinite") ? "∞" : PrinterInterval%i%) "]"
+		StickerPrinter["StickerPrinterEgg" i].Text := "None"
+	}
+}
+nm_AddPrinterItem(*) {
+	Global
+	local PrinterOption := StickerPrinter["PrinterOption"].Value, i:=PrinterAddIndex
+	PrinterInterval%i% := ((PrinterOption) ? "Infinite" : StickerPrinter["PrinterInterval"].Value)
+	IniWrite PrinterInterval%i%, "settings\nm_config.ini", "Collect", "PrinterInterval" i
+	PrinterItem%i% := StickerPrinter["StickerPrinterEgg"].Text
+	IniWrite PrinterItem%i%, "settings\nm_config.ini", "Collect", "PrinterItem" i
+	PrinterTimer%i% := SickerPrinter["PrinterTimer"].Text
+	IniWrite PrinterTimer%i%, "settings\nm_config.ini", "Collect", "PrinterTimer" i
+	StickerPrinter["PrinterAdd" i].Text := ((PrinterItem%i% = "None" || PrinterItem%i% = "") ? "Add" : "Clear")
+	StickerPrinter["PrinterData" i].Text := "[" ((PrinterInterval%i% = "Infinite") ? "∞" : PrinterInterval%i%) "]"
+	StickerPrinter["StickerPrinterEgg" i].Text := PrinterItem%i%
+	for v in ["PrinterOption", "PrinterInt", "PrinterInterval", "PrinterAddSlot", "StickerPrinterEgg", "SPELeft", "SPERight", "OptLeft", "OptRight", "PrinterTimer"]
+		StickerPrinter[v].Enabled := 0, StickerPrinter[v].Visible := 0
+	loop 2 {
+		StickerPrinter["PrinterAdd" A_Index].Visible := 1, StickerPrinter["PrinterAdd" A_Index].Enabled := 1
+		StickerPrinter["PrinterData" A_Index].Visible := 1, StickerPrinter["PrinterData" A_Index].Enabled := 1
+		StickerPrinter["StickerPrinterEgg" A_Index].Visible := 1, StickerPrinter["StickerPrinterEgg" A_Index].Enabled := 1
+	}
 }
 nm_BoostChaserCheck(*){
 	global BoostChaserCheck, AutoFieldBoostActive
@@ -12226,9 +12316,9 @@ nm_HoneyLB(){ ;Daily Honey LB
 	}
 }
 nm_StickerPrinter(){
-	global StickerPrinterCheck, LastStickerPrinter, StickerPrinterEgg
-
-	If (StickerPrinterCheck && (nowUnix()-LastStickerPrinter)>3600) { ;1 hour
+	global PrinterItem1, PrinterItem2, LastStickerPrinter, PrinterInterval1, PrinterInterval2, PrinterAmount1, PrinterAmount2, PrinterTimer1, PrinterTimer2
+	t := PrinterIndex
+	If (PrinterItem%t%!="None" && (PrinterInterval%t%="Infinite" ? true : PrinterAmount%t%<PrinterInterval%t%) && (nowUnix()-LastStickerPrinter)>(PrinterTimer%t%="auto" ? 3600 : 43,200)) { ;1 hour or 1 day
 		loop 2 {
 			hwnd := GetRobloxHWND()
 			offsetY := GetYOffset(hwnd)
@@ -12258,7 +12348,7 @@ nm_StickerPrinter(){
 				}
 				Gdip_DisposeImage(pBMScreen)
 				pos := Map("basic",-95, "silver",-40, "gold",15, "diamond",70, "mythic",125)
-				MouseMove windowX+windowWidth//2+pos[StrLower(StickerPrinterEgg)], windowY+4*windowHeight//10-20
+				MouseMove windowX+windowWidth//2+pos[StrLower(PrinterItem%t%)], windowY+4*windowHeight//10-20
 				Sleep 200
 				Click
 				Sleep 200
@@ -12296,13 +12386,15 @@ nm_StickerPrinter(){
 						break
 				}
 				Sleep 8000 ; wait for printer to print
-				nm_setStatus("Collected", "Sticker Printer (" StickerPrinterEgg " Egg)")
+				nm_setStatus("Collected", "Sticker Printer (" PrinterItem%t% " Egg)")
+				LastStickerPrinter:=nowUnix()
+				IniWrite LastStickerPrinter, "settings\nm_config.ini", "Collect", "LastStickerPrinter"
+				++PrinterAmount%t%
+				IniWrite PrinterAmount%t%, "settings\nm_config.ini", "Collect", "PrinterAmount" t
+				PrinterIndex:=(PrinterIndex=1 ? 2 : 1)
+				IniWrite PrinterIndex%t%, "settings\nm_config.ini", "Collect", "PrinterIndex" t
 				break
 			}
-		}
-		if (StickerPrinterCheck = 1) {
-			LastStickerPrinter:=nowUnix()
-			IniWrite LastStickerPrinter, "settings\nm_config.ini", "Collect", "LastStickerPrinter"
 		}
 	}
 }
