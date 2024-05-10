@@ -351,7 +351,8 @@ nm_importConfig()
 		, "PresetRepeat", 0
 		, "PresetTimedEnable", 0
 		, "lastPresetChange", 0
-		, "PriorityListNumeric", 123456789)
+		, "PriorityListNumeric", 123456789
+		, "NatroSoBroke", "Natro so broke :weary:")
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -2042,6 +2043,7 @@ Run
 bitmaps := Map(), bitmaps.CaseSense := 0
 shrine := Map(), shrine.CaseSense := 0
 hBitmapsSBT := Map(), hBitmapsSBT.CaseSense := 0
+stickerPBM := Map(), stickerPBM.CaseSense := 0
 #Include "%A_ScriptDir%\..\nm_image_assets"
 #Include "general\bitmaps.ahk"
 #Include "gui\bitmaps.ahk"
@@ -2055,6 +2057,7 @@ hBitmapsSBT := Map(), hBitmapsSBT.CaseSense := 0
 #Include "offset\bitmaps.ahk"
 #Include "perfstats\bitmaps.ahk"
 #Include "gui\blendershrine_bitmaps.ahk"
+#Include "gui\stickerstack_bitmaps.ahk"
 #Include "quests\bitmaps.ahk"
 #Include "sprinkler\bitmaps.ahk"
 #Include "stickerstack\bitmaps.ahk"
@@ -2631,7 +2634,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Button", "x315 yp-3 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
 (GuiCtrl := MainGui.Add("CheckBox", "x176 yp+24 w88 h15 vReconnectMessage Disabled Checked" ReconnectMessage, "Natro so broke")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["weary"])
-MainGui.Add("Picture", "+BackgroundTrans x269 yp-2 w20 h20", "HBITMAP:*" hBM)
+MainGui.Add("Picture", "+BackgroundTrans x269 yp-2 w20 h20", "HBITMAP:*" hBM).OnEvent("Click", nm_NatroSoBroke)
 DllCall("DeleteObject", "ptr", hBM)
 Gdip_DisposeImage(bitmaps["weary"])
 MainGui.Add("Button", "x315 yp+2 w10 h15 vNatroSoBrokeHelp Disabled", "?").OnEvent("Click", nm_NatroSoBrokeHelp)
@@ -5604,22 +5607,35 @@ nm_StickerStackSkinsHelp(*){
 	If 'Cub' is checked, the macro will donate Cub Skins to the Sticker Stack after all normal Stickers and Hive Skins have been used up. Otherwise, these will not be used.
 	)", "Sticker Stack Skins", 0x40000 " T60"
 }
+nm_StickerPrinterGifted(GuiCtrl, *) {
+
+}
 nm_StickerPrinterEgg(GuiCtrl, *){
 	global
-	static val := ["Basic", "Silver", "Gold", "Diamond", "Mythic"], l := val.Length
+	static val := ["basic", "silver", "gold", "diamond", "mythic", "giftedsilver", "giftedgold", "gifteddiamond", "giftedmythic", "star"], l := val.Length
 	local i
 	switch StickerPrinter["StickerPrinterEgg"].Text, 0
 	{
-		case "Basic":
+		case "basic":
 		i := 1
-		case "Silver":
+		case "silver":
 		i := 2
-		case "Gold":
+		case "gold":
 		i := 3
-		case "Diamond":
+		case "diamond":
 		i := 4
-		default:
+		case "mythic":
 		i := 5
+		case "giftedsilver":
+		i := 6
+		case "giftedgold":
+		i := 7
+		case "gifteddiamond":
+		i := 8
+		case "giftedmythic":
+		i := 9
+		default: ; star
+		i := 10
 	}
 	StickerPrinter["StickerPrinterEgg"].Text := val[(GuiCtrl.Name = "SPERight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
 }
@@ -5637,7 +5653,7 @@ nm_PrinterTimer(GuiCtrl, *){
 	StickerPrinter["PrinterTimer"].Text := val[(GuiCtrl.Name = "OptRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
 }
 nm_StickerPrinterGui(*) {
-	global
+	global 
 	if IsSet(StickerPrinter) && IsObject(StickerPrinter)
 		StickerPrinter.Destroy()
 	MainGui.GetPos(&gx, &gy, &gw, &gh)
@@ -5666,7 +5682,10 @@ nm_StickerPrinterGui(*) {
 	StickerPrinter.Add("Edit", "xp yp+15 w49 h18 limit3 Number vPrinterInt Disabled Hidden")
 	StickerPrinter.Add("UpDown", "vPrinterInterval range1-999 Disabled Hidden", 1)
 	StickerPrinter.Add("Button", "x23 y70 w80 h16 +Center vPrinterAddSlot Disabled Hidden").OnEvent("Click", nm_AddPrinterItem)
-	;StickerPrinter.Add("GroupBox", "x5 y2 h105 w304","Daily Eggs")
+	hBM := Gdip_CreateHBITMAPFromBitmap(stickerPBM["basic"])
+	StickerPrinter.Add("Picture", "+BackgroundTrans x44 y20 w40 h44 Disabled Hidden", "HBITMAP:*" hBM)
+	DllCall("DeleteObject", "ptr", hBM)
+	Gdip_DisposeImage(stickerPBM["basic"])
 }
 nm_PrinterIndexOption(*) {
 	global
@@ -8522,6 +8541,27 @@ nm_NatroSoBrokeHelp(*){ ; so broke information
 	DESCRIPTION:
 	Enable this to have the macro say 'Natro so broke :weary:' in chat after it reconnects! This is a reference to e_lol's macros which type 'e_lol so pro :weary:' in chat.
 	)", "Natro so broke :weary:", 0x40000
+}
+nm_NatroSoBroke(*){
+	static i := 0, t1, init := DllCall("GetSystemTimeAsFileTime", "int64p", &t1:=0)
+	DllCall("GetSystemTimeAsFileTime", "int64p", &t2:=0)
+	if (t2 - t1 < 50000000)
+	{
+		if (++i >= 3)
+		{
+			i:=0
+			UserInput:=InputBox("YOU FOUND SECRET, Congrats. `nWhat would you want to change the Natro so broke 😩 message to ?`n*cancel = revert back to default*", "SECRET", "default", "Natro so broke :weary:")
+			if UserInput.Result = "Cancel"
+				IniWrite "Natro so broke :weary:", "settings\nm_config.ini", "Settings", "NatroSoBroke"
+			else
+				if !(StrLen(UserInput.Value) >= 50 || RegExMatch(UserInput.Value, "([\x{00A9}\x{00AE}\x{2000}-\x{3300}\x{1F000}-\x{1F9FF}])"))
+					IniWrite UserInput.Value, "settings\nm_config.ini", "Settings", "NatroSoBroke"
+				else
+					msgbox "You can't have an input anything larger than 50 characters or emojis"
+		}
+	}
+	else
+		i := 1, t1 := t2
 }
 nm_PublicFallbackHelp(*){ ; public fallback information
 	MsgBox "
@@ -17397,8 +17437,10 @@ nm_claimHiveSlot(){
 	nm_setStatus("Claimed", "Hive Slot " . HiveSlot)
 	;;;;; Natro so broke :weary:
 	if(ReconnectMessage && ((nowUnix()-LastNatroSoBroke)>3600)) { ;limit to once per hour
+		global NatroSoBroke
 		LastNatroSoBroke:=nowUnix()
-		Send "{Text}/[" A_Hour ":" A_Min "] Natro so broke :weary:`n"
+		NatroSoBroke:=iniRead("settings\nm_config.ini", "Settings", "NatroSoBroke")
+		Send "{Text}/[" A_Hour ":" A_Min "] " NatroSoBroke "`n"
 		sleep 250
 	}
 	MouseMove windowX+350, windowY+offsetY+100
