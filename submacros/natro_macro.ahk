@@ -12391,7 +12391,7 @@ nm_StickerPrinter(){
 					break
 				}
 				Gdip_DisposeImage(pBMScreen)
-				pos := Map("basic",-95, "silver",-40, "gold",15, "diamond",70, "mythic",125)
+				pos := Map("basic",-95, "silver",-40, "gold",15, "diamond",70, "mythic",125, "star", 180, "giftedsilver", 235, "giftedgold", 125, "gifteddiamond", 180, "giftedmythic", 235)
 				MouseMove windowX+windowWidth//2+pos[StrLower(PrinterItem%t%)], windowY+4*windowHeight//10-20
 				Sleep 200
 				Click
