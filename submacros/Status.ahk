@@ -279,6 +279,7 @@ settings["PlanterNectar3"] := {enum: 76, type: "str", section: "Planters", regex
 settings["PlanterHarvestFull1"] := {enum: 77, type: "str", section: "Planters", regex: "i)^(Full|Timed)$"}
 settings["PlanterHarvestFull2"] := {enum: 78, type: "str", section: "Planters", regex: "i)^(Full|Timed)$"}
 settings["PlanterHarvestFull3"] := {enum: 79, type: "str", section: "Planters", regex: "i)^(Full|Timed)$"}
+settings["NatroSoBroke"] := {enum: 83, type: "str", section: "Settings", regex: "i)^(.{1,50})"}
 
 ;settings["discordMode"] := {enum: 1, type: "int", section: "Status", regex: "i)^(0|1|2)$"} dangerous
 ;settings["discordCheck"] := {enum: 2, type: "int", section: "Status", regex: "i)^(0|1)$"} dangerous
@@ -1854,7 +1855,11 @@ nm_command(command)
 			}
 			else
 				discord.SendEmbed("``" ((StrLen(value) > 0) ? value : "<blank>") "`` is not an acceptable value for ``PriorityListNumeric``!\n``" commandPrefix "help priority`` for help", 16711731, , , , id)
-
+			case "NatroSoBroke":
+			if params[3] ~= Settings["NatroSoBroke"].regex
+				UpdateStr("NatroSoBroke", (StrLen(value) > 0) ? StrToUnicode(value) : StrToUnicode("Natro so broke :weary:"), "Settings")
+			else
+				discord.SendEmbed("``" ((StrLen(value) > 0) ? value : "<blank>") "`` is not an acceptable value for ``NatroSoBroke``!", 16711731, , , , id)
 			default:
 			Loop 1
 			{
@@ -1903,6 +1908,8 @@ nm_command(command)
 				oldList .= "\n" i " - " defaultPriorityList[j]
 			discord.SendEmbed("**Priority List**: ``````" oldList "``````\nnumeric: ``" priorityListNumeric "``", 2829617, , , , id)
 		}
+		else if (params[2] = "NatroSoBroke")
+			discord.SendEmbed("``````" StrFromUnicode(NatroSoBroke) "``````", 2829617, , , , id)
 		else if IsSet(s)
 		{
 			postdata :=
@@ -2577,6 +2584,18 @@ nm_command(command)
 		UpdateInt("lastPresetChange", lastPresetChange, "Settings")
 		delta := hmsFromSeconds(time_delta)
 		discord.SendEmbed((type ? "Added " : "Subtracted ") delta " to preset timer!", 5066239, , , , id)
+	}
+	StrToUnicode(str) {
+		strOut := ""
+		Loop Parse str
+			StrOut .= ";U+" Format("{:X}",Ord(A_LoopField))
+		return SubStr(strout,2)
+	}
+	StrFromUnicode(str) {
+		strOut := ""
+		loop parse str, ";", "U+"
+			strOut .= Chr("0x" A_LoopField)
+		return strOut
 	}
 }
 

@@ -352,7 +352,7 @@ nm_importConfig()
 		, "PresetTimedEnable", 0
 		, "lastPresetChange", 0
 		, "PriorityListNumeric", 123456789
-		, "NatroSoBroke", "Natro so broke :weary:")
+		, "NatroSoBroke", "U+4E;U+61;U+74;U+72;U+6F;U+20;U+73;U+6F;U+20;U+62;U+72;U+6F;U+6B;U+65;U+20;U+3A;U+77;U+65;U+61;U+72;U+79;U+3A")
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -861,7 +861,6 @@ nm_importConfig()
 	for k,v in config ; load the default values as globals, will be overwritten if a new value exists when reading
 		for i,j in v
 			%i% := j
-
 	local inipath := A_WorkingDir "\settings\nm_config.ini"
 
 	if FileExist(inipath) ; update default values with new ones read from any existing .ini
@@ -8547,6 +8546,7 @@ nm_NatroSoBrokeHelp(*){ ; so broke information
 	)", "Natro so broke :weary:", 0x40000
 }
 nm_NatroSoBroke(*){
+	global NatroSoBroke
 	static i := 0, t1, init := DllCall("GetSystemTimeAsFileTime", "int64p", &t1:=0)
 	DllCall("GetSystemTimeAsFileTime", "int64p", &t2:=0)
 	if (t2 - t1 < 50000000)
@@ -8554,18 +8554,28 @@ nm_NatroSoBroke(*){
 		if (++i >= 3)
 		{
 			i:=0
-			UserInput:=InputBox("YOU FOUND SECRET, Congrats. `nWhat would you want to change the Natro so broke 😩 message to ?`n*cancel = revert back to default*", "SECRET", "default", "Natro so broke :weary:")
+			UserInput:=InputBox("YOU FOUND SECRET, Congrats. `nWhat would you want to change the Natro so broke 😩 message to ?", "SECRET", "default", StrFromUnicode(NatroSoBroke))
 			if UserInput.Result = "Cancel"
-				IniWrite "Natro so broke :weary:", "settings\nm_config.ini", "Settings", "NatroSoBroke"
-			else
-				if !(StrLen(UserInput.Value) >= 50 || RegExMatch(UserInput.Value, "([\x{00A9}\x{00AE}\x{2000}-\x{3300}\x{1F000}-\x{1F9FF}])"))
-					IniWrite UserInput.Value, "settings\nm_config.ini", "Settings", "NatroSoBroke"
-				else
-					msgbox "You can't have an input anything larger than 50 characters or emojis"
+				return
+			if (StrLen(UserInput.Value) >= 50)
+				msgbox "You can't have an input anything larger than 50 characters or emojis"
+			IniWrite NatroSoBroke := StrToUnicode(UserInput.value), "settings\nm_config.ini", "Settings", "NatroSoBroke"
 		}
 	}
 	else
 		i := 1, t1 := t2
+}
+StrToUnicode(str) {
+	strOut := ""
+	Loop Parse str
+		StrOut .= ";U+" Format("{:X}",Ord(A_LoopField))
+    return SubStr(strout,2)
+}
+StrFromUnicode(str) {
+    strOut := ""
+    loop parse str, ";", "U+"
+        strOut .= Chr("0x" A_LoopField)
+    return strOut
 }
 nm_PublicFallbackHelp(*){ ; public fallback information
 	MsgBox "
@@ -17300,7 +17310,7 @@ ShellRun(prms*)
 	shell.ShellExecute(prms*)
 }
 nm_claimHiveSlot(){
-	global KeyDelay, FwdKey, RightKey, LeftKey, BackKey, ZoomOut, HiveSlot, HiveConfirmed, SC_E, SC_Esc, SC_R, SC_Enter, bitmaps, ReconnectMessage
+	global KeyDelay, FwdKey, RightKey, LeftKey, BackKey, ZoomOut, HiveSlot, HiveConfirmed, SC_E, SC_Esc, SC_R, SC_Enter, bitmaps, ReconnectMessage, NatroSoBroke
 	static LastNatroSoBroke := 1
 
 	GetBitmap() {
@@ -17441,10 +17451,8 @@ nm_claimHiveSlot(){
 	nm_setStatus("Claimed", "Hive Slot " . HiveSlot)
 	;;;;; Natro so broke :weary:
 	if(ReconnectMessage && ((nowUnix()-LastNatroSoBroke)>3600)) { ;limit to once per hour
-		global NatroSoBroke
 		LastNatroSoBroke:=nowUnix()
-		NatroSoBroke:=iniRead("settings\nm_config.ini", "Settings", "NatroSoBroke")
-		Send "{Text}/[" A_Hour ":" A_Min "] " NatroSoBroke "`n"
+		Send "{Text}/[" A_Hour ":" A_Min "] " StrFromUnicode(NatroSoBroke) "`n"
 		sleep 250
 	}
 	MouseMove windowX+350, windowY+offsetY+100

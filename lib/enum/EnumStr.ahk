@@ -79,4 +79,5 @@
 	, "PlanterHarvestFull3"
 	, "PresetTimed1"
 	, "PresetTimed2"
-	, "SelectPreset"]
+	, "SelectPreset"
+	, "NatroSoBroke"]
