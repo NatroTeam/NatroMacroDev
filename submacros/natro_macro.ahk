@@ -5683,7 +5683,7 @@ nm_StickerPrinterGui(*) {
 	StickerPrinter.Add("Picture", "vStickerPrinterEgg x37 y10 Disabled Hidden +BackgroundTrans +0xE")
 	StickerPrinter.Add("Edit", "x128 y27 w49 h18 limit2 vPrinterTimeEdit Disabled Hidden")
 	StickerPrinter.Add("UpDown", "vPrinterTime range1-99 Disabled Hidden", 1)
-	StickerPrinter.Add("Button", "vPrinterHelp xp-20 yp+40 w15 h15 +Center Disabled Hidden", "?").OnEvent("Click", (*)=>MsgBox("Test"))
+	StickerPrinter.Add("Button", "vPrinterHelp xp-20 yp+40 w15 h15 +Center Disabled Hidden", "?").OnEvent("Click", (*)=>MsgBox("There are three options to select.`n You can change the egg with the arrows on either side of the current selected egg.`n`nYou can change the how often it goes to the printer with the top right control. Manual allows you to set the hourly time while daily will do every 24 hours.`n`nFinnally you can change how many eggs to donate before stopping."))
 }
 nm_PrinterIndexOption(*) {
 	global
