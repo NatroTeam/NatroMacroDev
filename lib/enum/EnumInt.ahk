@@ -366,4 +366,8 @@
 	, "PresetRepeat"
 	, "PresetTimedEnable"
 	, "PriorityListNumeric"
-	, "lastPresetChange"]
+	, "lastPresetChange"
+	, "PrinterAmount1"
+	, "PrinterAmount2"
+	, "PrinterTimer1"
+	, "PrinterTimer2"]

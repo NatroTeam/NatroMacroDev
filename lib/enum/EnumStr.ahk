@@ -63,7 +63,6 @@
 	, "BlenderItem2"
 	, "BlenderItem3"
 	, "StickerStackItem"
-	, "StickerPrinterEgg"
 	, "MondoLootDirection"
 	, "PlanterName1"
 	, "PlanterName2"
@@ -80,4 +79,6 @@
 	, "PresetTimed1"
 	, "PresetTimed2"
 	, "SelectPreset"
-	, "NatroSoBroke"]
+	, "NatroSoBroke"
+	, "PrinterItem1"
+	, "PrinterItem2"]
