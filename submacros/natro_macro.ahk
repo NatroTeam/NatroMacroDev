@@ -4880,7 +4880,7 @@ nm_setBlenderData(GuiCtrl, *){
 		, "blenderline1", "blendertitle1", "blenderline2", "blenderline3", "blenderline4"]
 
 	if (BlenderItem%i% = "None") {
-		BlenderAdd := i
+		BlenderAddIndex := i, BlenderAdd := i
 		loop 3 {
 			MainGui["BlenderAdd" A_Index].Visible := 0
 			MainGui["BlenderData" A_Index].Visible := 0
