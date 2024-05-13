@@ -5718,7 +5718,7 @@ nm_setPrinterData(GuiCtrl, *){
 		StickerPrinter["StickerPrinterEgg"].Value := ""
 		StickerPrinter["StickerPrinterEgg"].Value := "HBITMAP:*" stickerPB["Basic"]
 		StickerPrinterEgg:="Basic"
-		StickerPrinter["PrinterAmount"].Value := ""
+		StickerPrinter["PrinterAmount"].Value := 1
 		StickerPrinter["PrinterOption"].Value := 0
 		StickerPrinter["PrinterTime"].Value := 6
 		StickerPrinter["PrinterTimeEdit"].text := "01h 00m"
