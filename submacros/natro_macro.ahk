@@ -251,7 +251,7 @@ nm_importPaths()
 				"stockings", "wreath", "feast", "gingerbread", "snowmachine", "candles", "samovar", "lidart", "gummybeacon", "rbpdelevel", ; beesmas
 				"honeylb", "honeystorm", "stickerstack", "stickerprinter", "normalmm", "megamm", "nightmm", "extrememm", "wintermm", "meteorshower"], ; other
 		"gtf", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
-				"rose", "spider", "strawberry", "stump", "sunflower"], ; go to field
+				"rose", "spider", "strawberry", "stump", "sunflower", "tradinghub"], ; go to field
 		"gtp", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
 				"rose", "spider", "strawberry", "stump", "sunflower"], ; go to planter
 		"gtq", ["black", "brown", "bucko", "honey", "polar", "riley"], ; go to questgiver
@@ -907,7 +907,7 @@ nm_ReadIni(path)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 nectarnames:=["Comforting", "Refreshing", "Satisfying", "Motivating", "Invigorating"]
 planternames:=["PlasticPlanter", "CandyPlanter", "BlueClayPlanter", "RedClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "PlanterOfPlenty", "PaperPlanter", "TicketPlanter"]
-fieldnames:=["dandelion", "sunflower", "mushroom", "blueflower", "clover", "strawberry", "spider", "bamboo", "pineapple", "stump", "cactus", "pumpkin", "pinetree", "rose", "mountaintop", "pepper", "coconut"]
+fieldnames:=["dandelion", "sunflower", "mushroom", "blueflower", "clover", "strawberry", "spider", "bamboo", "pineapple", "stump", "cactus", "pumpkin", "pinetree", "rose", "mountaintop", "pepper", "coconut","tradinghub"]
 
 ComfortingFields:=["Dandelion", "Bamboo", "Pine Tree"]
 RefreshingFields:=["Coconut", "Strawberry", "Blue Flower"]
@@ -1464,7 +1464,8 @@ FieldBooster:=Map("pine tree", {booster:"blue", stacks:1}
 	, "stump", {booster:"none", stacks:0}
 	, "mountain top", {booster:"none", stacks:0}
 	, "coconut", {booster:"none", stacks:0}
-	, "pepper", {booster:"none", stacks:0})
+	, "pepper", {booster:"none", stacks:0}
+	, "trading hub", {booster:"none", stacks:0})
 
 ;Gumdrops carried me, they so pro
 CommandoChickHealth := Map(3, 150
@@ -1750,6 +1751,21 @@ nm_importFieldDefaults()
 		, "invertFB", 0
 		, "invertLR", 0)
 
+	FieldDefault["Trading Hub"] := Map("pattern", "Squares"
+		, "size", "M"
+		, "width", 5
+		, "camera", "None"
+		, "turns", 1
+		, "sprinkler", "Center"
+		, "distance", 1
+		, "percent", "ⁿ/ₐ" ;ninju fixed, wait until merged.
+		, "gathertime", 10
+		, "convert", "Rejoin"
+		, "drift", 0
+		, "shiftlock", 0
+		, "invertFB", 0
+		, "invertLR", 0)
+	
 	global StandardFieldDefault := ObjFullyClone(FieldDefault)
 
 	inipath := A_WorkingDir "\settings\field_config.ini"
@@ -1995,7 +2011,7 @@ HasPopStar:=0
 PopStarActive:=0
 PreviousAction:="None"
 CurrentAction:="Startup"
-fieldnamelist := ["Bamboo","Blue Flower","Cactus","Clover","Coconut","Dandelion","Mountain Top","Mushroom","Pepper","Pine Tree","Pineapple","Pumpkin","Rose","Spider","Strawberry","Stump","Sunflower"]
+fieldnamelist := ["Bamboo","Blue Flower","Cactus","Clover","Coconut","Dandelion","Mountain Top","Mushroom","Pepper","Pine Tree","Pineapple","Pumpkin","Rose","Spider","Strawberry","Stump","Sunflower","Trading Hub"]
 hotbarwhilelist := ["Never","Always","At Hive","Gathering","Attacking","Microconverter","Whirligig","Enzymes","GatherStart","Snowflake"]
 sprinklerImages := ["saturator"]
 ReconnectDelay:=0
@@ -2363,9 +2379,9 @@ MainGui.Add("Picture", "xp yp+60 wp hp Disabled vSaveFieldDefault2", "HBITMAP:*"
 MainGui.Add("Picture", "xp yp+60 wp hp Disabled vSaveFieldDefault3", "HBITMAP:*" hBM).OnEvent("Click", nm_SaveFieldDefault)
 DllCall("DeleteObject", "ptr", hBM)
 
-(GuiCtrl := MainGui.Add("CheckBox", "x65 y83 w50 +Center Disabled vFieldDriftCheck1 Checked" FieldDriftCheck1, "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck2 Checked" FieldDriftCheck2, "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck3 Checked" FieldDriftCheck3, "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x65 y83 w50 +Center Disabled vFieldDriftCheck1 Checked" FieldDriftCheck1 " Hidden" (MainGui["FieldName1"].text = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck2 Checked" FieldDriftCheck2 " Hidden" (MainGui["FieldName2"].text = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck3 Checked" FieldDriftCheck3 " Hidden" (MainGui["FieldName3"].text = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
 
 MainGui.Add("Button", "x115 y89 w9 h14 Disabled vFDCHelp1", "?").OnEvent("Click", nm_FDCHelp)
 MainGui.Add("Button", "xp yp+60 w9 h14 Disabled vFDCHelp2", "?").OnEvent("Click", nm_FDCHelp)
@@ -2439,24 +2455,24 @@ MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("Edit", "xp yp+60 wp h20 limit4 number Disabled vFieldUntilMins2", ValidateInt(&FieldUntilMins2, 10))).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 (GuiCtrl := MainGui.Add("Edit", "xp yp+60 wp h20 limit4 number Disabled vFieldUntilMins3", ValidateInt(&FieldUntilMins3, 10))).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 
-MainGui.Add("Text", "x375 y60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack1", FieldUntilPack1)
+MainGui.Add("Text", "x375 y60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack1", (FieldName1 = "Trading Hub" ? (Chr(0x207F) "/" Chr(0x2090)) : FieldUntilPack1)).OnEvent("Click", nm_TradingHubRestrict)
 MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack1UpDown", FieldUntilPack1//5).OnEvent("Change", nm_FieldUntilPack)
-MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack2", FieldUntilPack2)
+MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack2", (FieldName2 = "Trading Hub" ? (Chr(0x207F) "/" Chr(0x2090)) : FieldUntilPack2)).OnEvent("Click", nm_TradingHubRestrict)
 MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack2UpDown", FieldUntilPack2//5).OnEvent("Change", nm_FieldUntilPack)
-MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack3", FieldUntilPack3)
+MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack3", (FieldName3 = "Trading Hub" ? (Chr(0x207F) "/" Chr(0x2090)) : FieldUntilPack3)).OnEvent("Click", nm_TradingHubRestrict)
 MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack3UpDown", FieldUntilPack3//5).OnEvent("Change", nm_FieldUntilPack)
 SetLoadingProgress(24)
 
 MainGui.Add("Text", "x327 y79 w93 +BackgroundTrans +Center", "To Hive By:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "To Hive By:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "To Hive By:")
-MainGui.Add("Text", "x356 y96 w33 +Center +BackgroundTrans vFieldReturnType1", FieldReturnType1)
+MainGui.Add("Text", "x356 y96 w33 +Center +BackgroundTrans vFieldReturnType1", (FieldName1 = "Trading Hub" ? "Rejoin" : FieldReturnType3)).OnEvent("Click", nm_TradingHubRestrict)
 MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT1Left", "<").OnEvent("Click", nm_FieldReturnType)
 MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT1Right", ">").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType2", FieldReturnType2)
+MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType2", (FieldName2 = "Trading Hub" ? "Rejoin" : FieldReturnType3)).OnEvent("Click", nm_TradingHubRestrict)
 MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT2Left", "<").OnEvent("Click", nm_FieldReturnType)
 MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT2Right", ">").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType3", FieldReturnType3)
+MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType3", (FieldName3 = "Trading Hub" ? "Rejoin" : FieldReturnType3)).OnEvent("Click", nm_TradingHubRestrict)
 MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT3Left", "<").OnEvent("Click", nm_FieldReturnType)
 MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT3Right", ">").OnEvent("Click", nm_FieldReturnType)
 
@@ -3414,151 +3430,64 @@ nm_LockTabs(lock:=1){
 nm_TabGatherLock(){
 	global
 	local hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefielddisabled"])
-	MainGui["FieldName1"].Enabled := 0
-	MainGui["FieldPattern1"].Enabled := 0
-	MainGui["FieldPatternSize1UpDown"].Enabled := 0
-	MainGui["FieldPatternReps1"].Enabled := 0
-	MainGui["FieldPatternShift1"].Enabled := 0
-	MainGui["FieldPatternInvertFB1"].Enabled := 0
-	MainGui["FieldPatternInvertLR1"].Enabled := 0
-	MainGui["FieldUntilMins1"].Enabled := 0
-	MainGui["FieldUntilPack1UpDown"].Enabled := 0
-	MainGui["FieldSprinklerDist1"].Enabled := 0
-	MainGui["FieldRotateTimes1"].Enabled := 0
-	MainGui["FieldDriftCheck1"].Enabled := 0
-	MainGui["FRD1Left"].Enabled := 0
-	MainGui["FRD1Right"].Enabled := 0
-	MainGui["FRT1Left"].Enabled := 0
-	MainGui["FRT1Right"].Enabled := 0
-	MainGui["FSL1Left"].Enabled := 0
-	MainGui["FSL1Right"].Enabled := 0
-	MainGui["FDCHelp1"].Enabled := 0
-	MainGui["CopyGather1"].Enabled := 0
-	MainGui["PasteGather1"].Enabled := 0
-	MainGui["SaveFieldDefault1"].Enabled := 0
-	MainGui["SaveFieldDefault1"].Value := "HBITMAP:*" hBM
-	MainGui["FieldName2"].Enabled := 0
-	MainGui["FieldPattern2"].Enabled := 0
-	MainGui["FieldPatternSize2UpDown"].Enabled := 0
-	MainGui["FieldPatternReps2"].Enabled := 0
-	MainGui["FieldPatternShift2"].Enabled := 0
-	MainGui["FieldPatternInvertFB2"].Enabled := 0
-	MainGui["FieldPatternInvertLR2"].Enabled := 0
-	MainGui["FieldUntilMins2"].Enabled := 0
-	MainGui["FieldUntilPack2UpDown"].Enabled := 0
-	MainGui["FieldSprinklerDist2"].Enabled := 0
-	MainGui["FieldRotateTimes2"].Enabled := 0
-	MainGui["FieldDriftCheck2"].Enabled := 0
-	MainGui["FRD2Left"].Enabled := 0
-	MainGui["FRD2Right"].Enabled := 0
-	MainGui["FRT2Left"].Enabled := 0
-	MainGui["FRT2Right"].Enabled := 0
-	MainGui["FSL2Left"].Enabled := 0
-	MainGui["FSL2Right"].Enabled := 0
-	MainGui["FDCHelp2"].Enabled := 0
-	MainGui["CopyGather2"].Enabled := 0
-	MainGui["PasteGather2"].Enabled := 0
-	MainGui["SaveFieldDefault2"].Enabled := 0
-	MainGui["SaveFieldDefault2"].Value := "HBITMAP:*" hBM
-	MainGui["FieldName3"].Enabled := 0
-	MainGui["FieldPattern3"].Enabled := 0
-	MainGui["FieldPatternSize3UpDown"].Enabled := 0
-	MainGui["FieldPatternReps3"].Enabled := 0
-	MainGui["FieldPatternShift3"].Enabled := 0
-	MainGui["FieldPatternInvertFB3"].Enabled := 0
-	MainGui["FieldPatternInvertLR3"].Enabled := 0
-	MainGui["FieldUntilMins3"].Enabled := 0
-	MainGui["FieldUntilPack3UpDown"].Enabled := 0
-	MainGui["FieldSprinklerDist3"].Enabled := 0
-	MainGui["FieldRotateTimes3"].Enabled := 0
-	MainGui["FieldDriftCheck3"].Enabled := 0
-	MainGui["FRD3Left"].Enabled := 0
-	MainGui["FRD3Right"].Enabled := 0
-	MainGui["FRT3Left"].Enabled := 0
-	MainGui["FRT3Right"].Enabled := 0
-	MainGui["FSL3Left"].Enabled := 0
-	MainGui["FSL3Right"].Enabled := 0
-	MainGui["FDCHelp3"].Enabled := 0
-	MainGui["CopyGather3"].Enabled := 0
-	MainGui["PasteGather3"].Enabled := 0
-	MainGui["SaveFieldDefault3"].Enabled := 0
-	MainGui["SaveFieldDefault3"].Value := "HBITMAP:*" hBM
+	loop 3 {
+		MainGui["FieldName" A_Index].Enabled := 0
+		MainGui["FieldPattern" A_Index].Enabled := 0
+		MainGui["FieldPatternSize" A_Index "UpDown"].Enabled := 0
+		MainGui["FieldPatternReps" A_Index].Enabled := 0
+		MainGui["FieldPatternShift" A_Index].Enabled := 0
+		MainGui["FieldPatternInvertFB" A_Index].Enabled := 0
+		MainGui["FieldPatternInvertLR" A_Index].Enabled := 0
+		MainGui["FieldUntilMins" A_Index].Enabled := 0
+		MainGui["FieldUntilPack" A_Index "UpDown"].Enabled := 0
+		MainGui["FieldSprinklerDist" A_Index].Enabled := 0
+		MainGui["FieldRotateTimes" A_Index].Enabled := 0
+		MainGui["FieldDriftCheck" A_Index].Enabled := 0
+		MainGui["FRD" A_Index "Left"].Enabled := 0
+		MainGui["FRD" A_Index "Right"].Enabled := 0
+		MainGui["FRT" A_Index "Left"].Enabled := 0
+		MainGui["FRT" A_Index "Right"].Enabled := 0
+		MainGui["FSL" A_Index "Left"].Enabled := 0
+		MainGui["FSL" A_Index "Right"].Enabled := 0
+		MainGui["FDCHelp" A_Index].Enabled := 0
+		MainGui["CopyGather" A_Index].Enabled := 0
+		MainGui["PasteGather" A_Index].Enabled := 0
+		MainGui["SaveFieldDefault" A_Index].Enabled := 0
+		MainGui["SaveFieldDefault" A_Index].Value := "HBITMAP:*" hBM
+	}
+	DllCall("DeleteObject", "ptr", hBM)
 }
 nm_TabGatherUnLock(){
 	global
 	local hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefield"])
-	MainGui["FieldName1"].Enabled := 1
-	MainGui["FieldName2"].Enabled := 1
-	MainGui["FieldPattern1"].Enabled := 1
-	MainGui["FieldPatternSize1UpDown"].Enabled := 1
-	MainGui["FieldPatternReps1"].Enabled := 1
-	MainGui["FieldPatternShift1"].Enabled := 1
-	MainGui["FieldPatternInvertFB1"].Enabled := 1
-	MainGui["FieldPatternInvertLR1"].Enabled := 1
-	MainGui["FieldUntilMins1"].Enabled := 1
-	MainGui["FieldUntilPack1UpDown"].Enabled := 1
-	MainGui["FieldSprinklerDist1"].Enabled := 1
-	MainGui["FieldRotateTimes1"].Enabled := 1
-	MainGui["FieldDriftCheck1"].Enabled := 1
-	MainGui["FRD1Left"].Enabled := 1
-	MainGui["FRD1Right"].Enabled := 1
-	MainGui["FRT1Left"].Enabled := 1
-	MainGui["FRT1Right"].Enabled := 1
-	MainGui["FSL1Left"].Enabled := 1
-	MainGui["FSL1Right"].Enabled := 1
-	MainGui["FDCHelp1"].Enabled := 1
-	MainGui["CopyGather1"].Enabled := 1
-	MainGui["PasteGather1"].Enabled := 1
-	MainGui["PasteGather2"].Enabled := 1
-	MainGui["SaveFieldDefault1"].Enabled := 1
-	MainGui["SaveFieldDefault1"].Value := "HBITMAP:*" hBM
-	if(FieldName2!="none"){
-		MainGui["FieldName3"].Enabled := 1
-		MainGui["FieldPattern2"].Enabled := 1
-		MainGui["FieldPatternSize2UpDown"].Enabled := 1
-		MainGui["FieldPatternReps2"].Enabled := 1
-		MainGui["FieldPatternShift2"].Enabled := 1
-		MainGui["FieldPatternInvertFB2"].Enabled := 1
-		MainGui["FieldPatternInvertLR2"].Enabled := 1
-		MainGui["FieldUntilMins2"].Enabled := 1
-		MainGui["FieldUntilPack2UpDown"].Enabled := 1
-		MainGui["FieldSprinklerDist2"].Enabled := 1
-		MainGui["FieldRotateTimes2"].Enabled := 1
-		MainGui["FieldDriftCheck2"].Enabled := 1
-		MainGui["FRD2Left"].Enabled := 1
-		MainGui["FRD2Right"].Enabled := 1
-		MainGui["FRT2Left"].Enabled := 1
-		MainGui["FRT2Right"].Enabled := 1
-		MainGui["FSL2Left"].Enabled := 1
-		MainGui["FSL2Right"].Enabled := 1
-		MainGui["FDCHelp2"].Enabled := 1
-		MainGui["CopyGather2"].Enabled := 1
-		MainGui["PasteGather3"].Enabled := 1
-		MainGui["SaveFieldDefault2"].Enabled := 1
-		MainGui["SaveFieldDefault2"].Value := "HBITMAP:*" hBM
-	}
-	if(FieldName3!="none"){
-		MainGui["FieldPattern3"].Enabled := 1
-		MainGui["FieldPatternSize3UpDown"].Enabled := 1
-		MainGui["FieldPatternReps3"].Enabled := 1
-		MainGui["FieldPatternShift3"].Enabled := 1
-		MainGui["FieldPatternInvertFB3"].Enabled := 1
-		MainGui["FieldPatternInvertLR3"].Enabled := 1
-		MainGui["FieldUntilMins3"].Enabled := 1
-		MainGui["FieldUntilPack3UpDown"].Enabled := 1
-		MainGui["FieldSprinklerDist3"].Enabled := 1
-		MainGui["FieldRotateTimes3"].Enabled := 1
-		MainGui["FieldDriftCheck3"].Enabled := 1
-		MainGui["FRD3Left"].Enabled := 1
-		MainGui["FRD3Right"].Enabled := 1
-		MainGui["FRT3Left"].Enabled := 1
-		MainGui["FRT3Right"].Enabled := 1
-		MainGui["FSL3Left"].Enabled := 1
-		MainGui["FSL3Right"].Enabled := 1
-		MainGui["FDCHelp3"].Enabled := 1
-		MainGui["CopyGather3"].Enabled := 1
-		MainGui["SaveFieldDefault3"].Enabled := 1
-		MainGui["SaveFieldDefault3"].Value := "HBITMAP:*" hBM
+	loop 1+(FieldName2!="none")+(FieldName3!="none") {	
+		MainGui["FieldName" A_Index].Enabled := 1
+		MainGui["FieldPattern" A_Index].Enabled := 1
+		MainGui["FieldPatternSize" A_Index "UpDown"].Enabled := 1
+		MainGui["FieldPatternReps" A_Index].Enabled := 1
+		MainGui["FieldPatternShift" A_Index].Enabled := 1
+		MainGui["FieldPatternInvertFB" A_Index].Enabled := 1
+		MainGui["FieldPatternInvertLR" A_Index].Enabled := 1
+		MainGui["FieldUntilMins" A_Index].Enabled := 1
+		MainGui["FieldSprinklerDist" A_Index].Enabled := 1
+		MainGui["FieldRotateTimes" A_Index].Enabled := 1
+		MainGui["FieldDriftCheck" A_Index].Enabled := 1
+		MainGui["FRD" A_Index "Left"].Enabled := 1
+		MainGui["FRD" A_Index "Right"].Enabled := 1
+		if (MainGui["FieldName" A_Index].Text != "Trading Hub"){
+			MainGui["FRT" A_Index "Left"].Enabled := 1
+			MainGui["FRT" A_Index "Right"].Enabled := 1
+			MainGui["FieldUntilPack" A_Index "UpDown"].Enabled := 1
+		}
+		MainGui["FSL" A_Index "Left"].Enabled := 1
+		MainGui["FSL" A_Index "Right"].Enabled := 1
+		MainGui["FDCHelp" A_Index].Enabled := 1
+		MainGui["CopyGather" A_Index].Enabled := 1
+		MainGui["PasteGather" A_Index].Enabled := 1
+		MainGui["SaveFieldDefault" A_Index].Enabled := 1
+		MainGui["SaveFieldDefault" A_Index].Value := "HBITMAP:*" hBM
+		if (A_Index = 1+(FieldName2!="none")+(FieldName3!="none")) ;if no other loops remain, enable 2nd gather field control
+			MainGui["FieldName" A_Index+1].Enabled := 1
 	}
 	DllCall("DeleteObject", "ptr", hBM)
 }
@@ -4289,6 +4218,7 @@ nm_FieldSelect1(GuiCtrl?, *){
 	IniWrite CurrentFieldNum, "settings\nm_config.ini", "Gather", "CurrentFieldNum"
 	MainGui["CurrentField"].Text := FieldName1
 	CurrentField:=FieldName1
+	nm_TradingHubSelect(1)
 	nm_WebhookEasterEgg()
 }
 nm_FieldSelect2(GuiCtrl?, *){
@@ -4360,6 +4290,7 @@ nm_FieldSelect2(GuiCtrl?, *){
 		nm_FieldDefaults(2)
 		IniWrite FieldName2, "settings\nm_config.ini", "Gather", "FieldName2"
 	}
+	nm_TradingHubSelect(2)
 	nm_WebhookEasterEgg()
 }
 nm_FieldSelect3(GuiCtrl?, *){
@@ -4425,7 +4356,63 @@ nm_FieldSelect3(GuiCtrl?, *){
 		nm_FieldDefaults(3)
 		IniWrite FieldName3, "settings\nm_config.ini", "Gather", "FieldName3"
 	}
+	nm_TradingHubSelect(3)
 	nm_WebhookEasterEgg()
+}
+nm_TradingHubSelect(num){
+	global
+	local v
+	if (MainGui["FieldName" num].Text = "Trading Hub"){
+		MainGui["FieldDriftCheck" num].visible := 0
+		MainGui["FRT" num "Left"].enabled := 0
+		MainGui["FRT" num "Right"].enabled := 0
+		MainGui["FieldUntilPack" num "UpDown"].enabled := 0
+	}
+	else {
+		MainGui["FieldDriftCheck" num].visible := 1
+		MainGui["FRT" num "Left"].enabled := 1
+		MainGui["FRT" num "Right"].enabled := 1
+		MainGui["FieldUntilPack" num "UpDown"].enabled := 1
+	}
+}
+nm_TradingHubRestrict(GuiCtrl, *){
+	switch GuiCtrl.name {
+		case "FieldUntilPack1", "FieldUntilPack2", "FieldUntilPack3","FieldReturnType1","FieldReturnType1","FieldReturnType1","FDCHelp1","FDCHelp2","FDCHelp3":
+			loop 3
+			{
+				if (MainGui["FieldName" A_Index].Text = "Trading Hub" && SubStr(GuiCtrl.Name, -1) = A_Index)
+				{
+					break
+				}
+				if (A_Index = 3)
+					return 0
+			}
+		default:
+	}
+	return MsgBox("
+	(
+	NOTICE:
+	This control is disabled because of your gather field.
+	To enable different hive return types and field drift compensation, change your gather field to a different field.
+	Your start position is able changed, but sprinklers will not be placed.
+
+	ADVANCED INFO:
+	You cannot convert your bag in the Trading Hub, and due to the nature of reset being a core function in natro, the only currently avaiable convert method is rejoining to the main game.
+	You cannot use sprinklers in the Trading Hub, and as such field drift compensation will not work.
+	)", "Trading Hub restrictions")
+
+}
+nm_FDCHelp(GuiCtrl, *){
+	if nm_TradingHubRestrict(GuiCtrl)
+		return
+	return MsgBox("
+	(
+	DESCRIPTION:
+	Field Drift Compensation is a way to stop what we call field drift (AKA falling/running out of the field.)
+	Enabling this checkbox will re-align you to your saturator every so often by searching for the neon blue pixel and moving towards it.
+
+	Note that this feature requires The Supreme Saturator, otherwise you will drift more. If you would like more info, join our Discord.
+	)", "Field Drift Compensation", 0x40000)
 }
 nm_FieldDefaults(num){
 	global FieldDefault, FieldPatternSizeArr
@@ -4487,7 +4474,7 @@ nm_FieldDefaults(num){
 	MainGui["FieldPatternInvertLR" num].Value := FieldPatternInvertLR%num%
 	MainGui["FieldUntilMins" num].Value := FieldUntilMins%num%
 	MainGui["FieldUntilPack" num].Text := FieldUntilPack%num%
-	MainGui["FieldUntilPack" num "UpDown"].Value := FieldUntilPack%num%//5
+	MainGui["FieldUntilPack" num "UpDown"].Value := (IsInteger(FieldUntilPack%num%) ? FieldUntilPack%num%//5 : 9) 
 	MainGui["FieldReturnType" num].Text := FieldReturnType%num%
 	MainGui["FieldSprinklerLoc" num].Text := FieldSprinklerLoc%num%
 	MainGui["FieldSprinklerDist" num].Value := FieldSprinklerDist%num%
@@ -4509,16 +4496,6 @@ nm_FieldDefaults(num){
 	IniWrite FieldRotateTimes%num%, "settings\nm_config.ini", "Gather", "FieldRotateTimes" num
 	IniWrite FieldDriftCheck%num%, "settings\nm_config.ini", "Gather", "FieldDriftCheck" num
 	disableSave:=0
-}
-nm_FDCHelp(*){
-	MsgBox "
-	(
-	DESCRIPTION:
-	Field Drift Compensation is a way to stop what we call field drift (AKA falling/running out of the field.)
-	Enabling this checkbox will re-align you to your saturator every so often by searching for the neon blue pixel and moving towards it.
-
-	Note that this feature requires The Supreme Saturator, otherwise you will drift more. If you would like more info, join our Discord.
-	)", "Field Drift Compensation", 0x40000
 }
 nm_FieldPatternSize(GuiCtrl, *){
 	global
@@ -10484,6 +10461,12 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		}
 		;check to make sure there is no Memory Match
 		nm_SolveMemoryMatch()
+		;check to make sure you are not in trading hub
+		if (nm_InTradingHub()) {
+			CloseRoblox()
+			DisconnectCheck()
+		}
+
 
 		nm_setStatus("Resetting", "Character " . Mod(A_Index, 10))
 		MouseMove windowX+350, windowY+offsetY+100
@@ -12393,6 +12376,8 @@ nm_StickerPrinter(){
 				Gdip_DisposeImage(pBMScreen)
 				pos := Map("basic",-95, "silver",-40, "gold",15, "diamond",70, "mythic",125, "star", 180, "giftedsilver", 235, "giftedgold", 125, "gifteddiamond", 180, "giftedmythic", 235)
 				MouseMove windowX+windowWidth//2+pos[StrLower(PrinterItem%t%)], windowY+4*windowHeight//10-20
+				if (PrinterItem%t%="giftedGold" || PrinterItem%t%="giftedDiamond" || PrinterItem%t%="giftedMythic")
+					send "{WheelDown 5}"
 				Sleep 200
 				Click
 				Sleep 200
@@ -15642,7 +15627,7 @@ nm_GoGather(){
 	;close all menus
 	nm_OpenMenu()
 	;reset
-	if(fieldOverrideReason="None" || fieldOverrideReason="Boost") {
+	if((fieldOverrideReason="None" || fieldOverrideReason="Boost") && FieldName != "trading hub") {
 		nm_Reset(2)
 		;check if gathering field is boosted
 		blueBoosterFields:=["Pine Tree", "Bamboo", "Blue Flower"]
@@ -15712,6 +15697,7 @@ nm_GoGather(){
 	nm_setStatus("Traveling", FieldName)
 	;go to field
 	nm_gotoField(FieldName)
+	nm_TradingHubJoin()
 	nm_autoFieldBoost(FieldName)
 	nm_fieldBoostGlitter()
 	nm_PlanterTimeUpdate(FieldName)
@@ -15925,8 +15911,11 @@ nm_GoGather(){
 		nm_OpenMenu()
 		;check any planter progress
 		nm_PlanterTimeUpdate(FieldName)
-		;whirligig //todo: needs a major rework!
-		if(FieldReturnType="walk") { ;walk back
+		if (FieldName="trading hub") {
+			CloseRoblox()
+			DisconnectCheck()
+		} else if (FieldReturnType="walk") { ;walk back
+			;whirligig //todo: needs a major rework!
 			if((WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && !PFieldBoosted) || (WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && PFieldBoosted && GatherFieldBoosted)){
 				if(FieldName="sunflower"){
 					Send "{" RotLeft " 2}"
@@ -16595,7 +16584,7 @@ nm_setSprinkler(field, loc, dist){
 		flen:=2000*dist/10
 		fwid:=1500*dist/10
 
-		case "spider":
+		case "spider","trading hub":
 		flen:=2000*dist/10
 		fwid:=2000*dist/10
 
@@ -16651,6 +16640,8 @@ nm_setSprinkler(field, loc, dist){
 	}
 	if(loc="center")
 		Sleep 1000
+	if(field = "trading hub")
+		return
 	;set sprinkler(s)
 	if(SprinklerType="Supreme" || SprinklerType="Basic") {
 		Send "{" SC_1 "}"
@@ -16952,6 +16943,9 @@ DisconnectCheck(testCheck := 0)
 		nm_setStatus("Waiting", ReconnectDelay " seconds before Reconnect")
 		Sleep 1000*ReconnectDelay
 		ReconnectDelay := 0
+	}
+	else if (CurrentField = "trading hub") {
+		nm_setStatus("Reconnecting", "From Trading Hub")
 	}
 	else if (MacroState = 2) {
 		TotalDisconnects:=TotalDisconnects+1
@@ -17298,6 +17292,40 @@ ShellRun(prms*)
 
 	; IShellDispatch2.ShellExecute
 	shell.ShellExecute(prms*)
+}
+nm_InTradingHub(){
+	send "{" ZoomOut " 5}"
+	GetRobloxClientPos()
+	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY+36 "|" windowWidth//2+200 "|" windowHeight-offsetY-36)
+	if (Gdip_ImageSearch(pBMScreen, bitmaps["TradingHubGreen"], , , , 200, 120, 2) = 1) {
+		Gdip_DisposeImage(pBMScreen)
+		return 1
+	}
+	Gdip_DisposeImage(pBMScreen)
+	return 0
+}
+nm_TradingHubJoin(){
+	if (CurrentField != "trading hub")
+		return 0
+	sleep 3000
+	loop 90
+	{
+		sleep 500
+		if nm_InTradingHub(){
+			nm_createWalk(nm_Walk(50, FwdKey))
+			KeyWait "F14", "D T5 L"
+			KeyWait "F14", "T20 L"
+			nm_endWalk()
+			return 1
+		}
+		if (A_Index = 90)
+		{
+			nm_SetStatus("Error", "Failed to join trading hub")
+			CloseRoblox()
+			DisconnectCheck()
+			return 0
+		}
+	}
 }
 nm_claimHiveSlot(){
 	global KeyDelay, FwdKey, RightKey, LeftKey, BackKey, ZoomOut, HiveSlot, HiveConfirmed, SC_E, SC_Esc, SC_R, SC_Enter, bitmaps, ReconnectMessage
