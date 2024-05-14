@@ -1,4 +1,4 @@
-send "{" TCLRKey " down}"
+﻿send "{" TCLRKey " down}"
 Walk(( 4 * size ) + ( reps * 0.1 ) - 0.1)
 send "{" TCLRKey " up}{" AFCLRKey " down}"
 Walk(8 * size)	
