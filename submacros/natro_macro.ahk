@@ -22489,7 +22489,7 @@ robloxFPSGui(*) {
 	fpsUnlockerGui.Show("w70 h45")
 	fpsUnlockerGui.AddText("vFPSCountLabel w35 x5", "FPS")
 	fpsUnlockerGui.AddText("vFPSCountEdit yp xp+20 w50 Right")
-	fpsUnlockerGui.AddUpDown("vFPSCount Range1-500", prevFPS)
+	fpsUnlockerGui.AddUpDown("vFPSCount Range15-500", prevFPS)
 	fpsUnlockerGui.AddButton("x5 yp+20 w70","Apply").OnEvent("Click",(*) => WriteFPSCount(fpsUnlockerGui["FPSCount"].value))
 	WriteFPSCount(fpsCount) {
 		if fpsCount < 25
