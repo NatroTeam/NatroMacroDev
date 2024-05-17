@@ -2641,7 +2641,7 @@ nm_command(command)
 	getNectars(*) {
 		static nectarcolors := Map("comforting",0x7E9EB3, "motivating",0x937DB3, "satisfying",0xB398A7, "refreshing",0x78B375, "invigorating",0xB35951)
 		yOffset := GetYOffset(,&fail), GetRobloxClientPos()
-		if fail
+		if fail || !windowWidth
 			return false
 		activateRoblox()
 		out := Map("comforting", 0, "motivating", 0, "satisfying", 0, "refreshing", 0, "invigorating", 0)
