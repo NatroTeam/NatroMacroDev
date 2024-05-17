@@ -2641,11 +2641,12 @@ nm_command(command)
 	getNectars(*) {
 		static nectarcolors := Map("comforting",0x7E9EB3, "motivating",0x937DB3, "satisfying",0xB398A7, "refreshing",0x78B375, "invigorating",0xB35951)
 		yOffset := GetYOffset(,&fail), GetRobloxClientPos()
-		if fail || !windowWidth
+		if fail
 			return false
+		activateRoblox()
 		out := Map("comforting", 0, "motivating", 0, "satisfying", 0, "refreshing", 0, "invigorating", 0)
 		for i,j in nectarcolors {
-			try if !PixelSearch(&px,&py,windowX, windowY+offsetY+30, windowX+860, windowY+offsetY+150, j) 
+			try if !PixelSearch(&px, &py, windowX, windowY+yOffset+30, windowX+860, windowY+yOffset+150, j)
 				continue
 			catch
 				continue
@@ -2657,6 +2658,7 @@ nm_command(command)
 			}
 			out[i] := Round(pixels/38*100)
 		}
+		return out
 	}
 }
 
