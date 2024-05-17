@@ -109,7 +109,6 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5560, nm_closeChat)
-OnMessage(0x5562, nm_ReturnNectarPercentages)
 
 ; set version identifier
 VersionID := "1.0.1"
@@ -22432,19 +22431,7 @@ nm_UpdateGUIVar(var)
 		}
 	}
 }
-nm_ReturnNectarPercentages(*) {
-	critical
-	global nectarnames
-	if !GetRobloxHWND()
-		return 0
-	for k,v in nectarNames
-		str .= ba_GetNectarPercent(v) ","
-	DetectHiddenWindows 1
-	if WinExist("Status.ahk ahk_class AutoHotkey")
-		SendMessage 0xc,, StrPtr(SubStr(str,1,-1))
-	DetectHiddenWindows 0
-	return 1
-}
+
 nm_closeChat(*) {
     if !GetRobloxClientPos()
     	return 0	
