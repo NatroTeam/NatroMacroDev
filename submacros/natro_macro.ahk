@@ -1758,7 +1758,7 @@ nm_importFieldDefaults()
 		, "turns", 1
 		, "sprinkler", "Center"
 		, "distance", 1
-		, "percent", 0
+		, "percent", 100
 		, "gathertime", 10
 		, "convert", "Rejoin"
 		, "drift", 0
@@ -2379,9 +2379,9 @@ MainGui.Add("Picture", "xp yp+60 wp hp Disabled vSaveFieldDefault2", "HBITMAP:*"
 MainGui.Add("Picture", "xp yp+60 wp hp Disabled vSaveFieldDefault3", "HBITMAP:*" hBM).OnEvent("Click", nm_SaveFieldDefault)
 DllCall("DeleteObject", "ptr", hBM)
 
-(GuiCtrl := MainGui.Add("CheckBox", "x65 y83 w50 +Center Disabled vFieldDriftCheck1 Checked" FieldDriftCheck1 " Hidden" (MainGui["FieldName1"].text = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck2 Checked" FieldDriftCheck2 " Hidden" (MainGui["FieldName2"].text = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck3 Checked" FieldDriftCheck3 " Hidden" (MainGui["FieldName3"].text = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x65 y83 w50 +Center Disabled vFieldDriftCheck1 Checked" FieldDriftCheck1 " Hidden" (FieldName1 = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck2 Checked" FieldDriftCheck2 " Hidden" (FieldName2t = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck3 Checked" FieldDriftCheck3 " Hidden" (FieldName3 = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
 
 MainGui.Add("Button", "x115 y89 w9 h14 Disabled vFDCHelp1", "?").OnEvent("Click", nm_FDCHelp)
 MainGui.Add("Button", "xp yp+60 w9 h14 Disabled vFDCHelp2", "?").OnEvent("Click", nm_FDCHelp)
@@ -2456,25 +2456,25 @@ MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("Edit", "xp yp+60 wp h20 limit4 number Disabled vFieldUntilMins3", ValidateInt(&FieldUntilMins3, 10))).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 
 MainGui.Add("Text", "x375 y60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack1", FieldUntilPack1).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack1UpDown Hidden" (MainGui["FieldName1"].text = "Trading Hub" ? 1 : 0), FieldUntilPack1//5).OnEvent("Change", nm_FieldUntilPack)
+MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack1UpDown Hidden" (FieldName1 = "Trading Hub" ? 1 : 0), FieldUntilPack1//5).OnEvent("Change", nm_FieldUntilPack)
 MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack2", FieldUntilPack2).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack2UpDown Hidden" (MainGui["FieldName2"].text = "Trading Hub" ? 1 : 0), FieldUntilPack2//5).OnEvent("Change", nm_FieldUntilPack)
+MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack2UpDown Hidden" (FieldName2 = "Trading Hub" ? 1 : 0), FieldUntilPack2//5).OnEvent("Change", nm_FieldUntilPack)
 MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack3", FieldUntilPack3).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack3UpDown Hidden" (MainGui["FieldName3"].text = "Trading Hub" ? 1 : 0), FieldUntilPack3//5).OnEvent("Change", nm_FieldUntilPack)
+MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack3UpDown Hidden" (FieldName3 = "Trading Hub" ? 1 : 0), FieldUntilPack3//5).OnEvent("Change", nm_FieldUntilPack)
 SetLoadingProgress(24)
 
 MainGui.Add("Text", "x327 y79 w93 +BackgroundTrans +Center", "To Hive By:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "To Hive By:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "To Hive By:")
 MainGui.Add("Text", "x356 y96 w33 +Center +BackgroundTrans vFieldReturnType1", FieldReturnType3).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT1Left Hidden" (MainGui["FieldName1"].text = "Trading Hub" ? 1 : 0), "<").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT1Right Hidden" (MainGui["FieldName1"].text = "Trading Hub" ? 1 : 0), ">").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT1Left Hidden" (FieldName1 = "Trading Hub" ? 1 : 0), "<").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT1Right Hidden" (FieldName1 = "Trading Hub" ? 1 : 0), ">").OnEvent("Click", nm_FieldReturnType)
 MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType2", FieldReturnType3).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT2Left Hidden" (MainGui["FieldName2"].text = "Trading Hub" ? 1 : 0), "<").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT2Right Hidden" (MainGui["FieldName2"].text = "Trading Hub" ? 1 : 0), ">").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT2Left Hidden" (FieldName2 = "Trading Hub" ? 1 : 0), "<").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT2Right Hidden" (FieldName2 = "Trading Hub" ? 1 : 0), ">").OnEvent("Click", nm_FieldReturnType)
 MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType3", FieldReturnType3).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT3Left Hidden" (MainGui["FieldName3"].text = "Trading Hub" ? 1 : 0), "<").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT3Right Hidden" (MainGui["FieldName3"].text = "Trading Hub" ? 1 : 0), ">").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT3Left Hidden" (FieldName3 = "Trading Hub" ? 1 : 0), "<").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT3Right Hidden" (FieldName3 "Trading Hub" ? 1 : 0), ">").OnEvent("Click", nm_FieldReturnType)
 
 MainGui.Add("Text", "x427 y61 w60 +Center +BackgroundTrans vFieldSprinklerLoc1", FieldSprinklerLoc1)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 Disabled vFSL1Left", "<").OnEvent("Click", nm_FieldSprinklerLoc)
@@ -4672,7 +4672,7 @@ nm_PasteGatherSettings(GuiCtrl, *){
 		, "SprinklerDist", "^([1-9]|10)$"
 		, "SprinklerLoc", "i)^(Center|Upper Left|Upper|Upper Right|Right|Lower Right|Lower|Lower Left|Left)$"
 		, "UntilMins", "^\d{1,4}$"
-		, "UntilPack", "^(0|5|10|15|20|25|30|35|40|45|50|55|60|65|70|75|80|85|90|95|100)$"), q := Chr(34)
+		, "UntilPack", "^(5|10|15|20|25|30|35|40|45|50|55|60|65|70|75|80|85|90|95|100)$"), q := Chr(34)
 	local i := SubStr(GuiCtrl.Name, -1), obj, ctrl
 
 	If (!RegExMatch(A_Clipboard, "^\s*\{.*\}\s*$")){
