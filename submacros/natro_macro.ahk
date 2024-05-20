@@ -1758,7 +1758,7 @@ nm_importFieldDefaults()
 		, "turns", 1
 		, "sprinkler", "Center"
 		, "distance", 1
-		, "percent", "ⁿ/ₐ" ;ninju fixed, wait until merged.
+		, "percent", 0
 		, "gathertime", 10
 		, "convert", "Rejoin"
 		, "drift", 0
@@ -2455,26 +2455,26 @@ MainGui.Add("Text", "xp yp+60 wp h16 0x201 +Center")
 (GuiCtrl := MainGui.Add("Edit", "xp yp+60 wp h20 limit4 number Disabled vFieldUntilMins2", ValidateInt(&FieldUntilMins2, 10))).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 (GuiCtrl := MainGui.Add("Edit", "xp yp+60 wp h20 limit4 number Disabled vFieldUntilMins3", ValidateInt(&FieldUntilMins3, 10))).Section := "Gather", GuiCtrl.OnEvent("Change", nm_saveConfig)
 
-MainGui.Add("Text", "x375 y60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack1", (FieldName1 = "Trading Hub" ? (Chr(0x207F) "/" Chr(0x2090)) : FieldUntilPack1)).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack1UpDown", FieldUntilPack1//5).OnEvent("Change", nm_FieldUntilPack)
-MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack2", (FieldName2 = "Trading Hub" ? (Chr(0x207F) "/" Chr(0x2090)) : FieldUntilPack2)).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack2UpDown", FieldUntilPack2//5).OnEvent("Change", nm_FieldUntilPack)
-MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack3", (FieldName3 = "Trading Hub" ? (Chr(0x207F) "/" Chr(0x2090)) : FieldUntilPack3)).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack3UpDown", FieldUntilPack3//5).OnEvent("Change", nm_FieldUntilPack)
+MainGui.Add("Text", "x375 y60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack1", FieldUntilPack1).OnEvent("Click", nm_TradingHubRestrict)
+MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack1UpDown Hidden" (MainGui["FieldName1"].text = "Trading Hub" ? 1 : 0), FieldUntilPack1//5).OnEvent("Change", nm_FieldUntilPack)
+MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack2", FieldUntilPack2).OnEvent("Click", nm_TradingHubRestrict)
+MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack2UpDown Hidden" (MainGui["FieldName2"].text = "Trading Hub" ? 1 : 0), FieldUntilPack2//5).OnEvent("Change", nm_FieldUntilPack)
+MainGui.Add("Text", "x375 yp+60 h16 w16 0x201 +Center +BackgroundTrans vFieldUntilPack3", FieldUntilPack3).OnEvent("Click", nm_TradingHubRestrict)
+MainGui.Add("UpDown", "xp+18 yp h16 -16 Range1-20 Disabled vFieldUntilPack3UpDown Hidden" (MainGui["FieldName3"].text = "Trading Hub" ? 1 : 0), FieldUntilPack3//5).OnEvent("Change", nm_FieldUntilPack)
 SetLoadingProgress(24)
 
 MainGui.Add("Text", "x327 y79 w93 +BackgroundTrans +Center", "To Hive By:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "To Hive By:")
 MainGui.Add("Text", "xp yp+60 wp +BackgroundTrans +Center", "To Hive By:")
-MainGui.Add("Text", "x356 y96 w33 +Center +BackgroundTrans vFieldReturnType1", (FieldName1 = "Trading Hub" ? "Rejoin" : FieldReturnType3)).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT1Left", "<").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT1Right", ">").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType2", (FieldName2 = "Trading Hub" ? "Rejoin" : FieldReturnType3)).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT2Left", "<").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT2Right", ">").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType3", (FieldName3 = "Trading Hub" ? "Rejoin" : FieldReturnType3)).OnEvent("Click", nm_TradingHubRestrict)
-MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT3Left", "<").OnEvent("Click", nm_FieldReturnType)
-MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT3Right", ">").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Text", "x356 y96 w33 +Center +BackgroundTrans vFieldReturnType1", FieldReturnType3).OnEvent("Click", nm_TradingHubRestrict)
+MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT1Left Hidden" (MainGui["FieldName1"].text = "Trading Hub" ? 1 : 0), "<").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT1Right Hidden" (MainGui["FieldName1"].text = "Trading Hub" ? 1 : 0), ">").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType2", FieldReturnType3).OnEvent("Click", nm_TradingHubRestrict)
+MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT2Left Hidden" (MainGui["FieldName2"].text = "Trading Hub" ? 1 : 0), "<").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT2Right Hidden" (MainGui["FieldName2"].text = "Trading Hub" ? 1 : 0), ">").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Text", "x356 yp+61 w33 +Center +BackgroundTrans vFieldReturnType3", FieldReturnType3).OnEvent("Click", nm_TradingHubRestrict)
+MainGui.Add("Button", "xp-16 yp-1 w12 h16 Disabled vFRT3Left Hidden" (MainGui["FieldName3"].text = "Trading Hub" ? 1 : 0), "<").OnEvent("Click", nm_FieldReturnType)
+MainGui.Add("Button", "xp+52 yp w12 h16 Disabled vFRT3Right Hidden" (MainGui["FieldName3"].text = "Trading Hub" ? 1 : 0), ">").OnEvent("Click", nm_FieldReturnType)
 
 MainGui.Add("Text", "x427 y61 w60 +Center +BackgroundTrans vFieldSprinklerLoc1", FieldSprinklerLoc1)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 Disabled vFSL1Left", "<").OnEvent("Click", nm_FieldSprinklerLoc)
@@ -3474,11 +3474,9 @@ nm_TabGatherUnLock(){
 		MainGui["FieldDriftCheck" A_Index].Enabled := 1
 		MainGui["FRD" A_Index "Left"].Enabled := 1
 		MainGui["FRD" A_Index "Right"].Enabled := 1
-		if (MainGui["FieldName" A_Index].Text != "Trading Hub"){
-			MainGui["FRT" A_Index "Left"].Enabled := 1
-			MainGui["FRT" A_Index "Right"].Enabled := 1
-			MainGui["FieldUntilPack" A_Index "UpDown"].Enabled := 1
-		}
+		MainGui["FRT" A_Index "Left"].Enabled := 1
+		MainGui["FRT" A_Index "Right"].Enabled := 1
+		MainGui["FieldUntilPack" A_Index "UpDown"].Enabled := 1
 		MainGui["FSL" A_Index "Left"].Enabled := 1
 		MainGui["FSL" A_Index "Right"].Enabled := 1
 		MainGui["FDCHelp" A_Index].Enabled := 1
@@ -4364,20 +4362,20 @@ nm_TradingHubSelect(num){
 	local v
 	if (MainGui["FieldName" num].Text = "Trading Hub"){
 		MainGui["FieldDriftCheck" num].visible := 0
-		MainGui["FRT" num "Left"].enabled := 0
-		MainGui["FRT" num "Right"].enabled := 0
-		MainGui["FieldUntilPack" num "UpDown"].enabled := 0
+		MainGui["FRT" num "Left"].visible := 0
+		MainGui["FRT" num "Right"].visible := 0
+		MainGui["FieldUntilPack" num "UpDown"].visible := 0
 	}
 	else {
 		MainGui["FieldDriftCheck" num].visible := 1
-		MainGui["FRT" num "Left"].enabled := 1
-		MainGui["FRT" num "Right"].enabled := 1
-		MainGui["FieldUntilPack" num "UpDown"].enabled := 1
+		MainGui["FRT" num "Left"].visible := 1
+		MainGui["FRT" num "Right"].visible := 1
+		MainGui["FieldUntilPack" num "UpDown"].visible := 1
 	}
 }
 nm_TradingHubRestrict(GuiCtrl, *){
 	switch GuiCtrl.name {
-		case "FieldUntilPack1", "FieldUntilPack2", "FieldUntilPack3","FieldReturnType1","FieldReturnType1","FieldReturnType1","FDCHelp1","FDCHelp2","FDCHelp3":
+		case "FieldUntilPack1", "FieldUntilPack2", "FieldUntilPack3","FieldReturnType1","FieldReturnType2","FieldReturnType3","FDCHelp1","FDCHelp2","FDCHelp3":
 			loop 3
 			{
 				if (MainGui["FieldName" A_Index].Text = "Trading Hub" && SubStr(GuiCtrl.Name, -1) = A_Index)
@@ -4474,7 +4472,7 @@ nm_FieldDefaults(num){
 	MainGui["FieldPatternInvertLR" num].Value := FieldPatternInvertLR%num%
 	MainGui["FieldUntilMins" num].Value := FieldUntilMins%num%
 	MainGui["FieldUntilPack" num].Text := FieldUntilPack%num%
-	MainGui["FieldUntilPack" num "UpDown"].Value := (IsInteger(FieldUntilPack%num%) ? FieldUntilPack%num%//5 : 9) 
+	MainGui["FieldUntilPack" num "UpDown"].Value := FieldUntilPack%num%//5
 	MainGui["FieldReturnType" num].Text := FieldReturnType%num%
 	MainGui["FieldSprinklerLoc" num].Text := FieldSprinklerLoc%num%
 	MainGui["FieldSprinklerDist" num].Value := FieldSprinklerDist%num%
@@ -4668,13 +4666,13 @@ nm_PasteGatherSettings(GuiCtrl, *){
 		, "PatternReps", "^[1-9]$"
 		, "PatternShift", "^(0|1)$"
 		, "PatternSize", "i)^(XS|S|M|L|XL)$"
-		, "ReturnType", "i)^(Walk|Reset)$"
+		, "ReturnType", "i)^(Walk|Reset|Rejoin)$"
 		, "RotateDirection", "i)^(None|Left|Right)$"
 		, "RotateTimes", "^[1-4]$"
 		, "SprinklerDist", "^([1-9]|10)$"
 		, "SprinklerLoc", "i)^(Center|Upper Left|Upper|Upper Right|Right|Lower Right|Lower|Lower Left|Left)$"
 		, "UntilMins", "^\d{1,4}$"
-		, "UntilPack", "^(5|10|15|20|25|30|35|40|45|50|55|60|65|70|75|80|85|90|95|100)$"), q := Chr(34)
+		, "UntilPack", "^(0|5|10|15|20|25|30|35|40|45|50|55|60|65|70|75|80|85|90|95|100)$"), q := Chr(34)
 	local i := SubStr(GuiCtrl.Name, -1), obj, ctrl
 
 	If (!RegExMatch(A_Clipboard, "^\s*\{.*\}\s*$")){
