@@ -2380,7 +2380,7 @@ MainGui.Add("Picture", "xp yp+60 wp hp Disabled vSaveFieldDefault3", "HBITMAP:*"
 DllCall("DeleteObject", "ptr", hBM)
 
 (GuiCtrl := MainGui.Add("CheckBox", "x65 y83 w50 +Center Disabled vFieldDriftCheck1 Checked" FieldDriftCheck1 " Hidden" (FieldName1 = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck2 Checked" FieldDriftCheck2 " Hidden" (FieldName2t = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck2 Checked" FieldDriftCheck2 " Hidden" (FieldName2 = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+60 wp +Center Disabled vFieldDriftCheck3 Checked" FieldDriftCheck3 " Hidden" (FieldName3 = "Trading Hub" ? 1 : 0), "Drift`nComp")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
 
 MainGui.Add("Button", "x115 y89 w9 h14 Disabled vFDCHelp1", "?").OnEvent("Click", nm_FDCHelp)
@@ -3484,7 +3484,7 @@ nm_TabGatherUnLock(){
 		MainGui["PasteGather" A_Index].Enabled := 1
 		MainGui["SaveFieldDefault" A_Index].Enabled := 1
 		MainGui["SaveFieldDefault" A_Index].Value := "HBITMAP:*" hBM
-		if (A_Index = 1+(FieldName2!="none")+(FieldName3!="none")) ;if no other loops remain, enable 2nd gather field control
+		if (A_Index = 1+(FieldName2!="none")+(FieldName3!="none") && A_Index != 3) ;if no other loops remain, enable 2nd gather field control
 			MainGui["FieldName" A_Index+1].Enabled := 1
 	}
 	DllCall("DeleteObject", "ptr", hBM)
@@ -4122,53 +4122,22 @@ AsyncHttpRequest(method, url, func?, headers?)
 }
 
 ;current field up/down
-nm_currentFieldUp(*){
+nm_currentFieldUp(*) => nm_currentFieldChange("up")
+nm_currentFieldDown(*) => nm_currentFieldChange("down")
+nm_currentFieldChange(updown, *){
 	global CurrentField, CurrentFieldNum
-	if(CurrentFieldNum=1) { ;wrap around to bottom
-		if(FieldName3!="None") {
-			CurrentFieldNum:=3
-			CurrentField:=FieldName3
-		} else if (FieldName2!="None") {
-			CurrentFieldNum:=2
-			CurrentField:=FieldName2
-		} else {
-			CurrentFieldNum:=1
-			CurrentField:=FieldName1
-		}
-	} else if(CurrentFieldNum=2) {
-		CurrentFieldNum:=1
-		CurrentField:=FieldName1
-	} else if(CurrentFieldNum=3) {
-		CurrentFieldNum:=2
-		CurrentField:=FieldName2
-	}
-	MainGui["CurrentField"].Text := CurrentField
-	IniWrite CurrentFieldNum, "settings\nm_config.ini", "Gather", "CurrentFieldNum"
-}
-nm_currentFieldDown(*){
-	global CurrentField, CurrentFieldNum
-	if(CurrentFieldNum=1) {
-		if(FieldName2!="None") {
-			CurrentFieldNum:=2
-			CurrentField:=FieldName2
-		} else { ;default to 1
-			CurrentFieldNum:=1
-			CurrentField:=FieldName1
-		}
-	} else if(CurrentFieldNum=2) {
-		if(FieldName3!="None") {
-			CurrentFieldNum:=3
-			CurrentField:=FieldName3
-		} else { ;default to 1
-			CurrentFieldNum:=1
-			CurrentField:=FieldName1
-		}
-	} else if(CurrentFieldNum=3) {
-		CurrentFieldNum:=1
-		CurrentField:=FieldName1
-	}
-	MainGui["CurrentField"].Text := CurrentField
-	IniWrite CurrentFieldNum, "settings\nm_config.ini", "Gather", "CurrentFieldNum"
+	FieldMax := 1+(FieldName2!="none")+(FieldName3!="none")
+	if (updown = "down")
+		(Mod(CurrentFieldNum, FieldMax) ? CurrentFieldNum++ : CurrentFieldNum := 1)
+	else
+		CurrentFieldNum := (CurrentFieldNum-1 < 1 ? FieldMax : CurrentFieldNum-1)
+	if IsObject(updown)
+		CurrentFieldNum := updown.Value, AFBGui["AFBcurrentField"].text := FieldName%CurrentFieldNum%
+	
+	CurrentField := FieldName%CurrentFieldNum%
+	if IsObject(AFBGui)
+		AFBGui["AFBcurrentField"].text := CurrentField
+	MainGui["CurrentField"].Text := CurrentField, IniWrite(CurrentFieldNum, "settings\nm_config.ini", "Gather", "CurrentFieldNum")
 }
 
 ;error balloon tip (used to show info on incorrect inputs)
@@ -5792,8 +5761,9 @@ nm_autoFieldBoostGui(*){
 	AFBGui.OnEvent("Close", GuiClose)
 	AFBGui.SetFont("s8 cDefault Norm", "Tahoma")
 	AFBGui.Add("CheckBox", "x5 y5 vAutoFieldBoostActive Checked" AutoFieldBoostActive, "Activate Automatic Field Boost for Gathering Field:").OnEvent("Click", nm_autoFieldBoostCheck)
+	AFBGUI.Add("UpDown", "x269 y4 h15 w20 vAFBcurrentFiledUpDown range1-3 -16", currentField).OnEvent("Change", nm_currentFieldChange)
 	AFBGui.SetFont("w800 cBlue")
-	AFBGui.Add("Text", "x270 y5 left vAFBcurrentField", currentField)
+	AFBGui.Add("Text", "x289 y5 w100 left vAFBcurrentField", currentField)
 	AFBGui.SetFont("s8 cDefault Norm", "Tahoma")
 	AFBGui.Add("Button", "x20 y22 w120 h15", "What does this do?").OnEvent("Click", nm_AFBHelpButton)
 	AFBGui.Add("Text", "x5 y42 w355 h1 0x7")
