@@ -5333,6 +5333,14 @@ nm_HotbarWhile(GuiCtrl?, *){
 				MainGui["HotbarMax" i].Visible := 0
 				MainGui["HBText" i].Visible := 1
 
+				case "dice":
+				MainGui["HBText" i].Text := "@ Boosted"
+				MainGui["HotbarTime" i].Visible := 0
+				MainGui["HBTimeText" i].Visible := 0
+				MainGui["HBConditionText" i].Visible := 0
+				MainGui["HotbarMax" i].Visible := 0
+				MainGui["HBText" i].Visible := 1				
+
 				case "snowflake":
 				if (beesmasActive = 0)
 				{
@@ -10211,6 +10219,7 @@ nm_preset() {
 nm_HealthDetection()
 {
 	static pBMHealth, pBMDamage
+	global HealthX, HealthY	
 	HealthBars := []
 	if !(IsSet(pBMHealth) && IsSet(pBMDamage))
 	{
@@ -10263,6 +10272,8 @@ nm_HealthDetection()
 		}
 	}
 	Gdip_DeleteBrush(pBrush), Gdip_DisposeImage(pBMScreen), Gdip_DeleteGraphics(G)
+	HealthX := x1
+	HealthY := y1	
 	Return HealthBars
 }
 ;;Time interval in minutes
@@ -12163,7 +12174,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 			DllCall("GetSystemTimeAsFileTime", "int64p", &f:=s)
 			Sleep Max(500 - (f - s)//10000, -1) ; match previous version's total sleep 500
 
-			Loop 1000 {
+			Loop 300 {
 				pBMScreen := Gdip_BitmapFromScreen(TileXCordOAC-35 "|" TileYCordOAC-20 "|45|30") ; Detect Clicked Item
 				;Gdip_SaveBitmapToFile(pBMScreen, "empty" A_index ".png")
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["MMBorder"], , , , 8, 20, 1, , 2) = 1) {
@@ -12228,6 +12239,8 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 
 			if(A_Index=2 && LastChance=1)
 				break 2
+			if (disconnectcheck()) 
+				return					
 
 			pBMScreen := Gdip_BitmapFromScreen(middleX-250 "|" middleY-210 "|500|50")
 			if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitle"], , , , , , 8) = 0) {
@@ -15434,7 +15447,7 @@ nm_GoGather(){
 		, objective
 		, BackpackPercentFiltered
 		, MicroConverterKey
-		, WhirligigKey, PFieldBoosted, GlitterKey, GatherFieldBoosted, GatherFieldBoostedStart, LastGlitter, PMondoGuidComplete, LastGuid, PMondoGuid, PFieldGuidExtend, PFieldGuidExtendMins, PFieldBoostExtend, PPopStarExtend, HasPopStar, PopStarActive, FieldGuidDetected, ConvertGatherFlag
+		, WhirligigKey, PFieldBoosted, GlitterKey, DiceKey, GatherFieldBoosted, GatherFieldBoostedStart, LastGlitter, PMondoGuidComplete, LastGuid, PMondoGuid, PFieldGuidExtend, PFieldGuidExtendMins, PFieldBoostExtend, PPopStarExtend, HasPopStar, PopStarActive, FieldGuidDetected, ConvertGatherFlag
 		, LastWhirligig
 		, BoostChaserCheck, LastBlueBoost, LastRedBoost, LastMountainBoost, FieldBooster3, FieldBooster2, FieldBooster1, FieldDefault, LastMicroConverter, HiveConfirmed, LastWreath, WreathCheck
 		, BlueFlowerBoosterCheck, BambooBoosterCheck, PineTreeBoosterCheck, DandelionBoosterCheck, SunflowerBoosterCheck, CloverBoosterCheck, SpiderBoosterCheck, PineappleBoosterCheck, CactusBoosterCheck, PumpkinBoosterCheck, MushroomBoosterCheck, StrawberryBoosterCheck, RoseBoosterCheck, CoconutBoosterCheck
@@ -16448,7 +16461,7 @@ nm_convert(){
 	global AFBrollingDice, AFBuseGlitter, AFBuseBooster, CurrentField, HiveConfirmed, EnzymesKey, LastEnzymes
 		, ConvertStartTime, TotalConvertTime, SessionConvertTime
 		, BackpackPercent, BackpackPercentFiltered
-		, PFieldBoosted, GatherFieldBoosted, GatherFieldBoostedStart, LastGlitter, GlitterKey
+		, PFieldBoosted, GatherFieldBoosted, GatherFieldBoostedStart, LastGlitter, GlitterKey, DiceKey
 		, GameFrozenCounter, LastConvertBalloon, ConvertBalloon, ConvertMins, HiveBees, ConvertDelay, ConvertGatherFlag
 
 	if ((VBState = 1) || nm_MondoInterrupt())
@@ -18092,6 +18105,15 @@ nm_hotbar(boost:=0){
 			ActiveHotkeys[key][4]:=LastHotkeyN
 			break
 		}
+		;gathering boosted
+		else if(GatherFieldBoosted && state="Gathering" && (fieldOverrideReason="None" || fieldOverrideReason="Boost") && ActiveHotkeys[key][1]="GatheringBoosted" && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
+			HotkeyNum:=ActiveHotkeys[key][2]
+			send "{sc00" HotkeyNum+1 "}"
+			LastHotkeyN:=nowUnix()
+			IniWrite LastHotkeyN, "settings\nm_config.ini", "Boost", "LastHotkey" HotkeyNum
+			ActiveHotkeys[key][4]:=LastHotkeyN
+			break
+		}			
 		;GatherStart
 		else if(state="Gathering" && (fieldOverrideReason="None" || fieldOverrideReason="Boost" || (QuestBoostCheck = 1 && fieldOverrideReason="Quest")) && (nowUnix()-GatherStartTime)<10 && ActiveHotkeys[key][1]="GatherStart" && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
 			HotkeyNum:=ActiveHotkeys[key][2]
@@ -21972,7 +21994,7 @@ start(*){
 	;set ActiveHotkeys[]
 	global ActiveHotkeys:=[]
 	;set hotbar values for actions handled by nm_hotbar()
-	whileNames:=["Always", "Attacking", "Gathering", "At Hive", "GatherStart"]
+	whileNames:=["Always", "Attacking", "Gathering", "GatheringBoosted", "At Hive", "GatherStart"]
 	for key, val in whileNames {
 		loop 6 {
 			slot:=A_Index+1
@@ -22023,6 +22045,16 @@ start(*){
 		slot:=A_Index+1
 		if(HotbarWhile%slot%="Glitter") {
 			GlitterKey:="sc00" slot+1
+			break
+		}
+	}
+	;DiceKey
+	global DiceKey
+	DiceKey:="None"
+	loop 6 {
+		slot:=A_Index+1
+		if(HotbarWhile%slot%="Dice") {
+			DiceKey:="sc00" slot+1
 			break
 		}
 	}
