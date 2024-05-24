@@ -4131,12 +4131,17 @@ nm_currentFieldChange(updown, *){
 		(Mod(CurrentFieldNum, FieldMax) ? CurrentFieldNum++ : CurrentFieldNum := 1)
 	else
 		CurrentFieldNum := (CurrentFieldNum-1 < 1 ? FieldMax : CurrentFieldNum-1)
-	if IsObject(updown)
-		CurrentFieldNum := updown.Value, AFBGui["AFBcurrentField"].text := FieldName%CurrentFieldNum%
+	if (IsObject(updown))
+		CurrentFieldNum := updown.Value
 	
 	CurrentField := FieldName%CurrentFieldNum%
-	if IsObject(AFBGui)
+	if IsObject(AFBGui){
 		AFBGui["AFBcurrentField"].text := CurrentField
+		if (CurrentField = "Trading Hub" && AutoFieldBoostActive)
+			AFBGui["AFBDiceEnable"].Value := 0, AFBGui["AFBDiceEnable"].Enabled := 0
+		else
+			AFBGui["AFBDiceEnable"].Enabled := 1
+	}
 	MainGui["CurrentField"].Text := CurrentField, IniWrite(CurrentFieldNum, "settings\nm_config.ini", "Gather", "CurrentFieldNum")
 }
 
@@ -4328,7 +4333,6 @@ nm_FieldSelect3(GuiCtrl?, *){
 }
 nm_TradingHubSelect(num){
 	global
-	local v
 	if (MainGui["FieldName" num].Text = "Trading Hub"){
 		MainGui["FieldDriftCheck" num].visible := 0
 		MainGui["FRT" num "Left"].visible := 0
@@ -4343,31 +4347,25 @@ nm_TradingHubSelect(num){
 	}
 }
 nm_TradingHubRestrict(GuiCtrl, *){
-	switch GuiCtrl.name {
-		case "FieldUntilPack1", "FieldUntilPack2", "FieldUntilPack3","FieldReturnType1","FieldReturnType2","FieldReturnType3","FDCHelp1","FDCHelp2","FDCHelp3":
-			loop 3
-			{
-				if (MainGui["FieldName" A_Index].Text = "Trading Hub" && SubStr(GuiCtrl.Name, -1) = A_Index)
-				{
-					break
-				}
-				if (A_Index = 3)
-					return 0
-			}
-		default:
-	}
-	return MsgBox("
-	(
-	NOTICE:
-	This control is disabled because of your gather field.
-	To enable different hive return types and field drift compensation, change your gather field to a different field.
-	Your start position is able changed, but sprinklers will not be placed.
+		if ((GuiCtrl.Gui.Hwnd = AFBGui.hwnd) && (CurrentField = "Trading Hub") && AutoFieldBoostActive){
+			return InfoMsgbox()
+		}
+		loop 3
+		{
+			if (MainGui["FieldName" A_Index].Text = "Trading Hub" && SubStr(GuiCtrl.Name, -1) = A_Index)
+				return InfoMsgbox()
+		}
+	InfoMsgbox() => MsgBox("
+		(
+		NOTICE:
+		This control is disabled because of your gathering field.
+		To enable different hive return types and field drift compensation, change your gather field to a different field.
+		Your start position is able changed, but sprinklers will not be placed.
 
-	ADVANCED INFO:
-	You cannot convert your bag in the Trading Hub, and due to the nature of reset being a core function in natro, the only currently avaiable convert method is rejoining to the main game.
-	You cannot use sprinklers in the Trading Hub, and as such field drift compensation will not work.
-	)", "Trading Hub restrictions")
-
+		ADVANCED INFO:
+		You cannot convert your bag in the Trading Hub, and due to the nature of reset being a core function in natro, the only currently avaiable convert method is rejoining to the main game.
+		You cannot use sprinklers in the Trading Hub, and as such field drift compensation will not work.
+		)", "Trading Hub restrictions")
 }
 nm_FDCHelp(GuiCtrl, *){
 	if nm_TradingHubRestrict(GuiCtrl)
@@ -5776,7 +5774,7 @@ nm_autoFieldBoostGui(*){
 	AFBGui.Add("Text", "x5 y86 w355 h1 0x7")
 	AFBGui.SetFont("s10")
 	AFBGui.Add("Button", "x5 y90 w10 h15", "?").OnEvent("Click", nm_AFBDiceEnableHelpButton)
-	AFBGui.Add("CheckBox", "x20 y90 vAFBDiceEnable Checked" AFBDiceEnable, "Dice:").OnEvent("Click", nm_AFBDiceEnableCheck)
+	AFBGui.Add("CheckBox", "x20 y90 vAFBDiceEnable Checked" AFBDiceEnable " Disabled" ((CurrentField = "Trading Hub" && AutoFieldBoostActive) ? 1 : 0), "Dice:").OnEvent("Click", nm_AFBDiceEnableCheck)
 	AFBGui.Add("Button", "x5 y113 w10 h15", "?").OnEvent("Click", nm_AFBGlitterEnableHelpButton)
 	AFBGui.Add("CheckBox", "x20 y113 vAFBGlitterEnable Checked" AFBGlitterEnable, "Glitter:").OnEvent("Click", nm_AFBGlitterEnableCheck)
 	AFBGui.Add("Button", "x5 y136 w10 h15", "?").OnEvent("Click", nm_AFBFieldEnableHelpButton)
@@ -5847,7 +5845,9 @@ nm_AFBHelpButton(*){
 nm_AFBRebuffHelpButton(*){
 	MsgBox "This setting defines the time interval between each Field Boost buff.", "Re-Buff Field Boost"
 }
-nm_AFBDiceEnableHelpButton(*){
+nm_AFBDiceEnableHelpButton(GuiCtrl, *){
+	if nm_TradingHubRestrict(GuiCtrl)
+		return 0
 	MsgBox "
 	(
 	This setting indicates if you would like to use Field Dice (NOT Smooth or Loaded) to boost your current gathering field.
@@ -5956,6 +5956,10 @@ nm_autoFieldBoostCheck(*){
 	}
 	IniWrite AutoFieldBoostActive, "settings\nm_config.ini", "Boost", "AutoFieldBoostActive"
 	MainGui["AutoFieldBoostButton"].Text := AutoFieldBoostActive ? "Auto Field Boost`n[ON]" : "Auto Field Boost`n[OFF]"
+	if (CurrentField = "Trading Hub" && AutoFieldBoostActive)
+		AFBGui["AFBDiceEnable"].Value := 0, AFBGui["AFBDiceEnable"].Enabled := 0
+	else
+		AFBGui["AFBDiceEnable"].Enabled := 1
 }
 nm_AFBDiceEnableCheck(*){
 	global
