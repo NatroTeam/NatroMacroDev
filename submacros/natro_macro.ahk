@@ -2704,7 +2704,8 @@ MainGui.Add("Button", "xp+66 yp w12 h16 vAPARight Disabled", ">").OnEvent("Click
 MainGui.Add("Text", "x14 yp+15 vAntPassPointText +BackgroundTrans", "\__")
 MainGui.Add("CheckBox", "x+4 yp+5 vAntPassBuyCheck Disabled Checked" AntPassBuyCheck, "Use Tickets").OnEvent("Click", nm_AntPassBuyCheck)
 (GuiCtrl := MainGui.Add("CheckBox", "x10 yp+17 vHoneystormCheck Disabled Checked" HoneystormCheck, "Honeystorm")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("Checkbox", "x10 yp+18 vMeteorShowerCheck Disabled Checked" meteorShowerCheck, "Meteor Shower")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("Checkbox", "x10 yp+18 vMeteorShowerCheck Disabled Checked" meteorShowerCheck, "Meteor Shower")).Section := "Collect", GuiCtrl.OnEvent("Click", (GuiCtrl, *) => (nm_saveConfig(GuiCtrl),
+((GuiCtrl.value = 1) ? Msgbox("Enabling this will not collect the meteors; it will only activate the shower and then reset.", "Meteor Shower", 0x40000) : "")))
 ;memory match
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x5 y184 w125 h52 vMemoryMatchGroupBox", "Memory Match")
