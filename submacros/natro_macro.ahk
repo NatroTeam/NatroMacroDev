@@ -22535,7 +22535,7 @@ blc_mutationsGUI(*) {
 #Warn VarUnset, Off
 pToken := Gdip_Startup()
 OnExit((*) =>( Gdip_Shutdown(pToken), ExitApp()))
-mgui := Gui("+E" (0x00080000 | 0x00000008) " +AlwaysOnTop +OwnDialogs -Caption")
+mgui := Gui("+E" (0x00080000 | 0x00000008 | 0x8000000) " +AlwaysOnTop +OwnDialogs -Caption")
 mgui.Show("NA")
 ;===Dimensions===
 w:=500,h:=325
