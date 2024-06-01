@@ -22530,16 +22530,10 @@ blc_mutationsGUI(*) {
 '
 #SingleInstance Force
 #Requires AutoHotkey v2.0
-#notrayicon
 #Include %A_ScriptDir%\lib\Gdip_All.ahk
 #Warn VarUnset, Off
 pToken := Gdip_Startup()
-OnExit((*) =>( Gdip_Shutdown(pToken), ExitApp()))
-mgui := Gui("+E" (0x00080000 | 0x00000008 | 0x8000000) " +AlwaysOnTop +OwnDialogs -Caption")
-mgui.Show("NA")
-;===Dimensions===
-w:=500,h:=325
-;===Bee Array===
+OnExit((*) =>( Gdip_Shutdown(pToken), closefunction(), ExitApp() ), -1)
 getConfig() {
 	global
 	local k, v, p, c, i, section, key, value, inipath, config, f, ini
@@ -22591,6 +22585,10 @@ getConfig() {
 			Tadpole: 0,
 			Vector: 0,
 			selectAll: 0
+		},
+		GUI : {
+			xPos: A_ScreenWidth//2-w//2,
+			yPos: A_ScreenHeight//2-h//2
 		}
 	}
 	for i, section in config.OwnProps()
@@ -22616,34 +22614,42 @@ getConfig() {
 	}
 	(f:=FileOpen(inipath, "w")).Write(ini), f.Close()
 }
-getConfig()
+;===Dimensions===
+w:=500,h:=357
+;===Bee Array===
 beeArr := ["Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley", "Shocked", "Baby", "Carpenter", "Demon", "Diamond", "Lion", "Music", "Ninja", "Shy", "Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
 mutationsArr := [{name: "Ability"}, {name: "Gather"}, {name: "Convert"}, {name: "Energy"}, {name:"Movespeed"}, {name: "Crit"}, {name: "Instant"}, {name: "Attack"}]
+getConfig()
 (bitmaps := Map()).CaseSense:=0
 #Include %A_ScriptDir%\nm_image_assets\mutatorgui\bitmaps.ahk
-
-for i, j in [{name:"move", options:"x0 y0 w" w " h36"}, {name:"selectall", options:"x" w-330 " y220 w40 h18"}, {name:"mutations", options:"x" w-170 " y220 w40 h18"}, {name:"close", options:"x" w-40 " y5 w28 h28"}]
-	mgui.AddText("v" j.name " " j.options)
-for i, j in beeArr {
-	y := (A_Index-1)//8*1
-	mgui.AddText("v" j " x" 10+mod(A_Index-1,8)*60 " y" 50+y*40 " w45 h36")
+startGui() {
+	global
+	(mgui := Gui("+E" (0x00080000 | 0x00000008 | 0x8000000) " +AlwaysOnTop +OwnDialogs -Caption")).OnEvent("Close", closefunction)
+	mgui.Show("NA")
+	for i, j in [{name:"move", options:"x0 y0 w" w " h36"}, {name:"selectall", options:"x" w-330 " y220 w40 h18"}, {name:"mutations", options:"x" w-170 " y220 w40 h18"}, {name:"close", options:"x" w-40 " y5 w28 h28"}, {name:"roll", options:"x10 y" h-42 " w" w-20 " h30"}]
+		mgui.AddText("v" j.name " " j.options)
+	for i, j in beeArr {
+		y := (A_Index-1)//8*1
+		mgui.AddText("v" j " x" 10+mod(A_Index-1,8)*60 " y" 50+y*40 " w45 h36")
+	}
+	for i, j in mutationsArr {
+		y := (A_Index-1)//4*1
+		mgui.AddText("v" j.name " x" 10+mod(A_Index-1,4)*120 " y" 260+y*25 " w40 h18")
+	}
+	hBM := CreateDIBSection(w, h)
+	hDC := CreateCompatibleDC()
+	SelectObject(hDC, hBM)
+	G := Gdip_GraphicsFromHDC(hDC)
+	Gdip_SetSmoothingMode(G, 4)
+	Gdip_SetInterpolationMode(G, 7)
+	update := UpdateLayeredWindow.Bind(mgui.hwnd, hDC)
+	update(xpos < 0 ? 0 : xpos > A_ScreenWidth ? 0 : xpos, ypos < 0 ? 0 : ypos > A_ScreenHeight ? 0 : ypos, w, h)
+	hovercontrol := ""
+	DrawGUI()
 }
-for i, j in mutationsArr {
-	y := (A_Index-1)//4*1
-	mgui.AddText("v" j.name " x" 10+mod(A_Index-1,4)*120 " y" 260+y*25 " w40 h18")
-}
+startGUI()
 OnMessage(0x201, WM_LBUTTONDOWN)
 OnMessage(0x200, WM_MOUSEMOVE)
-hBM := CreateDIBSection(w, h)
-hDC := CreateCompatibleDC()
-SelectObject(hDC, hBM)
-G := Gdip_GraphicsFromHDC(hDC)
-Gdip_SetSmoothingMode(G, 4)
-Gdip_SetInterpolationMode(G, 7)
-update := UpdateLayeredWindow.Bind(mgui.hwnd, hDC)
-update(A_ScreenWidth//2-w//2, A_ScreenHeight//2-h//2, w, h)
-hovercontrol := ""
-DrawGUI()
 DrawGUI() {
 	Gdip_GraphicsClear(G)
 	Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid(0xFF131416), 2, 2, w-4, h-4, 20), Gdip_DeleteBrush(brush)
@@ -22653,7 +22659,7 @@ DrawGUI() {
 	Gdip_SetClipRegion(G, region)
 	Gdip_FillRectangle(G, brush, 2, 20, w-4, 14)
 	Gdip_DeleteBrush(brush), Gdip_DeleteRegion(region)
-	Gdip_TextToGraphics(G, "Auto-Jelly", "s20 x20 y5 w460 Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFF131416")), "Comic Sans MS", 460, 30)
+	Gdip_TextToGraphics(G, "Auto-Jelly", "s20 x20 y5 w460 Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFF131416")), "Comic Sans MS", 460, 30), Gdip_DeleteBrush(brush)
 	Gdip_DrawImage(G, bitmaps["close"], w-40, 5, 28, 28)
 	for i, j in beeArr {
 		;bitmaps are w45 h36
@@ -22664,18 +22670,22 @@ DrawGUI() {
 	;===Switches===
 	Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid("0xFF" . 13*2 . 14*2 . 16*2), w-330, 220, 40, 18, 9), Gdip_DeleteBrush(brush)
 	Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), selectAll ? w-310 : w-330, 218, 22, 22)
-	Gdip_TextToGraphics(G, "Select All Bees", "s14 x" w-284 " y220 Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS",, 20)
+	Gdip_TextToGraphics(G, "Select All Bees", "s14 x" w-284 " y220 Near vCenter c" brush, "Comic Sans MS",, 20), Gdip_DeleteBrush(brush)
 	Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid("0xFF" . 13*2 . 14*2 . 16*2), w-170, 220, 40, 18, 9), Gdip_DeleteBrush(brush)
-	Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), mutations ? w-150 : w-170, 218, 22, 22)
-	Gdip_TextToGraphics(G, "Mutations", "s14 x" w-124 " y220 Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS",, 20)
+	Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), mutations ? w-150 : w-170, 218, 22, 22), Gdip_DeleteBrush(brush)
+	Gdip_TextToGraphics(G, "Mutations", "s14 x" w-124 " y220 Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS",, 20), Gdip_DeleteBrush(brush)
 	For i, j in mutationsArr {
 		y := (A_Index-1)//4
 		Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid("0xFF" . 13*2 . 14*2 . 16*2), 10+mod(A_Index-1,4)*120, 260+y*25, 40, 18, 9), Gdip_DeleteBrush(brush)
-		Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), (%j.name% ? 3 : 1) * 10+mod(A_Index-1,4)*120, 258+y*25, 22, 22)
+		Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), (%j.name% ? 3 : 1) * 10+mod(A_Index-1,4)*120, 258+y*25, 22, 22), Gdip_DeleteBrush(brush)
 		Gdip_TextToGraphics(G, j.name, "s12 x" 56+mod(A_Index-1,4)*120 " y" 260+y*25 " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 100, 20)
 	}
 	if !mutations
-		Gdip_FillRectangle(G, brush:=Gdip_BrushCreateSolid("0x70131416"), 9, 255, w-18, h-268)
+		Gdip_FillRectangle(G, brush:=Gdip_BrushCreateSolid("0x70131416"), 9, 255, w-18, h-268), Gdip_DeleteBrush(brush)
+	if hovercontrol = "roll"
+		Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0x30FEC6DF"), 10, h-42, w-20, 30, 10), Gdip_DeleteBrush(brush)
+	Gdip_TextToGraphics(G, "Roll!", "x10 y" h-40 " Center vCenter s15 c" (brush:=Gdip_BrushCreateSolid("0xFFFEC6DF")),"Comic Sans MS",w-20, 28), Gdip_DeleteBrush(brush)
+	Gdip_DrawRoundedRectanglePath(G, pen:=Gdip_CreatePen("0xFFFEC6DF", 4), 10, h-42, w-20, 30, 10), Gdip_DeletePen(pen)
 	update()
 }
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
@@ -22684,12 +22694,19 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 	if !ctrl
 		return
 	switch mgui[ctrl].name, 0 {
-		case "move":PostMessage(0xA1,2)
-		case "close":PostMessage(0x112,0xF060)
-		case "selectall", "Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley":
+		case "move":PostMessage(0x00A1,2)
+		case "close":PostMessage(0x0112,0xF060)
+		case "roll":PostMessage(0x0112, 0xF060), blc_roll()
+		case "selectAll":
 			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
+		case "Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley":
+			if !selectAll
+				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
 		case "Shocked", "Baby", "Carpenter", "Demon", "Diamond", "Lion", "Music", "Ninja", "Shy", "Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector":
-			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
+			if !selectAll
+				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
+		case "mutations":
+			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "mutations", mgui[ctrl].name)
 		default:
 			if mutations
 				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "mutations", mgui[ctrl].name)
@@ -22740,7 +22757,32 @@ ReplaceSystemCursors(IDC := "")
 			DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
 		}
 	}
-}'
+}
+blc_roll() {
+	selectedBees := [], selectedMutations := 0
+	for i in beeArr
+		if %i% || SelectAll
+			selectedBees.push(i)
+	if mutations {
+		selectedMutations := []
+		for i in mutationsArr
+			if %i.name%
+				selectedMutations.push(i)
+	}
+	msgbox selectedBees.length " " (selectedMutations ? selectedMutations.length : 0)
+	startGUI()
+}
+closeFunction(*) {
+	global xPos, yPos
+	try {
+		mgui.getPos(&xp, &yp)
+		if !(xp < 0) && !(xp > A_ScreenWidth) && !(yp < 0) && !(yp > A_ScreenHeight)
+			xPos := xp, yPos := yp
+		IniWrite(xpos, ".\settings\mutations.ini", "GUI", "xpos")
+		IniWrite(ypos, ".\settings\mutations.ini", "GUI", "ypos")
+	}
+}
+'
 )
 	exec := ComObject("WScript.shell").Exec('"' exe_path64 '" /script /force *')
 	exec.StdIn.Write(script), exec.StdIn.Close()
