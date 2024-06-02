@@ -2092,7 +2092,7 @@ nm_command(command)
 		switch params[2], 0
 		{
 			case "ready":
-			if ((params[3] = 1) || (params[3] = 2) || (params[3] = 3))
+			if ((params[3] = 1) || (params[3] = 2))
 			{
 				n := params[3]
 				Iniwrite 0, "settings\nm_config.ini", "Shrine", "LastShrine"
@@ -2100,10 +2100,10 @@ nm_command(command)
 				discord.SendEmbed("Readied Slot " n "!", 5066239, , , , id)
 			}
 			else
-				discord.SendEmbed((StrLen(params[3]) = 0) ? "You must specify a slot to make ready!" : ("Slot must be 1, 2, or 3!\nYou entered " params[3] "."), 16711731, , , , id)
+				discord.SendEmbed((StrLen(params[3]) = 0) ? "You must specify a slot to make ready!" : ("Slot must be 1 or 2!\nYou entered " params[3] "."), 16711731, , , , id)
 
 			case "clear":
-			if ((params[3] = 1) || (params[3] = 2) || (params[3] = 3))
+			if ((params[3] = 1) || (params[3] = 2))
 			{
 				n := params[3]
 				IniWrite "None", "settings\nm_config.ini", "Shrine", "ShrineItem" n
@@ -2119,7 +2119,7 @@ nm_command(command)
 				discord.SendEmbed("Cleared Slot " n "!", 5066239, , , , id)
 			}
 			else
-				discord.SendEmbed((StrLen(params[3]) = 0) ? "You must specify a slot to clear!" : ("Slot must be 1, 2, or 3!\nYou entered " params[3] "."), 16711731, , , , id)
+				discord.SendEmbed((StrLen(params[3]) = 0) ? "You must specify a slot to clear!" : ("Slot must be 1 or 2!\nYou entered " params[3] "."), 16711731, , , , id)
 
 			default:
 			ShrineRotTemp := (vars["ShrineRot"] = 2) ? 1 : 2, t := nowUnix(), duration := DurationFromSeconds(time := (vars["LastShrine"] + 3600 - t), (time > 0) ? (((time >= 86400) ? "d'd' h" : "") ((time >= 3600) ? "h'h' m" : "") ((time >= 60) ? "m'm' s" : "") "s's'") : "'Ready'")
