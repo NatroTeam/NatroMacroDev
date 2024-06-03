@@ -17574,6 +17574,8 @@ nm_searchForE(){
 	return success
 }
 nm_boostBypassCheck(){ ; always returns 0 for now: no field boost bypass implemented
+	return 0
+	/*
 	global LastBlueBoost, LastRedBoost, LastMountainBoost
 	static fieldBoosters := Map("Pine Tree", "blue"
 		, "Bamboo", "blue"
@@ -17601,6 +17603,7 @@ nm_boostBypassCheck(){ ; always returns 0 for now: no field boost bypass impleme
 			return 1
 	}
 	return 0
+	*/
 }
 nm_ViciousCheck(){
 	global VBState ;0=no VB, 1=searching for VB, 2=VB found
