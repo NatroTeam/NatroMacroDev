@@ -9551,7 +9551,8 @@ nm_ContributorsImage(page:=1, contributors:=""){
 		, hBM11, hBM12, hBM13, hBM14, hBM15, hBM16, hBM17, hBM18, hBM19, hBM20 ; 20 pages max
 		, colorArr := Map("blue", [0xff83c6e2, 0xff2779d8, 0xff83c6e2]
 			, "gold", [0xfff0ca8f, 0xffd48d22, 0xfff0ca8f]
-			, "red", [0xffA82428, 0xffA82428, 0xffA82428])
+			, "red", [0xffA82428, 0xffA82428, 0xffA82428]
+			, "interrobang", [0xff9992FE, 0xff5246FD, 0xff9992FE])
 	local pBM1, pBM2, pBM3, pBM4, pBM5, pBM6, pBM7, pBM8, pBM9, pBM10
 	, pBM11, pBM12, pBM13, pBM14, pBM15, pBM16, pBM17, pBM18, pBM19, pBM20 ; 20 pages max
 
