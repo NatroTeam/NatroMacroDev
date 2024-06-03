@@ -22538,6 +22538,7 @@ blc_mutations(*) {
 ;==================================
 pToken := Gdip_Startup()
 OnExit((*) =>( Gdip_Shutdown(pToken), closefunction(), ExitApp() ), -1)
+*esc::ExitApp()
 sendMode("event")
 getConfig() {
 	global
@@ -22623,7 +22624,16 @@ getConfig() {
 w:=500,h:=357
 ;===Bee Array===
 beeArr := ["Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley", "Shocked", "Baby", "Carpenter", "Demon", "Diamond", "Lion", "Music", "Ninja", "Shy", "Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
-mutationsArr := [{name: "Ability"}, {name: "Gather"}, {name: "Convert"}, {name: "Energy"}, {name:"Movespeed"}, {name: "Crit"}, {name: "Instant"}, {name: "Attack"}]
+mutationsArr := [
+	{name:"Ability", triggers:["rate", "abil", "ity"], full:"AbilityRate"},
+	{name:"Gather", triggers:["gath", "herAm"], full:"GatherAmount"},
+	{name:"Convert", triggers:["convert", "vertAm"], full:"ConvertAmount"},
+	{name:"Instant", triggers:["inst", "antConv"], full:"InstantConversion"},
+	{name:"Crit", triggers:["crit", "chance"], full:"CriticalChance"},
+	{name:"Attack", triggers:["attack", "att", "ack"], full:"Attack"},
+	{name:"Energy", triggers:["energy", "rgy"], full:"Energy"},
+	{name:"movespeed", triggers:["movespeed", "speed", "move"], full:"MoveSpeed"},
+]
 getConfig()
 (bitmaps := Map()).CaseSense:=0
 #Include %A_ScriptDir%\nm_image_assets\mutatorgui\bitmaps.ahk
@@ -22771,7 +22781,8 @@ ReplaceSystemCursors(IDC := "")
 	}
 }
 blc_start() {
-	global selectedBees := [], selectedMutations := 0
+	rld(*) => reload()
+	selectedBees := [], selectedMutations := []
 	for i in beeArr
 		if %i% || SelectAll
 			selectedBees.push(i)
@@ -22783,8 +22794,7 @@ blc_start() {
 	}
 	ocr_enabled := 1
 	ocr_language := ""
-	for k,v in Map("Windows.Globalization.Language","{9B0252AC-0C27-44F8-B792-9793FB66C63E}", "Windows.Graphics.Imaging.BitmapDecoder","{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", "Windows.Media.Ocr.OcrEngine","{5BFFA85A-3384-3540-9940-699120D428A8}")
-	{
+	for k,v in Map("Windows.Globalization.Language","{9B0252AC-0C27-44F8-B792-9793FB66C63E}", "Windows.Graphics.Imaging.BitmapDecoder","{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", "Windows.Media.Ocr.OcrEngine","{5BFFA85A-3384-3540-9940-699120D428A8}") {
 		CreateHString(k, &hString)
 		GUID := Buffer(16), DllCall("ole32\CLSIDFromString", "WStr", v, "Ptr", GUID)
 		result := DllCall("Combase.dll\RoGetActivationFactory", "Ptr", hString, "Ptr", GUID, "PtrP", &pClass:=0)
@@ -22798,44 +22808,64 @@ blc_start() {
 	if !(ocr_enabled) && mutations
 		msgbox "OCR is disabled. This means that the macro will not be able to detect mutations.",, 0x40010
 	list := ocr("ShowAvailableLanguages")
-	for lang in ["ko","en-"] ; priority list
-	{
-		Loop Parse list, "``n", "``r"
-		{
-			if (InStr(A_LoopField, lang) = 1)
-			{
-				ocr_language := A_LoopField
-				break 2
-			}
+	lang:="en-"
+	Loop Parse list, "``n", "``r" {
+		if (InStr(A_LoopField, lang) = 1) {
+			ocr_language := A_LoopField
+			break
 		}
 	}
 	if (ocr_language = "")
 		if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
 			return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
-	blc_roll()
-	startGUI()
-	blc_roll() {
-		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
-			return msgbox("Roblox needs to be open to run Auto-Jelly macro!", "ERROR", 0x40010)
-		if !selectedBees.length
-			return msgbox("You need to select at least one bee to run this macro!", "ERROR", 0x40010)
-		yOffset := GetYOffset(hwndRoblox, &fail)
-		if fail
-			msgbox "Unable to detect in-game GUI offset", "WARNING", 0x40040
-		loop {
-			found := 0
-			ActivateRoblox()
-			click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
-			sleep 1000
-			pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.45*windowHeight - 180 "|" 320 "|" 80)
-			for i, j in selectedBees {
-				if found := Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) * 2
+	if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
+		return msgbox("Roblox needs to be open to run Auto-Jelly macro!", "ERROR", 0x40010)
+	if !selectedBees.length
+		return msgbox("You need to select at least one bee to run this macro!", "ERROR", 0x40010)
+	yOffset := GetYOffset(hwndRoblox, &fail)
+	if fail
+		msgbox "Unable to detect in-game GUI offset", "WARNING", 0x40040
+	loop {
+		ActivateRoblox()
+		click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
+		sleep 1000
+		pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.45*windowHeight - 180 "|" 320 "|" 80)
+		found:=0
+		for i, j in selectedBees {
+			if found := Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) * 2 {
+				if (!mutations || !ocr_enabled || !selectedMutations.length) {
 					if msgbox("Bee found, wanna keep?",, 0x4) = "Yes"
 						break 2
+					else
+						continue 2
+				}
+				break
 			}
-
 		}
+		if !found
+			continue
+		Gdip_DisposeImage(pBitmap)
+		pBitmap := Gdip_BitmapFromScreen(windowX + Round(0.5 * windowWidth - 320) "|" windowY + yOffset + Round(0.4 * windowHeight + 17) "|210|90")
+		Gdip_setBitmapToClipboard(pBitmap)
+		pEffect := Gdip_CreateEffect(5, -60,30)
+		Gdip_BitmapApplyEffect(pBitmap, pEffect)
+		Gdip_DisposeEffect(pEffect)
+		hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmap)
+		pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
+		text:= RegExReplace(ocr(pIRandomAccessStream), "i)([\r\n\s]|mutation)*")
+		found := 0
+		for i, j in selectedMutations
+			for k, trigger in j.triggers
+				if inStr(text, trigger) {
+					found := 1
+					break
+				}
+		if !found
+			continue
+		if msgbox("selection found! Do you want to keep this?", "FOUND!", 0x40044) = "Yes"
+			break
 	}
+	startGUI()
 }
 closeFunction(*) {
 	global xPos, yPos
