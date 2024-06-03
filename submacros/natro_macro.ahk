@@ -22626,6 +22626,7 @@ mutationsArr := [{name: "Ability"}, {name: "Gather"}, {name: "Convert"}, {name: 
 getConfig()
 (bitmaps := Map()).CaseSense:=0
 #Include %A_ScriptDir%\nm_image_assets\mutatorgui\bitmaps.ahk
+#include %A_ScriptDir%\nm_image_assets\mutator\bitmaps.ahk
 startGui() {
 	global
 	(mgui := Gui("+E" (0x00080000 | 0x00000008 | 0x8000000) " +AlwaysOnTop +OwnDialogs -Caption")).OnEvent("Close", closefunction)
@@ -22699,7 +22700,12 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 		return
 	switch mgui[ctrl].name, 0 {
 		case "move":PostMessage(0x00A1,2)
-		case "close":PostMessage(0x0112,0xF060)
+		case "close":
+			while GetKeyState("LButton", "P")
+				sleep -1
+			mousegetpos ,,, &ctrl2, 2
+			if ctrl = ctrl2
+				PostMessage(0x0112,0xF060)
 		case "roll":PostMessage(0x0112, 0xF060), blc_start()
 		case "selectAll":
 			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
@@ -22773,6 +22779,37 @@ blc_start() {
 			if %i.name%
 				selectedMutations.push(i)
 	}
+	ocr_enabled := 1
+	ocr_language := ""
+	for k,v in Map("Windows.Globalization.Language","{9B0252AC-0C27-44F8-B792-9793FB66C63E}", "Windows.Graphics.Imaging.BitmapDecoder","{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", "Windows.Media.Ocr.OcrEngine","{5BFFA85A-3384-3540-9940-699120D428A8}")
+	{
+		CreateHString(k, &hString)
+		GUID := Buffer(16), DllCall("ole32\CLSIDFromString", "WStr", v, "Ptr", GUID)
+		result := DllCall("Combase.dll\RoGetActivationFactory", "Ptr", hString, "Ptr", GUID, "PtrP", &pClass:=0)
+		DeleteHString(hString)
+		if (result != 0)
+		{
+			ocr_enabled := 0
+			break
+		}
+	}
+	if !(ocr_enabled)
+		return(msgbox("OCR disabled. Make sure you`'re running Windows 10 or later",,0x40010), startGui())
+	list := ocr("ShowAvailableLanguages")
+	for lang in ["ko","en-"] ; priority list
+	{
+		Loop Parse list, "``n", "``r"
+		{
+			if (InStr(A_LoopField, lang) = 1)
+			{
+				ocr_language := A_LoopField
+				break 2
+			}
+		}
+	}
+	if (ocr_language = "")
+		if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
+			msgbox "No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030
 	blc_roll()
 	startGUI()
 	blc_roll() {
@@ -22783,6 +22820,10 @@ blc_start() {
 		yOffset := GetYOffset(hwndRoblox, &fail)
 		if fail
 			msgbox "Unable to detect in-game GUI offset", "WARNING", 0x40040
+		found := skip := 0
+		While (!found && !skip) {
+			found := ++skip
+		}
 	}
 }
 closeFunction(*) {
