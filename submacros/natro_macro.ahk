@@ -22538,6 +22538,7 @@ blc_mutations(*) {
 ;==================================
 pToken := Gdip_Startup()
 OnExit((*) =>( Gdip_Shutdown(pToken), closefunction(), ExitApp() ), -1)
+sendMode("event")
 getConfig() {
 	global
 	local k, v, p, c, i, section, key, value, inipath, config, f, ini
@@ -22627,6 +22628,7 @@ getConfig()
 (bitmaps := Map()).CaseSense:=0
 #Include %A_ScriptDir%\nm_image_assets\mutatorgui\bitmaps.ahk
 #include %A_ScriptDir%\nm_image_assets\mutator\bitmaps.ahk
+#include %A_ScriptDir%\nm_image_assets\offset\bitmaps.ahk
 startGui() {
 	global
 	(mgui := Gui("+E" (0x00080000 | 0x00000008 | 0x8000000) " +AlwaysOnTop +OwnDialogs -Caption")).OnEvent("Close", closefunction)
@@ -22793,8 +22795,8 @@ blc_start() {
 			break
 		}
 	}
-	if !(ocr_enabled)
-		return(msgbox("OCR disabled. Make sure you`'re running Windows 10 or later",,0x40010), startGui())
+	if !(ocr_enabled) && mutations
+		msgbox "OCR is disabled. This means that the macro will not be able to detect mutations.",, 0x40010
 	list := ocr("ShowAvailableLanguages")
 	for lang in ["ko","en-"] ; priority list
 	{
@@ -22809,20 +22811,29 @@ blc_start() {
 	}
 	if (ocr_language = "")
 		if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
-			msgbox "No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030
+			return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
 	blc_roll()
 	startGUI()
 	blc_roll() {
-		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowW)
+		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
 			return msgbox("Roblox needs to be open to run Auto-Jelly macro!", "ERROR", 0x40010)
 		if !selectedBees.length
 			return msgbox("You need to select at least one bee to run this macro!", "ERROR", 0x40010)
 		yOffset := GetYOffset(hwndRoblox, &fail)
 		if fail
 			msgbox "Unable to detect in-game GUI offset", "WARNING", 0x40040
-		found := skip := 0
-		While (!found && !skip) {
-			found := ++skip
+		loop {
+			found := 0
+			ActivateRoblox()
+			click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
+			sleep 1000
+			pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.45*windowHeight - 180 "|" 320 "|" 80)
+			for i, j in selectedBees {
+				if found := Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) * 2
+					if msgbox("Bee found, wanna keep?",, 0x4) = "Yes"
+						break 2
+			}
+
 		}
 	}
 }
