@@ -1,28 +1,32 @@
-﻿if (MoveMethod = "walk")
+if (MoveMethod = "walk")
 {
 	nm_gotoramp()
 	nm_Walk(44.75, BackKey, LeftKey) ; 47.25
-	nm_Walk(42.5, LeftKey)
-	nm_Walk(8.5, BackKey)
-	nm_Walk(22.5, LeftKey)
+	nm_Walk(28, LeftKey)
+	nm_Walk(10, BackKey)
+	nm_Walk(6, LeftKey)
+	nm_Walk(12, BackKey, LeftKey) ;corner align
+	nm_Walk(1.5, RightKey)
+	nm_Walk(12.2, FwdKey)
+	nm_Walk(12.5, LeftKey) ; ladder 1
+	nm_Walk(1.5, RightKey, BackKey)
+	nm_Walk(15, BackKey)
+	nm_Walk(7.5, LeftKey) ;corner align 2
+	nm_Walk(1.75, RightKey)
+	nm_Walk(4, FwdKey)
+	nm_Walk(22.5, LeftKey) ; ladder 2
 	send "{" RotLeft " 2}"
 	nm_Walk(40, FwdKey)
-	nm_Walk(3, BackKey)
+	nm_Walk(1, BackKey)
 	nm_Walk(7, RightKey) ; 2.25
-	send "{" FwdKey " down}"
-	Walk(3)
-	send "{space down}"
+	send "{" FwdKey " down}{space down}"
 	HyperSleep(100)
 	send "{space up}"
-	Walk(5)
+	HyperSleep(500)
 	send "{" FwdKey " up}"
+	nm_Walk(5, FwdKey)
 	nm_Walk(5, LeftKey)
-	nm_Walk(4, FwdKey)
-	nm_Walk(4, RightKey)
-	nm_Walk(10, FwdKey)
-	nm_Walk(4, BackKey)
-	nm_Walk(3, LeftKey)	
-	send "{" RotRight " 2}"
+	nm_Walk(15, FwdKey)
 }
 else
 {
