@@ -22538,7 +22538,9 @@ blc_mutations(*) {
 ;==================================
 pToken := Gdip_Startup()
 OnExit((*) =>( Gdip_Shutdown(pToken), closefunction(), ExitApp() ), -1)
-*esc::ExitApp()
+*esc:: {
+	global stopping := true
+}
 sendMode("event")
 getConfig() {
 	global
@@ -22641,7 +22643,8 @@ getConfig()
 #include %A_ScriptDir%\nm_image_assets\offset\bitmaps.ahk
 startGui() {
 	global
-	(mgui := Gui("+E" (0x00080000 | 0x00000008 | 0x8000000) " +AlwaysOnTop +OwnDialogs -Caption")).OnEvent("Close", closefunction)
+	local i,j,y,hBM
+	(mgui := Gui("+E" (0x00080000) " +OwnDialogs -Caption")).OnEvent("Close", closefunction)
 	mgui.Show("NA")
 	for i, j in [
 		{name:"move", options:"x0 y0 w" w " h36"},
@@ -22711,7 +22714,7 @@ DrawGUI() {
 	if hovercontrol = "help"
 		Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0x30FEC6DF"), w-40, h-42, 30, 30, 10), Gdip_DeleteBrush(brush)
 	Gdip_TextToGraphics(G, "Roll!", "x10 y" h-40 " Center vCenter s15 c" (brush:=Gdip_BrushCreateSolid("0xFFFEC6DF")),"Comic Sans MS",w-56, 28)
-	Gdip_TextToGraphics(G, "?", "x" w-40 " y" h-40 " Center vCenter s15 c" brush,"Comic Sans MS",30, 28), Gdip_DeleteBrush(brush)
+	Gdip_TextToGraphics(G, "?", "x" w-39 " y" h-40 " Center vCenter s15 c" brush,"Comic Sans MS",30, 28), Gdip_DeleteBrush(brush)
 	Gdip_DrawRoundedRectanglePath(G, pen:=Gdip_CreatePen("0xFFFEC6DF", 4), 10, h-42, w-56, 30, 10)
 	Gdip_DrawRoundedRectanglePath(G, pen, w-40, h-42, 30, 30, 10), Gdip_DeletePen(pen)
 	update()
@@ -22793,6 +22796,7 @@ ReplaceSystemCursors(IDC := "")
 	}
 }
 blc_start() {
+	global stopping:=false
 	selectedBees := [], selectedMutations := []
 	for i in beeArr
 		if %i% || SelectAll
@@ -22837,8 +22841,8 @@ blc_start() {
 	if fail	
 		MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
 	if mgui is Gui
-		PostMessage(0x0112,0xF060,,mgui)
-	loop {
+		mgui.hide()
+	While !stopping {
 		ActivateRoblox()
 		click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
 		sleep 1000
@@ -22878,7 +22882,7 @@ blc_start() {
 		if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
 			break
 	}
-	startGUI()
+	mgui.show()
 }
 closeFunction(*) {
 	global xPos, yPos
