@@ -22538,6 +22538,7 @@ blc_mutations(*) {
 ;==================================
 pToken := Gdip_Startup()
 OnExit((*) =>( Gdip_Shutdown(pToken), closefunction(), ExitApp() ), -1)
+OnError (e, mode) => (mode = "Return") ? -1 : 0
 *esc:: {
 	global stopping := true
 }
@@ -22725,15 +22726,20 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 	if !ctrl
 		return
 	switch mgui[ctrl].name, 0 {
-		case "move":PostMessage(0x00A1,2)
+		case "move":
+			PostMessage(0x00A1,2)
 		case "close":
 			while GetKeyState("LButton", "P")
 				sleep -1
 			mousegetpos ,,, &ctrl2, 2
 			if ctrl = ctrl2
 				PostMessage(0x0112,0xF060)
-		case "roll":blc_start()
-		case "help":Msgbox("Auto-Jelly help``n``n- Select the bees and mutations you want``n- put a neonberry on the bee you want to change``n- make sure your in-game Auto-Jelly settings are right``n- use one royal jelly on the bee and click yes.``n``nThen click on Roll.``nTo stop press the escape key", "Auto-Jelly", "0x40040")
+		case "roll":
+			ReplaceSystemCursors()
+			blc_start()
+		case "help":
+			ReplaceSystemCursors()	
+			Msgbox("Auto-Jelly help``n``n- Select the bees and mutations you want``n- put a neonberry on the bee you want to change``n- make sure your in-game Auto-Jelly settings are right``n- use one royal jelly on the bee and click yes.``n``nThen click on Roll.``nTo stop press the escape key", "Auto-Jelly", "0x40040")
 		case "selectAll":
 			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
 		case "Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley":
