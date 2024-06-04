@@ -22643,7 +22643,14 @@ startGui() {
 	global
 	(mgui := Gui("+E" (0x00080000 | 0x00000008 | 0x8000000) " +AlwaysOnTop +OwnDialogs -Caption")).OnEvent("Close", closefunction)
 	mgui.Show("NA")
-	for i, j in [{name:"move", options:"x0 y0 w" w " h36"}, {name:"selectall", options:"x" w-330 " y220 w40 h18"}, {name:"mutations", options:"x" w-170 " y220 w40 h18"}, {name:"close", options:"x" w-40 " y5 w28 h28"}, {name:"roll", options:"x10 y" h-42 " w" w-20 " h30"}]
+	for i, j in [
+		{name:"move", options:"x0 y0 w" w " h36"},
+		{name:"selectall", options:"x" w-330 " y220 w40 h18"}, 
+		{name:"mutations", options:"x" w-170 " y220 w40 h18"}, 
+		{name:"close", options:"x" w-40 " y5 w28 h28"}, 
+		{name:"roll", options:"x10 y" h-42 " w" w-56 " h30"},
+		{name:"help", options:"x" w-40 " y" h-42 " w28 h28"}
+	]
 		mgui.AddText("v" j.name " " j.options)
 	for i, j in beeArr {
 		y := (A_Index-1)//8*1
@@ -22700,9 +22707,13 @@ DrawGUI() {
 	if !mutations
 		Gdip_FillRectangle(G, brush:=Gdip_BrushCreateSolid("0x70131416"), 9, 255, w-18, h-268), Gdip_DeleteBrush(brush)
 	if hovercontrol = "roll"
-		Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0x30FEC6DF"), 10, h-42, w-20, 30, 10), Gdip_DeleteBrush(brush)
-	Gdip_TextToGraphics(G, "Roll!", "x10 y" h-40 " Center vCenter s15 c" (brush:=Gdip_BrushCreateSolid("0xFFFEC6DF")),"Comic Sans MS",w-20, 28), Gdip_DeleteBrush(brush)
-	Gdip_DrawRoundedRectanglePath(G, pen:=Gdip_CreatePen("0xFFFEC6DF", 4), 10, h-42, w-20, 30, 10), Gdip_DeletePen(pen)
+		Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0x30FEC6DF"), 10, h-42, w-56, 30, 10), Gdip_DeleteBrush(brush)
+	if hovercontrol = "help"
+		Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0x30FEC6DF"), w-40, h-42, 30, 30, 10), Gdip_DeleteBrush(brush)
+	Gdip_TextToGraphics(G, "Roll!", "x10 y" h-40 " Center vCenter s15 c" (brush:=Gdip_BrushCreateSolid("0xFFFEC6DF")),"Comic Sans MS",w-56, 28)
+	Gdip_TextToGraphics(G, "?", "x" w-40 " y" h-40 " Center vCenter s15 c" brush,"Comic Sans MS",30, 28), Gdip_DeleteBrush(brush)
+	Gdip_DrawRoundedRectanglePath(G, pen:=Gdip_CreatePen("0xFFFEC6DF", 4), 10, h-42, w-56, 30, 10)
+	Gdip_DrawRoundedRectanglePath(G, pen, w-40, h-42, 30, 30, 10), Gdip_DeletePen(pen)
 	update()
 }
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
@@ -22718,7 +22729,8 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 			mousegetpos ,,, &ctrl2, 2
 			if ctrl = ctrl2
 				PostMessage(0x0112,0xF060)
-		case "roll":PostMessage(0x0112, 0xF060), blc_start()
+		case "roll":blc_start()
+		case "help":Msgbox("Auto-Jelly help``n``n- Select the bees and mutations you want``n- put a neonberry on the bee you want to change``n- make sure your in-game Auto-Jelly settings are right``n- use one royal jelly on the bee and click yes.``n``nThen click on Roll.``nTo stop press the escape key", "Auto-Jelly", "0x40040")
 		case "selectAll":
 			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
 		case "Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley":
@@ -22781,7 +22793,6 @@ ReplaceSystemCursors(IDC := "")
 	}
 }
 blc_start() {
-	rld(*) => reload()
 	selectedBees := [], selectedMutations := []
 	for i in beeArr
 		if %i% || SelectAll
@@ -22815,16 +22826,18 @@ blc_start() {
 			break
 		}
 	}
-	if (ocr_language = "")
+	if (ocr_language = "" && ocr_enabled)
 		if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
 			return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
 	if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
-		return msgbox("Roblox needs to be open to run Auto-Jelly macro!", "ERROR", 0x40010)
+		return msgbox("You must have Bee Swarm Simulator open to use this!", "Auto-Jelly", 0x40030)
 	if !selectedBees.length
-		return msgbox("You need to select at least one bee to run this macro!", "ERROR", 0x40010)
+		return msgbox("You must select at least one bee to run this macro!", "Auto-Jelly", 0x40030)
 	yOffset := GetYOffset(hwndRoblox, &fail)
-	if fail
-		msgbox "Unable to detect in-game GUI offset", "WARNING", 0x40040
+	if fail	
+		MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
+	if mgui is Gui
+		PostMessage(0x0112,0xF060,,mgui)
 	loop {
 		ActivateRoblox()
 		click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
@@ -22834,7 +22847,7 @@ blc_start() {
 		for i, j in selectedBees {
 			if found := Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) * 2 {
 				if (!mutations || !ocr_enabled || !selectedMutations.length) {
-					if msgbox("Bee found, wanna keep?",, 0x4) = "Yes"
+					if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
 						break 2
 					else
 						continue 2
@@ -22862,13 +22875,14 @@ blc_start() {
 				}
 		if !found
 			continue
-		if msgbox("selection found! Do you want to keep this?", "FOUND!", 0x40044) = "Yes"
+		if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
 			break
 	}
 	startGUI()
 }
 closeFunction(*) {
 	global xPos, yPos
+	ReplaceSystemCursors()
 	try {
 		mgui.getPos(&xp, &yp)
 		if !(xp < 0) && !(xp > A_ScreenWidth) && !(yp < 0) && !(yp > A_ScreenHeight)
