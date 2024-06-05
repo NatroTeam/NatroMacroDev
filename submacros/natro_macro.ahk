@@ -22539,7 +22539,7 @@ blc_mutations(*) {
 pToken := Gdip_Startup()
 OnExit((*) =>( Gdip_Shutdown(pToken), closefunction(), ExitApp() ), -1)
 OnError (e, mode) => (mode = "Return") ? -1 : 0
-*esc:: {
+stopToggle(*) {
 	global stopping := true
 }
 sendMode("event")
@@ -22598,6 +22598,10 @@ getConfig() {
 		GUI : {
 			xPos: A_ScreenWidth//2-w//2,
 			yPos: A_ScreenHeight//2-h//2
+		},
+		extrasettings: {
+			mythicStop: 0,
+			giftedStop: 0
 		}
 	}
 	for i, section in config.OwnProps()
@@ -22624,7 +22628,7 @@ getConfig() {
 	(f:=FileOpen(inipath, "w")).Write(ini), f.Close()
 }
 ;===Dimensions===
-w:=500,h:=357
+w:=500,h:=397
 ;===Bee Array===
 beeArr := ["Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley", "Shocked", "Baby", "Carpenter", "Demon", "Diamond", "Lion", "Music", "Ninja", "Shy", "Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
 mutationsArr := [
@@ -22635,7 +22639,11 @@ mutationsArr := [
 	{name:"Crit", triggers:["crit", "chance"], full:"CriticalChance"},
 	{name:"Attack", triggers:["attack", "att", "ack"], full:"Attack"},
 	{name:"Energy", triggers:["energy", "rgy"], full:"Energy"},
-	{name:"movespeed", triggers:["movespeed", "speed", "move"], full:"MoveSpeed"},
+	{name:"Movespeed", triggers:["movespeed", "speed", "move"], full:"MoveSpeed"},
+]
+extrasettings:=[
+	{name:"mythicStop", text: "Stop on mythics"},
+	{name:"giftedStop", text: "Stop on gifteds"}
 ]
 getConfig()
 (bitmaps := Map()).CaseSense:=0
@@ -22644,7 +22652,7 @@ getConfig()
 #include %A_ScriptDir%\nm_image_assets\offset\bitmaps.ahk
 startGui() {
 	global
-	local i,j,y,hBM
+	local i,j,y,hBM,x
 	(mgui := Gui("+E" (0x00080000) " +OwnDialogs -Caption")).OnEvent("Close", closefunction)
 	mgui.Show("NA")
 	for i, j in [
@@ -22663,6 +22671,10 @@ startGui() {
 	for i, j in mutationsArr {
 		y := (A_Index-1)//4*1
 		mgui.AddText("v" j.name " x" 10+mod(A_Index-1,4)*120 " y" 260+y*25 " w40 h18")
+	}
+	for i, j in extrasettings {
+		x := 10 + (w-12)/extrasettings.length * (i-1), y:=(316+h-42)//2-10
+		mgui.AddText("v" j.name " x" x " y" y " w40 h18")
 	}
 	hBM := CreateDIBSection(w, h)
 	hDC := CreateCompatibleDC()
@@ -22697,19 +22709,55 @@ DrawGUI() {
 	}
 	;===Switches===
 	Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid("0xFF" . 13*2 . 14*2 . 16*2), w-330, 220, 40, 18, 9), Gdip_DeleteBrush(brush)
-	Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), selectAll ? w-310 : w-330, 218, 22, 22)
+	Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), selectAll ? w-310 : w-332, 218, 22, 22)
 	Gdip_TextToGraphics(G, "Select All Bees", "s14 x" w-284 " y220 Near vCenter c" brush, "Comic Sans MS",, 20), Gdip_DeleteBrush(brush)
+	if !SelectAll {
+		Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF" . 13*2 . 14*2 . 16*2), w-330, 220, 18, 18), Gdip_DeleteBrush(brush)
+		Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[w-325, 225], [w-317, 233]])
+		Gdip_DrawLines(G, Pen								  , [[w-325, 233], [w-317, 225]]), Gdip_DeletePen(Pen)
+	}
+	else
+		Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[w-303, 229], [w-300, 232], [w-295, 225]]), Gdip_DeletePen(Pen)
 	Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid("0xFF" . 13*2 . 14*2 . 16*2), w-170, 220, 40, 18, 9), Gdip_DeleteBrush(brush)
-	Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), mutations ? w-150 : w-170, 218, 22, 22), Gdip_DeleteBrush(brush)
-	Gdip_TextToGraphics(G, "Mutations", "s14 x" w-124 " y220 Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS",, 20), Gdip_DeleteBrush(brush)
+	Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), mutations ? w-150 : w-172, 218, 22, 22)
+	Gdip_TextToGraphics(G, "Mutations", "s14 x" w-124 " y220 Near vCenter c" (brush), "Comic Sans MS",, 20), Gdip_DeleteBrush(brush)
+	if !mutations {
+		Gdip_FillEllipse(G, brush:= Gdip_BrushCreateSolid("0xFF" . 13*2 . 14*2 . 16*2), w-170, 220, 18, 18), Gdip_DeleteBrush(brush)
+		Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[w-165, 225], [w-157, 233]])
+		Gdip_DrawLines(G, Pen								  , [[w-165, 233], [w-157, 225]]), Gdip_DeletePen(Pen)
+	}
+	else
+		Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[w-143, 229], [w-140, 232], [w-135, 225]]), Gdip_DeletePen(Pen)
 	For i, j in mutationsArr {
 		y := (A_Index-1)//4
 		Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid("0xFF" . 13*2 . 14*2 . 16*2), 10+mod(A_Index-1,4)*120, 260+y*25, 40, 18, 9), Gdip_DeleteBrush(brush)
-		Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), (%j.name% ? 3 : 1) * 10+mod(A_Index-1,4)*120, 258+y*25, 22, 22), Gdip_DeleteBrush(brush)
-		Gdip_TextToGraphics(G, j.name, "s12 x" 56+mod(A_Index-1,4)*120 " y" 260+y*25 " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 100, 20)
+		Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), (%j.name% ? 3.2 : 1) * 10+mod(A_Index-1,4)*120, 258+y*25, 22, 22), Gdip_DeleteBrush(brush)
+		Gdip_TextToGraphics(G, j.name, "s13 x" 56+mod(A_Index-1,4)*120 " y" 260+y*25 " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 100, 20), Gdip_DeleteBrush(brush)
+		if !%j.name% {
+			Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), x:=10+mod(A_Index-1,4)*120+2, yp:=258+y*25+2, 18, 18), Gdip_DeleteBrush(brush)
+			Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[x+5, yp+5 ], [x+13, yp+13]])
+			Gdip_DrawLines(G, Pen								  , [[x+5, yp+13], [x+13, yp+5 ]]), Gdip_DeletePen(Pen)
+		}
+		else
+			Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[x:=39+mod(A_Index-1,4)*120, yp:=269+y*25], [x+3, yp+3], [x+8, yp-4]]), Gdip_DeletePen(Pen)
 	}
 	if !mutations
-		Gdip_FillRectangle(G, brush:=Gdip_BrushCreateSolid("0x70131416"), 9, 255, w-18, h-268), Gdip_DeleteBrush(brush)
+		Gdip_FillRectangle(G, brush:=Gdip_BrushCreateSolid("0x70131416"), 9, 255, w-18, 52), Gdip_DeleteBrush(brush)
+	Gdip_DrawLine(G, Pen:=Gdip_CreatePen("0xFFFEC6DF", 2), 10, 315, w-12, 315), Gdip_DeletePen(Pen)
+	;two more switches for "stop on mythic" and "stop on gifted"
+	for i, j in extrasettings {
+		x := 10 + (tw:=(w-12)/extrasettings.length) * (i-1), y:=(316+h-42)//2-10
+		Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), x, y, 40, 18, 9), Gdip_DeleteBrush(brush), Gdip_DeleteBrush(brush)
+		Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), %j.name% ? x+18 : x-2, y-2, 22, 22)
+		Gdip_TextToGraphics(G, j.text, "s14 x" x+46 " y" y " vCenter c" brush, "Comic Sans MS", tw,20), Gdip_DeleteBrush(brush)
+		if !%j.name% {
+			Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), x, y, 18, 18), Gdip_deleteBrush(brush)
+			Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[x+5, y+5 ], [x+13, y+13]])
+			Gdip_DrawLines(G, Pen								  , [[x+5, y+13], [x+13, y+5 ]]), Gdip_DeletePen(Pen)
+		}
+		else
+			Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[x+25, y+9], [x+28, y+12], [x+33, y+5]]), Gdip_DeletePen(Pen)
+	}
 	if hovercontrol = "roll"
 		Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0x30FEC6DF"), 10, h-42, w-56, 30, 10), Gdip_DeleteBrush(brush)
 	if hovercontrol = "help"
@@ -22721,7 +22769,11 @@ DrawGUI() {
 	update()
 }
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
-	global hovercontrol, mutations, Bomber, Brave, Bumble, Cool, Hasty, Looker, Rad, Rascal, Stubborn, Bubble, Bucko, Commander, Demo, Exhausted, Fire, Frosty, Honey, Rage, Riley, Shocked, Baby, Carpenter, Demon, Diamond, Lion, Music, Ninja, Shy, Buoyant, Fuzzy, Precise, Spicy, Tadpole, Vector, SelectAll, Ability, Gather, Convert, Energy, Movespeed, Crit, Instant, Attack
+	global hovercontrol, mutations, Bomber, Brave, Bumble, Cool, Hasty, Looker, Rad, Rascal
+	global Stubborn, Bubble, Bucko, Commander, Demo, Exhausted, Fire, Frosty, Honey, Rage
+	global Riley, Shocked, Baby, Carpenter, Demon, Diamond, Lion, Music, Ninja, Shy, Buoyant
+	global Fuzzy, Precise, Spicy, Tadpole, Vector, SelectAll, Ability, Gather, Convert, Energy
+	global Movespeed, Crit, Instant, Attack, mythicStop, giftedStop
 	MouseGetPos(,,,&ctrl,2)
 	if !ctrl
 		return
@@ -22748,6 +22800,8 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 		case "Shocked", "Baby", "Carpenter", "Demon", "Diamond", "Lion", "Music", "Ninja", "Shy", "Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector":
 			if !selectAll
 				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
+		case "giftedStop", "mythicStop":
+			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "extrasettings", mgui[ctrl].name)
 		case "mutations":
 			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "mutations", mgui[ctrl].name)
 		default:
@@ -22803,6 +22857,7 @@ ReplaceSystemCursors(IDC := "")
 }
 blc_start() {
 	global stopping:=false
+	hotkey "~*esc", stopToggle, "On"
 	selectedBees := [], selectedMutations := []
 	for i in beeArr
 		if %i% || SelectAll
@@ -22854,9 +22909,21 @@ blc_start() {
 		sleep 1000
 		pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.45*windowHeight - 180 "|" 320 "|" 80)
 		found:=0
+		if mythicStop
+			for i, j in ["Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
+				if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
+					Gdip_DisposeImage(pBitmap)
+					msgbox "Found a myhic bee!", "Auto-Jelly", 0x40040
+					break 2
+				}
+		if giftedStop && Gdip_ImageSearch(pBitmap, bitmaps["giftedstar"]) {
+			Gdip_DisposeImage(pBitmap)
+			break
+		}
 		for i, j in selectedBees {
 			if found := Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) * 2 {
 				if (!mutations || !ocr_enabled || !selectedMutations.length) {
+					Gdip_DisposeImage(pBitmap)
 					if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
 						break 2
 					else
@@ -22865,9 +22932,9 @@ blc_start() {
 				break
 			}
 		}
+		Gdip_DisposeImage(pBitmap)
 		if !found
 			continue
-		Gdip_DisposeImage(pBitmap)
 		pBitmap := Gdip_BitmapFromScreen(windowX + Round(0.5 * windowWidth - 320) "|" windowY + yOffset + Round(0.4 * windowHeight + 17) "|210|90")
 		Gdip_setBitmapToClipboard(pBitmap)
 		pEffect := Gdip_CreateEffect(5, -60,30)
@@ -22888,6 +22955,7 @@ blc_start() {
 		if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
 			break
 	}
+	hotkey "~*esc", stopToggle, "Off"
 	mgui.show()
 }
 closeFunction(*) {
