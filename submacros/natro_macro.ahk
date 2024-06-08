@@ -22908,7 +22908,6 @@ blc_start() {
 		click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
 		sleep 1000
 		pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.45*windowHeight - 180 "|" 320 "|" 80)
-		found:=0
 		if mythicStop
 			for i, j in ["Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
 				if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
@@ -22916,12 +22915,16 @@ blc_start() {
 					msgbox "Found a myhic bee!", "Auto-Jelly", 0x40040
 					break 2
 				}
-		if giftedStop && Gdip_ImageSearch(pBitmap, bitmaps["giftedstar"]) {
-			Gdip_DisposeImage(pBitmap)
-			break
-		}
+		if giftedStop
+			for i, j in beeArr {
+				if Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
+					Gdip_DisposeImage(pBitmap)
+					msgbox "Found a gifted bee!", "Auto-Jelly", 0x40040
+					break 2	
+				}	
+			}
 		for i, j in selectedBees {
-			if found := Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) * 2 {
+			if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
 				if (!mutations || !ocr_enabled || !selectedMutations.length) {
 					Gdip_DisposeImage(pBitmap)
 					if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
