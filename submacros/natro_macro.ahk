@@ -22731,15 +22731,15 @@ DrawGUI() {
 	For i, j in mutationsArr {
 		y := (A_Index-1)//4
 		Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid("0xFF" . 13*2 . 14*2 . 16*2), 10+mod(A_Index-1,4)*120, 260+y*25, 40, 18, 9), Gdip_DeleteBrush(brush)
-		Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), (%j.name% ? 3.2 : 1) * 10+mod(A_Index-1,4)*120, 258+y*25, 22, 22), Gdip_DeleteBrush(brush)
+		Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), (%j.name% ? 3.2 : 1) * 8+mod(A_Index-1,4)*120, 258+y*25, 22, 22), Gdip_DeleteBrush(brush)
 		Gdip_TextToGraphics(G, j.name, "s13 x" 56+mod(A_Index-1,4)*120 " y" 260+y*25 " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 100, 20), Gdip_DeleteBrush(brush)
 		if !%j.name% {
-			Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), x:=10+mod(A_Index-1,4)*120+2, yp:=258+y*25+2, 18, 18), Gdip_DeleteBrush(brush)
+			Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), x:=10+mod(A_Index-1,4)*120, yp:=258+y*25+2, 18, 18), Gdip_DeleteBrush(brush)
 			Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[x+5, yp+5 ], [x+13, yp+13]])
 			Gdip_DrawLines(G, Pen								  , [[x+5, yp+13], [x+13, yp+5 ]]), Gdip_DeletePen(Pen)
 		}
 		else
-			Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[x:=39+mod(A_Index-1,4)*120, yp:=269+y*25], [x+3, yp+3], [x+8, yp-4]]), Gdip_DeletePen(Pen)
+			Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[x:=32.6+mod(A_Index-1,4)*120, yp:=269+y*25], [x+3, yp+3], [x+8, yp-4]]), Gdip_DeletePen(Pen)
 	}
 	if !mutations
 		Gdip_FillRectangle(G, brush:=Gdip_BrushCreateSolid("0x70131416"), 9, 255, w-18, 52), Gdip_DeleteBrush(brush)
@@ -22770,10 +22770,10 @@ DrawGUI() {
 }
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 	global hovercontrol, mutations, Bomber, Brave, Bumble, Cool, Hasty, Looker, Rad, Rascal
-	global Stubborn, Bubble, Bucko, Commander, Demo, Exhausted, Fire, Frosty, Honey, Rage
-	global Riley, Shocked, Baby, Carpenter, Demon, Diamond, Lion, Music, Ninja, Shy, Buoyant
-	global Fuzzy, Precise, Spicy, Tadpole, Vector, SelectAll, Ability, Gather, Convert, Energy
-	global Movespeed, Crit, Instant, Attack, mythicStop, giftedStop
+	, Stubborn, Bubble, Bucko, Commander, Demo, Exhausted, Fire, Frosty, Honey, Rage
+	, Riley, Shocked, Baby, Carpenter, Demon, Diamond, Lion, Music, Ninja, Shy, Buoyant
+	, Fuzzy, Precise, Spicy, Tadpole, Vector, SelectAll, Ability, Gather, Convert, Energy
+	, Movespeed, Crit, Instant, Attack, mythicStop, giftedStop
 	MouseGetPos(,,,&ctrl,2)
 	if !ctrl
 		return
@@ -22791,7 +22791,7 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 			blc_start()
 		case "help":
 			ReplaceSystemCursors()	
-			Msgbox("Auto-Jelly help``n``n- Select the bees and mutations you want``n- put a neonberry on the bee you want to change``n- make sure your in-game Auto-Jelly settings are right``n- use one royal jelly on the bee and click yes.``n``nThen click on Roll.``nTo stop press the escape key", "Auto-Jelly", "0x40040")
+			Msgbox("- Select the bees and mutations you want``n- put a neonberry on the bee you want to change``n- make sure your in-game Auto-Jelly settings are right``n- use one royal jelly on the bee and click yes.``n``nThen click on Roll.``nTo stop press the escape key``n``nStops:``n- GiftedStop stops on any gifted bee ignoring the``n  mutation and your bee selection``n- MythicStop stops on any gifted bee ignoring the``n  mutation and your bee selection", "Auto-Jelly Help", "0x40040")
 		case "selectAll":
 			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
 		case "Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley":
@@ -22906,18 +22906,22 @@ blc_start() {
 	While !stopping {
 		ActivateRoblox()
 		click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
-		sleep 1000
+		sleep 800
 		pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.45*windowHeight - 180 "|" 320 "|" 80)
+		Gdip_SaveBitmapToFile(pBitmap, "img.temp.png")
 		found:=0
-		if mythicStop
-			for i, j in ["Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
+		if mythicStop {
+			for i, j in ["Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"] {
 				if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
 					Gdip_DisposeImage(pBitmap)
 					msgbox "Found a myhic bee!", "Auto-Jelly", 0x40040
 					break 2
 				}
-		if giftedStop && Gdip_ImageSearch(pBitmap, bitmaps["giftedstar"]) {
+			}
+		}
+		if giftedStop && (n:=Gdip_ImageSearch(pBitmap, bitmaps["giftedstar"])) {
 			Gdip_DisposeImage(pBitmap)
+			msgbox "Found a gifted bee!", "Auto-Jelly", 0x40040
 			break
 		}
 		for i, j in selectedBees {
@@ -22946,7 +22950,7 @@ blc_start() {
 		found := 0
 		for i, j in selectedMutations
 			for k, trigger in j.triggers
-				if inStr(text, trigger) {
+				if inStr(text, trigger) { 
 					found := 1
 					break
 				}
