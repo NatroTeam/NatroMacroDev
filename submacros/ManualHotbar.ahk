@@ -163,13 +163,13 @@ ManualHotbar.Add("CheckBox", "xp+75 y0 w13 h13 vManualHotbarArmed5 Checked" Manu
 ManualHotbar.Add("CheckBox", "xp+75 y0 w13 h13 vManualHotbarArmed6 Checked" ManualHotbarArmed6).OnEvent("Click", nm_armManualHotbar)
 ManualHotbar.Add("CheckBox", "xp+75 y0 w13 h13 vManualHotbarArmed7 Checked" ManualHotbarArmed7).OnEvent("Click", nm_armManualHotbar)
 ManualHotbar.SetFont("w700")
-ManualHotbar.Add("Edit", "x60 y0 w58 h15 vManualHotbarTimer1 Number Limit7 Center Disabled " (ManualHotbarArmed1 = 0 ? "Hidden" : ""), ManualHotbarTimer1 || 0).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer2 Number Limit7 Center Disabled " (ManualHotbarArmed2 = 0 ? "Hidden" : ""), ManualHotbarTimer2 || 0).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer3 Number Limit7 Center Disabled " (ManualHotbarArmed3 = 0 ? "Hidden" : ""), ManualHotbarTimer3 || 0).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer4 Number Limit7 Center Disabled " (ManualHotbarArmed4 = 0 ? "Hidden" : ""), ManualHotbarTimer4 || 0).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer5 Number Limit7 Center Disabled " (ManualHotbarArmed5 = 0 ? "Hidden" : ""), ManualHotbarTimer5 || 0).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer6 Number Limit7 Center Disabled " (ManualHotbarArmed6 = 0 ? "Hidden" : ""), ManualHotbarTimer6 || 0).OnEvent("Change", nm_saveManualHotbar)
-ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer7 Number Limit7 Center Disabled " (ManualHotbarArmed7 = 0 ? "Hidden" : ""), ManualHotbarTimer7 || 0).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "x60 y0 w58 h15 vManualHotbarTimer1 Limit7 Center Disabled " (ManualHotbarArmed1 = 0 ? "Hidden" : ""), ManualHotbarTimer1 || 0).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer2 Limit7 Center Disabled " (ManualHotbarArmed2 = 0 ? "Hidden" : ""), ManualHotbarTimer2 || 0).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer3 Limit7 Center Disabled " (ManualHotbarArmed3 = 0 ? "Hidden" : ""), ManualHotbarTimer3 || 0).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer4 Limit7 Center Disabled " (ManualHotbarArmed4 = 0 ? "Hidden" : ""), ManualHotbarTimer4 || 0).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer5 Limit7 Center Disabled " (ManualHotbarArmed5 = 0 ? "Hidden" : ""), ManualHotbarTimer5 || 0).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer6 Limit7 Center Disabled " (ManualHotbarArmed6 = 0 ? "Hidden" : ""), ManualHotbarTimer6 || 0).OnEvent("Change", nm_saveManualHotbar)
+ManualHotbar.Add("Edit", "xp+75 y0 w58 h15 vManualHotbarTimer7 Limit7 Center Disabled " (ManualHotbarArmed7 = 0 ? "Hidden" : ""), ManualHotbarTimer7 || 0).OnEvent("Change", nm_saveManualHotbar)
 ManualHotbar.SetFont("Norm")
 ManualHotbar.Add("Button", "x46 y15 w73 h15 vManualHotbarButton1", "Start 1").OnEvent("Click", nm_toggleManualHotbar)
 ManualHotbar.Add("Button", "xp+75 y15 w73 h15 vManualHotbarButton2", "Start 2").OnEvent("Click", nm_toggleManualHotbar)
@@ -182,7 +182,7 @@ ManualHotbar.Add("Button", "xp+75 y15 w73 h15 vManualHotbarButton7", "Start 7").
 
 ManualHotbar.OnEvent("Close", (*) => ExitApp())
 ManualHotbar.SetFont("s8 cDefault w1000", "Tahoma")
-
+OnMessage 0x0102, WM_CHAR
 ;; Add Placeholders "Delay"
 loop 7
     PostMessage 0x1501 , 1 , StrPtr("Delay") , ManualHotbar["ManualHotbarTimer" A_Index]
@@ -197,10 +197,13 @@ ManualHotbarCountdown6:=ManualHotbarTimer6
 ManualHotbarCountdown7:=ManualHotbarTimer7
 
 ;main loop
+DllCall("QueryPerformanceFrequency", "int64p", &f:=0)
 loop {
+    DllCall("QueryPerformanceCounter", "int64p", &s:=0)
     loop 7
         ManualHotbarArmed%A_Index% && MAnualHotbarButton%A_Index% && nm_ManualHotbar(A_Index)
-    sleep 1000
+    DllCall("QueryPerformanceCounter", "int64p", &e:=0)
+    sleep(100 - (e - s) * 1000 // f)
 }
 
 nm_ManualHotbarHelp(*){
@@ -265,14 +268,12 @@ nm_ManualHotbarExit(*){
 
 nm_ManualHotbar(num, *){
     global
-
-    ManualHotbar["ManualHotbarTimer" num].Text := ManualHotbarCountdown%num%
-
-    if(ManualHotbarCountdown%num%=0) {
-        ManualHotbarCountdown%num% := ManualHotbarTimer%num%-1
+    ManualHotbarCountdown%num% -= 0.1
+    if(ManualHotbarCountdown%num%<=0.1) {
+        ManualHotbarCountdown%num% := ManualHotbarTimer%num%
         send "{sc00" num+1 "}"
-    } else
-        ManualHotbarCountdown%num%--
+    }
+    ManualHotbar["ManualHotbarTimer" num].Text := Round(ManualHotbarCountdown%num%,1)
 }
 
 nm_ToggleManualAll(GuiCtrl, *){
@@ -314,7 +315,7 @@ nm_ToggleManualHotbar(GuiCtrl, param?,*){
         ManualHotbar["ToggleManualAll"].Text := "Stop`nAll"
         ManualHotbarButton%num% := 1
         ;ManualHotbar["ManualHotbarTimer" num].Enabled := 0
-        ManualHotbarCountdown%num%:=ManualHotbarTimer%num%-1
+        ManualHotbarCountdown%num%:=ManualHotbarTimer%num%
         return 1
     } else {
         ManualHotbar["ManualHotbarButton" num].Text := ("Start " . num)
@@ -351,6 +352,11 @@ nm_armManualHotbar(GuiCtrl, *){
 
 nm_saveManualHotbar(GuiCtrl, *) {
 	global
+    if (GuiCtrl.type = "Edit" && !(GuiCtrl.Value ~= '^\d*(\.\d?)?$')) {
+        nm_showErrorBalloonTip(GuiCtrl, "Invalid Input", "Only numbers with one decimal place are allowed")
+        GuiCtrl.Value := %GuiCtrl.Name%
+        return
+    }
     %GuiCtrl.Name% := GuiCtrl.Value
 	IniWrite GuiCtrl.Value, "settings\manual_hotbar.ini", "ManualHotbar", GuiCtrl.Name
 }
@@ -372,4 +378,18 @@ GetRobloxHWND()
     }
 	else
 		return 0
+}
+nm_showErrorBalloonTip(ctrl, Title, text) {
+    Buf := Buffer(4 * A_PtrSize, 0)
+    NumPut("uint", 4*A_PtrSize,
+            "ptr", StrPtr(Title),
+            "ptr", StrPtr(text),
+            "uint", 3, Buf)
+    SendMessage(0x1503, 0, Buf, ctrl)
+}
+WM_CHAR(a*) {
+    if a[3] != 0x0102 || !a[4]
+        return
+    if !(a[1] = 0x8 || a[1] = 0x2E || (a[1] > 0x2f && a[1] < 0x3A))
+        return nm_showErrorBalloonTip(ManualHotbar[a[4]], "Invalid Input", "Only numbers are allowed") || 0
 }
