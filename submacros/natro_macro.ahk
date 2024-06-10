@@ -22542,6 +22542,7 @@ OnError (e, mode) => (mode = "Return") ? -1 : 0
 stopToggle(*) {
 	global stopping := true
 }
+traySetIcon(".\nm_image_assets\auryn.ico")
 sendMode("event")
 getConfig() {
 	global
@@ -22653,7 +22654,7 @@ getConfig()
 startGui() {
 	global
 	local i,j,y,hBM,x
-	(mgui := Gui("+E" (0x00080000) " +OwnDialogs -Caption")).OnEvent("Close", closefunction)
+	(mgui := Gui("+E" (0x00080000) " +OwnDialogs -Caption", "Auto-Jelly")).OnEvent("Close", closefunction)
 	mgui.Show("NA")
 	for i, j in [
 		{name:"move", options:"x0 y0 w" w " h36"},
