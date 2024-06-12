@@ -204,7 +204,7 @@ loop {
         ManualHotbarArmed%A_Index% && MAnualHotbarButton%A_Index% && nm_ManualHotbar(A_Index)
     DllCall("QueryPerformanceCounter", "int64p", &e:=0)
     DllCall("timeBeginPeriod", "uint", 5)
-    DllCall("sleep", "uint", 100 - (e - s) * 1000 // f)
+    DllCall("Sleep", "uint", 100 - (e - s) * 1000 // f)
     DllCall("timeEndPeriod", "uint", 5)
 }
 
