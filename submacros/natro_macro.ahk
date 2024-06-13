@@ -22521,5 +22521,4 @@ robloxFPSGui(*) {
 nm_WM_CHAR(p*) {
 	if (tabCtrl.value == 1 and MainGui[p[4]].type = "DDL" and GetKeyState("Control", "P"))
 		return 0
-	PostMessage(0x102, p*)
 }
