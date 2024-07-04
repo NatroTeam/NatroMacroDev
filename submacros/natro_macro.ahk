@@ -22911,7 +22911,7 @@ blc_start() {
 		ActivateRoblox()
 		click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
 		sleep 800
-		pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.45*windowHeight - 180 "|" 320 "|" 80)
+		pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.425*windowHeight - 200 "|" 320 "|" 140)
 		if mythicStop
 			for i, j in ["Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
 				if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
@@ -22927,6 +22927,7 @@ blc_start() {
 					break 2	
 				}	
 			}
+        found := 0
 		for i, j in selectedBees {
 			if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
 				if (!mutations || !ocr_enabled || !selectedMutations.length) {
@@ -22936,6 +22937,7 @@ blc_start() {
 					else
 						continue 2
 				}
+                found := 1
 				break
 			}
 		}
@@ -22943,7 +22945,6 @@ blc_start() {
 		if !found
 			continue
 		pBitmap := Gdip_BitmapFromScreen(windowX + Round(0.5 * windowWidth - 320) "|" windowY + yOffset + Round(0.4 * windowHeight + 17) "|210|90")
-		Gdip_setBitmapToClipboard(pBitmap)
 		pEffect := Gdip_CreateEffect(5, -60,30)
 		Gdip_BitmapApplyEffect(pBitmap, pEffect)
 		Gdip_DisposeEffect(pEffect)
