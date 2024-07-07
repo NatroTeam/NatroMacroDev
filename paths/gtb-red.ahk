@@ -47,6 +47,7 @@ else
 	send "{space}{" RightKey " up}"
 	HyperSleep(1000)
 	nm_Walk(8, FwdKey, RightKey)
+	nm_Walk(1, FwdKey)
 	nm_Walk(6.75, RightKey)
 	HyperSleep(1000)
 	send "{" RotRight " 4}"
