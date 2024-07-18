@@ -15072,8 +15072,8 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	
 	movespeed := ' MoveSpeedNum '
 	both            := (Mod(movespeed*1000, 1265) = 0) || (Mod(Round((movespeed+0.005)*1000), 1265) = 0)
-    hasty_guard     := (Mod(movespeed*1000, 1100) < 0.00001 || both) ? 1 : 0
-    gifted_hasty    := (Mod(movespeed*1000, 1150) < 0.00001 || both) ? 1 : 0
+    hasty_guard     := (Mod(movespeed*1000, 1100) < 0.00001 || both)
+    gifted_hasty    := (Mod(movespeed*1000, 1150) < 0.00001 || both)
     base_movespeed  := round(movespeed / (both ? 1.265 : (hasty_guard ? 1.1 : (gifted_hasty ? 1.15 : 1))), 0)
 	'
 	) :
