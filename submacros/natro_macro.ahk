@@ -4818,31 +4818,29 @@ nm_BeesmasHandler(req)
 		return
 
 	if (req.status = 200)
-	{
-		switch Trim(req.responseText, " `t`r`n")
-		{
-			case 1:
-			beesmasActive := 1
-
-			MainGui["BeesmasGroupBox"].Text := "Beesmas (Active)"
-
-			hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["beesmas"])
-			MainGui["BeesmasImage"].Value := "HBITMAP:*" hBM
-			DllCall("DeleteObject", "ptr", hBM)
-
-			for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
-				MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
-
-			sprinklerImages.Push("saturatorWS")
-			MainGui["BeesmasFailImage"].Value := ""
-
-			case 0:
-			MainGui["BeesmasFailImage"].Value := ""
-		}
-	}
+		nm_EnableBeesmas(Trim(req.responseText, " `t`r`n"))
 }
-BeesmasActiveFail(*){
-	MsgBox "Could not fetch Beesmas data from GitHub!`r`nTo use Beesmas features, make sure you have a working internet connection and then reload the macro!", "Error", 0x1030 " Owner" MainGui.Hwnd
+BeesmasActiveFail(*) => ((MsgBox("Could not fetch Beesmas data from GitHub!`r`nTo enable Beesmas features automatically, make sure you have a working internet connection and then reload the macro!`r`n`r`nIf you would like to enable Beesmas manually, select `"Yes`"", "Error", 0x1134 " Owner" MainGui.Hwnd) = "Yes") ? nm_EnableBeesmas(1) : "")
+nm_EnableBeesmas(toggle){
+	global beesmasActive
+	if (toggle != 1 && toggle != 0)
+		return
+	if toggle {
+		beesmasActive := 1
+
+		MainGui["BeesmasGroupBox"].Text := "Beesmas (Active)"
+
+		hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["beesmas"])
+		MainGui["BeesmasImage"].Value := "HBITMAP:*" hBM
+		DllCall("DeleteObject", "ptr", hBM)
+
+		for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
+			MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
+
+		sprinklerImages.Push("saturatorWS")
+		MainGui["BeesmasFailImage"].Value := ""
+	}
+	else MainGui["BeesmasFailImage"].Value := ""
 }
 nm_NightMemoryMatchCheck(*){
 	global NightMemoryMatchCheck
