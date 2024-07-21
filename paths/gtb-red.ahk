@@ -47,10 +47,12 @@ else
 	send "{space}{" RightKey " up}"
 	HyperSleep(1000)
 	nm_Walk(8, FwdKey, RightKey)
+	nm_Walk(1, FwdKey)
 	nm_Walk(6.75, RightKey)
 	HyperSleep(1000)
 	send "{" RotRight " 4}"
 	HyperSleep(100)
-	nm_Walk(20, FwdKey)
+	nm_Walk(11, FwdKey)
+	nm_Walk(5, FwdKey, RightKey)
 }
 ;path 230629 noobyguy
