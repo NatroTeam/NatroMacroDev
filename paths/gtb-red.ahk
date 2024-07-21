@@ -52,6 +52,7 @@ else
 	HyperSleep(1000)
 	send "{" RotRight " 4}"
 	HyperSleep(100)
-	nm_Walk(20, FwdKey)
+	nm_Walk(11, FwdKey)
+	nm_Walk(5, FwdKey, RightKey)
 }
 ;path 230629 noobyguy
