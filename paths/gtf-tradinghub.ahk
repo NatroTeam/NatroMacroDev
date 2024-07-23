@@ -4,16 +4,30 @@ if (MoveMethod = "Cannon") {
     send "{e down}"
     HyperSleep(100)
     send "{e up}{" FwdKey " down}"
-    Hypersleep(900)
-    send "{space down}"
-    HyperSleep(100)
-    send "{space up}"
-    HyperSleep(200)
-    send "{space down}"
-    HyperSleep(100)
-    send "{space up}"
-    HyperSleep(4200)
-    nm_Walk(55, FwdKey, LeftKey)
+    Hypersleep(750)
+	loop 2 {
+		send "{space down}"
+		HyperSleep(50)
+		send "{space up}"
+	}
+    HyperSleep(5000)
+	Walk(9)
+	Send "{" RotLeft " 2}"
+	Walk(10)
+	loop 2 {
+		send "{space down}"
+		HyperSleep(50)
+		send "{space up}"
+		(A_Index = 1 ? HyperSleep(300) : "")
+	}
+	Send("{" FwdKey " up}"), HyperSleep(3500)
+    nm_Walk(3, FwdKey)
+	nm_Walk(13, FwdKey, RightKey)
+	nm_Walk(5, RightKey)
+	nm_Walk(5, FwdKey)
+	nm_Walk(8, BackKey, LeftKey)
+	nm_Walk(6.8, BackKey, RightKey)
+	nm_Walk(13, FwdKey, RightKey)
     ;path 240222 money_mountain
 } else {
     nm_Walk(3, FwdKey)
