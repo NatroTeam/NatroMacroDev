@@ -17269,7 +17269,7 @@ nm_InTradingHub(){
 	send "{" ZoomOut " 5}"
 	GetRobloxClientPos()
 	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY+36 "|" windowWidth//2+200 "|" windowHeight-offsetY-36)
-	if (Gdip_ImageSearch(pBMScreen, bitmaps["TradingHubGreen"], , , , 200, 120, 2) = 1) {
+	if (Gdip_ImageSearch(pBMScreen, bitmaps["TradingHubGreen"], , , , 200, 120, 5) = 1) {
 		Gdip_DisposeImage(pBMScreen)
 		return 1
 	}
