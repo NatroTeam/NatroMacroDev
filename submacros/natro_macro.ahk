@@ -14728,70 +14728,32 @@ nm_GoGather(){
 		;whirligig //todo: needs a major rework!
 		if(FieldReturnType="walk") { ;walk back
 			if((WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && !PFieldBoosted) || (WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && PFieldBoosted && GatherFieldBoosted)){
-				if(FieldName="sunflower"){
-					Send "{" RotLeft " 2}"
-				}
-				else if(FieldName="dandelion"){
-					Send "{" RotRight " 2}"
-				}
-				else if(FieldName="mushroom"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="blue flower"){
-					Send "{" RotRight " 2}"
-				}
-				else if(FieldName="spider"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="strawberry"){
-					Send "{" RotLeft " 2}"
-				}
-				else if(FieldName="bamboo"){
-					Send "{" RotRight " 2}"
-				}
-				else if(FieldName="pineapple"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="stump"){
-					Send "{" RotRight " 2}"
-				}
-				else if(FieldName="pumpkin"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="pine tree"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="rose"){
-					Send "{" RotLeft " 2}"
-				}
-				else if(FieldName="pepper"){
-					Send "{" RotLeft " 2}"
-				}
-				Send "{" WhirligigKey "}"
-				sleep (2500+KeyDelay)
-				;Confirm hive
-				send "{PgUp 4}"
-				loop 8 {
-					Send "{" ZoomOut "}"
-				}
-				loop 4
-				{
-					If ((nm_imgSearch("hive4.png",20,"actionbar")[1] = 0) || (nm_imgSearch("hive_honeystorm.png",20,"actionbar")[1] = 0) || (nm_imgSearch("hive_snowstorm.png",20,"actionbar")[1] = 0))
-					{
-						send "{" RotRight " 4}{" RotDown " 4}"
-						HiveConfirmed:=1
-						LastWhirligig:=nowUnix()
-						IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
-						Sleep 1000
-						break
+				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth/2-300 "|" windowY+windowHeight-150 "|600|125")
+				if (Gdip_ImageSearch(pBMScreen,bitmaps['whirligig'], , , , , ,10, ,3) = 1) {
+					Sleep 100
+					switch FieldName {
+						case "Sunflower", "Strawberry", "Rose", "Pepper":
+							loop 2 {
+								Send "{" RotLeft "}"
+							}
+						case "Dandelion", "Blue Flower", "Bamboo", "Stump":
+							loop 2 {
+								Send "{" RotRight "}"
+							}
+						case "Mushroom", "Spider", "Pineapple", "Pumpkin", "Pine Tree":
+							loop 4 {
+								Send "{" RotLeft "}"
+							}
 					}
-					SendInput "{" RotRight " 4}"
-					sleep (250+KeyDelay)
-					If (A_Index=4)
-					{
-						nm_setStatus("Warning", "No Whirligigs")
-						WhirligigKey:="None"
-					}
+					Send "{" WhirligigKey "}"
+					sleep (2500+KeyDelay)
+					HiveConfirmed:=1
+					LastWhirligig:=nowUnix()
+					IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
+					Sleep 1000
+				} else {
+					nm_setStatus("Warning", "No Whirligigs")
+					WhirligigKey:="None"
 				}
 			} else { ;walk to hive
 				nm_walkFrom(FieldName)
@@ -14851,96 +14813,31 @@ nm_GoGather(){
 			}
 		} else { ;reset back
 			if ((WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && !PFieldBoosted) || (WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && PFieldBoosted && GatherFieldBoosted)) {
-				if(FieldName="sunflower"){
-					loop 2 {
-						Send "{" RotLeft "}"
+				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth/2-300 "|" windowY+windowHeight-150 "|600|125")
+				if (Gdip_ImageSearch(pBMScreen,bitmaps['whirligig'], , , , , ,10, ,3) = 1) {
+					switch FieldName {
+						case "Sunflower", "Strawberry", "Rose", "Pepper":
+							loop 2 {
+								Send "{" RotLeft "}"
+							}
+						case "Dandelion", "Blue Flower", "Bamboo", "Stump":
+							loop 2 {
+								Send "{" RotRight "}"
+							}
+						case "Mushroom", "Spider", "Pineapple", "Pumpkin", "Pine Tree":
+							loop 4 {
+								Send "{" RotLeft "}"
+							}
 					}
-				}
-				else if(FieldName="dandelion"){
-					loop 2 {
-						Send "{" RotRight "}"
-					}
-				}
-				else if(FieldName="mushroom"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="blue flower"){
-					loop 2 {
-						Send "{" RotRight "}"
-					}
-				}
-				else if(FieldName="spider"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="strawberry"){
-					loop 2 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="bamboo"){
-					loop 2 {
-						Send "{" RotRight "}"
-					}
-				}
-				else if(FieldName="pineapple"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="stump"){
-					loop 2 {
-						Send "{" RotRight "}"
-					}
-				}
-				else if(FieldName="pumpkin"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="pine tree"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="rose"){
-					loop 2 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="pepper"){
-					loop 2 {
-						Send "{" RotLeft "}"
-					}
-				}
-				Send "{" WhirligigKey "}"
-				sleep (2500+KeyDelay)
-				;Confirm hive
-				send "{PgUp 4}"
-				loop 8 {
-					Send "{" ZoomOut "}"
-				}
-				loop 4
-				{
-					If ((nm_imgSearch("hive4.png",20,"actionbar")[1] = 0) || (nm_imgSearch("hive_honeystorm.png",20,"actionbar")[1] = 0) || (nm_imgSearch("hive_snowstorm.png",20,"actionbar")[1] = 0))
-					{
-						send "{" RotRight " 4}{" RotDown " 4}"
-						HiveConfirmed:=1
-						LastWhirligig:=nowUnix()
-						IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
-						Sleep 1000
-						break
-					}
-					SendInput "{" RotRight " 4}"
-					sleep (250+KeyDelay)
-					If (A_Index=4)
-					{
-						nm_setStatus("Missing", "Whirligig")
-						WhirligigKey:="None"
-					}
+					Send "{" WhirligigKey "}"
+					sleep (2500+KeyDelay)
+					HiveConfirmed:=1
+					LastWhirligig:=nowUnix()
+					IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
+					Sleep 1000
+				} else {
+					nm_setStatus("Warning", "No Whirligigs")
+					WhirligigKey:="None"
 				}
 			}
 		}
