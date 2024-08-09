@@ -337,7 +337,9 @@ nm_importConfig()
 		, "TimersHotkey", "F5"
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
-		, "FDCWarn", 1)
+		, "FDCWarn", 1
+		, "SprinklerWarn", 1
+		, "SprinklerSlot", 1)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -10052,7 +10054,7 @@ nm_Ant() { ;collect Ant Pass then do Challenge
 					--AntPassNum
 					nm_setStatus("Attacking", "Ant Challenge")
 					Sleep 500
-					send "{" SC_1 "}"
+					Send "{" SprinklerKey "}"
 					movement :=
 					(
 					nm_Walk(9, BackKey) "
@@ -11894,7 +11896,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking", "Spider")
-					Send "{" SC_1 "}"
+					Send "{" SprinklerKey "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12016,7 +12018,7 @@ nm_Bugrun(){
 					{
 						nm_setStatus("Attacking", "Ladybugs (Strawberry)")
 						SendInput "{" RotUp " 4}"
-						Send "{" SC_1 "}"
+						Send "{" SprinklerKey "}"
 						if(!DisableToolUse)
 							Click "Down"
 						r := 0
@@ -12126,7 +12128,7 @@ nm_Bugrun(){
 				if(found)
 				{
 					nm_setStatus("Attacking", "Ladybugs (Mushroom)")
-					Send "{" SC_1 "}"
+					Send "{" SprinklerKey "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12232,7 +12234,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking")
-					Send "{" SC_1 "}"
+					Send "{" SprinklerKey "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12347,7 +12349,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking")
-					Send "{" SC_1 "}"
+					Send "{" SprinklerKey "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12439,7 +12441,7 @@ nm_Bugrun(){
 					if (found)
 					{
 						nm_setStatus("Attacking")
-						Send "{" SC_1 "}"
+						Send "{" SprinklerKey "}"
 						SendInput "{" RotUp " 4}"
 						if(!DisableToolUse)
 							Click "Down"
@@ -12590,7 +12592,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking")
-					Send "{" SC_1 "}"
+					Send "{" SprinklerKey "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12688,7 +12690,7 @@ nm_Bugrun(){
 					if (found)
 					{
 						nm_setStatus("Attacking", "Werewolf (Pumpkin)")
-						Send "{" SC_1 "}"
+						Send "{" SprinklerKey "}"
 						SendInput "{" RotUp " 4}"
 						if(!DisableToolUse)
 							Click "Down"
@@ -12852,7 +12854,7 @@ nm_Bugrun(){
 					if (found)
 					{
 						nm_setStatus("Attacking")
-						Send "{" SC_1 "}"
+						Send "{" SprinklerKey "}"
 						SendInput "{" RotUp " 4}"
 						if(!DisableToolUse)
 							Click "Down"
@@ -12984,7 +12986,7 @@ nm_Bugrun(){
 					{
 						nm_setStatus("Attacking")
 						SendInput "{" RotUp " 4}"
-						Send "{" SC_1 "}"
+						Send "{" SprinklerKey "}"
 						if(!DisableToolUse)
 							Click "Down"
 						loop 17 { ;wait to kill
@@ -13442,7 +13444,7 @@ nm_Bugrun(){
 					DllCall("GetSystemTimeAsFileTime", "int64p", &SnailStartTime:=0)
 					KillCheck := SnailStartTime
 					UpdateTimer := SnailStartTime
-					Send "{" SC_1 "}"
+					Send "{" SprinklerKey "}"
 					loop 2
 					{
 						Send "{" RotUp "}"
@@ -13849,7 +13851,7 @@ nm_Bugrun(){
 				nm_Reset(1, wait)
 				nm_setStatus("Traveling", "Coco Crab")
 				nm_gotoField("coconut")
-				Send "{" SC_1 "}"
+				Send "{" SprinklerKey "}"
 				nm_Move(1400, RightKey)
 				nm_Move(1000, BackKey)
 
@@ -15356,7 +15358,7 @@ nm_convert(){
 	Sleep 500+(IsNumber(ConvertDelay) ? ConvertDelay : 0)*1000
 }
 nm_setSprinkler(field, loc, dist){
-	global FwdKey, LeftKey, BackKey, RightKey, SC_1, SC_Space, KeyDelay, SprinklerType, MoveSpeedNum
+	global FwdKey, LeftKey, BackKey, RightKey, SprinklerKey, SC_Space, KeyDelay, SprinklerType, MoveSpeedNum
 
 	if (SprinklerType = "None")
 		return
@@ -15442,7 +15444,7 @@ nm_setSprinkler(field, loc, dist){
 		Sleep 1000
 	;set sprinkler(s)
 	if(SprinklerType="Supreme" || SprinklerType="Basic") {
-		Send "{" SC_1 "}"
+		Send "{" SprinklerKey "}"
 		return
 	} else {
 		nm_JumpSprinkler(1)
@@ -15512,7 +15514,7 @@ nm_JumpSprinkler(resetDelay := 0){
 	Loop 3 {
 		Send "{" SC_Space " down}"
 		Sleep JumpDelay
-		Send "{" SC_1 "}{" SC_Space " up}"
+		Send "{" SprinklerKey "}{" SC_Space " up}"
 		Sleep 500
 		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth-356 "|" windowY+windowHeight-326 "|340|300")
 		if (Gdip_ImageSearch(pBMScreen, bitmaps["standing"], , , , , , 20) = 1) { ; jumped too high
@@ -20741,7 +20743,36 @@ start(*){
 			}
 		}
 	}
+	;find sprinkler hotbar
+	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth/2-300 "|" windowY+windowHeight-150 "|600|125")
+	if (Gdip_ImageSearch(pBMScreen,bitmaps['sprinkler'], , , , , ,10, ,3) = 0 && SprinklerType != "None" && SprinklerWarn = 1) {
+		NoSprinkler := MsgBox("
+		(
+		No sprinkler detected in hotbar whilst having sprinkler enabled!
+
+		This means that you do not have your sprinkler set in your hotbar. If you have a sprinkler, please drag it into one of the hotbar slots. If you don't have a sprinkler, click yes on this to disable sprinkler usage.
+
+		Click yes to disable usage of sprinklers (setting it to none). Click no to keep sprinkler setting on whilst not having one in the hotbar.
+		)", "WARNING!!", 0x1034 . " T60")
+		if (NoSprinkler = "Yes") {
+    		IniWrite(SprinklerType := "None", "settings\nm_config.ini", "Settings", "SprinklerType")
+		}
+		if (MsgBox("Would you like to disable this warning for the future?", "Sprinkler Detection", 0x1124 . " T30") = "Yes") {
+    		IniWrite(SprinklerWarn := 0, "settings\nm_config.ini", "Settings", "SprinklerWarn")
+		}
+	} else if (Gdip_ImageSearch(pBMScreen,bitmaps['sprinkler'], , , , , ,10, ,3) = 1) {
+		loop 7 {
+			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth/2-300 "|" windowY+windowHeight-150 "|" (80*A_Index) "|125")
+			if (Gdip_ImageSearch(pBMScreen, bitmaps["sprinkler"], , , , , , 10, , 3) = 1) {
+				IniWrite (SprinklerSlot := A_Index), "settings\nm_config.ini", "Settings", "SprinklerSlot"
+				break
+			}
+		}		
+	}
 	;special hotbar cases
+	;SprinklerKey
+	global SprinklerKey
+	SprinklerKey:="sc00" SprinklerSlot+1
 	;MicroConverterKey
 	global MicroConverterKey
 	MicroConverterKey:="None"
