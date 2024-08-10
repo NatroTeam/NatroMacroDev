@@ -20744,22 +20744,22 @@ start(*){
 		}
 	}
 	;find sprinkler hotbar
-	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth/2-300 "|" windowY+windowHeight-150 "|600|125")
-	if (Gdip_ImageSearch(pBMScreen,bitmaps['sprinkler'], , , , , ,10, ,3) = 0 && SprinklerType != "None" && SprinklerWarn = 1) {
-		NoSprinkler := MsgBox("
-		(
-		No sprinkler detected in hotbar whilst having sprinkler enabled!
-
-		This means that you do not have your sprinkler set in your hotbar. If you have a sprinkler, please drag it into one of the hotbar slots. If you don't have a sprinkler, click yes on this to disable sprinkler usage.
-
-		Click yes to disable usage of sprinklers (setting it to none). Click no to keep sprinkler setting on whilst not having one in the hotbar.
-		)", "WARNING!!", 0x1034 . " T60")
-		if (NoSprinkler = "Yes") {
-    		IniWrite(SprinklerType := "None", "settings\nm_config.ini", "Settings", "SprinklerType")
-		}
-		if (MsgBox("Would you like to disable this warning for the future?", "Sprinkler Detection", 0x1124 . " T30") = "Yes") {
-    		IniWrite(SprinklerWarn := 0, "settings\nm_config.ini", "Settings", "SprinklerWarn")
-		}
+	local pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth/2-300 "|" windowY+windowHeight-150 "|600|125")
+	if (Gdip_ImageSearch(pBMScreen,bitmaps["sprinkler"], , , , , ,10, ,3) = 0 && SprinklerType != "None" && SprinklerWarn = 1) {
+		if (MsgBox(
+			"Sprinkler could not detected automaticaly!`n`n"
+			. "The macro could not determine if a sprinkler is in your hotbar slots. If you have a sprinkler, drag it into one of your hotbar slots and restart the macro (" StopHotkey ").`n`n"
+			. "Currently, your sprinkler is assumed to be in Slot " SprinklerSlot ". Click OK to start the macro with this slot, or Cancel to change this manually."
+			, "WARNING!!", 0x31 . " T60")="Cancel") {
+				loop {
+					local NewSprinklerSlot := InputBox("Sprinkler Slot", "Enter the slot number of your sprinkler:", , SprinklerSlot)
+					if (IsInteger(NewSprinklerSlot.Value) && NewSprinklerSlot.Value < 8 && NewSprinklerSlot.Value > 0){
+						SprinklerSlot := NewSprinklerSlot.Value
+						break
+					}
+					MsgBox("Invalid slot number! Enter a number between 1 and 7.") 
+				}
+			}
 	} else if (Gdip_ImageSearch(pBMScreen,bitmaps['sprinkler'], , , , , ,10, ,3) = 1) {
 		loop 7 {
 			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth/2-300 "|" windowY+windowHeight-150 "|" (80*A_Index) "|125")
