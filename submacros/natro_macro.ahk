@@ -20760,14 +20760,15 @@ start(*){
 					MsgBox("Invalid slot number! Enter a number between 1 and 7.") 
 				}
 			}
-	} else if (Gdip_ImageSearch(pBMScreen,bitmaps['sprinkler'], , , , , ,10, ,3) = 1) {
+	} else {
+		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth/2-300 "|" windowY+windowHeight-150 "|80|125")
 		loop 7 {
-			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth/2-300 "|" windowY+windowHeight-150 "|" (80*A_Index) "|125")
-			if (Gdip_ImageSearch(pBMScreen, bitmaps["sprinkler"], , , , , , 10, , 3) = 1) {
+			if (Gdip_ImageSearch(pBMScreen, bitmaps["sprinkler"], , 80*A_Index, , , , 10, , 3) = 1) {
 				IniWrite (SprinklerSlot := A_Index), "settings\nm_config.ini", "Settings", "SprinklerSlot"
 				break
 			}
-		}		
+		}	
+		Gdip_DisposeImage(pBMScreen)
 	}
 	;special hotbar cases
 	;SprinklerKey
