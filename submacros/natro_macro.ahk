@@ -9257,7 +9257,6 @@ PostSubmacroMessage(submacro, args*){
 }
 nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	global resetTime, youDied, VBState, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, MultiReset, bitmaps
-	static hivedown := 0
 	;check for game frozen conditions
 	if (GameFrozenCounter>=3) { ;3 strikes
 		nm_setStatus("Detected", "Roblox Game Frozen, Restarting")
@@ -9408,27 +9407,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		}
 		SetKeyDelay PrevKeyDelay
 
-		; hive check
-		if hivedown
-			sendinput "{" RotDown "}"
-		region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
-		sconf := windowWidth**2//3200
-		loop 4 {
-			sleep 250+KeyDelay
-			pBMScreen := Gdip_BitmapFromScreen(region), s := 0
-			for i, k in ["day", "night", "day-gifted", "night-gifted", "noshadow-gifted", "noshadow-day", "noshadow-night", "wing"] {
-				s := Max(s, Gdip_ImageSearch(pBMScreen, bitmaps["hive"][k], , , , , , 4, , , sconf))
-				if (s >= sconf) {
-					Gdip_DisposeImage(pBMScreen)
-					HiveConfirmed := 1
-					sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
-					Send "{" ZoomOut " 5}"
-					break 2
-				}
-			}
-			Gdip_DisposeImage(pBMScreen)
-			sendinput "{" RotRight " 4}" ((A_Index = 2) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
-		}
+		nm_confirmHive()
 	}
 	;convert
 	(convert=1) && nm_convert()
@@ -9443,6 +9422,31 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		else {
 			Sleep (remaining*1000) ;miliseconds
 		}
+	}
+}
+nm_confirmHive(){
+	global RotRight, RotUp, RotDown, ZoomOut, HiveConfirmed, bitmaps
+	static hivedown := 0
+
+	if hivedown
+		sendinput "{" RotDown "}"
+	region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
+	sconf := windowWidth**2//3200
+	loop 4 {
+		sleep 250+KeyDelay
+		pBMScreen := Gdip_BitmapFromScreen(region), s := 0
+		for i, k in ["day", "night", "day-gifted", "night-gifted", "noshadow-gifted", "noshadow-day", "noshadow-night", "wing"] {
+			s := Max(s, Gdip_ImageSearch(pBMScreen, bitmaps["hive"][k], , , , , , 4, , , sconf))
+			if (s >= sconf) {
+				Gdip_DisposeImage(pBMScreen)
+				HiveConfirmed := 1
+				sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
+				Send "{" ZoomOut " 5}"
+				break 2
+			}
+		}
+		Gdip_DisposeImage(pBMScreen)
+		sendinput "{" RotRight " 4}" ((A_Index = 2) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
 	}
 }
 nm_setShiftLock(state, *){
@@ -14747,7 +14751,15 @@ nm_GoGather(){
 					}
 					Send "{" WhirligigKey "}"
 					sleep (2500+KeyDelay)
-					HiveConfirmed:=1
+					loop 5 {
+						Send "{" ZoomIn "}"
+					}
+					nm_confirmHive()
+					sleep (200)
+					if (!HiveConfirmed) {
+						nm_setStatus("Warning", "Unable to confirm hive!")
+						nm_reset()
+					}
 					LastWhirligig:=nowUnix()
 					IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
 					Sleep 1000
@@ -14831,7 +14843,15 @@ nm_GoGather(){
 					}
 					Send "{" WhirligigKey "}"
 					sleep (2500+KeyDelay)
-					HiveConfirmed:=1
+					loop 5 {
+						Send "{" ZoomIn "}"
+					}
+					nm_confirmHive()
+					sleep (200)
+					if (!HiveConfirmed) {
+						nm_reset()
+						nm_setStatus("Warning", "Unable to confirm hive!")
+					}
 					LastWhirligig:=nowUnix()
 					IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
 					Sleep 1000
