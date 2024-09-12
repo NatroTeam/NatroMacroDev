@@ -3192,7 +3192,7 @@ SetLoadingProgress(99)
 if (BuffDetectReset = 1)
 	nm_AdvancedGUI()
 SetLoadingProgress(100)
-
+MainGui.OnEvent("DropFiles", nm_fileDrop)
 ;unlock tabs
 nm_LockTabs(0)
 nm_setStatus("Startup", "UI")
@@ -3219,6 +3219,77 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; GUI FUNCTIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;file drop
+nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
+	global FieldPattern1, FieldPattern2, FieldPattern3
+    for k, v in fileArr {
+        If (regexmatch(content:=FileRead(v), "im)patterns\[") || regexmatch(content, "im)paths\["))
+            return msgbox(
+                (
+                'The file "' v '" seems to be deprecated!
+     			Make sure to install a compatible version of the file.'
+                ), , 0x1010)
+		SplitPath(v,&FileName:="",,&Ext:="",&Name:="")
+		if !RegExMatch(ext, "i)^(ini|preset|ahk)$")
+			return msgbox(
+				(
+				'The file "' v '" is not a valid file type!
+				Make sure to import a valid file type.'
+				), , 0x1010)
+		if SubStr(name,1,3) = "ct-"
+			return msgbox(
+				(
+					'ct- paths are no longer supported!
+					Use gtf- instead.'
+				), , 0x1010)
+		hCursor := DllCall("LoadCursor", "ptr", 0, "int", 0x7F02, "Ptr")
+		DllCall("SetCursor", "Ptr", hCursor)
+		f := FileOpen(outputPath:=
+			(RegExMatch(name, "i)^(nm_config|field_config|manual_planters|manual_hotbar|mutations)$") ? "settings\" 
+				: ext = "preset" ? "settings\presets\"
+					: fileName ~= "i)^(wf|gt(b|c|p|q|f))-" ? (type :='paths') "\"
+						: ext = "ahk" ? (type := "patterns") "\"
+							: "") FileName
+			, "w"
+		)
+        f.write(content)
+        f.close()
+		if ext = "ini" {
+			if msgbox(
+			(
+			'Successfully imported config!
+			To apply the imported settings you need to reload the macro.
+			Reload now?'
+			),"Imported Config", 0x1044) = "yes"
+				stop()
+			return
+		}
+		if ext = "preset" {
+			msgbox(
+					(
+					(FileExist(outputPath) ? 'Successfully imported ' : 'Could not import ') (ext = "ini" ? "config " : "preset ") filename '!'
+					),,0x1040)
+			return
+		}
+		if type = "patterns" && !ObjHasValue(patternlist,name)
+			For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
+				MainGui[i].add([name])
+        (%'nm_import' type%)()
+        if (type = "paths")
+            return msgbox('Successfully imported the path ' name '!')
+        if (tabCtrl.value = 1 && (copyTo := ((y > 53 && y < 115) || 2 * (y > 115 && y < 175 && mainGui["fieldName2"].enabled) || 3 * (y > 175 && y < 235 && mainGui["fieldName3"].enabled)))) {
+			if (Msgbox('You dragged the pattern ' name '`r`non the ' (copyTo = 1 ? "first" : copyTo = 2 ? "second" : "third") ' gather settings!`r`nDo you want to use this pattern?', , 0x1044) = "Yes") {
+				IniWrite (FieldPattern%copyTo% := name), "settings\nm_config.ini", "Gather", "FieldPattern" copyTo
+				MainGui["FieldPattern" copyTo].Text := name
+			}
+		}
+		msgbox
+		(
+			'Successfully imported the pattern ' name '!
+			Paste the gather settings by clicking on the paste button'
+		),,0x1040
+    }
+}
 ;buttons
 nm_StartButton(GuiCtrl, *){
 	MouseGetPos , , , &hCtrl, 2
