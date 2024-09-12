@@ -1,4 +1,5 @@
-﻿/*
+﻿
+/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -80,6 +81,8 @@ PrivServer := A_Args[33]
 DebugLogEnabled := A_Args[34]
 
 MonsterRespawnTime := A_Args[35]
+
+HoneyUpdateSSCheck := A_Args[36]
 
 pToken := Gdip_Startup()
 OnExit(ExitFunc)
@@ -706,8 +709,8 @@ nm_status(status)
 			|| ((PlanterSSCheck = 1) && (((state = "Detected") || (state = "Screenshot") || (state = "Holding")) && InStr(stateString, "Planter")))
 			|| ((HoneySSCheck = 1) && InStr(stateString, "Reporting: Daily Honey LB") && ((discordMode = 0) || (channel := (StrLen(ReportChannelID) < 17) ? MainChannelID : ReportChannelID)))
 			|| ((ssDebugging = 1) && ((state = "Placing") || (state = "Collecting") || (state = "Failed") || InStr(stateString, "Next Quest Step")))
-			|| ((state = "Gathering") && !InStr(objective, "Ended") && (pBM := CreateHoneyBitmap(1, 0)))
-			|| ((state = "Converting") && (objective = "Backpack") && (pBM := CreateHoneyBitmap()))))
+			|| ((state = "Gathering") && !InStr(objective, "Ended") && (HoneyUpdateSSCheck) && (pBM := CreateHoneyBitmap(1, 0)))
+			|| ((state = "Converting") && (objective = "Backpack") && (HoneyUpdateSSCheck) && (pBM := CreateHoneyBitmap()))))
 		{
 			if !IsSet(pBM)
 				hwnd := GetRobloxHWND(), GetRobloxClientPos(hwnd), pBM := Gdip_BitmapFromScreen((windowWidth > 0) ? (windowX "|" windowY "|" windowWidth "|" windowHeight) : 0)
