@@ -21216,7 +21216,7 @@ nm_priorityListGui(*) {
 	priorityGui.OnEvent("Close", (*) => ExitApp()), priorityGui.OnEvent("Escape", (*) => ExitApp())
 	priorityGui.Show("NA")
 
-	for i in ["moveRegion", "close", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "Reset"]
+	for i in ["moveRegion", "close", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "Reset", "ToolTip"]
 		priorityGui.AddText("v" i)
     priorityGui["Reset"].enabled := false
 	w:=250, h:=priorityList.Length * 34 + 87
@@ -21244,7 +21244,8 @@ nm_priorityListGui(*) {
 	priorityGui["close"].move(w-42, 4, 28, 28)
 	for i,v in priorityList
 		priorityGui["p" i].move(15, i*34+3, w-30, 30)
-	priorityGui["Reset"].move(15, h-50, w-30, 30)
+	priorityGui["Reset"].move(15, h-50, w-62, 30)
+	priorityGui["ToolTip"].move(w-45, h-50, 30, 30)
 	nm_priorityGui(movingItem?, mouseY?, drop?) {
 		global priorityList
 		local v,i
@@ -21289,13 +21290,14 @@ nm_priorityListGui(*) {
 			Gdip_DrawLine(G, pPen, groupw-20, groupy + 15, groupw-5, groupy + 15)
 			Gdip_DrawLine(G, pPen, groupw-20, groupy + 20, groupw-5, groupy + 20), Gdip_DeletePen(pPen)
 		}
-		Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid(accentColors[11]), 15, h-50, w-30, 30, 8), Gdip_DeleteBrush(pBrush)
+		Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid(accentColors[11]), 15, h-50, w-62, 30, 8)
+		Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid(accentColors[11]), w-45, h-50, 30, 30, 8), Gdip_DeleteBrush(pBrush)
 		if priorityList[1] == defaultList[1] && priorityList[2] == defaultList[2] && priorityList[3] == defaultList[3] && priorityList[4] == defaultList[4] && priorityList[5] == defaultList[5] && priorityList[6] == defaultList[6] && priorityList[7] == defaultList[7] && priorityList[8] == defaultList[8] && priorityList[9] == defaultList[9]
-			Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid("0xBB131416"), 13, h-52, w-26, 34), Gdip_DeleteBrush(pBrush), priorityGui["Reset"].enabled := false
+			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid("0x88000000"), 17, h-48, w-66, 26, 8), Gdip_DeleteBrush(pBrush), priorityGui["Reset"].enabled := false
         else
             priorityGui["Reset"].enabled := true
-		Gdip_TextToGraphics(G, "Reset", "x15 y" h-43 " s15 c00000000 Bolder Center","Arial", w-30)
-
+		Gdip_TextToGraphics(G, "Reset", "x15 y" h-43 " s15 c00000000 Bold Center","Arial", w-62)
+		Gdip_TextToGraphics(G, "?", "x" w-45 " y" h-43 " s15 c00000000 Bold Center","Arial", 30)
 		UpdateLayeredWindow(priorityGui.hwnd, hdc)
 		OnMessage(0x201, WM_LBUTTONDOWN)
 		OnExit(ExitFunc)
@@ -21321,6 +21323,8 @@ nm_priorityListGui(*) {
 				priorityList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 				updateInt("priorityListNumeric", 123456789)
 				nm_priorityGui()
+			case "ToolTip":
+				Msgbox("Priority List``r``n``r``nDrag and drop to reorder the priority list.``r``nPress Reset to reset the priority list back to default.``nNote:``n - The priority List will not overwrite the interrupts.``n - In one loop you will still do all tasks``n - The Default priority makes the most sense so think twice before changing it","Priority List",0x40040)
 			default:
 				MouseGetPos(,&y)
 				priorityGui.GetPos(,&wy)
