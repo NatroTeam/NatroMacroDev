@@ -107,6 +107,7 @@ OnMessage(0x5555, nm_backgroundEvent, 255)
 OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
+OnMessage(0x5559, nm_FindItem)
 
 ; set version identifier
 VersionID := "1.0.0.2"
@@ -9557,6 +9558,56 @@ nm_AmuletPrompt(decision:=0, *){
 		nm_setShiftLock(Prev_ShiftLock)
 		return 0
 	}
+}
+nm_FindItem(chosenItem, *) {
+	global shiftLockEnabled, bitmaps
+	static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "Snowflake", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
+	GetRobloxClientPos()
+	DetectHiddenWindows 1
+	if windowWidth == 0 {
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			sendMessage 0x5559
+		DetectHiddenWindows 0
+		return 0
+	}
+	Prev_ShiftLock := ShiftLockEnabled
+	yOffset := GetYOffset()
+	nm_setShiftLock(0)
+	ActivateRoblox()
+	if (nm_OpenMenu("itemmenu") = 0) {
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			SendMessage 0x5559,, 2
+		DetectHiddenWindows 0
+		nm_setShiftLock(Prev_ShiftLock)
+		return 0
+	}
+	MouseMove windowX+46, windowY+yOffset+219
+	Loop 55 {
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+150 "|306|" windowHeight-300)
+		if (Gdip_ImageSearch(pBMScreen, bitmaps[items[chosenitem]], &itemCoords,,,,,5)) {
+			Gdip_DisposeImage(pBMScreen)
+			break
+		}
+		for k,v in items {
+			if (Gdip_ImageSearch(pBMScreen, bitmaps[v], , , , , , 5)) {
+				Send "{Wheel" (k > chosenItem ? "Up" : "Down") " 1}"
+				break
+			}
+			if A_Index = items.length
+				Send "{WheelUp 1}"
+		}
+		Gdip_DisposeImage(pBMScreen)
+		sleep 300
+	}
+	DetectHiddenWindows 1
+	if !itemCoords
+		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, 0, 1, , , , , , 2000) : ""
+	else
+		WinExist("Status.ahk ahk_class AutoHotkey") ? SendMessage(0x5559, StrSplit(itemCoords,",")[2]+windowY+yOffset+140, , , , , , , 2000) : ""
+	sleep 1000
+	DetectHiddenWindows 0
+	nm_OpenMenu()
+	nm_setShiftLock(Prev_ShiftLock)
 }
 nm_gotoRamp(){
 	global FwdKey, RightKey, HiveSlot, state, objective, HiveConfirmed

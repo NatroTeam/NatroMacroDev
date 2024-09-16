@@ -88,6 +88,7 @@ OnMessage(0xC2, nm_setStatus, 255)
 OnMessage(0x5552, nm_setGlobalInt, 255)
 OnMessage(0x5553, nm_setGlobalStr, 255)
 OnMessage(0x5556, nm_sendHeartbeat)
+OnMessage(0x5559, nm_sendItemPicture)
 
 discord.SendEmbed("Connected to Discord!", 5066239)
 
@@ -922,6 +923,11 @@ nm_command(command)
 					{
 						"name": "' commandPrefix 'restart",
 						"value": "Restarts your computer",
+						"inline": true
+					},
+					{
+						"name": "' commandPrefix 'finditem [item]",
+						"value": "finds an item in your inventory and send you a screenshot",
 						"inline": true
 					}]
 				}],
@@ -2312,6 +2318,22 @@ nm_command(command)
 			postdata .= "]}"
 			discord.SendMessageAPI(postdata)
 		}
+		
+		case "FindItem":
+		static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "Snowflake", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
+		UI := SubStr(command.content, 11) ; user input
+		if !(UI) {
+			command_buffer.RemoveAt(1)
+			return discord.SendEmbed("Missing required parameter!\n``````?finditem [itemname]``````", 16711731, , , , id)
+		}
+		closestItem:=findClosestItem(items,UI)
+		if closestItem.dist > 6 || not closestItem.item
+			discord.SendEmbed("Item ``" UI "`` is not valid", 5066239, , , , id)
+		else
+			DetectHiddenWindows 1
+			if WinExist("natro_macro ahk_class AutoHotkey")
+				SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)	
+			DetectHiddenWindows 0
 
 
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
@@ -2322,6 +2344,39 @@ nm_command(command)
 	}
 
 	command_buffer.RemoveAt(1)
+	LevenshteinDistance(s1, s2) {
+		len1 := StrLen(s1), len2 := StrLen(s2)
+		s1 := StrSplit(s1), s2 := StrSplit(s2)
+		d := {}, d.0 := { 0: 0 }
+		Loop len1
+			d.%A_Index% := { 0: A_Index }
+		Loop len2
+			d.0.%A_Index% := A_Index
+		Loop len1 {
+			i := A_Index
+			Loop len2 {
+				j := A_Index  ; only for simplicity
+				cost := s1[i] != s2[j]
+				d.%i%.%j% := Min(d.%i - 1%.%j% + 1, d.%i%.%j - 1% + 1, d.%i - 1%.%j - 1% + cost)
+			}
+		}
+		return d.%len1%.%len2%
+	}
+	findClosestItem(arr,needle) {
+		dist := StrLen(needle)
+		for i,v in arr
+			if (d := LevenshteinDistance(needle, v)) < dist
+				dist := d, item := v
+		if !IsSet(item)
+			return {item:0,dist:100} ;large dist to break
+		return {item:item,dist:dist}
+	}
+	ObjHasValue(obj, value) {
+		for k,v in obj
+			if (v = value)
+			return k
+		return 0
+	}
 }
 
 class discord
@@ -2697,6 +2752,25 @@ nm_sendHeartbeat(*)
 		PostMessage 0x5556, 3
 	}
 	return 0
+}
+
+nm_sendItemPicture(wParam, lParam,*) {
+	critical
+	switch wParam {
+		case 0:
+			switch lParam {
+				case 0:
+					discord.SendEmbed("No Roblox window found!", 16711731)
+				case 1:
+					discord.SendEmbed("Item was not found.", 16711731)
+				case 2:
+					discord.SendEmbed("Can't open inventory!", 16711731)
+			}
+		default:
+			GetRobloxClientPos()
+			discord.SendEmbed("Item Found!", 5066239, , (pBMScreen := Gdip_BitmapFromScreen(windowX "|" wParam "|306|97")))
+			Gdip_DisposeImage(pBMScreen)
+	}
 }
 
 ExitFunc(*)
