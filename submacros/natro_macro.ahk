@@ -18,7 +18,6 @@ You should have received a copy of the license along with Natro Macro. If not, p
 ;@Ahk2Exe-SetCompanyName Natro Team
 ;@Ahk2Exe-SetCopyright Copyright © Natro Team
 ;@Ahk2Exe-SetOrigFilename natro_macro.exe
-
 #MaxThreads 255
 #Requires AutoHotkey v2.0
 #SingleInstance Force
@@ -2047,7 +2046,9 @@ TraySetIcon "nm_image_assets\auryn.ico"
 A_TrayMenu.Delete()
 A_TrayMenu.Add()
 A_TrayMenu.Add("Open Logs", (*) => ListLines())
+A_TrayMenu.Add("Copy Logs", copyLogFile)
 A_TrayMenu.Add()
+
 A_TrayMenu.Add("Edit This Script", (*) => Edit())
 A_TrayMenu.Add("Suspend Hotkeys", (*) => (A_TrayMenu.ToggleCheck("Suspend Hotkeys"), Suspend()))
 A_TrayMenu.Add()
@@ -8173,7 +8174,8 @@ nm_DebugLogGUI(*){
 	DebugLogGui.SetFont("s8 cDefault Norm", "Tahoma")
 	DebugLogGui.Add("CheckBox", "x10 y6 vDebugLogEnabled Checked" DebugLogEnabled, "Enable Debug Logging").OnEvent("Click", nm_DebugLogCheck)
 	DebugLogGui.Add("Button", "xp+140 y5 h16", "Go To File").OnEvent("Click", (*) => Run('explorer.exe /e, /n, /select,"' A_WorkingDir '\settings\debug_log.txt"'))
-	DebugLogGui.Show("w210 h20")
+	DebugLogGui.Add("Button", "xp yp+20 hp wp", "Copy Logs").OnEvent("Click", copyLogFile)
+	DebugLogGui.Show("w210 h36")
 }
 nm_DebugLogCheck(*){
 	global
@@ -20549,6 +20551,57 @@ mp_HarvestPlanter(PlanterIndex) {
 		}
 		return 1
 	}
+}
+
+/**
+ * FileToClipboard(path)
+ * @param path full or relative path to the file. wildcards are allowed
+ * @author Lexikos coverted by just me (https://www.autohotkey.com/boards/viewtopic.php?t=1103)
+ */
+FileToClipboard(PathToCopy) {
+	Loop Files, PathToCopy
+		PathToCopy := A_LoopFileFullPath
+	hPath := DllCall("GlobalAlloc", "UInt", 0x42, "UInt", 20 + StrPut(PathToCopy) + 2, "UPtr")
+	pPath := DllCall("GlobalLock", "Ptr", hPath, "UPtr")
+	NumPut("UInt", 20, pPath)
+	NumPut("UInt", 1 , pPath, 16)
+	StrPut(PathToCopy, pPath + 20)
+	DllCall("GlobalUnlock", "UPtr", hPath)
+	DllCall("OpenClipboard", "Ptr", 0)
+	DllCall("EmptyClipboard")
+	DllCall("SetClipboardData","UInt", 0xF, "Ptr", hPath)
+	DllCall("CloseClipboard")
+	return DllCall("IsClipboardFormatAvailable", "uint", 0xF)
+}
+copyLogFile(*) {
+	static tempPath := A_Temp "\debug_log.txt", os_version := ""
+	content := FileRead(".\settings\debug_log.txt")
+	out := ""
+	for line in StrSplit(content, "`n", "`r")
+		if line
+			out .= line "`n"
+	until A_Index = 50
+	if (!os_version) {
+		os_version := "winmgmts error!"
+		for objItem in ComObjGet("winmgmts:").ExecQuery("SELECT * FROM Win32_OperatingSystem")
+			os_version := Trim(StrReplace(StrReplace(StrReplace(StrReplace(objItem.Caption, "Microsoft"), "Майкрософт"), "مايكروسوفت"), "微软"))
+	}
+	out .=
+	(
+	'
+	###########################################
+	OSVersion: ' os_version ' : ' (A_Is64bitOS ? '64-bit' : '32-bit') '
+	AutoHotkey Version: ' A_AhkVersion '; ' (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? "Using included AHK" : "Using installed AHK") '
+	Natro Version: ' VersionID '
+	Installation Path: ' StrReplace('C:\users\ninju\documents\natromacrodev', A_UserName, '<user>') '
+	###########################################
+	'
+	)
+	F:=FileOpen(tempPath, "w"), F.write(out), F.Close()
+	if FileToClipboard(tempPath)
+		MsgBox("Successfully copied debug log file!","Debug Log Options", 0x40000 " iconi")
+	else
+		MsgBox("Error: failed to copy logs to clipboard!", "Debug Log Options", 0x40010)
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
