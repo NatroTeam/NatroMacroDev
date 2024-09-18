@@ -20593,10 +20593,11 @@ copyLogFile(*) {
 	OSVersion: ' os_version ' : ' (A_Is64bitOS ? '64-bit' : '32-bit') '
 	AutoHotkey Version: ' A_AhkVersion '; ' (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? "Using included AHK" : "Using installed AHK") '
 	Natro Version: ' VersionID '
-	Installation Path: ' StrReplace('C:\users\ninju\documents\natromacrodev', A_UserName, '<user>') '
+	Installation Path: ' StrReplace(A_WorkingDir, A_UserName, '<user>') '
 	###########################################
 	'
 	)
+
 	F:=FileOpen(tempPath, "w"), F.write(out), F.Close()
 	if FileToClipboard(tempPath)
 		MsgBox("Successfully copied debug log file!","Debug Log Options", 0x40000 " iconi")
