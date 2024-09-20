@@ -208,7 +208,7 @@ nm_importPatterns()
 			nm_Walk(param1, param2, param3?) => ""
 			Gdip_ImageSearch(*) => ""
 			Gdip_BitmapFromBase64(*) => ""
-
+			nm_CameraRotation(param1, param2) => ""
 			' pattern '
 
 			'
@@ -8757,6 +8757,16 @@ nm_testButton(*){
 		FieldName:=FieldPattern:=FieldPatternSize:=FieldReturnType:=FieldSprinklerLoc:=FieldRotateDirection:=""
 		FieldUntilPack:=FieldPatternReps:=FieldPatternShift:=FieldSprinklerDist:=FieldRotateTimes:=FieldDriftCheck:=FieldPatternInvertFB:=FieldPatternInvertLR:=FieldUntilMins:=0
 
+		nm_CameraRotation(Dir, count) {
+			Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Mod(Abs(LR), 8) "}{" Rot%(UD > 0 ? "Up" : "Down")% " " Abs(UD) "}"), -1)
+			send "{" Rot%Dir% " " count "}"
+			Switch Dir,0 {
+				Case "Left": LR -= count
+				Case "Right": LR += count
+				Case "Up": UD -= count
+				Case "Down": UD += count
+			}
+		}
 		' nm_PathVars()
 		)
 	)
@@ -14986,7 +14996,18 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 			FieldSprinklerDist:=' FieldSprinklerDist '
 			FieldRotateDirection:="' FieldRotateDirection '"
 			FieldRotateTimes:=' FieldRotateTimes '
-			FieldDriftCheck:=' FieldDriftCheck
+			FieldDriftCheck:=' FieldDriftCheck '
+			nm_CameraRotation(Dir, count) {
+				Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Mod(Abs(LR), 8) "}{" Rot%(UD > 0 ? "Up" : "Down")% " " Abs(UD) "}"), -1)
+				send "{" Rot%Dir% " " count "}"
+				Switch Dir,0 {
+					Case "Left": LR -= count
+					Case "Right": LR += count
+					Case "Up": UD -= count
+					Case "Down": UD += count
+				}
+			}
+			'
 			)
 		) ; create / replace cycled walk script for this gather session
 	else
