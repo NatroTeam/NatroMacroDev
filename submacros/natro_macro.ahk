@@ -20574,7 +20574,7 @@ FileToClipboard(PathToCopy) {
 	return DllCall("IsClipboardFormatAvailable", "uint", 0xF)
 }
 copyLogFile(*) {
-	static tempPath := A_Temp "\debug_log.txt", os_version := ""
+	static tempPath := A_Temp "\debug_log.txt", os_version := "", processorName := '', RAMAmount := 0, manufacturer := ''
 	content := FileRead(".\settings\debug_log.txt")
 	out := ""
 	for line in StrSplit(content, "`n", "`r")
@@ -20583,8 +20583,17 @@ copyLogFile(*) {
 	until A_Index = 50
 	if (!os_version) {
 		os_version := "winmgmts error!"
-		for objItem in ComObjGet("winmgmts:").ExecQuery("SELECT * FROM Win32_OperatingSystem")
+		for objItem in (winmgmts:=ComObjGet("winmgmts:")).ExecQuery("SELECT * FROM Win32_OperatingSystem")
 			os_version := Trim(StrReplace(StrReplace(StrReplace(StrReplace(objItem.Caption, "Microsoft"), "Майкрософт"), "مايكروسوفت"), "微软"))
+		;GET CPU Name
+	}
+	if (os_version != 'winmgmts error!' && (!processorName || !RAMAmount || !manufacturer)) {
+		if !isSet(winmgmts)
+			winmgmts := ComObjGet("winmgmts:")
+		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_Processor")
+			processorName := objItem.Name
+		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_ComputerSystem")
+			manufacturer := objItem.manufacturer, RAMAmount := round(objItem.TotalPhysicalMemory / 1073741824, 1)
 	}
 	out .=
 	(
@@ -20593,7 +20602,12 @@ copyLogFile(*) {
 	OSVersion: ' os_version ' : ' (A_Is64bitOS ? '64-bit' : '32-bit') '
 	AutoHotkey Version: ' A_AhkVersion '; ' (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? "Using included AHK" : "Using installed AHK") '
 	Natro Version: ' VersionID '
-	Installation Path: ' StrReplace(A_WorkingDir, A_UserName, '<user>') '
+	Installation Path: ' StrReplace(A_WorkingDir, A_UserName, '<user>')
+	. (processorName ? '`r`nCPU: ' processorName : '')
+	. (manufacturer ? '`r`nManufacturer: ' manufacturer : '')
+	. (RAMAmount ? '`r`nRAM: ' RAMAmount 'GB' : '')
+	.
+	'
 	###########################################
 	'
 	)
