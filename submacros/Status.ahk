@@ -2330,7 +2330,40 @@ nm_command(command)
 				case "cpu":
 					discord.SendEmbed("CPU Usage: " nm_getCPUPercentage() "%", 5066239, , , , id)
 				case "ram":
-					discord.SendEmbed("RAM Usage: " nm_getRAMPercentage() "%", 5066239, , , , id)
+					ramObj := nm_getRAMUsage()
+					postdata :=	
+					(
+					'{
+						"allowed_mentions": {
+						"parse": []
+						},
+						"message_reference": {
+							"message_id": "' id '",
+							"fail_if_not_exists": false
+						},
+						"embeds": [{
+							"color": "5066239",
+							"title": "RAM Usage",
+							"fields": [{
+								"name": "Used Memory",
+								"value": "``' ramObj.usedMemory 'GB``",
+								"inline": true
+							},
+							{
+								"name": "Total Memory",
+								"value": "``' ramObj.totalMemory 'GB``",
+								"inline": true
+							},
+							{
+								"name": "Percentage Used",
+								"value": "``' ramObj.percentage '%``",
+								"inline": true
+							}]
+						}]
+					}
+					'
+					)
+					discord.SendMessageAPI(postdata)
 				default:
 					discord.SendEmbed("Invalid parameter!\n``````?performance [cpu|ram]``````", 16711731, , , , id)
 			}
@@ -2750,4 +2783,13 @@ nm_getRAMPercentage() {
 	totalMemory := NumGet(MEMORYSTATUSEX,8,"int64")
 	freeMemory := NumGet(MEMORYSTATUSEX, 16, "int64")
 	return (totalMemory - freeMemory) * 100 // totalMemory
+}
+
+nm_getRAMUsage() {
+	static MEMORYSTATUSEX := Buffer(64, 0)
+	NumPut("uint",64, MEMORYSTATUSEX)
+	DllCall("Kernel32.dll\GlobalMemoryStatusEx", "Ptr", MEMORYSTATUSEX.Ptr)
+	totalMemory := NumGet(MEMORYSTATUSEX,8,"int64")
+	freeMemory := NumGet(MEMORYSTATUSEX, 16, "int64")
+	return {totalMemory:Round(totalMemory / 1073741824, 1), freeMemory: Round(freeMemory / 1073741824, 1), percentage: Round((totalMemory - freeMemory) / totalMemory * 100, 1), usedMemory: Round((totalMemory - freeMemory) / 1073741824, 1)}
 }
