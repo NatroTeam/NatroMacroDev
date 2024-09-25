@@ -20553,70 +20553,45 @@ mp_HarvestPlanter(PlanterIndex) {
 	}
 }
 
-/**
- * FileToClipboard(path)
- * @param path full or relative path to the file. wildcards are allowed
- * @author Lexikos coverted by just me (https://www.autohotkey.com/boards/viewtopic.php?t=1103)
- */
-FileToClipboard(PathToCopy) {
-	Loop Files, PathToCopy
-		PathToCopy := A_LoopFileFullPath
-	hPath := DllCall("GlobalAlloc", "UInt", 0x42, "UInt", 20 + StrPut(PathToCopy) + 2, "UPtr")
-	pPath := DllCall("GlobalLock", "Ptr", hPath, "UPtr")
-	NumPut("UInt", 20, pPath)
-	NumPut("UInt", 1 , pPath, 16)
-	StrPut(PathToCopy, pPath + 20)
-	DllCall("GlobalUnlock", "UPtr", hPath)
-	DllCall("OpenClipboard", "Ptr", 0)
-	DllCall("EmptyClipboard")
-	DllCall("SetClipboardData","UInt", 0xF, "Ptr", hPath)
-	DllCall("CloseClipboard")
-	return DllCall("IsClipboardFormatAvailable", "uint", 0xF)
-}
 copyLogFile(*) {
-	static tempPath := A_Temp "\debug_log.txt", os_version := "", processorName := '', RAMAmount := 0, manufacturer := ''
+	static tempPath := A_Temp "\debug_log.txt", os_version := "Cannot detect OS version", processorName := '', RAMAmount := 0
 	content := FileRead(".\settings\debug_log.txt")
-	out := ""
 	for line in StrSplit(content, "`n", "`r")
 		if line
 			out .= line "`n"
 	until A_Index = 50
-	if (!os_version) {
-		os_version := "winmgmts error!"
-		for objItem in (winmgmts:=ComObjGet("winmgmts:")).ExecQuery("SELECT * FROM Win32_OperatingSystem")
+	if !isSet(winmgmts)
+		winmgmts := ComObjGet("winmgmts:")
+	if (os_version = "Cannot detect OS version") {
+		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_OperatingSystem")
 			os_version := Trim(StrReplace(StrReplace(StrReplace(StrReplace(objItem.Caption, "Microsoft"), "Майкрософт"), "مايكروسوفت"), "微软"))
-		;GET CPU Name
 	}
-	if (os_version != 'winmgmts error!' && (!processorName || !RAMAmount || !manufacturer)) {
-		if !isSet(winmgmts)
-			winmgmts := ComObjGet("winmgmts:")
+	if (!processorName){
 		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_Processor")
-			processorName := objItem.Name
-		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_ComputerSystem")
-			manufacturer := objItem.manufacturer, RAMAmount := round(objItem.TotalPhysicalMemory / 1073741824, 1)
+			processorName := Trim(objItem.Name)
 	}
-	out .=
+	if (!RAMAmount) {
+		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_ComputerSystem")
+			RAMAmount := round(objItem.TotalPhysicalMemory / 1073741824, 1)
+	}
+	out :=	
 	(
-	'
-	###########################################
-	OSVersion: ' os_version ' : ' (A_Is64bitOS ? '64-bit' : '32-bit') '
+	'``````md
+	#          Info        
+	OSVersion: ' os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')
 	AutoHotkey Version: ' A_AhkVersion '; ' (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? "Using included AHK" : "Using installed AHK") '
 	Natro Version: ' VersionID '
 	Installation Path: ' StrReplace(A_WorkingDir, A_UserName, '<user>')
 	. (processorName ? '`r`nCPU: ' processorName : '')
-	. (manufacturer ? '`r`nManufacturer: ' manufacturer : '')
 	. (RAMAmount ? '`r`nRAM: ' RAMAmount 'GB' : '')
-	.
 	'
-	###########################################
+	#          Latest Logs     
 	'
 	)
-
-	F:=FileOpen(tempPath, "w"), F.write(out), F.Close()
-	if FileToClipboard(tempPath)
-		MsgBox("Successfully copied debug log file!","Debug Log Options", 0x40000 " iconi")
-	else
-		MsgBox("Error: failed to copy logs to clipboard!", "Debug Log Options", 0x40010)
+	LatestDebuglog := FileRead(".\settings\debug_log.txt")
+	out .= SubStr(LatestDebugLog, InStr(LatestDebuglog, "`n", , ,-24)) "``````" ;InStr: retrieve the last 25 lines of the debug log (log is oldest to newest) [Integer] | SubStr: retrieve the content of the last 25 lines
+	A_Clipboard := out
+	MsgBox("Copied Debug stats to your clipboard.")
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
