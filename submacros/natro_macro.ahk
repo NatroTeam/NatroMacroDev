@@ -20555,12 +20555,8 @@ mp_HarvestPlanter(PlanterIndex) {
 
 copyLogFile(*) {
 	static tempPath := A_Temp "\debug_log.txt", os_version := "Cannot detect OS version", processorName := '', RAMAmount := 0
-	content := FileRead(".\settings\debug_log.txt")
-	for line in StrSplit(content, "`n", "`r")
-		if line
-			out .= line "`n"
-	until A_Index = 50
-	if !isSet(winmgmts)
+	alt := !!GetKeyState("Control")
+	if ((!processorName) || (os_version = "Cannot detect OS version"))
 		winmgmts := ComObjGet("winmgmts:")
 	if (os_version = "Cannot detect OS version") {
 		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_OperatingSystem")
@@ -20571,13 +20567,15 @@ copyLogFile(*) {
 			processorName := Trim(objItem.Name)
 	}
 	if (!RAMAmount) {
-		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_ComputerSystem")
-			RAMAmount := round(objItem.TotalPhysicalMemory / 1073741824, 1)
+		MEMORYSTATUSEX := Buffer(64,0)
+		NumPut("uint", 64, MEMORYSTATUSEX)
+		DllCall("kernel32\GlobalMemoryStatusEx", "ptr", MEMORYSTATUSEX)
+		RAMAmount := Round(NumGet(MEMORYSTATUSEX, 8, "int64") / 1073741824, 1)
 	}
 	out :=	
 	(
 	'``````md
-	#          Info        
+	# Info -----------------------------------------------
 	OSVersion: ' os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')
 	AutoHotkey Version: ' A_AhkVersion '; ' (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? "Using included AHK" : "Using installed AHK") '
 	Natro Version: ' VersionID '
@@ -20585,13 +20583,13 @@ copyLogFile(*) {
 	. (processorName ? '`r`nCPU: ' processorName : '')
 	. (RAMAmount ? '`r`nRAM: ' RAMAmount 'GB' : '')
 	'
-	#          Latest Logs     
+	# Latest Logs ----------------------------------------
 	'
 	)
 	LatestDebuglog := FileRead(".\settings\debug_log.txt")
-	out .= SubStr(LatestDebugLog, InStr(LatestDebuglog, "`n", , ,-24)) "``````" ;InStr: retrieve the last 25 lines of the debug log (log is oldest to newest) [Integer] | SubStr: retrieve the content of the last 25 lines
+	out .= SubStr(LatestDebugLog, InStr(LatestDebuglog, "`n", , ,-(alt ? 40 : 26)) + 1) "``````" ;InStr: retrieve the last 25 lines of the debug log (log is oldest to newest) [Integer] | SubStr: retrieve the content of the last 25 lines
 	A_Clipboard := out
-	MsgBox("Copied Debug stats to your clipboard.")
+	MsgBox("Copied Debug stats to your clipboard.", "Copy Debug Logs", 0x40040)
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
