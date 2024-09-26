@@ -2357,7 +2357,7 @@ nm_command(command)
 							{
 								"name": "Percentage Used",
 								"value": "``' ramObj.percentage '%``",
-								"inline": true
+								"inline": false
 							}]
 						}]
 					}
@@ -2789,7 +2789,8 @@ nm_getRAMUsage() {
 	static MEMORYSTATUSEX := Buffer(64, 0)
 	NumPut("uint",64, MEMORYSTATUSEX)
 	DllCall("Kernel32.dll\GlobalMemoryStatusEx", "Ptr", MEMORYSTATUSEX.Ptr)
+	percentage := NumGet(MEMORYSTATUSEX, 4, "uint")
 	totalMemory := NumGet(MEMORYSTATUSEX,8,"int64")
 	freeMemory := NumGet(MEMORYSTATUSEX, 16, "int64")
-	return {totalMemory:Round(totalMemory / 1073741824, 1), freeMemory: Round(freeMemory / 1073741824, 1), percentage: Round((totalMemory - freeMemory) / totalMemory * 100, 1), usedMemory: Round((totalMemory - freeMemory) / 1073741824, 1)}
+	return {totalMemory:Round(totalMemory / 1073741824, 1), freeMemory: Round(freeMemory / 1073741824, 1), percentage: percentage, usedMemory: Round((totalMemory - freeMemory) / 1073741824, 1)}
 }
