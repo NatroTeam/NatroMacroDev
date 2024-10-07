@@ -723,7 +723,7 @@ nm_status(status)
 		if (ssCheck = 1)
 		{
 			global HoneyUpdate
-			if (((state = "Gathering") && !InStr(objective, "Ended")) || ((state = "Converting") && !InStr(objective, "Refreshed") && !InStr(objective, "Emptied")))
+			if (HoneyUpdateSSCheck && (((state = "Gathering") && !InStr(objective, "Ended")) || ((state = "Converting") && !InStr(objective, "Refreshed") && !InStr(objective, "Emptied"))))
 				HoneyUpdate := (WebhookEasterEgg = 1) ? colors[colorIndex := Mod(colorIndex, 7) + 1] : color
 			else if (state != "Detected")
 				HoneyUpdate := 0
