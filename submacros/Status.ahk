@@ -2776,15 +2776,6 @@ nm_getCPUPercentage() {
 	return load
 }
 
-nm_getRAMPercentage() {
-	static MEMORYSTATUSEX := Buffer(64, 0)
-	NumPut("uint",64, MEMORYSTATUSEX)
-	DllCall("Kernel32.dll\GlobalMemoryStatusEx", "Ptr", MEMORYSTATUSEX.Ptr)
-	totalMemory := NumGet(MEMORYSTATUSEX,8,"int64")
-	freeMemory := NumGet(MEMORYSTATUSEX, 16, "int64")
-	return (totalMemory - freeMemory) * 100 // totalMemory
-}
-
 nm_getRAMUsage() {
 	static MEMORYSTATUSEX := Buffer(64, 0)
 	NumPut("uint",64, MEMORYSTATUSEX)
