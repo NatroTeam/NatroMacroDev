@@ -3252,7 +3252,7 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 							: "") FileName
 			, "w"
 		)
-        f.write(content)
+        f.write('ï»¿' . content)
         f.close()
 		if ext = "ini" {
 			if msgbox(
