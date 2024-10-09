@@ -21268,6 +21268,7 @@ nm_priorityListGui(*) {
 	(bitmaps := Map()).CaseSense := 0
 	#Include "%A_ScriptDir%\nm_image_assets\webhook_gui\bitmaps.ahk"
 
+	OnMessage(0x20, (*)=>0)
 	;;config
 	defaultList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 	priorityList := []
@@ -21301,6 +21302,7 @@ nm_priorityListGui(*) {
 	]
 
 	nm_priorityGui()
+	WM_MOUSEMOVE()
 	Msgbox("Reminder:``n``nChanging priority does not nessisarily affect the order of actions, but rather the order in which they are executed.","Priority list",0x40040)
 
 	priorityGui["moveRegion"].move(0, 0, w-42, 30)
@@ -21362,8 +21364,25 @@ nm_priorityListGui(*) {
 		Gdip_TextToGraphics(G, "Reset", "x15 y" h-43 " s15 c" (default ? "FFCCCCCC" : "FFFFFFFF") " Bold Center","Arial", w-62)
 		Gdip_TextToGraphics(G, "?", "x" w-45 " y" h-43 " s15 cFFFFFFFF Bold Center","Arial", 30)
 		UpdateLayeredWindow(priorityGui.hwnd, hdc)
-		OnMessage(0x201, WM_LBUTTONDOWN)
+		static _ := (OnMessage(0x201, WM_LBUTTONDOWN), OnMessage(0x200, WM_MOUSEMOVE))
 		OnExit(ExitFunc)
+	}
+	WM_MOUSEMOVE(*) {
+		static hIDC_HAND := DllCall("LoadCursor", "Ptr", 0, "ptr", 0x7F89), hIDC_ARROW := DllCall("LoadCursor", "Ptr", 0, "ptr", 0x7F00), current := 1
+		MouseGetPos(,,,&hCtrl, 2)
+		if !hCtrl {
+			if current
+				DllCall("SetCursor", "Ptr", hIDC_ARROW), current := 0
+			return	
+		}
+		switch priorityGui[hCtrl].name, 0 {
+			case "Reset", "ToolTip":
+				if !current
+					DllCall("SetCursor", "Ptr", hIDC_HAND), current := 1
+			default:
+				if current
+					DllCall("SetCursor", "Ptr", hIDC_ARROW), current := 0
+		}
 	}
 	ObjHasValue(obj,value) {
 		for q,o in obj
@@ -21393,46 +21412,15 @@ nm_priorityListGui(*) {
 				priorityGui.GetPos(,&wy)
 				index := SubStr(priorityGui[hCtrl].name,2)
 				offset := y - wy-(index*34+3)
-				ReplaceSystemCursors("IDC_HAND")
 				While GetKeyState("LButton", "P") {
 					MouseGetPos(,&y)
 					y-=offset + wy
 					nm_priorityGui(priorityList[index], y)
 				}
-				ReplaceSystemCursors()
 				nm_priorityGui(priorityList[index], y, 1)
 				for k,v in priorityList
 					out .= ObjHasValue(defaultList, v)
 				updateInt("priorityListNumeric", out)
-		}
-	}
-	ReplaceSystemCursors(IDC := "")
-	{
-		static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
-			, SysCursors := Map(  "IDC_APPSTARTING", 32650
-								, "IDC_ARROW"      , 32512
-								, "IDC_CROSS"      , 32515
-								, "IDC_HAND"       , 32649
-								, "IDC_HELP"       , 32651
-								, "IDC_IBEAM"      , 32513
-								, "IDC_NO"         , 32648
-								, "IDC_SIZEALL"    , 32646
-								, "IDC_SIZENESW"   , 32643
-								, "IDC_SIZENWSE"   , 32642
-								, "IDC_SIZEWE"     , 32644
-								, "IDC_SIZENS"     , 32645
-								, "IDC_UPARROW"    , 32516
-								, "IDC_WAIT"       , 32514 )
-		if !IDC
-			DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
-		else
-		{
-			hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
-			for k, v in SysCursors
-			{
-				hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
-				DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
-			}
 		}
 	}
 	UpdateInt(name, value)
@@ -21448,7 +21436,6 @@ nm_priorityListGui(*) {
 	{
 		PriorityGui.Destroy()
 		try Gdip_Shutdown(pToken)
-		ReplaceSystemCursors()
 	}
 	'
 	)
