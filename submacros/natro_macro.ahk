@@ -3242,16 +3242,27 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 					'ct- paths are no longer supported!
 					Use gtf- instead.'
 				), , 0x1010)
-		hCursor := DllCall("LoadCursor", "ptr", 0, "int", 0x7F02, "Ptr")
-		DllCall("SetCursor", "Ptr", hCursor)
-		f := FileOpen(outputPath:=
-			(RegExMatch(name, "i)^(nm_config|field_config|manual_planters|manual_hotbar|mutations)$") ? "settings\" 
-				: ext = "preset" ? "settings\presets\"
-					: fileName ~= "i)^(wf|gt(b|c|p|q|f))-" ? (type :='paths') "\"
-						: ext = "ahk" ? (type := "patterns") "\"
-							: "") FileName
-			, "w"
-		)
+		switch {
+			;* check if its a config:
+			case (name ~= "i)^(nm_config|field_config|manual_planters|manual_hotbar|mutations)$"):
+				outputPath := "settings\"
+		;* check if its a preset:
+			case (ext = "preset"):
+				outputPath := "settings\presets\"
+		;* ahk files:
+			case FileName ~= "i)^(wf|gt(b|c|p|q|f))-":
+				outputPath := (_type := "paths") "\"
+			case (ext = "ahk"):
+				;* whitelist keywords for patterns:
+				if !(content ~= "im)^\s*(nm_)?(walk)") && !((content ~= "im)^\s*(send)") && (content ~= "im)^\s*(hyper)?(sleep)"))
+					return MsgBox(
+							(
+							'The pattern "' v '" seems to be an invalid pattern!'
+							), , 0x40010
+						)
+				outputPath := (_type := "patterns") "\"
+		}
+		f:=FileOpen(outputPath . FileName , "w")
         f.write('ï»¿' . content)
         f.close()
 		if ext = "ini" {
@@ -3271,11 +3282,11 @@ nm_fileDrop(guiObj, guictrl, fileArr, x, y) {
 					),,0x1040)
 			return
 		}
-		if type = "patterns" && !ObjHasValue(patternlist,name)
+		if _type = "patterns" && !ObjHasValue(patternlist,name)
 			For i in ["FieldPattern1", "FieldPattern2", "FieldPattern3"]
 				MainGui[i].add([name])
-        (%'nm_import' type%)()
-        if (type = "paths")
+        (%'nm_import' _type%)()
+        if (_type = "paths")
             return msgbox('Successfully imported the path ' name '!')
         if (tabCtrl.value = 1 && (copyTo := ((y > 53 && y < 115) || 2 * (y > 115 && y < 175 && mainGui["fieldName2"].enabled) || 3 * (y > 175 && y < 235 && mainGui["fieldName3"].enabled)))) {
 			if (Msgbox('You dragged the pattern ' name '`r`non the ' (copyTo = 1 ? "first" : copyTo = 2 ? "second" : "third") ' gather settings!`r`nDo you want to use this pattern?', , 0x1044) = "Yes") {
