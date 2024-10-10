@@ -15356,24 +15356,22 @@ nm_convert(){
 	Sleep 500+(IsNumber(ConvertDelay) ? ConvertDelay : 0)*1000
 }
 nm_setSprinkler(field, loc, dist){
-	if (SprinklerType = "None")
-		return
-	FieldDim := {  ; Times are roughly 1/10 of the way to the edge of the field.
+	static FieldDim := {  ; Times are roughly 1/10 of the way to the edge of the field. | Width = Right/Left Key | Length = Fwd/Back Key
 		sunflower: {
-		Length: 0.55,
-		Width: 1.65
+		Length: 0.8,
+		Width: 1.4
 		},
 		dandelion: {
-		Length: 2.25,
-		Width: 0.75
+		Length: 1.6,
+		Width: 0.8
 		},
 		mushroom: {
-		Length: 1,
-		Width: 1.5
+		Length: 0.88,
+		Width: 1.28
 		},
-		blueflower: {
-		Length: 2.5,
-		Width: 0.5
+		blueflower: { ;(!)
+		Length: 2,
+		Width: 0.7
 		},
 		clover: {
 		Length: 1.75,
@@ -15428,6 +15426,8 @@ nm_setSprinkler(field, loc, dist){
 		Width: 2
 		}
 	}
+	if (SprinklerType = "None")
+		return
 	field := StrReplace(field, " ")
 	Length := FieldDim.%field%.Length*dist
 	Width := FieldDim.%field%.Width*dist
@@ -15451,7 +15451,8 @@ nm_setSprinkler(field, loc, dist){
 	KeyWait "F14", "T15 L"
 	nm_endWalk()
 
-	nm_placeSprinkler(loc)
+	if SprinklerKey ;could be undefined if the user is afk
+		nm_placeSprinkler(loc)
 }
 ;Place 1 sprinkler if loc is not defined, otherwise place all.
 nm_placeSprinkler(loc?){ 
@@ -20738,6 +20739,7 @@ start(*){
 		}
 	}
 	;find sprinkler hotbar
+	global SprinklerKey
 	pBMScreen := Gdip_BitmapFromScreen(WindowX+WindowWidth*0.5-260 "|" WindowY+WindowHeight-101 "|" 75*7 "|" 66)
 	if (Gdip_ImageSearch(pBMScreen, bitmaps["Sprinkler"], &pos, , , , , 60, , 4) = 1) {
 		x := SubStr(pos, 1, (comma := InStr(pos, ",")) - 1)
@@ -20746,8 +20748,26 @@ start(*){
 	Gdip_DisposeImage(pBMScreen)
 	;special hotbar cases
 	;SprinklerKey
-	global SprinklerKey
-	SprinklerKey:="sc00" SprinklerSlot+1
+	if (!IsSet(SprinklerSlot) || !RegExMatch(SprinklerSlot, "[1-7]")){
+		BoxesTimeout := []
+		BoxesTimeout.Push(Msgbox("Could not determine the hotbar slot of your sprinkler.`n`nYou can set the sprinkler slot manually after you press `"OK`" for this session.`n`nIf this issue persists, please join the discord and ask for assistance.","Sprinkler", "T30"))
+		Loop {
+			UserInput := InputBox("Enter sprinkler slot manually", "Sprinkler","T30")
+			BoxesTimeout.Push(UserInput.Result)
+			if (RegExMatch(UserInput.Value, "[1-7]")){
+				SprinklerKey := "sc00" 1+UserInput.Value
+				break
+			}
+			if UserInput.Value
+				Msgbox("Invalid input, numbers 1-7 only.", "Sprinkler", "T60")
+			if ObjHasValue(BoxesTimeout, "Timeout"){ ;if user takes too long to input
+				SprinklerKey := ""
+				break
+			}
+		}
+
+	} else
+		SprinklerKey:="sc00" SprinklerSlot+1
 	;MicroConverterKey
 	global MicroConverterKey
 	MicroConverterKey:="None"

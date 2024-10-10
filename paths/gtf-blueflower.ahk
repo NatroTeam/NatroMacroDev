@@ -4,11 +4,11 @@
     send "{e down}"
     HyperSleep(100)
     send "{e up}{" LeftKey " down}"
-    HyperSleep(675)
+    HyperSleep(690)
     send "{space 2}"
-    HyperSleep(2000)
+    HyperSleep(1900)
     send "{" LeftKey " up}"
-    HyperSleep(1250)
+    HyperSleep(1400)
     send "{space}{" RotLeft " 2}"
     Sleep 1000
 } else {
