@@ -337,7 +337,7 @@ nm_importConfig()
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
 		, "FDCWarn", 1
-		, "priorityListNumeric", 123456789)
+		, "priorityListNumeric", 12345678)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -8803,6 +8803,7 @@ nm_Start(){
 	Loop 
 		for i in priorityList
 			(%"nm_" i%)()
+    nm_planter()=>(mp_Planter(),ba_planter())
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -20659,6 +20660,7 @@ start(*){
 	Hotkey StartHotkey, "Off"
 	nm_setStatus("Begin", "Macro")
 	local ForceStart := (A_Args.Has(1) && (A_Args[1] = 1))
+    priorityList:=[], defaultPriorityList:=["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 	for i in StrSplit(priorityListNumeric)
 		priorityList.push(defaultPriorityList[i])
 	;Auto Field Boost WARNING @ start
@@ -21270,7 +21272,7 @@ nm_priorityListGui(*) {
 
 	OnMessage(0x20, (*)=>0)
 	;;config
-	defaultList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
+	defaultList := ["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 	priorityList := []
 	for i in StrSplit(' priorityListNumeric ')
 		priorityList.push(defaultList[i])
@@ -21279,7 +21281,7 @@ nm_priorityListGui(*) {
 	priorityGui.OnEvent("Close", (*) => ExitApp()), priorityGui.OnEvent("Escape", (*) => ExitApp())
 	priorityGui.Show("NA")
 
-	for i in ["moveRegion", "close", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "Reset", "ToolTip"]
+	for i in ["moveRegion", "close", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "Reset", "ToolTip"]
 		priorityGui.AddText("v" i)
 	priorityGui["Reset"].enabled := false
 	w:=250, h:=priorityList.Length * 34 + 87
@@ -21357,7 +21359,7 @@ nm_priorityListGui(*) {
 		}
 		Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid(accentColors[5]), 15, h-50, w-62, 30, 8)
 		Gdip_FillRoundedRectangle(G, pBrush, w-45, h-50, 30, 30, 8), Gdip_DeleteBrush(pBrush)
-		if (default := (priorityList[1] == defaultList[1] && priorityList[2] == defaultList[2] && priorityList[3] == defaultList[3] && priorityList[4] == defaultList[4] && priorityList[5] == defaultList[5] && priorityList[6] == defaultList[6] && priorityList[7] == defaultList[7] && priorityList[8] == defaultList[8] && priorityList[9] == defaultList[9]))
+		if (default := (priorityList[1] == defaultList[1] && priorityList[2] == defaultList[2] && priorityList[3] == defaultList[3] && priorityList[4] == defaultList[4] && priorityList[5] == defaultList[5] && priorityList[6] == defaultList[6] && priorityList[7] == defaultList[7] && priorityList[8] == defaultList[8]))
 			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid("0x50000000"), 17, h-48, w-66, 26, 8), Gdip_DeleteBrush(pBrush), priorityGui["Reset"].enabled := false
 		else
 			priorityGui["Reset"].enabled := true
@@ -21369,11 +21371,11 @@ nm_priorityListGui(*) {
 	}
 	WM_MOUSEMOVE(*) {
 		static hIDC_HAND := DllCall("LoadCursor", "Ptr", 0, "ptr", 0x7F89), hIDC_ARROW := DllCall("LoadCursor", "Ptr", 0, "ptr", 0x7F00), current := 1
-		MouseGetPos(,,,&hCtrl, 2)
-		if !hCtrl {
+		MouseGetPos(,,&hWnd,&hCtrl, 2)
+		if !hCtrl || !(hwnd = PriorityGui.hwnd) {
 			if current
 				DllCall("SetCursor", "Ptr", hIDC_ARROW), current := 0
-			return	
+			return
 		}
 		switch priorityGui[hCtrl].name, 0 {
 			case "Reset", "ToolTip":
@@ -21402,8 +21404,8 @@ nm_priorityListGui(*) {
 			case "close":
 				ExitApp()
 			case "Reset":
-				priorityList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
-				updateInt("priorityListNumeric", 123456789)
+				priorityList := ["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
+				updateInt("priorityListNumeric", 12345678)
 				nm_priorityGui()
 			case "ToolTip":
 				Msgbox("Priority List``r``n``r``nDrag and drop to reorder the priority list.``r``nPress Reset to reset the priority list back to default.``nNote:``n - The Priority List will not overwrite interrupts.``n - In one loop, each task will be executed.``n - The default priority is optimal for most players.","Priority List",0x40040)
