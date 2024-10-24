@@ -26,6 +26,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 OnError (e, mode) => (mode = "Return") ? -1 : 0
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
+CoordMode 'Pixel', 'Screen'
 
 if (A_Args.Length = 0)
 {
@@ -1002,6 +1003,11 @@ nm_command(command)
 					{
 						"name": "' commandPrefix 'prefix [prefix]",
 						"value": "Sets the command prefix, e.g. ``' commandPrefix 'prefix +``",
+						"inline": true
+					},
+                    {
+						"name": "' commandPrefix 'nectar",
+						"value": "Returns an image of your nectars",
 						"inline": true
 					}]
 				}],
@@ -2312,7 +2318,49 @@ nm_command(command)
 			postdata .= "]}"
 			discord.SendMessageAPI(postdata)
 		}
+        case "nectar", "nectars", "nec":
+        if !(nectars := getNectars())
+            return (discord.SendEmbed("Roblox window not found!", 16711731, , , , id), command_buffer.RemoveAt(1))
+        pBitmap := Gdip_CreateBitmap(1100, 211), G:= Gdip_GraphicsFromImage(pBitmap), Gdip_SetSmoothingMode(G,4)
+        for i,j in ["comforting","motivating","satisfying","refreshing","invigorating"] {
+            color := (j = "comforting") ? 0xff7e9eb3
+                : (j = "motivating") ? 0xff937db3
+                : (j = "satisfying") ? 0xffb398a7
+                : (j = "refreshing") ? 0xff78b375
+                : 0xffb35951 ; invigorating
 
+            nectar_value := nectars[j]
+            pPen := Gdip_CreatePen(color, 32), Gdip_DrawArc(G, pPen, 24+(A_Index-1)*220,20, 170, 170,-90, nectar_value/100*360), Gdip_DeletePen(pPen)
+            pPen := Gdip_CreatePen(color-0xd0000000, 32), Gdip_DrawArc(G, pPen, 24+(A_Index-1)*220, 20, 170, 170, -90, 360), Gdip_DeletePen(pPen)
+
+            pBrush := Gdip_BrushCreateSolid(color)
+            Gdip_TextToGraphics(G, nectar_value "%", "s40 Center Bold c" pBrush " x" 24+(A_Index-1)*220+85 " y80", "Segoe UI")
+            Gdip_DeleteBrush(pBrush)
+        }
+        Gdip_DeleteGraphics(G)
+        payload :=
+        (
+        '
+        {
+            "allowed_mentions": {
+                "parse": []
+            },
+            "message_reference": {
+                "message_id": "' id '",
+                "fail_if_not_exists": false
+            },
+            "embeds": [{
+                "title": "**Nectar Percentages**",
+                "color": ' 0x2b2d31 ',
+                "image": {
+                    "url": "attachment://nectar.png"
+                }
+            }]
+        }'
+        )
+        discord.CreateFormData(&postdata, &contentType, [Map("name","payload_json","content-type","application/json","content",payload),Map("name","file[0]","filename","nectar.png","content-type","image/png","pBitmap",pBitmap)])
+        discord.SendMessageAPI(postdata, contentType)
+        Gdip_DisposeImage(pBitmap)
 
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
@@ -2322,6 +2370,28 @@ nm_command(command)
 	}
 
 	command_buffer.RemoveAt(1)
+    getNectars(*) {
+		static nectarcolors := Map("comforting",0x7E9EB3, "motivating",0x937DB3, "satisfying",0xB398A7, "refreshing",0x78B375, "invigorating",0xB35951)
+		yOffset := GetYOffset(,&fail), GetRobloxClientPos()
+		if fail || !windowWidth
+			return false
+		activateRoblox()
+		out := Map("comforting", 0, "motivating", 0, "satisfying", 0, "refreshing", 0, "invigorating", 0)
+		for i,j in nectarcolors {
+			try if !PixelSearch(&px, &py, windowX, windowY+yOffset+30, windowX+860, windowY+yOffset+150, j)
+				continue
+			catch
+				continue
+			pixels := 1
+			loop 38 {
+				if PixelGetColor(px, ++py) != j
+					break
+				pixels++
+			}
+			out[i] := Round(pixels/38*100)
+		}
+		return out
+	}
 }
 
 class discord
