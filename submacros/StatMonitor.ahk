@@ -233,7 +233,7 @@ buff_bitmaps["pBMBearGummy"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAA
 buff_bitmaps["pBMBearScience"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAA4AAAABBAMAAAAcMII3AAAAFVBMVEUwLi1TTD+zjUy0jky8l1W5oXHevny+g95vAAAAE0lEQVR4AQEIAPf/ACNGUQAVZDIFbwFmjB55HwAAAABJRU5ErkJggg==")
 buff_bitmaps["pBMBearMother"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAABAAAAABBAMAAAAlVzNsAAAAJFBMVEVBNRlDNxtTRid8b0avoG69r22+sG7Qw4PRw4Te0Jbk153m2Z5VNHxxAAAAFElEQVR4AQEJAPb/AFVouTECSnZVDPsCv+2QpmwAAAAASUVORK5CYII=")
 buff_bitmaps["pBMBlessing"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAA4AAAAMAgMAAAAv7mRJAAAACVBMVEUAAADIyjzz8/PLJx4rAAAAAXRSTlMAQObYZgAAAEdJREFUeAEBPADD/wAAgAAAAAAAgAAAACIAAAAACAAAAAAIAAAAACIAAAAAAIAAAACAAAAAAgAgAAAAAAAAAAAAAAAAVVVVUGMZA8YHWu2lAAAAAElFTkSuQmCC")
-buff_bitmaps["100xBlessing"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAABIAAAAJCAYAAAA/33wPAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwwAADsMBx2+oZAAAADZJREFUKFNjoBr4/PnzfyiTMoBsECFD8coTMoho+aFnEDLAK48uCeIjY6gwHOCUx6aYdMDAAABrD3sBy6BkjgAAAABJRU5ErkJggg==")
+buff_bitmaps["100xBlessing"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAABIAAAAJCAYAAAA/33wPAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwgAADsIBFShKgAAAADZJREFUKFNjoCr4/PnzfyiTMoBsECFD8coTMoho+aFnEDLAK48uCeIjY6gwHOCUx6aYNMDAAAB+8XsBv9pIGQAAAABJRU5ErkJggg==")
 
 
 ; INFO FROM MAIN SCRIPT
@@ -707,11 +707,15 @@ DetectBuffs()
 			continue
 		}
 
+		
 		x := SubStr(list, 1, InStr(list, ",")-1)
-        if ((v="blessing") && (Gdip_ImageSearch(pBMArea, buff_bitmaps["100xBlessing"], , x, , x+38, , 50, , 6) = 1)) {
-		    buff_values["blessing"][i] := "100"
-            continue
-	    }
+
+		if (v = "blessing") && (Gdip_ImageSearch(pBMArea, buff_bitmaps["100xBlessing"],, x+8, 15, x+36, 50, 5)=1)
+		{
+			buff_values["blessing"][i] := "100"
+			continue
+		}
+		
 		(digits := Map()).Default := ""
 
 		Loop 10
