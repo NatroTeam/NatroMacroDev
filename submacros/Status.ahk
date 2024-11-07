@@ -634,7 +634,7 @@ settings["SilverEggMatchIgnore"] := {enum: 357, type: "int", section: "Collect"}
 settings["GoldEggMatchIgnore"] := {enum: 358, type: "int", section: "Collect"}
 settings["DiamondEggMatchIgnore"] := {enum: 359, type: "int", section: "Collect"}
 settings["CoconutBoosterCheck"] := {enum: 360, type: "int", section: "Boost", regex: "i)^(0|1)$"}
-settings["StumpBoosterCheck"] := {enum: 361, type: "int", section: "Boost", regex: "i)^(0|1)$"}
+settings["StumpBoosterCheck"] := {enum: 361, type: "int", section: "Planters", regex: "i)^(0|1)$"}
 settings["PepperBoosterCheck"] := {enum: 362, type: "int", section: "Boost", regex: "i)^(0|1)$"}
 settings["MGatherPlanterLoot"] := {enum: 363, type: "int", section: "Boost", regex: "i)^(0|1)$"}
 
