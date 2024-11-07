@@ -744,6 +744,7 @@ nm_importConfig()
 		, "MPuffMode2", 0
 		, "MPuffMode3", 0
 		, "MConvertFullBagHarvest", 0
+		, "MGatherPlanterLoot", 1
 		, "PlanterHarvestNow1", 0
 		, "PlanterHarvestNow2", 0
 		, "PlanterHarvestNow3", 0
@@ -3153,12 +3154,19 @@ Loop 3 {
 		MainGui.Add("Text", "xs ys+22 w350 h1 0x7 vMSlot" i "SeparatorLine" hidden)
 }
 
-MainGui.Add("Text", "x366 y65 +BackgroundTrans Section +center vMCurrentCycle" hidden, "Current`nPlanter`nCycle")
+; page movement
+MainGui.Add("Text", "x360 y63 vMPageNumberText" hidden, "Page " (MPageIndex := 1))
+MainGui.Add("Button", "xp+36 y63 w11 h14 vMPageLeft Disabled" hidden, "<").OnEvent("Click", mp_UpdatePage)
+MainGui.Add("Button", "xp+13 y63 w11 h14 vMPageRight Disabled" hidden, ">").OnEvent("Click", mp_UpdatePage)
+MainGui.Add("Text", "x360 y80 h1 w60 0x7 vMPagesSeparatorLine" hidden)
+
+
+MainGui.Add("Text", "x371 y82 +BackgroundTrans Section +center vMCurrentCycle" hidden, "Current`nCycle:")
 Loop 3 {
-	MainGui.Add("Text", ((A_Index = 1) ? "x415 y63" : "x415 ys+16") " w200 +BackgroundTrans Section vMSlot" A_Index "CycleText" hidden, "Slot " A_Index ": ")
-	MainGui.Add("Text", ((A_Index = 1) ? "x469 y63" : "x469 ys") " w200 +BackgroundTrans Section vMSlot" A_Index "CycleNo" hidden, PlanterManualCycle%A_Index%)
-	MainGui.Add("Button", "x455 ys w11 h14 +Center vMSlot" A_Index "Left Disabled" hidden, "—").OnEvent("Click", mp_Slot%A_Index%ChangeLeft)
-	MainGui.Add("Button", "x477 ys w11 h14 +Center vMSlot" A_Index "Right Disabled" hidden, "+").OnEvent("Click", mp_Slot%A_Index%ChangeRight)
+	MainGui.Add("Text", ((A_Index = 1) ? "x428 y63" : "x428 ys+16") " w200 +BackgroundTrans Section vMSlot" A_Index "CycleText" hidden, "Slot " A_Index ": ")
+	MainGui.Add("Text", ((A_Index = 1) ? "x476 y63" : "x476 ys") " w200 +BackgroundTrans Section vMSlot" A_Index "CycleNo" hidden, PlanterManualCycle%A_Index%)
+	MainGui.Add("Button", "x462 ys w11 h14 +Center vMSlot" A_Index "Left Disabled" hidden, "<").OnEvent("Click", mp_Slot%A_Index%ChangeLeft)
+	MainGui.Add("Button", "x484 ys w11 h14 +Center vMSlot" A_Index "Right Disabled" hidden, ">").OnEvent("Click", mp_Slot%A_Index%ChangeRight)
 }
 
 MainGui.Add("Text", "x355 y23 h215 w1 0x7 vMSectionSeparatorLine" hidden)
@@ -3185,15 +3193,12 @@ MainGui.Add("Button", "x484 yp+1 w11 h14 vMPlanterGatherHelp Disabled" hidden, "
 ; harvest every interval
 MainGui.Add("Text", "x355 y186 h1 w150 0x7 Section vMPageSeparatorLine" hidden)
 MainGui.Add("CheckBox", "x360 ys+4 w138 h13 vMConvertFullBagHarvest Disabled Checked" MConvertFullBagHarvest hidden, "Convert Full Bag Harvest").OnEvent("Click", mp_SaveConfig)
-MainGui.Add("Text", "xs+6 ys+19 vMHarvestText Section" hidden, "Harvest every")
+MainGui.Add("CheckBox", "x373 ys+19 w138 h13 vMGatherPlanterLoot Disabled Checked" MGatherPlanterLoot hidden, "Gather Planter Loot").OnEvent("Click", mp_SaveConfig)
+MainGui.Add("Text", "xs+6 ys+34 vMHarvestText Section" hidden, "Harvest every")
 MainGui.Add("Text", "xs+65 ys w48 vMHarvestInterval +Center +BackgroundTrans " hidden, MHarvestInterval)
 MainGui.Add("Button", "x471 ys w11 h14 vMHILeft Disabled" hidden, "<").OnEvent("Click", nm_MHarvestInterval)
 MainGui.Add("Button", "x484 ys w11 h14 vMHIRight Disabled" hidden, ">").OnEvent("Click", nm_MHarvestInterval)
 
-; page movement
-MainGui.Add("Text", "x395 ys+16 vMPageNumberText" hidden, "Page " (MPageIndex := 1))
-MainGui.Add("Button", "xp+36 ys+16 w11 h14 vMPageLeft Disabled" hidden, "<").OnEvent("Click", mp_UpdatePage)
-MainGui.Add("Button", "xp+13 ys+16 w11 h14 vMPageRight Disabled" hidden, ">").OnEvent("Click", mp_UpdatePage)
 SetLoadingProgress(99)
 
 if (BuffDetectReset = 1)
@@ -3828,7 +3833,7 @@ nm_TabPlantersLock(){
 	MainGui["MHILeft"].Enabled := 0
 	MainGui["MHIRight"].Enabled := 0
 	Static ManualPlantersControls := ["MPageLeft", "MPageRight", "MSlot1Left", "MSlot1Right", "MSlot2Left", "MSlot2Right", "MSlot3Left", "MSlot3Right"
-	, "MPuffModeA", "MPuffMode1", "MPuffMode2", "MPuffMode3", "MPuffModeHelp", "MPlanterGatherA", "MPlanterGather1", "MPlanterGather2", "MPlanterGather3", "MPlanterGatherHelp", "MConvertFullBagHarvest"
+	, "MPuffModeA", "MPuffMode1", "MPuffMode2", "MPuffMode3", "MPuffModeHelp", "MPlanterGatherA", "MPlanterGather1", "MPlanterGather2", "MPlanterGather3", "MPlanterGatherHelp", "MConvertFullBagHarvest", "MGatherPlanterLoot"
 	, "MSlot1Cycle1Planter", "MSlot1Cycle2Planter", "MSlot1Cycle3Planter", "MSlot1Cycle4Planter", "MSlot1Cycle5Planter", "MSlot1Cycle6Planter", "MSlot1Cycle7Planter", "MSlot1Cycle8Planter", "MSlot1Cycle9Planter"
 	, "MSlot1Cycle1Field", "MSlot1Cycle2Field", "MSlot1Cycle3Field", "MSlot1Cycle4Field", "MSlot1Cycle5Field", "MSlot1Cycle6Field", "MSlot1Cycle7Field", "MSlot1Cycle8Field", "MSlot1Cycle9Field"
 	, "MSlot1Cycle1Glitter", "MSlot1Cycle2Glitter", "MSlot1Cycle3Glitter", "MSlot1Cycle4Glitter", "MSlot1Cycle5Glitter", "MSlot1Cycle6Glitter", "MSlot1Cycle7Glitter", "MSlot1Cycle8Glitter", "MSlot1Cycle9Glitter"
@@ -3905,6 +3910,7 @@ nm_TabPlantersUnLock(){
 	MainGui["MPlanterGatherA"].Enabled := 1
 	MainGui["MPlanterGatherHelp"].Enabled := 1
 	MainGui["MConvertFullBagHarvest"].Enabled := 1
+	MainGui["MGatherPlanterLoot"].Enabled := 1
 	mp_UpdatePage()
 	mp_UpdateControls()
 }
@@ -5876,7 +5882,7 @@ ba_planterSwitch(*){
 		,"MSlot1CycleText","MSlot1CycleNo","MSlot1Left","MSlot1Right","MSlot2CycleText","MSlot2CycleNo","MSlot2Left","MSlot2Right","MSlot3CycleText","MSlot3CycleNo","MSlot3Left","MSlot3Right"
 		,"MCurrentCycle","MHarvestText","MHarvestInterval","MPageSeparatorLine","MPageLeft","MPageNumberText","MPageRight"
 		,"MPuffModeSeparatorLine","MPuffModeHelp","MPuffModeText","MPuffModeA","MPuffMode1","MPuffMode2","MPuffMode3"
-		,"MGatherSeparatorLine","MPlanterGatherHelp","MPlanterGatherText","MPlanterGatherA","MPlanterGather1","MPlanterGather2","MPlanterGather3","MConvertFullBagHarvest"
+		,"MGatherSeparatorLine","MPlanterGatherHelp","MPlanterGatherText","MPlanterGatherA","MPlanterGather1","MPlanterGather2","MPlanterGather3","MConvertFullBagHarvest","MGatherPlanterLoot"
 		,"MHILeft","MHIRight"]
 	, ManualPlantersOptions := ["Planter","Field","Glitter","AutoFull"]
 	local i, c, k, v
@@ -6042,6 +6048,7 @@ mp_SaveConfig(*) {
 	MPlanterGather3 := MainGui["MPlanterGather3"].Value
 
 	MConvertFullBagHarvest := MainGui["MConvertFullBagHarvest"].Value
+	MGatherPlanterLoot := MainGui["MGatherPlanterLoot"].Value
 
 	Loop 3 {
 		i := A_Index
@@ -6077,6 +6084,7 @@ mp_SaveConfig(*) {
 	IniWrite MPlanterGather2, "settings\nm_config.ini", "Planters", "MPlanterGather2"
 	IniWrite MPlanterGather3, "settings\nm_config.ini", "Planters", "MPlanterGather3"
 	IniWrite MConvertFullBagHarvest, "settings\nm_config.ini", "Planters", "MConvertFullBagHarvest"
+	IniWrite MGatherPlanterLoot, "settings\nm_config.ini", "Planters", "MGatherPlanterLoot"
 
 	mp_UpdateControls()
 
@@ -20655,17 +20663,22 @@ mp_HarvestPlanter(PlanterIndex) {
 		IniWrite TotalPlantersCollected, "settings\nm_config.ini", "Status", "TotalPlantersCollected"
 		IniWrite SessionPlantersCollected, "settings\nm_config.ini", "Status", "SessionPlantersCollected"
 		;gather loot
-		nm_setStatus("Looting", MPlanterName . " Loot")
-		Sleep 1000
-		nm_Move(1500*round(18/MoveSpeedNum, 2), BackKey, RightKey)
-		nm_loot(9, 5, "left")
+		if (MGatherPlanterLoot = 1)
+			{
+				nm_setStatus("Looting", MPlanterName . " Loot")
+				Sleep 1000
+				nm_Move(1500*round(18/MoveSpeedNum, 2), BackKey, RightKey)
+				nm_loot(9, 5, "left")
+			}
 		if ((MConvertFullBagHarvest = 1) && (BackpackPercent >= 95))
 		{
 			; loot path end location for some fields prevents successful return to hive
-			If (MFieldName = "Cactus") || (MFieldName = "Sunflower") {
-				sleep 200
-				nm_Move(1500*round(18/MoveSpeedNum, 6), RightKey)
-				sleep 200
+			If (MGatherPlanterLoot = 1) {
+				If (MFieldName = "Cactus") || (MFieldName = "Sunflower") {
+					sleep 200
+					nm_Move(1500*round(18/MoveSpeedNum, 6), RightKey)
+					sleep 200
+				}
 			}
 			;nm_setStatus("Holding", "Inside if MConvertFullBagHarvest=1 && BackpackPercent>=95 " (MPlanterName . " (" . MFieldName . ")")) ; //testing
 			nm_walkFrom(MFieldName)
