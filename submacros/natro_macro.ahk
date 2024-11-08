@@ -3191,7 +3191,7 @@ MainGui.Add("CheckBox", "xs+95 yp w24 h16 vMPlanterGather3 Disabled Checked" MPl
 MainGui.Add("Button", "x484 yp+1 w11 h14 vMPlanterGatherHelp Disabled" hidden, "?").OnEvent("Click", nm_MPlanterGatherHelp)
 
 ; harvest every interval
-MainGui.Add("Text", "x355 y186 h1 w150 0x7 Section vMPageSeparatorLine" hidden)
+MainGui.Add("Text", "x355 y186 h1 w150 0x7 Section vMHarvestSeparatorLine" hidden)
 MainGui.Add("CheckBox", "x360 ys+4 w138 h13 vMConvertFullBagHarvest Disabled Checked" MConvertFullBagHarvest hidden, "Convert Full Bag Harvest").OnEvent("Click", mp_SaveConfig)
 MainGui.Add("CheckBox", "x373 ys+19 w138 h13 vMGatherPlanterLoot Disabled Checked" MGatherPlanterLoot hidden, "Gather Planter Loot").OnEvent("Click", mp_SaveConfig)
 MainGui.Add("Text", "xs+6 ys+34 vMHarvestText Section" hidden, "Harvest every")
@@ -5880,7 +5880,7 @@ ba_planterSwitch(*){
 		,"MSlot3PlanterText","MSlot3FieldText","MSlot3SettingsText"
 		,"MSectionSeparatorLine","MSliderSeparatorLine"
 		,"MSlot1CycleText","MSlot1CycleNo","MSlot1Left","MSlot1Right","MSlot2CycleText","MSlot2CycleNo","MSlot2Left","MSlot2Right","MSlot3CycleText","MSlot3CycleNo","MSlot3Left","MSlot3Right"
-		,"MCurrentCycle","MHarvestText","MHarvestInterval","MPageSeparatorLine","MPageLeft","MPageNumberText","MPageRight"
+		,"MCurrentCycle","MHarvestText","MHarvestInterval","MHarvestSeparatorLine","MPageLeft","MPageNumberText","MPageRight", "MPagesSeparatorLine" 
 		,"MPuffModeSeparatorLine","MPuffModeHelp","MPuffModeText","MPuffModeA","MPuffMode1","MPuffMode2","MPuffMode3"
 		,"MGatherSeparatorLine","MPlanterGatherHelp","MPlanterGatherText","MPlanterGatherA","MPlanterGather1","MPlanterGather2","MPlanterGather3","MConvertFullBagHarvest","MGatherPlanterLoot"
 		,"MHILeft","MHIRight"]
