@@ -300,11 +300,11 @@ nm_importConfig()
 		, "MoveSpeedNum", 28
 		, "MoveMethod", "Cannon"
 		, "SprinklerType", "Supreme"
-		, "MultiReset", 0
+		;, "MultiReset", 0
 		, "ConvertBalloon", "Gather"
 		, "ConvertMins", 30
 		, "LastConvertBalloon", 1
-		, "GatherDoubleReset", 1
+		;, "GatherDoubleReset", 1
 		, "DisableToolUse", 0
 		, "AnnounceGuidingStar", 0
 		, "NewWalk", 1
@@ -2037,6 +2037,7 @@ hBitmapsSBT := Map(), hBitmapsSBT.CaseSense := 0
 #Include "stickerstack\bitmaps.ahk"
 #Include "stickerprinter\bitmaps.ahk"
 #Include "memorymatch\bitmaps.ahk"
+#include "reset\bitmaps.ahk"
 
 hBitmapsSB := Map()
 for x,y in hBitmapsSBT
@@ -2632,9 +2633,9 @@ MainGui.Add("Button", "x480 y131 w12 h16 vCBRight Disabled", ">").OnEvent("Click
 MainGui.Add("Text", "x370 y147 w110 +BackgroundTrans", "\____\___")
 (GuiCtrl := MainGui.Add("Edit", "x422 y150 w30 h18 number Limit3 vConvertMins Disabled", ValidateInt(&ConvertMins, 30))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 MainGui.Add("Text", "x456 y152", "Mins")
-MainGui.Add("Text", "x345 y170 w110 +BackgroundTrans", "Multiple Reset:")
-(GuiCtrl := MainGui.Add("Slider", "x415 y168 w78 h16 vMultiReset Thick16 Disabled ToolTipTop Range0-3 Page1 TickInterval1", MultiReset)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x345 y186 vGatherDoubleReset Disabled Checked" GatherDoubleReset, "Gather Double Reset")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+MainGui.Add("Text", "x345 y170 w110 +BackgroundTrans" (GuiTheme = "MacLion3" ? " disabled":""), "Multiple Reset:")
+(GuiCtrl := MainGui.Add("Slider", "x415 y168 w78 h16 vMultiReset Thick16 Disabled ToolTipTop Range0-3 Page1 TickInterval1", 0)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x345 y186 vGatherDoubleReset Disabled Checked0", "Gather Double Reset")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "x345 y201 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 GuiCtrl := MainGui.Add("CheckBox", "x345 y216 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
 SetLoadingProgress(30)
@@ -3971,10 +3972,10 @@ nm_TabSettingsUnLock(){
 	MainGui["STRight"].Enabled := 1
 	MainGui["CBLeft"].Enabled := 1
 	MainGui["CBRight"].Enabled := 1
-	MainGui["MultiReset"].Enabled := 1
+	;MainGui["MultiReset"].Enabled := 1
 	if (ConvertBalloon="every")
 		MainGui["ConvertMins"].Enabled := 1
-	MainGui["GatherDoubleReset"].Enabled := 1
+	;MainGui["GatherDoubleReset"].Enabled := 1
 	MainGui["DisableToolUse"].Enabled := 1
 	MainGui["AnnounceGuidingStar"].Enabled := 1
 	MainGui["NewWalk"].Enabled := 1
@@ -9464,25 +9465,25 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		MouseMove windowX+350, windowY+offsetY+100
 		PrevKeyDelay:=A_KeyDelay
 		SetKeyDelay 250+KeyDelay
-		Loop (VBState = 0) ? (1 + MultiReset + (GatherDoubleReset && (CheckAll=2))) : 1
+		resetTime:=nowUnix()
+		PostSubmacroMessage("background", 0x5554, 1, resetTime)
+		;reset
+		ActivateRoblox()
+		GetRobloxClientPos()
+		send "{" SC_Esc "}{" SC_R "}{" SC_Enter "}"
+		n := 0
+		while ((n < 2) && (A_Index <= 80))
 		{
-			resetTime:=nowUnix()
-			PostSubmacroMessage("background", 0x5554, 1, resetTime)
-			;reset
-			ActivateRoblox()
-			GetRobloxClientPos()
-			send "{" SC_Esc "}{" SC_R "}{" SC_Enter "}"
-			n := 0
-			while ((n < 2) && (A_Index <= 80))
-			{
-				Sleep 100
-				pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|50")
-				n += (Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) = (n = 0))
-				Gdip_DisposeImage(pBMScreen)
-			}
-			Sleep 1000
+			Sleep 100
+			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|50")
+			n += (Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) = (n = 0))
+			Gdip_DisposeImage(pBMScreen)
 		}
+		Sleep 1000
 		SetKeyDelay PrevKeyDelay
+
+		if !atHive()
+			continue
 
 		; hive check
 		if hivedown
@@ -9491,10 +9492,9 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		sconf := windowWidth**2//3200
 		loop 4 {
 			sleep 250+KeyDelay
-			pBMScreen := Gdip_BitmapFromScreen(region), s := 0
-			for i, k in ["day", "night", "day-altUI", "night-altUI", "day-gifted", "night-gifted", "noshadow-gifted", "noshadow-day", "noshadow-night", "wing"] {
-				s := Max(s, Gdip_ImageSearch(pBMScreen, bitmaps["hive"][k], , , , , , 4, , , sconf))
-				if (s >= sconf) {
+			pBMScreen := Gdip_BitmapFromScreen(region)
+			for i, k in bitmaps["hive"] {
+				if (Gdip_ImageSearch(pBMScreen, k, , , , , , 6, , , sconf) > 0) {
 					Gdip_DisposeImage(pBMScreen)
 					HiveConfirmed := 1
 					sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
@@ -9519,6 +9519,14 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		else {
 			Sleep (remaining*1000) ;miliseconds
 		}
+	}
+	atHive() {
+		ActivateRoblox()
+		GetRobloxClientPos()
+		pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + GetYOffset() + 40 "|350|60")
+		out := Gdip_ImageSearch(pBMScreen, bitmaps["colhey"],,,,,,5)
+		Gdip_DisposeImage(pBMScreen)
+		return (out=1)
 	}
 }
 nm_setShiftLock(state, *){
@@ -18756,17 +18764,8 @@ nm_PathVars(){
 		static hivedown := 0
 		static pBMR := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAACgAAAAGCAAAAACUM4P3AAAAAnRSTlMAAHaTzTgAAAAXdEVYdFNvZnR3YXJlAFBob3RvRGVtb24gOS4wzRzYMQAAAyZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0n77u/JyBpZD0nVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkJz8+Cjx4OnhtcG1ldGEgeG1sbnM6eD0nYWRvYmU6bnM6bWV0YS8nIHg6eG1wdGs9J0ltYWdlOjpFeGlmVG9vbCAxMi40NCc+CjxyZGY6UkRGIHhtbG5zOnJkZj0naHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyc+CgogPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9JycKICB4bWxuczpleGlmPSdodHRwOi8vbnMuYWRvYmUuY29tL2V4aWYvMS4wLyc+CiAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjQwPC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICA8ZXhpZjpQaXhlbFlEaW1lbnNpb24+NjwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiA8L3JkZjpEZXNjcmlwdGlvbj4KCiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0nJwogIHhtbG5zOnRpZmY9J2h0dHA6Ly9ucy5hZG9iZS5jb20vdGlmZi8xLjAvJz4KICA8dGlmZjpJbWFnZUxlbmd0aD42PC90aWZmOkltYWdlTGVuZ3RoPgogIDx0aWZmOkltYWdlV2lkdGg+NDA8L3RpZmY6SW1hZ2VXaWR0aD4KICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogIDx0aWZmOlJlc29sdXRpb25Vbml0PjI8L3RpZmY6UmVzb2x1dGlvblVuaXQ+CiAgPHRpZmY6WFJlc29sdXRpb24+OTYvMTwvdGlmZjpYUmVzb2x1dGlvbj4KICA8dGlmZjpZUmVzb2x1dGlvbj45Ni8xPC90aWZmOllSZXNvbHV0aW9uPgogPC9yZGY6RGVzY3JpcHRpb24+CjwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9J3InPz77yGiWAAAAI0lEQVR42mNUYyAOMDJggOUMDAyRmAqXMxAHmBiobjWxngEAj7gC+wwAe1AAAAAASUVORK5CYII=")
 
-		hive_bitmaps := Map()
-		hive_bitmaps["day"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["day"]), Gdip_GraphicsClear(G, 0xffd28f0c), Gdip_DeleteGraphics(G)
-		hive_bitmaps["night"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["night"]), Gdip_GraphicsClear(G, 0xffc08200), Gdip_DeleteGraphics(G)
-		hive_bitmaps["day-altUI"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["day-altUI"]), Gdip_GraphicsClear(G, 0xff916507), Gdip_DeleteGraphics(G)
-		hive_bitmaps["night-altUI"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["night-altUI"]), Gdip_GraphicsClear(G, 0xff845c00), Gdip_DeleteGraphics(G)
-		hive_bitmaps["day-gifted"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["day-gifted"]), Gdip_GraphicsClear(G, 0xffb97e03), Gdip_DeleteGraphics(G)
-		hive_bitmaps["night-gifted"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["night-gifted"]), Gdip_GraphicsClear(G, 0xffaa7400), Gdip_DeleteGraphics(G)
-		hive_bitmaps["noshadow-day"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["noshadow-day"]), Gdip_GraphicsClear(G, 0xffffb325), Gdip_DeleteGraphics(G)
-		hive_bitmaps["noshadow-night"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["noshadow-night"]), Gdip_GraphicsClear(G, 0xff694a00), Gdip_DeleteGraphics(G)
-		hive_bitmaps["noshadow-gifted"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["noshadow-gifted"]), Gdip_GraphicsClear(G, 0xffe39d1f), Gdip_DeleteGraphics(G)
-		hive_bitmaps["wing"] := Gdip_CreateBitmap(16, 4), G := Gdip_GraphicsFromImage(hive_bitmaps["wing"]), Gdip_GraphicsClear(G, 0xffa28645), Gdip_DeleteGraphics(G)
+		(bitmaps:=Map()).CaseSense := 0
+		#include "%A_ScriptDir%\nm_image_assets\reset\bitmaps.ahk"
 
 		success := 0
 		hwnd := GetRobloxHWND()
@@ -18796,6 +18795,9 @@ nm_PathVars(){
 			}
 			Sleep 1000
 
+			if !atHive()
+				continue
+
 			if hivedown
 				Send "{" RotDown "}"
 			region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
@@ -18803,9 +18805,8 @@ nm_PathVars(){
 			Loop 4 {
 				sleep 250
 				pBMScreen := Gdip_BitmapFromScreen(region), s := 0
-				for i, k in ["day", "night", "day-altUI", "night-altUI", "day-gifted", "night-gifted", "noshadow-gifted", "noshadow-day", "noshadow-night", "wing"] {
-					s := Max(s, Gdip_ImageSearch(pBMScreen, hive_bitmaps[k], , , , , , 4, , , sconf))
-					if (s >= sconf) {
+				for i, k in bitmaps["hive"] {
+					if (Gdip_ImageSearch(pBMScreen, k, , , , , , 6, , , sconf) = sconf) {
 						Gdip_DisposeImage(pBMScreen)
 						success := 1
 						Send "{" RotRight " 4}"
@@ -18826,10 +18827,18 @@ nm_PathVars(){
 				}
 			}
 		}
-		for k,v in hive_bitmaps
+		for k,v in bitmaps["hive"]
 			Gdip_DisposeImage(v)
 		if (success = 0)
 			ExitApp
+	}
+	atHive() {
+		ActivateRoblox()
+		GetRobloxClientPos()
+		pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + GetYOffset() + 40 "|350|60")
+		out := Gdip_ImageSearch(pBMScreen, bitmaps["colhey"],,,,,,5)
+		Gdip_DisposeImage(pBMScreen)
+		return (out=1)
 	}
 	'
 	)
