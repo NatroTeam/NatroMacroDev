@@ -9301,8 +9301,8 @@ nm_imgSearch(fileName,v,aim := "full", trans:="none"){
 	;wh := windowHeight
 	xi:=(aim="actionbar") ? windowWidth//4 : (aim="highright") ? windowWidth//2 : (aim="right") ? windowWidth//2 : (aim="center") ? windowWidth//4 : (aim="lowright") ? windowWidth//2 : 0
 	yi:=(aim="low") ? windowHeight//2 : (aim="actionbar") ? (windowHeight//4)*3 : (aim="center") ? windowHeight//4 : (aim="lowright") ? windowHeight//2 : (aim="quest") ? 150 : 0
-	ww:=(aim="actionbar") ? xi*3 : (aim="highleft") ? windowWidth//2 : (aim="left") ? windowWidth//2 : (aim="center") ? xi*3 : (aim="quest") ? 310 : windowWidth
-	wh:=(aim="high") ? windowHeight//2 : (aim="highright") ? windowHeight//2 : (aim="highleft") ? windowHeight//2 : (aim="buff") ? 150 : (aim="abovebuff") ? 30 : (aim="center") ? yi*3 : (aim="quest") ? Max(560, windowHeight-100) : windowHeight
+	ww:=(aim="actionbar") ? xi*3 : (aim="highleft") ? windowWidth//2 : (aim="left") ? windowWidth//2 : (aim="center") ? xi*3 : (aim="quest" || aim="questbrown") ? 310 : windowWidth
+	wh:=(aim="high") ? windowHeight//2 : (aim="highright") ? windowHeight//2 : (aim="highleft") ? windowHeight//2 : (aim="buff") ? 150 : (aim="abovebuff") ? 30 : (aim="center") ? yi*3 : (aim="quest") ? Max(560, windowHeight-100) : (aim="questbrown") ? windowHeight//2 : windowHeight
 	if DirExist(A_WorkingDir "\nm_image_assets")
 	{
 		try result := ImageSearch(&FoundX, &FoundY, windowX + xi, windowY + yi, windowX + ww, windowY + wh, "*" v ((trans != "none") ? (" *Trans" trans) : "") " " A_WorkingDir "\nm_image_assets\" fileName)
@@ -17201,6 +17201,13 @@ nm_PolarQuestProg(){
 			break
 		}
 
+		Qfound:=nm_imgSearch("polar_bear3.png",50,"quest")
+		if (Qfound[1]=0) {
+			if (A_Index > 1)
+				Gdip_DisposeImage(pBMLog)
+			break
+		}
+
 		ActivateRoblox()
 		switch A_Index
 		{
@@ -17984,6 +17991,20 @@ nm_BlackQuestProg(){
 			break
 		}
 
+		Qfound:=nm_imgSearch("black_bear5.png",50,"quest")
+		if (Qfound[1]=0) {
+			if (A_Index > 1)
+				Gdip_DisposeImage(pBMLog)
+			break
+		}
+
+		Qfound:=nm_imgSearch("black_bear6.png",50,"quest")
+		if (Qfound[1]=0) {
+			if (A_Index > 1)
+				Gdip_DisposeImage(pBMLog)
+			break
+		}
+
 		ActivateRoblox()
 		switch A_Index
 		{
@@ -18196,61 +18217,53 @@ nm_BrownQuestProg(){
 	;2 scrolls
 	Loop 3 {
 		;search for brown quest
-		Loop 70
+		; if possible, move quest to top half of screen, to ensure quest tasks not cut off
+		aim := ["questbrown", "quest"]
+		loop aim.Length 
 		{
-			Qfound:=nm_imgSearch("brown_bear.png",50,"quest")
-			if (Qfound[1]=0) {
-				if (A_Index > 1)
-					Gdip_DisposeImage(pBMLog)
-				break
-			}
-
-			Qfound:=nm_imgSearch("brown_bear2.png",50,"quest")
-			if (Qfound[1]=0) {
-				if (A_Index > 1)
-					Gdip_DisposeImage(pBMLog)
-				break
-			}
-
-			Qfound:=nm_imgSearch("brown_bear3.png",50,"quest")
-			if (Qfound[1]=0) {
-				if (A_Index > 1)
-					Gdip_DisposeImage(pBMLog)
-				break
-			}
-
-			Qfound:=nm_imgSearch("brown_bear4.png",50,"quest")
-			if (Qfound[1]=0) {
-				if (A_Index > 1)
-					Gdip_DisposeImage(pBMLog)
-				break
-			}
-
-			ActivateRoblox()
-			switch A_Index
+			i := A_Index
+			Loop 70
 			{
-				case 1:
-				GetRobloxClientPos(hwnd)
-				MouseMove windowX+30, windowY+offsetY+200, 5
-				Loop 50 ; scroll all the way up
+				n := A_Index				
+				loop 5 
 				{
-					MouseMove windowX+30, windowY+offsetY+200, 5
-					sendinput "{WheelUp}"
-					Sleep 50
+					Qfound:=nm_imgSearch("brown_bear" A_Index ".png",50,aim[i])
+					if (Qfound[1]=0) {
+						if (n > 1)
+							Gdip_DisposeImage(pBMLog)
+						break 3
+					}
 				}
-				pBMLog := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
 
-				default:
-				GetRobloxClientPos(hwnd)
-				MouseMove windowX+30, windowY+offsetY+200, 5
-				sendinput "{WheelDown}"
-				Sleep 500 ; wait for scroll to finish
-				pBMScreen := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
-				if (Gdip_ImageSearch(pBMScreen, pBMLog, , , , , , 50) = 1) { ; end of quest log
-					Gdip_DisposeImage(pBMLog), Gdip_DisposeImage(pBMScreen)
-					break
+				ActivateRoblox()
+				switch A_Index
+				{
+					case 1:
+					GetRobloxClientPos(hwnd)
+					MouseMove windowX+30, windowY+offsetY+200, 5
+					Loop 50 ; scroll all the way up
+					{
+						MouseMove windowX+30, windowY+offsetY+200, 5
+						sendinput "{WheelUp}"
+						Sleep 50
+					}
+					pBMLog := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
+
+					default:
+					GetRobloxClientPos(hwnd)
+					MouseMove windowX+30, windowY+offsetY+200, 5
+					sendinput "{WheelDown}"
+					Sleep 500 ; wait for scroll to finish
+					pBMScreen := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
+					if (Gdip_ImageSearch(pBMScreen, pBMLog, , , , , , 50) = 1) { ; end of quest log
+						Gdip_DisposeImage(pBMLog), Gdip_DisposeImage(pBMScreen)
+						if i = 2
+							break 2
+						else
+							continue 2 ; if not detected in top half, search rest
+					}
+					Gdip_DisposeImage(pBMLog), pBMLog := Gdip_CloneBitmap(pBMScreen), Gdip_DisposeImage(pBMScreen)
 				}
-				Gdip_DisposeImage(pBMLog), pBMLog := Gdip_CloneBitmap(pBMScreen), Gdip_DisposeImage(pBMScreen)
 			}
 		}
 		Sleep 500
@@ -18319,13 +18332,14 @@ nm_BrownQuestProg(){
 					}
 
 					;//todo: detect if scrollbar is already at end before scrolling, or how much has scrolled instead of fixed 150. every quest needs this, should be in rewrite
-
-					; otherwise, scroll up
 					Gdip_DisposeImage(pBMScreen)
-					MouseMove windowX+30, windowY+offsetY+225
-					Sleep 50
-					send "{WheelDown 1}"
-					Sleep 500
+					; scroll, but only if the questgiver name is in the lower part of the screen
+					if (yi > (wh - (windowHeight//2))) {
+						MouseMove windowX+30, windowY+offsetY+200, 5
+						Sleep 50
+						sendinput "{WheelDown 1}" ; to allow for tasks not on screen, if applicable
+						Sleep 500 ; wait for scroll to finish
+					}
 					continue 2
 				}
 
