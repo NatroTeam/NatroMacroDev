@@ -16504,14 +16504,20 @@ nm_Night(){
 nm_confirmNight(){
 	nm_setStatus("Confirming", "Night")
 	nm_Reset(0, 2000, 0)
-	sendinput "{" RotDown " 5}"
+	sendinput "{" RotDown " 1}"
 	loop 10 {
 		SendInput "{" ZoomOut "}"
 		Sleep 100
 		if ((findImg := nm_imgSearch("nightsky.png", 50, "abovebuff"))[1] = 0)
 			break
+		sendinput "{" RotLeft " 4}"
+		findImg := nm_imgSearch("nightsky.png", 50, "abovebuff")
+		sendinput "{" RotRight " 4}"
+		if findImg[1] = 0		
+			break
+
 	}
-	sendinput "{" RotUp " 5}"
+	sendinput "{" RotUp " 1}"
 	send "{" ZoomOut " 8}"
 	return (findImg[1]=0)
 }

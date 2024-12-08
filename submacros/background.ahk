@@ -196,19 +196,28 @@ nm_dayOrNight(){
 	Gdip_DisposeImage(pBMScreen)
 
 	try {
-		resulta := ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatdaya.png")
-		resultb := ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatdayb.png")
+		for i in ["ground", "dande", "stump", "pa"]
+			if ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatday" i ".png") = 1 
+			{
+				result := 1
+				break
+			}
 	} catch
 		return
-	if (resulta = 1 || resultb = 1) {
+	if result {
 		dayOrNight:="Day"
 	} else {
 		try {
-			resulta := ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatnighta.png")
-			resultb := ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatnightb.png")
+			for i in ["a", "b"] {
+				if ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatnight" i ".png") = 1
+				{
+					result := 1
+					break
+				}
+			}		
 		} catch
 			return
-		if (resulta = 1 || resultb = 1)  {
+		if result  {
 			dayOrNight:="Dusk"
 		} else {
 			dayOrNight:="Day"
@@ -226,7 +235,7 @@ nm_dayOrNight(){
 			try IniWrite NightLastDetected, "settings\nm_config.ini", "Collect", "NightLastDetected"
 			if WinExist("natro_macro ahk_class AutoHotkey") {
 				PostMessage 0x5555, 2, NightLastDetected
-				Send_WM_COPYDATA("Detected: Night", "natro_macro ahk_class AutoHotkey")
+				Send_WM_COPYDATA("Detected: Night, X=" FoundX " Y=" FoundY, "natro_macro ahk_class AutoHotkey")
 			}
 			if(((StingerCheck=1) && ((StingerDailyBonusCheck=0) || (nowUnix()-VBLastKilled)>79200) && VBState=0) || ((NightMemoryMatchCheck=1) && (nowUnix()-LastNightMemoryMatch)>28800)) {
 				VBState:=1 ;0=no VB, 1=searching for VB, 2=VB found
