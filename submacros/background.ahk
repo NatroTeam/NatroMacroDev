@@ -196,8 +196,8 @@ nm_dayOrNight(){
 	Gdip_DisposeImage(pBMScreen)
 
 	try {
-		for i in ["ground", "dande", "stump", "pa"]
-			if ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatday" i ".png") = 1 
+		for i in ["ground", "dande", "stump", "pa", "clov"]
+			if ImageSearch(&FoundX, &FoundY, windowX, windowY + 2*windowHeight//5, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatday" i ".png") = 1 
 			{
 				result := 1
 				break
