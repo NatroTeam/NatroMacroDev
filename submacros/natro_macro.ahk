@@ -12005,7 +12005,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking", "Spider")
-					Send "{" SC_1 "}"
+					;Send "{" SC_1 "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12127,7 +12127,7 @@ nm_Bugrun(){
 					{
 						nm_setStatus("Attacking", "Ladybugs (Strawberry)")
 						SendInput "{" RotUp " 4}"
-						Send "{" SC_1 "}"
+						;Send "{" SC_1 "}"
 						if(!DisableToolUse)
 							Click "Down"
 						r := 0
@@ -12237,7 +12237,7 @@ nm_Bugrun(){
 				if(found)
 				{
 					nm_setStatus("Attacking", "Ladybugs (Mushroom)")
-					Send "{" SC_1 "}"
+					;Send "{" SC_1 "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12343,7 +12343,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking")
-					Send "{" SC_1 "}"
+					;Send "{" SC_1 "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12458,7 +12458,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking")
-					Send "{" SC_1 "}"
+					;Send "{" SC_1 "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12550,7 +12550,7 @@ nm_Bugrun(){
 					if (found)
 					{
 						nm_setStatus("Attacking")
-						Send "{" SC_1 "}"
+						;Send "{" SC_1 "}"
 						SendInput "{" RotUp " 4}"
 						if(!DisableToolUse)
 							Click "Down"
@@ -12701,7 +12701,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking")
-					Send "{" SC_1 "}"
+					;Send "{" SC_1 "}"
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12799,7 +12799,7 @@ nm_Bugrun(){
 					if (found)
 					{
 						nm_setStatus("Attacking", "Werewolf (Pumpkin)")
-						Send "{" SC_1 "}"
+						;Send "{" SC_1 "}"
 						SendInput "{" RotUp " 4}"
 						if(!DisableToolUse)
 							Click "Down"
@@ -12963,7 +12963,7 @@ nm_Bugrun(){
 					if (found)
 					{
 						nm_setStatus("Attacking")
-						Send "{" SC_1 "}"
+						;Send "{" SC_1 "}"
 						SendInput "{" RotUp " 4}"
 						if(!DisableToolUse)
 							Click "Down"
@@ -13095,7 +13095,7 @@ nm_Bugrun(){
 					{
 						nm_setStatus("Attacking")
 						SendInput "{" RotUp " 4}"
-						Send "{" SC_1 "}"
+						;Send "{" SC_1 "}"
 						if(!DisableToolUse)
 							Click "Down"
 						loop 17 { ;wait to kill

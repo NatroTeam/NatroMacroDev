@@ -235,7 +235,7 @@ nm_dayOrNight(){
 			try IniWrite NightLastDetected, "settings\nm_config.ini", "Collect", "NightLastDetected"
 			if WinExist("natro_macro ahk_class AutoHotkey") {
 				PostMessage 0x5555, 2, NightLastDetected
-				Send_WM_COPYDATA("Detected: Night, X=" FoundX " Y=" FoundY, "natro_macro ahk_class AutoHotkey")
+				Send_WM_COPYDATA("Detected: Night", "natro_macro ahk_class AutoHotkey")
 			}
 			if(((StingerCheck=1) && ((StingerDailyBonusCheck=0) || (nowUnix()-VBLastKilled)>79200) && VBState=0) || ((NightMemoryMatchCheck=1) && (nowUnix()-LastNightMemoryMatch)>28800)) {
 				VBState:=1 ;0=no VB, 1=searching for VB, 2=VB found
