@@ -6,9 +6,9 @@
     send "{e up}{" LeftKey " down}{" FwdKey " down}"
     HyperSleep(525)
     send "{space 2}"
-    HyperSleep(1250)
+    HyperSleep(900)
     send "{" FwdKey " up}"
-    HyperSleep(1850)
+    HyperSleep(1950)
     send "{" LeftKey " up}"
     HyperSleep(1000)
     send "{space}"

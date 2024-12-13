@@ -10146,7 +10146,7 @@ nm_Ant() { ;collect Ant Pass then do Challenge
 					--AntPassNum
 					nm_setStatus("Attacking", "Ant Challenge")
 					Sleep 500
-					send "{" SC_1 "}"
+					nm_placeSprinkler()
 					movement :=
 					(
 					nm_Walk(9, BackKey) "
@@ -12005,7 +12005,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking", "Spider")
-					Send "{" SC_1 "}"
+					nm_placeSprinkler()
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12127,7 +12127,7 @@ nm_Bugrun(){
 					{
 						nm_setStatus("Attacking", "Ladybugs (Strawberry)")
 						SendInput "{" RotUp " 4}"
-						Send "{" SC_1 "}"
+						nm_placeSprinkler()
 						if(!DisableToolUse)
 							Click "Down"
 						r := 0
@@ -12237,7 +12237,7 @@ nm_Bugrun(){
 				if(found)
 				{
 					nm_setStatus("Attacking", "Ladybugs (Mushroom)")
-					Send "{" SC_1 "}"
+					nm_placeSprinkler()
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12343,7 +12343,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking")
-					Send "{" SC_1 "}"
+					nm_placeSprinkler()
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12458,7 +12458,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking")
-					Send "{" SC_1 "}"
+					nm_placeSprinkler()
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12550,7 +12550,7 @@ nm_Bugrun(){
 					if (found)
 					{
 						nm_setStatus("Attacking")
-						Send "{" SC_1 "}"
+						nm_placeSprinkler()
 						SendInput "{" RotUp " 4}"
 						if(!DisableToolUse)
 							Click "Down"
@@ -12701,7 +12701,7 @@ nm_Bugrun(){
 				if (found)
 				{
 					nm_setStatus("Attacking")
-					Send "{" SC_1 "}"
+					nm_placeSprinkler()
 					SendInput "{" RotUp " 4}"
 					if(!DisableToolUse)
 						Click "Down"
@@ -12799,7 +12799,7 @@ nm_Bugrun(){
 					if (found)
 					{
 						nm_setStatus("Attacking", "Werewolf (Pumpkin)")
-						Send "{" SC_1 "}"
+						nm_placeSprinkler()
 						SendInput "{" RotUp " 4}"
 						if(!DisableToolUse)
 							Click "Down"
@@ -12963,7 +12963,7 @@ nm_Bugrun(){
 					if (found)
 					{
 						nm_setStatus("Attacking")
-						Send "{" SC_1 "}"
+						nm_placeSprinkler()
 						SendInput "{" RotUp " 4}"
 						if(!DisableToolUse)
 							Click "Down"
@@ -13095,7 +13095,7 @@ nm_Bugrun(){
 					{
 						nm_setStatus("Attacking")
 						SendInput "{" RotUp " 4}"
-						Send "{" SC_1 "}"
+						nm_placeSprinkler()
 						if(!DisableToolUse)
 							Click "Down"
 						loop 17 { ;wait to kill
@@ -13540,7 +13540,7 @@ nm_Bugrun(){
 					DllCall("GetSystemTimeAsFileTime", "int64p", &SnailStartTime:=0)
 					KillCheck := SnailStartTime
 					UpdateTimer := SnailStartTime
-					Send "{" SC_1 "}"
+					nm_placeSprinkler()
 					loop 2
 					{
 						Send "{" RotUp "}"
@@ -13938,7 +13938,7 @@ nm_Bugrun(){
 				nm_Reset(1, wait)
 				nm_setStatus("Traveling", "Coco Crab")
 				nm_gotoField("coconut")
-				Send "{" SC_1 "}"
+				nm_placeSprinkler()
 				nm_Move(1400, RightKey)
 				nm_Move(1000, BackKey)
 
@@ -15456,150 +15456,147 @@ nm_convert(){
 	Sleep 500+(IsNumber(ConvertDelay) ? ConvertDelay : 0)*1000
 }
 nm_setSprinkler(field, loc, dist){
-	global FwdKey, LeftKey, BackKey, RightKey, SC_1, SC_Space, KeyDelay, SprinklerType, MoveSpeedNum
-
+	static FieldDim := {  ; Times are roughly 1/10 of the way to the edge of the field. | Width = Right/Left Key | Length = Fwd/Back Key
+		sunflower: {
+		Length: 0.8,
+		Width: 1.4
+		},
+		dandelion: {
+		Length: 1.6,
+		Width: 0.8
+		},
+		mushroom: {
+		Length: 0.88,
+		Width: 1.28
+		},
+		blueflower: { ;(!)
+		Length: 2,
+		Width: 0.7
+		},
+		clover: {
+		Length: 1.75,
+		Width: 1.25
+		},
+		spider: {
+		Length: 1.75,
+		Width: 1.75
+		},
+		strawberry: {
+		Length: 1.25,
+		Width: 1.75
+		},
+		bamboo: {
+		Length: 2.75,
+		Width: 1
+		},
+		pineapple: {
+		Length: 1.5,
+		Width: 2.75
+		},
+		stump: {
+		Length: 1.25,
+		Width: 1.25
+		},
+		cactus: {
+		Length: 1.25,
+		Width: 2.25
+		},
+		pumpkin: {
+		Length: 1.25,
+		Width: 2.25
+		},
+		pinetree: {
+		Length: 2.25,
+		Width: 1.5
+		},
+		rose: {
+		Length: 2.25,
+		Width: 1.25
+		},
+		mountaintop: {
+		Length: 2,
+		Width: 1.25
+		},
+		pepper: {
+		Length: 1.25,
+		Width: 2
+		},
+		coconut: {
+		Length: 1.25,
+		Width: 2
+		}
+	}
 	if (SprinklerType = "None")
 		return
-
-	;field dimensions
-	switch field, 0
-	{
-		case "sunflower":
-		flen:=1250*dist/10
-		fwid:=2000*dist/10
-
-		case "dandelion":
-		flen:=2500*dist/10
-		fwid:=1000*dist/10
-
-		case "mushroom":
-		flen:=1250*dist/10
-		fwid:=1750*dist/10
-
-		case "blue flower":
-		flen:=2750*dist/10
-		fwid:=750*dist/10
-
-		case "clover":
-		flen:=2000*dist/10
-		fwid:=1500*dist/10
-
-		case "spider":
-		flen:=2000*dist/10
-		fwid:=2000*dist/10
-
-		case "strawberry":
-		flen:=1500*dist/10
-		fwid:=2000*dist/10
-
-		case "bamboo":
-		flen:=3000*dist/10
-		fwid:=1250*dist/10
-
-		case "pineapple":
-		flen:=1750*dist/10
-		fwid:=3000*dist/10
-
-		case "stump":
-		flen:=1500*dist/10
-		fwid:=1500*dist/10
-
-		case "cactus","pumpkin":
-		flen:=1500*dist/10
-		fwid:=2500*dist/10
-
-		case "pine tree":
-		flen:=2500*dist/10
-		fwid:=1750*dist/10
-
-		case "rose":
-		flen:=2500*dist/10
-		fwid:=1500*dist/10
-
-		case "mountain top":
-		flen:=2250*dist/10
-		fwid:=1500*dist/10
-
-		case "pepper","coconut":
-		flen:=1500*dist/10
-		fwid:=2250*dist/10
-	}
-
-	MoveSpeedFactor:=round(18/MoveSpeedNum, 2)
-
+	field := StrReplace(field, " ")
+	Length := FieldDim.%field%.Length*dist
+	Width := FieldDim.%field%.Width*dist
+	
 	;move to start position
-	if(InStr(loc, "Upper")){
-		nm_Move(flen*MoveSpeedFactor, FwdKey)
-	} else if(InStr(loc, "Lower")){
-		nm_Move(flen*MoveSpeedFactor, BackKey)
-	}
-	if(InStr(loc, "Left")){
-		nm_Move(fwid*MoveSpeedFactor, LeftKey)
-	} else if(InStr(loc, "Right")){
-		nm_Move(fwid*MoveSpeedFactor, RightKey)
-	}
-	if(loc="center")
-		Sleep 1000
-	;set sprinkler(s)
-	if(SprinklerType="Supreme" || SprinklerType="Basic") {
-		Send "{" SC_1 "}"
-		return
-	} else {
+	if(InStr(loc, "Upper"))
+		movement := 'nm_Walk(' Length ', FwdKey)'
+	else if (InStr(loc, "Lower"))
+		movement := 'nm_Walk(' Length ', BackKey)'
+	nm_createWalk(movement)
+	KeyWait "F14", "D T5 L"
+	KeyWait "F14", "T15 L"
+	nm_endWalk()
+
+	if(InStr(loc, "Left"))
+		movement := 'nm_Walk(' Width ', LeftKey)'
+	else if(InStr(loc, "Right"))
+		movement := 'nm_Walk(' Width ', RightKey)'
+	nm_createWalk(movement)
+	KeyWait "F14", "D T5 L"
+	KeyWait "F14", "T15 L"
+	nm_endWalk()
+
+	if SprinklerKey ;could be undefined if the user is afk
+		nm_placeSprinkler(loc)
+}
+;Place 1 sprinkler if loc is not defined, otherwise place all.
+nm_placeSprinkler(loc?){ 
+	local movement:=""
+	(Keys := Map()).CaseSense := 0, RecentLocations := [], (SprinklerReps:=Map()).CaseSense := 0
+	SprinklerReps := Map("Silver", 2
+		, "Golden", 3
+		, "Diamond", 4)
+	
+	Keys := Map("Upper", ["BackKey", "FwdKey"]
+		, "Lower", ["FwdKey", "BackKey"]
+		, "Left", ["RightKey", "LeftKey"]
+		, "Right", ["LeftKey", "RightKey"])
+
+	if (SprinklerReps.Has(SprinklerType) && loc){
 		nm_JumpSprinkler(1)
+		loop (SprinklerReps[SprinklerType]-1) { ;minus 1; 1st sprinkler is placed above
+			if (!Mod(A_Index, 2)) ;odd numbers
+				RecentLocations.Push((InStr(loc, "Upper") ? "Upper" : "Lower"))
+			else  ;even numbers
+				RecentLocations.Push((InStr(loc, "Left") ? "Left" : "Right"))
+			nm_createWalk('nm_Walk(4, ' Keys[RecentLocations[A_Index]][(A_Index+1)//2] ')')
+			KeyWait "F14", "D T3 L"
+			KeyWait "F14", "T5 L"
+			nm_endWalk()
+			Sleep 500
+			nm_JumpSprinkler()
+		}
+		Switch SprinklerType, "Off" {
+			case "Diamond":
+				movement := 'nm_Walk(4,' Keys[RecentLocations[2]][2] ')'
+			case "Golden":
+				movement := 'nm_Walk(6,' Keys[RecentLocations[1]][2] ',' Keys[RecentLocations[2]][2] ')'
+			case "Silver":
+				movement := 'nm_Walk(4,' Keys[RecentLocations[1]][2] ')'
+		}
+		nm_createWalk(movement)
+		KeyWait "F14", "D T5 L"
+		KeyWait "F14", "T5 L"
+		nm_endWalk()
 	}
-	if(SprinklerType="Silver" || SprinklerType="Golden" || SprinklerType="Diamond") {
-		if(InStr(loc, "Upper")){
-			nm_Move(1000*MoveSpeedFactor, BackKey)
-		} else {
-			nm_Move(1000*MoveSpeedFactor, FwdKey)
-		}
-		DllCall("Sleep","UInt",500)
-		nm_JumpSprinkler()
-	}
-	if(SprinklerType="Silver") {
-		if(InStr(loc, "Upper")){
-			nm_Move(1000*MoveSpeedFactor, FwdKey)
-		} else {
-			nm_Move(1000*MoveSpeedFactor, BackKey)
-		}
-	}
-	if(SprinklerType="Golden" || SprinklerType="Diamond") {
-		if(InStr(loc, "Left")){
-			nm_Move(1000*MoveSpeedFactor, RightKey)
-		} else {
-			nm_Move(1000*MoveSpeedFactor, LeftKey)
-		}
-		DllCall("Sleep","UInt",500)
-		nm_JumpSprinkler()
-	}
-	if(SprinklerType="Golden") {
-		if(InStr(loc, "Upper")){
-			if(InStr(loc, "Left")){
-				nm_Move(1400*MoveSpeedFactor, FwdKey, LeftKey)
-			} else {
-				nm_Move(1400*MoveSpeedFactor, FwdKey, RightKey)
-			}
-		} else {
-			if(InStr(loc, "Left")){
-				nm_Move(1400*MoveSpeedFactor, BackKey, LeftKey)
-			} else {
-				nm_Move(1400*MoveSpeedFactor, BackKey, RightKey)
-			}
-		}
-	}
-	if(SprinklerType="Diamond") {
-		if(InStr(loc, "Upper")){
-			nm_Move(1000*MoveSpeedFactor, FwdKey)
-		} else {
-			nm_Move(1000*MoveSpeedFactor, BackKey)
-		}
-		DllCall("Sleep","UInt",500)
-		nm_JumpSprinkler()
-		if(InStr(loc, "Left")){
-			nm_Move(1000*MoveSpeedFactor, LeftKey)
-		} else {
-			nm_Move(1000*MoveSpeedFactor, RightKey)
-		}
+	else { ;Place one: Supreme or basic or loc not defined (used in bugrun, for example)
+		Send "{" SprinklerKey "}"
+		return
 	}
 }
 nm_JumpSprinkler(resetDelay := 0){
@@ -15612,7 +15609,7 @@ nm_JumpSprinkler(resetDelay := 0){
 	Loop 3 {
 		Send "{" SC_Space " down}"
 		Sleep JumpDelay
-		Send "{" SC_1 "}{" SC_Space " up}"
+		Send "{" SprinklerKey "}{" SC_Space " up}"
 		Sleep 500
 		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth-356 "|" windowY+windowHeight-326 "|340|300")
 		if (Gdip_ImageSearch(pBMScreen, bitmaps["standing"], , , , , , 20) = 1) { ; jumped too high
@@ -20829,7 +20826,36 @@ start(*){
 			}
 		}
 	}
+	;find sprinkler hotbar
+	global SprinklerKey
+	pBMScreen := Gdip_BitmapFromScreen(WindowX+WindowWidth*0.5-260 "|" WindowY+WindowHeight-101 "|" 75*7 "|" 66)
+	if (Gdip_ImageSearch(pBMScreen, bitmaps["Sprinkler"], &pos, , , , , 60, , 4) = 1) {
+		x := SubStr(pos, 1, (comma := InStr(pos, ",")) - 1)
+		SprinklerSlot := x//75+1
+	}
+	Gdip_DisposeImage(pBMScreen)
 	;special hotbar cases
+	;SprinklerKey
+	if (!IsSet(SprinklerSlot) || !RegExMatch(SprinklerSlot, "[1-7]")){
+		BoxesTimeout := []
+		BoxesTimeout.Push(Msgbox("Could not determine the hotbar slot of your sprinkler.`n`nYou can set the sprinkler slot manually after you press `"OK`" for this session.`n`nIf this issue persists, please join the discord and ask for assistance.","Sprinkler", "T30"))
+		Loop {
+			UserInput := InputBox("Enter sprinkler slot manually", "Sprinkler","T30")
+			BoxesTimeout.Push(UserInput.Result)
+			if (RegExMatch(UserInput.Value, "[1-7]")){
+				SprinklerKey := "sc00" 1+UserInput.Value
+				break
+			}
+			if UserInput.Value
+				Msgbox("Invalid input, numbers 1-7 only.", "Sprinkler", "T60")
+			if ObjHasValue(BoxesTimeout, "Timeout"){ ;if user takes too long to input
+				SprinklerKey := ""
+				break
+			}
+		}
+
+	} else
+		SprinklerKey:="sc00" SprinklerSlot+1
 	;MicroConverterKey
 	global MicroConverterKey
 	MicroConverterKey:="None"
