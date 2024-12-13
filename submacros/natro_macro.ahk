@@ -7190,6 +7190,7 @@ nm_HiveBeesHelp(*){
 	)", "Hive Bees", 0x40000
 }
 nm_AnnounceGuidWarn(GuiCtrl, *){
+	global AnnounceGuidingStar
 	if GuiCtrl.Value = 0
 		IniWrite (GuiCtrl.Value := 0), "settings\nm_config.ini", "Settings", "AnnounceGuidingStar"
 	else {
@@ -7201,9 +7202,10 @@ nm_AnnounceGuidWarn(GuiCtrl, *){
 
 		DESCRIPTION:
 		When enabled, the macro will send a message to the Roblox chat reading <<Guiding Star in (field) until __:mm>> when the "Guiding star in (field)" text is detected on the bottom right of your screen.
-		)", "Announce Guiding Star", 0x40031)="Ok"){
-			IniWrite (GuiCtrl.Value := 1), "settings\nm_config.ini", "Settings", "AnnounceGuidingStar"
-		} else IniWrite (GuiCtrl.Value := 0), "settings\nm_config.ini", "Settings", "AnnounceGuidingStar"
+		)", "Announce Guiding Star", 0x40031)="Ok")
+			IniWrite (GuiCtrl.Value := AnnounceGuidingStar := 1), "settings\nm_config.ini", "Settings", "AnnounceGuidingStar"
+		 else 
+			IniWrite (GuiCtrl.Value := AnnounceGuidingStar := 0), "settings\nm_config.ini", "Settings", "AnnounceGuidingStar"
 	}
 }
 nm_ResetConfig(*){
