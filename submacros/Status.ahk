@@ -344,7 +344,6 @@ settings["NewWalk"] := {enum: 67, type: "int", section: "Settings", regex: "i)^(
 settings["HiveSlot"] := {enum: 68, type: "int", section: "Settings", regex: "i)^[1-6]$"}
 settings["HiveBees"] := {enum: 69, type: "int", section: "Settings", regex: "^([1-9]|[1-4][0-9]|50)$"}
 settings["ConvertDelay"] := {enum: 70, type: "int", section: "Settings", regex: "i)^\d{1,2}$"}
-settings["ReconnectMessage"] := {enum: 71, type: "int", section: "Settings", regex: "i)^(0|1)$"}
 settings["PublicFallback"] := {enum: 72, type: "int", section: "Settings", regex: "i)^(0|1)$"}
 settings["KeyDelay"] := {enum: 73, type: "int", section: "Settings", regex: "i)^\d{1,3}$"}
 settings["FieldPatternReps1"] := {enum: 74, type: "int", section: "Gather", regex: "i)^[1-9]$"}
