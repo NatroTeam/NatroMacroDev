@@ -9482,7 +9482,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		Sleep 1000
 		SetKeyDelay PrevKeyDelay
 
-		if !atHive()
+		if A_Index <5 && !atHive()
 			continue
 
 		; hive check
@@ -18795,7 +18795,7 @@ nm_PathVars(){
 			}
 			Sleep 1000
 
-			if !atHive()
+			if A_Index <5 && !atHive()
 				continue
 
 			if hivedown
