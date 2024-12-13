@@ -319,7 +319,6 @@ nm_importConfig()
 		, "ReconnectInterval", ""
 		, "ReconnectHour", ""
 		, "ReconnectMin", ""
-		, "ReconnectMessage", 0
 		, "PublicFallback", 1
 		, "GuiX", ""
 		, "GuiY", ""
@@ -2597,12 +2596,6 @@ MainGui.SetFont("s6 w700")
 MainGui.Add("Text", "x295 yp+6 +BackgroundTrans", "UTC")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Button", "x315 yp-3 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
-(GuiCtrl := MainGui.Add("CheckBox", "x176 yp+24 w88 h15 vReconnectMessage Disabled Checked" ReconnectMessage, "Natro so broke")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
-hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["weary"])
-MainGui.Add("Picture", "+BackgroundTrans x269 yp-2 w20 h20", "HBITMAP:*" hBM)
-DllCall("DeleteObject", "ptr", hBM)
-Gdip_DisposeImage(bitmaps["weary"])
-MainGui.Add("Button", "x315 yp+2 w10 h15 vNatroSoBrokeHelp Disabled", "?").OnEvent("Click", nm_NatroSoBrokeHelp)
 (GuiCtrl := MainGui.Add("CheckBox", "x176 yp+18 w132 h15 vPublicFallback Disabled Checked" PublicFallback, "Fallback to Public Server")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("Button", "x315 yp w10 h15 vPublicFallbackHelp Disabled", "?").OnEvent("Click", nm_PublicFallbackHelp)
 
@@ -3939,7 +3932,6 @@ nm_TabSettingsLock(){
 	MainGui["HiveBeesHelp"].Enabled := 0
 	MainGui["ConvertDelay"].Enabled := 0
 	MainGui["PrivServer"].Enabled := 0
-	MainGui["ReconnectMessage"].Enabled := 0
 	MainGui["PublicFallback"].Enabled := 0
 	MainGui["ResetFieldDefaultsButton"].Enabled := 0
 	MainGui["ResetAllButton"].Enabled := 0
@@ -3949,7 +3941,6 @@ nm_TabSettingsLock(){
 	MainGui["ReconnectHour"].Enabled := 0
 	MainGui["ReconnectMin"].Enabled := 0
 	MainGui["ReconnectTimeHelp"].Enabled := 0
-	MainGui["NatroSoBrokeHelp"].Enabled := 0
 	MainGui["PublicFallbackHelp"].Enabled := 0
 	MainGui["NewWalkHelp"].Enabled := 0
 }
@@ -3980,7 +3971,6 @@ nm_TabSettingsUnLock(){
 	MainGui["HiveBeesHelp"].Enabled := 1
 	MainGui["ConvertDelay"].Enabled := 1
 	MainGui["PrivServer"].Enabled := 1
-	MainGui["ReconnectMessage"].Enabled := 1
 	MainGui["PublicFallback"].Enabled := 1
 	MainGui["ResetFieldDefaultsButton"].Enabled := 1
 	MainGui["ResetAllButton"].Enabled := 1
@@ -3990,7 +3980,6 @@ nm_TabSettingsUnLock(){
 	MainGui["ReconnectHour"].Enabled := 1
 	MainGui["ReconnectMin"].Enabled := 1
 	MainGui["ReconnectTimeHelp"].Enabled := 1
-	MainGui["NatroSoBrokeHelp"].Enabled := 1
 	MainGui["PublicFallbackHelp"].Enabled := 1
 	MainGui["NewWalkHelp"].Enabled := 1
 }
@@ -7501,13 +7490,6 @@ nm_ReconnectTimeHelp(*){
 
 	RECONNECT TIMES: " ReconnectTimeString
 	), "Coordinated Universal Time (UTC)", 0x40000 " Owner" MainGui.Hwnd
-}
-nm_NatroSoBrokeHelp(*){ ; so broke information
-	MsgBox "
-	(
-	DESCRIPTION:
-	Enable this to have the macro say 'Natro so broke :weary:' in chat after it reconnects! This is a reference to e_lol's macros which type 'e_lol so pro :weary:' in chat.
-	)", "Natro so broke :weary:", 0x40000
 }
 nm_PublicFallbackHelp(*){ ; public fallback information
 	MsgBox "
@@ -16171,8 +16153,7 @@ ShellRun(prms*)
 	shell.ShellExecute(prms*)
 }
 nm_claimHiveSlot(){
-	global KeyDelay, FwdKey, RightKey, LeftKey, BackKey, ZoomOut, HiveSlot, HiveConfirmed, SC_E, SC_Esc, SC_R, SC_Enter, bitmaps, ReconnectMessage
-	static LastNatroSoBroke := 1
+	global KeyDelay, FwdKey, RightKey, LeftKey, BackKey, ZoomOut, HiveSlot, HiveConfirmed, SC_E, SC_Esc, SC_R, SC_Enter, bitmaps
 
 	GetBitmap() {
 		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
@@ -16310,12 +16291,7 @@ nm_claimHiveSlot(){
 	MainGui["HiveSlot"].Text := HiveSlot
 	IniWrite HiveSlot, "settings\nm_config.ini", "Settings", "HiveSlot"
 	nm_setStatus("Claimed", "Hive Slot " . HiveSlot)
-	;;;;; Natro so broke :weary:
-	if(ReconnectMessage && ((nowUnix()-LastNatroSoBroke)>3600)) { ;limit to once per hour
-		LastNatroSoBroke:=nowUnix()
-		Send "{Text}/[" A_Hour ":" A_Min "] Natro so broke :weary:`n"
-		sleep 250
-	}
+	PostSubmacroMessage("background", 0x5554, 2, HiveSlot)
 	MouseMove windowX+350, windowY+offsetY+100
 
 	return 1
