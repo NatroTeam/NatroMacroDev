@@ -3205,8 +3205,10 @@ try {
 }
 
 SetTimer Background, 2000
-if (A_Args.Has(1) && (A_Args[1] = 1))
+if (A_Args.Has(1) && (A_Args[1] = 1)){
+	global ForceStart := 1
 	SetTimer start, -1000
+}
 
 return
 
@@ -20679,104 +20681,128 @@ start(*){
 	MainGui["StartButton"].Enabled := 0
 	Hotkey StartHotkey, "Off"
 	nm_setStatus("Begin", "Macro")
-	local ForceStart := (A_Args.Has(1) && (A_Args[1] = 1))
-	;Auto Field Boost WARNING @ start
-	if(AutoFieldBoostActive){
-		if(AFBDiceEnable)
-			if(AFBDiceLimitEnable)
-				futureDice:=AFBDiceLimit-AFBdiceUsed
-			else
-				futureDice:="ALL"
-		else
-			futureDice:="None"
-		if(AFBGlitterEnable)
-			if(AFBGlitterLimitEnable)
-				futureGlitter:=AFBGlitterLimit-AFBglitterUsed
-			else
-				futureGlitter:="ALL"
-		else
-			futureGlitter:="None"
-		if !ForceStart {
-			if (MsgBox(
-			(
-			"Automatic Field Boost is ACTIVATED.
-			------------------------------------------------------------------------------------
-			If you continue the following quantity of items can be used:
-			Dice: " futureDice "
-			Glitter: " futureGlitter "
 
-			HIGHLY RECOMMENDED:
-			Disable any non-essential tasks such as quests, bug runs, stingers, etc. Any time away from your gathering field can result in the loss of your field boost."
-			), "WARNING!!", 257 " T30") = "Cancel")
-				return
-		}
-	}
+	ForceStart := ForceStart ?? 0 ;Force start: errors/info are suppressed.
+	RemoteStart := RemoteStart ?? 0 ;RC start: errors/info are sent to status instead of msgboxes.
+	
 	if !ForceStart {
-		;Field drift compensation warning
-		Loop 3 {
-			;if gathering in a field with FDC on and without supreme set in settings, warn user
-			if (FDCWarn = 1 && FieldName%A_Index% != "None" && FieldName%A_Index% && FieldDriftCheck%A_Index% && SprinklerType != "Supreme") {
-				MsgBox
+		;Auto Field Boost WARNING @ start
+		if AutoFieldBoostActive {
+			local futureDice  := (AFBDiceEnable ? (AFBDiceLimitEnable ? (AFBDiceLimit-AFBdiceUsed) : 'All') : 'None')
+			local futureGlitter  := (AFBGlitterEnable ? (AFBGlitterLimitEnable ? (AFBGlitterLimit-AFBglitterUsed) : 'All') : 'None')
+			if !RemoteStart
+				MsgBox(
 				(
-				"You have Field Drift Compensation enabled for Gathering Field " A_Index ", however you do not have supreme saturator as your sprinkler type set in settings.
-				Please note that Field Drift Compensation requires you to own the Supreme saturator, as it searches for the blue pixel."
-				), "Field Drift Compensation", 0x1040 " T30"
-				if (MsgBox("Would you like to disable this warning for the future?", "Field Drift Compensation", 0x1124 " T30") = "Yes")
-					IniWrite (FDCWarn := 0), "settings\nm_config.ini", "Settings", "FDCWarn"
-				break
+				"Automatic Field Boost is ACTIVATED.
+				------------------------------------------------------------------------------------
+				If you continue the following quantity of items can be used:
+				Dice: " futureDice "
+				Glitter: " futureGlitter "
+	
+				HIGHLY RECOMMENDED:
+				Disable any non-essential tasks such as quests, bug runs, stingers, etc. Any time away from your gathering field can result in the loss of your field boost."
+				), "WARNING!!", 257 " T30")
+			else
+				nm_setStatus("Warning","`nAutomatic Field Boost is ACTIVATED.`nIf you continue the following quantity of items can be used:`nDice: " futureGlitter "`nGlitter: " PossibleGlitter)
+		}
+		;Field drift compensation warning
+		;if gathering in a field with FDC on and without supreme set in settings, warn user
+		if (FDCWarn = 1 && SprinklerType != "Supreme") {
+			local Driftablefields := []
+			Loop 3 {
+				if (FieldName%A_Index% != "None" && FieldName%A_Index% && FieldDriftCheck%A_Index%)
+					Driftablefields.Push(A_Index)
+			}
+			if (Driftablefields.Length > 0){
+				; humanize text
+				local formattedfields := "field" (Driftablefields.Length > 1 ? "s" : "") " "
+				local index, field
+				for index, field in Driftablefields {
+					formattedfields .= field " (" FieldName%field% ")" ((index < Driftablefields.Length) ? (index = Driftablefields.Length-1 ? ", and " : ", ") : "")
+				}
+
+				if !RemoteStart {
+					MsgBox
+					(
+					"You have Field Drift Compensation enabled for gathering " formattedfields ". However, you do not have supreme saturator as your sprinkler type set in settings.
+					Please note that Field Drift Compensation requires you to own the Supreme saturator, as it searches for the blue pixel."
+					), "Field Drift Compensation", 0x1040 " T30"
+					if (MsgBox("Would you like to disable this warning for the future?", "Field Drift Compensation", 0x1124 " T30") = "Yes")
+						IniWrite (FDCWarn := 0), "settings\nm_config.ini", "Settings", "FDCWarn"
+				} else
+					nm_setStatus("Warning","`nField Drift Compensation is enabled for gathering " formattedfields " without supreme saturator. This means that you may run out of the fields easily in these fields.")
 			}
 		}
 		;Sticker Warning
 		if ((StickerStackCheck = 1) && InStr(StickerStackItem, "Sticker")) { ;Warns user about stickers
-			msgbox
-			(
-			"You have enabled the Sticker option for Sticker Stack!
-			Consider trading all of your valuable stickers to alternative account, to ensure that you do not lose any valuable stickers."
-			(((StickerStackHive + StickerStackCub > 0) &&
-			(
-			"
+			if !RemoteStart {
+				msgbox
+				(
+				"You have enabled the Sticker option for Sticker Stack!
+				Consider trading all of your valuable stickers to alternative account, to ensure that you do not lose any valuable stickers."
+				(((StickerStackHive + StickerStackCub > 0) &&
+				(
+				"
 
-			EXTRA WARNING!!
-			You have enabled the donation of:" ((StickerStackHive = 1) ? "`n- Hive Skins" : "") ((StickerStackCub = 1) ? "`n- Cub Skins" : "") "
-			Make sure this is correct because the macro WILL use them!"
-			)
-			) || "")
-			), "Sticker Stack", 0x1040 " T30"
+				EXTRA WARNING!!
+				You have enabled the donation of:" ((StickerStackHive = 1) ? "`n- Hive Skins" : "") ((StickerStackCub = 1) ? "`n- Cub Skins" : "") "
+				Make sure this is correct because the macro WILL use them!"
+				)
+				) || "")
+				), "Sticker Stack", 0x1040 " T30"
+			} else
+				nm_setStatus("Warning", (StickerStackHive + StickerStackCub > 0) ? ("`nSticker Stack is enabled. Unwanted stickers may be donated.`nYou have also enabled **VALUABLE STICKERS:**"
+				(StickerStackHive ? "`n- **__Hive Skins__**" : "") 
+				(StickerStackCub ? "`n- **__Cub Skins__**" : "") 
+				) : "")
 		}
 		;Guid star Warning
 		if AnnounceGuidingStar
-			nm_AnnounceGuidWarn(MainGui["AnnounceGuidingStar"])
+			if !RemoteStart
+				nm_AnnounceGuidWarn(MainGui["AnnounceGuidingStar"])
+			else 
+				nm_setStatus("Warning","`nAnnounce Guiding Star is enabled. Make sure you are in a private server.")
 	}
 	ActivateRoblox()
 	disconnectCheck()
-	;check UIPI
-	try PostMessage 0x100, 0x7, 0, , "ahk_id " (hRoblox := GetRobloxHWND())
-	catch
-		MsgBox "
-		(
-		Your Roblox window is run as admin, but the macro is not!
-		This means the macro will be unable to send any inputs to Roblox.
-		You must either reinstall Roblox without administrative rights, or run Natro Macro as admin!
-
-		NOTE: It is recommended to stop the macro now, as this issue also causes hotkeys to not work while Roblox is active."
-		)", "WARNING!!", 0x1030 " T60"
-	try PostMessage 0x101, 0x7, 0xC0000000, , "ahk_id " hRoblox
 	nm_setShiftLock(0)
-	GetRobloxClientPos(hRoblox)
-	offsetY := GetYOffset(hRoblox, &offsetfail)
-	if (offsetfail = 1)
-		MsgBox "
-		(
-		Unable to detect in-game GUI offset!
-		This means the macro will NOT work correctly!
+	offsetY := GetYOffset((hRoblox := GetRobloxHWND()), &offsetfail)
 
-		There are a few reasons why this can happen, including:
-		- Incorrect graphics settings
-		- Your 'Experience Language' is not set to English
-		- Something is covering the top of your Roblox window
+	;addition warnings after roblox window is confirmed
+	if !ForceStart {
+		;check UIPI
+		try PostMessage 0x100, 0x7, 0, , "ahk_id " hRoblox
+		catch {
+			if !RemoteStart 
+				MsgBox "
+				(
+				Your Roblox window is run as admin, but the macro is not!
+				This means the macro will be unable to send any inputs to Roblox.
+				You must either reinstall Roblox without administrative rights, or run Natro Macro as admin!
 
-		Join our Discord server for support and our Knowledge Base post on this topic (Unable to detect in-game GUI offset)!
-		)", "WARNING!!", 0x1030 " T60"
+				NOTE: It is recommended to stop the macro now, as this issue also causes hotkeys to not work while Roblox is active."
+				)", "WARNING!!", 0x1030 " T60"
+			else
+				nm_setStatus("Error","`nRoblox is run as admin, but the macro is not. The macro cannot work in this state.")
+		}
+		try PostMessage 0x101, 0x7, 0xC0000000, , "ahk_id " hRoblox
+		if (offsetfail = 1)
+			if !RemoteStart 
+				MsgBox "
+				(
+				Unable to detect in-game GUI offset!
+				This means the macro will NOT work correctly!
+
+				There are a few reasons why this can happen, including:
+				- Incorrect graphics settings
+				- Your 'Experience Language' is not set to English
+				- Something is covering the top of your Roblox window
+
+				Join our Discord server for support and our Knowledge Base post on this topic (Unable to detect in-game GUI offset)!
+				)", "WARNING!!", 0x1030 " T60"
+			else 
+				nm_setStatus("Error","`nUnable to detect in-game GUI offset! Please check that all of your settings are correct.")
+	}
 	nm_OpenMenu()
 	MouseMove windowX+350, windowY+offsetY+100
 	DetectHiddenWindows 1
@@ -21088,8 +21114,10 @@ nm_ForceLabel(wParam, *){
 	switch wParam
 	{
 		case 1:
-		if (MainGui["StartButton"].Enabled = 1)
+		if (MainGui["StartButton"].Enabled = 1){
+			global RemoteStart := 1
 			SetTimer start, -500
+		}
 
 		case 2:
 		nm_pause()
