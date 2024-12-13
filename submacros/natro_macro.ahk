@@ -2626,7 +2626,6 @@ MainGui.Add("Text", "x345 y170 w110 +BackgroundTrans", "Multiple Reset:")
 (GuiCtrl := MainGui.Add("Slider", "x415 y168 w78 h16 vMultiReset Thick16 Disabled ToolTipTop Range0-3 Page1 TickInterval1", MultiReset)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "x345 y186 vGatherDoubleReset Disabled Checked" GatherDoubleReset, "Gather Double Reset")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "x345 y201 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
-GuiCtrl := MainGui.Add("CheckBox", "x345 y216 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
 SetLoadingProgress(30)
 
 ;COLLECT/Kill TAB
@@ -8634,12 +8633,20 @@ nm_showAdvancedSettings(*){
 nm_AdvancedGUI(init:=0){
 	global
 	local hBM, GuiCtrl
+	DangerInfo() => MsgBox("
+	(
+	These settings could case the macro to not function correctly, or for your roblox account to be at risk.
+
+	Read each warning CAREFULLY. If you are unsure about any of these settings, it is recommended to leave them off.
+	)")
+	
 	TabCtrl.UseTab("Advanced")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	MainGui.SetFont("w700")
 	MainGui.Add("GroupBox", "x5 y24 w240 h90", "Fallback Private Servers")
+	MainGui.Add("GroupBox", "x5 yp+90 w240 h115", "Danger Zone")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
-	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
+	MainGui.Add("GroupBox", "x255 yp+38 w240 h168", "Test Paths/Patterns")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
 	MainGui.Add("Text", "x15 y44", "3 Fails:")
@@ -8648,6 +8655,9 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("Edit", "x55 y64 w180 h18 vFallbackServer2", FallbackServer2).OnEvent("Change", nm_ServerLink)
 	MainGui.Add("Text", "x15 y88", "9 Fails:")
 	MainGui.Add("Edit", "x55 y86 w180 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
+	;danger
+	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", (*) => DangerInfo())
+	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
