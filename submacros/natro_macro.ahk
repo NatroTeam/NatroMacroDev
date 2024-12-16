@@ -9422,7 +9422,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		Sleep 1000
 		SetKeyDelay PrevKeyDelay
 
-		if A_Index <5 && !atHive()
+		if A_Index <5 && !atHive(hwnd)
 			continue
 
 		; hive check
@@ -9460,10 +9460,8 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			Sleep (remaining*1000) ;miliseconds
 		}
 	}
-	atHive() {
-		ActivateRoblox()
-		GetRobloxClientPos()
-		pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + GetYOffset() + 40 "|350|60")
+	atHive(hwnd) {
+		pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + GetYOffset(hwnd) + 40 "|350|60")
 		out := Gdip_ImageSearch(pBMScreen, bitmaps["colhey"],,,,,,5)
 		Gdip_DisposeImage(pBMScreen)
 		return (out=1)
@@ -18766,9 +18764,7 @@ nm_PathVars(){
 			ExitApp
 	}
 	atHive() {
-		ActivateRoblox()
-		GetRobloxClientPos()
-		pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + GetYOffset() + 40 "|350|60")
+		pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + offsetY + 40 "|350|60")
 		out := Gdip_ImageSearch(pBMScreen, bitmaps["colhey"],,,,,,5)
 		Gdip_DisposeImage(pBMScreen)
 		return (out=1)
