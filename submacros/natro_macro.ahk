@@ -13257,7 +13257,7 @@ nm_Bugrun(){
 				GetRobloxClientPos()
 				pBM := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2)
 				for , value in bitmaps["tunnelbearconfirm"] {
-					if (Gdip_ImageSearch(pBM, value, , , , , , 25) = 1)
+					if (Gdip_ImageSearch(pBM, value, , , , , , 15) = 1)
 						break
 					if A_Index = bitmaps["tunnelbearconfirm"].Count {
 						Gdip_DisposeImage(pBM)
