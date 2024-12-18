@@ -2025,6 +2025,7 @@ hBitmapsSBT := Map(), hBitmapsSBT.CaseSense := 0
 #Include "buffs\bitmaps.ahk"
 #Include "convert\bitmaps.ahk"
 #Include "collect\bitmaps.ahk"
+#Include "kill\bitmaps.ahk"
 #Include "boost\bitmaps.ahk"
 #Include "inventory\bitmaps.ahk"
 #Include "reconnect\bitmaps.ahk"
@@ -13253,9 +13254,17 @@ nm_Bugrun(){
 					SetKeyDelay PrevKeyDelay
 				}
 				;confirm tunnel
-				if ((nm_imgSearch("tunnel.png",25,"high")[1] = 1) && (nm_imgSearch("tunnel2.png",25,"high")[1] = 1)){
-					continue
+				GetRobloxClientPos()
+				pBM := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2)
+				for , value in bitmaps["tunnelbearconfirm"] {
+					if (Gdip_ImageSearch(pBM, value, , , , , , 25) = 1)
+						break
+					if A_Index = bitmaps["tunnelbearconfirm"].Count {
+						Gdip_DisposeImage(pBM)
+						continue 2 ;retry
+					}
 				}
+				Gdip_DisposeImage(pBM)
 				loop 2 {
 					Send "{" RotLeft "}"
 				}
