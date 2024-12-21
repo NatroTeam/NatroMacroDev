@@ -2025,6 +2025,7 @@ hBitmapsSBT := Map(), hBitmapsSBT.CaseSense := 0
 #Include "buffs\bitmaps.ahk"
 #Include "convert\bitmaps.ahk"
 #Include "collect\bitmaps.ahk"
+#Include "kill\bitmaps.ahk"
 #Include "boost\bitmaps.ahk"
 #Include "inventory\bitmaps.ahk"
 #Include "reconnect\bitmaps.ahk"
@@ -13224,39 +13225,77 @@ nm_Bugrun(){
 				nm_Reset(1, wait)
 				nm_setStatus("Traveling", "Tunnel Bear")
 				nm_gotoRamp()
-				If (MoveMethod="walk") {
-					break
+				if (MoveMethod = "walk") {
+					nm_gotoramp()
+	
+					movement := 
+					(
+					nm_Walk(67.5, BackKey, LeftKey) "
+					send '{" RotRight " 4}'
+					" nm_Walk(23.5, FwdKey) "
+					" nm_Walk(31.5, FwdKey, RightKey) "
+					" nm_Walk(10, RightKey) "
+					send '{" RotRight " 2}' 
+					" nm_Walk(28, FwdKey) "
+					" nm_Walk(13, LeftKey) "
+					" nm_Walk(25, RightKey) "
+					send '{" SC_Space " down}{" FwdKey " down}'
+					Walk(12)
+					send '{" SC_Space " up}{" FwdKey " up}{" RotLeft " 2}'
+					" nm_Walk(35, FwdKey) "
+					" nm_Walk(25, RightKey) "
+					" nm_Walk(12, FwdKey) "
+					" nm_Walk(3.5, RightKey) "
+					send '{" RotRight " 4}'
+					" nm_Walk(37, Fwdkey) "
+					" nm_Walk(10, FwdKey, LeftKey) "
+					" nm_Walk(5, Backkey) "
+					" nm_Walk(15, RightKey) "
+					" nm_Walk(10, BackKey) "
+					Sleep(3000) 
+					send '{" RotRight " 4}{" RotUp " 3}' "
+					)
 				} else {
-					nm_gotoCannon()
-					PrevKeyDelay := A_KeyDelay
-					SetKeyDelay 5
-					SendInput "{" SC_E " down}"
-					Sleep 100
-					SendInput "{" SC_E " up}"
-					DllCall("Sleep","UInt",50)
-					Send "{" LeftKey " down}"
-					DllCall("Sleep","UInt",1050)
-					Send "{" SC_Space "}"
-					Send "{" SC_Space "}"
-					DllCall("Sleep","UInt",4500)
-					Send "{" LeftKey " up}"
-					Send "{" SC_Space "}"
-					DllCall("Sleep","UInt",1000)
-					nm_Move(1500*MoveSpeedFactor, RightKey, BackKey)
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-					nm_Move(2500*MoveSpeedFactor, FwdKey)
-					DllCall("Sleep","UInt",2000)
-					SetKeyDelay PrevKeyDelay
+					nm_gotoramp()
+					nm_gotocannon()
+	
+					movement := 
+					(
+					" send '{" SC_E " down}'
+					sleep 100
+					send '{" SC_E " up}'
+					HyperSleep(1000)
+					send '{" LeftKey " down}'
+					HyperSleep(100)
+					send '{" SC_space " 2}'
+					HyperSleep(900)
+					send '{" LeftKey " up}'
+					HyperSleep(6000)
+					" nm_Walk(10, FwdKey, LeftKey) "
+					" nm_Walk(5, Backkey) "
+					" nm_Walk(15, RightKey) "
+					" nm_Walk(10, BackKey) "
+					Sleep(3000) 
+					send '{" RotRight " 4}{" RotUp " 3}' "
+					)
 				}
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T90 L"
+				nm_endWalk()
 				;confirm tunnel
-				if ((nm_imgSearch("tunnel.png",25,"high")[1] = 1) && (nm_imgSearch("tunnel2.png",25,"high")[1] = 1)){
-					continue
+				GetRobloxClientPos()
+				pBM := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2)
+				for , value in bitmaps["tunnelbearconfirm"] {
+					if (Gdip_ImageSearch(pBM, value, , , , , , 15) = 1)
+						break
+					if A_Index = bitmaps["tunnelbearconfirm"].Count {
+						Gdip_DisposeImage(pBM)
+						continue 2 ;retry
+					}
 				}
-				loop 2 {
-					Send "{" RotLeft "}"
-				}
+				Gdip_DisposeImage(pBM)
+				Send "{" RotLeft " 2}{" RotDown " 3}"
 				;wait for baby love
 				DllCall("Sleep","UInt",2000)
 				if (TunnelBearBabyCheck){
