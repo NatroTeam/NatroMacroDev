@@ -393,7 +393,7 @@ nm_importConfig()
 		, "DebugLogEnabled", 1
 		, "SessionTotalHoney", 0
 		, "HoneyAverage", 0
-        , "HoneyUpdateSSCheck", 1)
+		, "HoneyUpdateSSCheck", 1)
 
 	config["Gather"] := Map("FieldName1", "Sunflower"
 		, "FieldName2", "None"
@@ -6807,7 +6807,7 @@ nm_WebhookGUI(*){
 		local k,v,x,y,w,h,str
 		static ss_list := ["critical","amulet","machine","balloon","vicious","death","planter","honey", "honeyUpdate"]
 		static ping_list := ["criticalerror","disconnect","gamefrozen","phantom","unexpecteddeath","emergencyballoon"]
-		
+
 		Gdip_GraphicsClear(G)
 		w := 500, h := 420 + discordMode * 80
 
@@ -7147,7 +7147,7 @@ nm_WebhookGUI(*){
 	shell := ComObject("WScript.Shell")
 	exec := shell.Exec('"' exe_path64 '" /script /force *')
 	exec.StdIn.Write(script), exec.StdIn.Close()
-	
+
 	return (WGUIPID := exec.ProcessID)
 }
 

@@ -358,4 +358,4 @@
 	, "GoldEggMatchIgnore"
 	, "DiamondEggMatchIgnore"
 	, "CoconutBoosterCheck"
-    , "HoneyUpdateSSCheck"]
+	, "HoneyUpdateSSCheck"]
