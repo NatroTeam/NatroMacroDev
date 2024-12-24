@@ -359,4 +359,5 @@
 	, "DiamondEggMatchIgnore"
 	, "CoconutBoosterCheck"
 	, "StumpBoosterCheck"
-	, "PepperBoosterCheck"]
+	, "PepperBoosterCheck"
+  , "HoneyUpdateSSCheck"]
