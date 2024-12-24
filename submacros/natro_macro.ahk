@@ -1954,6 +1954,10 @@ try Hotkey StopHotkey, stop, "On"
 pToken := Gdip_Startup()
 currentWalk := {pid:"", name:""} ; stores "pid" (script process ID) and "name" (pattern/movement name)
 
+priorityList:=[], defaultPriorityList:=["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
+for x in StrSplit(priorityListNumeric)
+	priorityList.push(defaultPriorityList[x])
+
 VBState:=0
 LostPlanters:=""
 QuestFields:=""
