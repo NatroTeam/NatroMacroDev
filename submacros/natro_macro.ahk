@@ -108,7 +108,7 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 
 ; set version identifier
-VersionID := "1.0.0.2"
+VersionID := "1.0.0.3"
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
