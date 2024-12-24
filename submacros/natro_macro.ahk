@@ -8791,6 +8791,7 @@ nm_Start(){
 	Loop 
 		for i in priorityList
             (%"nm_" i%)()
+	nm_planter() => (mp_Planter(),ba_planter())
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
