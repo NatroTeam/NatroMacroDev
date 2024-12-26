@@ -19880,7 +19880,7 @@ ba_harvestPlanter(planterNum){
 	nm_setShiftLock(0)
 	nm_Reset(1, ((GatherPlanterLoot = 1) && ((fieldname = "Rose") || (fieldname = "Pine Tree") || (fieldname = "Pumpkin") || (fieldname = "Cactus") || (fieldname = "Spider"))) ? min(20000, (60-HiveBees)*1000) : 0)
 	nm_setStatus("Traveling", planterName . " (" . fieldName . ")")
-	nm_gotoPlanter(fieldName)
+	nm_gotoPlanter(fieldName, 1)
 	nm_setStatus("Collecting", (planterName . " (" . fieldName . ")"))
 	while ((A_Index <= 5) && !(findPlanter := (nm_imgSearch("e_button.png",10)[1] = 0)))
 		Sleep 200
@@ -20495,7 +20495,8 @@ mp_HarvestPlanter(PlanterIndex) {
 	nm_Reset(nm_Reset(1, ((MFieldName = "Rose") || (MFieldName = "Pine Tree") || (MFieldName = "Pumpkin") || (MFieldName = "Cactus") || (MFieldName = "Spider")) ? min(20000, (60-HiveBees)*1000) : 0))
 
 	nm_setStatus("Traveling", MPlanterName . " (" . MFieldName . ")")
-	nm_gotoPlanter(MFieldName)
+	nm_gotoPlanter(MFieldName, 1)
+
 	if ((!MPuffModeA) || (!MPuffMode%PlanterIndex%) || (PlanterHarvestNow%PlanterIndex%))
 		nm_setStatus("Collecting", (MPlanterName . " (" . MFieldName . ")"))
 	else
@@ -20506,8 +20507,8 @@ mp_HarvestPlanter(PlanterIndex) {
 		nm_setStatus("Searching", (MPlanterName . " (" . MFieldName . ")"))
 		findPlanter := nm_searchForE()
 	}
+	;check for phantom planter, if not found
 	if (findPlanter = 0) {
-		;check for phantom planter
 		nm_setStatus("Checking", "Phantom Planter: " . MPlanterName)
 
 		planterPos := nm_InventorySearch(MPlanterName, "up", 4) ;~ new function
@@ -20561,6 +20562,7 @@ mp_HarvestPlanter(PlanterIndex) {
 		return 1
 	}
 	else {
+		; harvest planter
 		sendinput "{" SC_E " down}"
 		Sleep 100
 		sendinput "{" SC_E " up}"
@@ -20605,11 +20607,12 @@ mp_HarvestPlanter(PlanterIndex) {
 			}
 		}
 		else {
-			loop 3 {
+			loop 10 {
+				MouseMove windowX+350, windowY+offsetY+100
 				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-52 "|500|150")
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1) {
 					MouseMove windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1), windowY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1)
-					Sleep 150
+					Sleep 200
 					Click
 					sleep 100
 					Gdip_DisposeImage(pBMScreen)
@@ -20654,6 +20657,7 @@ mp_HarvestPlanter(PlanterIndex) {
 		PostSubmacroMessage("StatMonitor", 0x5555, 4, 1)
 		IniWrite TotalPlantersCollected, "settings\nm_config.ini", "Status", "TotalPlantersCollected"
 		IniWrite SessionPlantersCollected, "settings\nm_config.ini", "Status", "SessionPlantersCollected"
+
 		;gather loot
 		nm_setStatus("Looting", MPlanterName . " Loot")
 		Sleep 1000
@@ -20667,7 +20671,6 @@ mp_HarvestPlanter(PlanterIndex) {
 				nm_Move(1500*round(18/MoveSpeedNum, 6), RightKey)
 				sleep 200
 			}
-			;nm_setStatus("Holding", "Inside if MConvertFullBagHarvest=1 && BackpackPercent>=95 " (MPlanterName . " (" . MFieldName . ")")) ; //testing
 			nm_walkFrom(MFieldName)
 			DisconnectCheck()
 			nm_findHiveSlot()
