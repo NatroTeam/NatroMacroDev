@@ -19743,7 +19743,7 @@ ba_getNextPlanter(nextfield){
 }
 ba_placePlanter(fieldName, planter, planterNum, atField:=0){
 	global BambooFieldCheck, BlueFlowerFieldCheck, CactusFieldCheck, CloverFieldCheck, CoconutFieldCheck, DandelionFieldCheck, MountainTopFieldCheck, MushroomFieldCheck, PepperFieldCheck, PineTreeFieldCheck, PineappleFieldCheck, PumpkinFieldCheck, RoseFieldCheck, SpiderFieldCheck, StrawberryFieldCheck, StumpFieldCheck, SunflowerFieldCheck, MaxAllowedPlanters, LostPlanters, bitmaps
-
+	global PlasticPlanterCheck, CandyPlanterCheck, BlueClayPlanterCheck, RedClayPlanterCheck, TackyPlanterCheck, PesticidePlanterCheck, HeatTreatedPlanterCheck, HydroponicPlanterCheck, PetalPlanterCheck, PlanterCheckOfPlenty, PaperPlanterCheck, TicketPlanterCheck
 	nm_updateAction("Planters")
 
 	nm_setShiftLock(0)
@@ -19761,8 +19761,10 @@ ba_placePlanter(fieldName, planter, planterNum, atField:=0){
 
 	if (planterPos = 0) ; planter not in inventory
 	{
-		nm_setStatus("Missing", planterName)
 		LostPlanters.=planterName
+		%planterName%Check := 0
+		MainGui[planterName "Check"].Value := 0
+		nm_setStatus("Missing", planterName "!" planterName " has been deselected.")
 		ba_saveConfig_()
 		return 0
 	}
