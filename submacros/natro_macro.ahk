@@ -9496,9 +9496,10 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		sconf := windowWidth**2//3200
 		loop 4 {
 			sleep 250+KeyDelay
-			pBMScreen := Gdip_BitmapFromScreen(region)
+			pBMScreen := Gdip_BitmapFromScreen(region), s := 0
 			for i, k in bitmaps["hive"] {
-				if (Gdip_ImageSearch(pBMScreen, k, , , , , , 6, , , sconf) > 0) {
+				s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 4, , , sconf))
+				if (s >= sconf) {
 					Gdip_DisposeImage(pBMScreen)
 					HiveConfirmed := 1
 					sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
@@ -18837,7 +18838,8 @@ nm_PathVars(){
 				sleep 250
 				pBMScreen := Gdip_BitmapFromScreen(region), s := 0
 				for i, k in bitmaps["hive"] {
-					if (Gdip_ImageSearch(pBMScreen, k, , , , , , 6, , , sconf) = sconf) {
+					s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 4, , , sconf))
+					if (s >= sconf) {						
 						Gdip_DisposeImage(pBMScreen)
 						success := 1
 						Send "{" RotRight " 4}"
