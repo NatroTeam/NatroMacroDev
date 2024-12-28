@@ -15428,66 +15428,69 @@ nm_setSprinkler(field, loc, dist){
 	}
 	if (SprinklerType = "None")
 		return
-	field := StrReplace(field, " ")
-	Length := FieldDim.%field%.Length*dist
-	Width := FieldDim.%field%.Width*dist
-	
-	;move to start position
-	if(InStr(loc, "Upper"))
-		movement := 'nm_Walk(' Length ', FwdKey)'
-	else if (InStr(loc, "Lower"))
-		movement := 'nm_Walk(' Length ', BackKey)'
-	nm_createWalk(movement)
-	KeyWait "F14", "D T5 L"
-	KeyWait "F14", "T15 L"
-	nm_endWalk()
+	if (loc != "Center") {
+		field := StrReplace(field, " ")
+		Length := FieldDim.%field%.Length*dist
+		Width := FieldDim.%field%.Width*dist
+		
+		;move to start position
+		if(InStr(loc, "Upper"))
+			movement := 'nm_Walk(' Length ', FwdKey)'
+		else if (InStr(loc, "Lower"))
+			movement := 'nm_Walk(' Length ', BackKey)'
+		nm_createWalk(movement)
+		KeyWait "F14", "D T5 L"
+		KeyWait "F14", "T15 L"
+		nm_endWalk()
 
-	if(InStr(loc, "Left"))
-		movement := 'nm_Walk(' Width ', LeftKey)'
-	else if(InStr(loc, "Right"))
-		movement := 'nm_Walk(' Width ', RightKey)'
-	nm_createWalk(movement)
-	KeyWait "F14", "D T5 L"
-	KeyWait "F14", "T15 L"
-	nm_endWalk()
-
+		if(InStr(loc, "Left"))
+			movement := 'nm_Walk(' Width ', LeftKey)'
+		else if(InStr(loc, "Right"))
+			movement := 'nm_Walk(' Width ', RightKey)'
+		nm_createWalk(movement)
+		KeyWait "F14", "D T5 L"
+		KeyWait "F14", "T15 L"
+		nm_endWalk()
+	}	
 	if SprinklerKey ;could be undefined if the user is afk
 		nm_placeSprinkler(loc)
 }
 ;Place 1 sprinkler if loc is not defined, otherwise place all.
 nm_placeSprinkler(loc?){ 
-	local movement:=""
-	(Keys := Map()).CaseSense := 0, RecentLocations := [], (SprinklerReps:=Map()).CaseSense := 0
-	SprinklerReps := Map("Silver", 2
-		, "Golden", 3
-		, "Diamond", 4)
-	
-	Keys := Map("Upper", ["BackKey", "FwdKey"]
-		, "Lower", ["FwdKey", "BackKey"]
-		, "Left", ["RightKey", "LeftKey"]
-		, "Right", ["LeftKey", "RightKey"])
+	;sprinkler data
+	(SprinklerReps := Map()).CaseSense := 0
+	SprinklerReps.Set("Silver", 2
+	, "Golden", 3
+	, "Diamond", 4)
 
-	if (SprinklerReps.Has(SprinklerType) && loc){
+	(SprinklerDirectionKeys := Map()).CaseSense := 0
+	SprinklerDirectionKeys.Set("Upper", ["BackKey", "FwdKey"]
+	, "Lower", ["FwdKey", "BackKey"]
+	, "Left", ["RightKey", "LeftKey"]
+	, "Right", ["LeftKey", "RightKey"])
+
+	if (SprinklerReps.Has(SprinklerType) && IsSet(loc)){
+		RecentMovements := []
 		nm_JumpSprinkler(1)
 		loop (SprinklerReps[SprinklerType]-1) { ;minus 1; 1st sprinkler is placed above
 			if (!Mod(A_Index, 2)) ;odd numbers
-				RecentLocations.Push((InStr(loc, "Upper") ? "Upper" : "Lower"))
+				RecentMovements.Push((InStr(loc, "Upper") ? "Upper" : "Lower"))
 			else  ;even numbers
-				RecentLocations.Push((InStr(loc, "Left") ? "Left" : "Right"))
-			nm_createWalk('nm_Walk(4, ' Keys[RecentLocations[A_Index]][(A_Index+1)//2] ')')
+				RecentMovements.Push((InStr(loc, "Left") ? "Left" : "Right"))
+			nm_createWalk('nm_Walk(4, ' SprinklerDirectionKeys[RecentMovements[A_Index]][(A_Index+1)//2] ')')
 			KeyWait "F14", "D T3 L"
 			KeyWait "F14", "T5 L"
 			nm_endWalk()
 			Sleep 500
 			nm_JumpSprinkler()
 		}
-		Switch SprinklerType, "Off" {
+		Switch SprinklerType, 0 {
 			case "Diamond":
-				movement := 'nm_Walk(4,' Keys[RecentLocations[2]][2] ')'
+				movement := 'nm_Walk(4,' SprinklerDirectionKeys[RecentMovements[2]][2] ')'
 			case "Golden":
-				movement := 'nm_Walk(6,' Keys[RecentLocations[1]][2] ',' Keys[RecentLocations[2]][2] ')'
+				movement := 'nm_Walk(6,' SprinklerDirectionKeys[RecentMovements[1]][2] ',' SprinklerDirectionKeys[RecentMovements[2]][2] ')'
 			case "Silver":
-				movement := 'nm_Walk(4,' Keys[RecentLocations[1]][2] ')'
+				movement := 'nm_Walk(4,' SprinklerDirectionKeys[RecentMovements[1]][2] ')'
 		}
 		nm_createWalk(movement)
 		KeyWait "F14", "D T5 L"
@@ -20738,23 +20741,27 @@ start(*){
 			}
 		}
 	}
-	;find sprinkler hotbar
-	global SprinklerKey
+	;find sprinkler in hotbar
 	pBMScreen := Gdip_BitmapFromScreen(WindowX+WindowWidth*0.5-260 "|" WindowY+WindowHeight-101 "|" 75*7 "|" 66)
-	if (Gdip_ImageSearch(pBMScreen, bitmaps["Sprinkler"], &pos, , , , , 60, , 4) = 1) {
-		x := SubStr(pos, 1, (comma := InStr(pos, ",")) - 1)
+	if (Gdip_ImageSearch(pBMScreen, bitmaps["Sprinkler"], &pos, , , , , 60, , 4) = 1) { ;high variation needed; transparent BG
+		x := SubStr(pos, 1, InStr(pos, ",") - 1)
 		SprinklerSlot := x//75+1
 	}
 	Gdip_DisposeImage(pBMScreen)
-	;special hotbar cases
-	;SprinklerKey
-	if (!IsSet(SprinklerSlot) || !RegExMatch(SprinklerSlot, "[1-7]")){
+	;set key for sprinkler 
+	if (IsSet(SprinklerSlot) && SprinklerSlot ~= "[1-7]"){
+		SprinklerKey:="sc00" SprinklerSlot+1
+		IniWrite SprinklerSlot, "settings\nm_config.ini", "Settings", "SprinklerSlot"
+	} else if ForceStart ;no message boxes when forced to start
+		SprinklerKey := ""
+	else { ; sprinkler slot could not be detected
 		BoxesTimeout := []
 		BoxesTimeout.Push(Msgbox("Could not determine the hotbar slot of your sprinkler.`n`nYou can set the sprinkler slot manually after you press `"OK`" for this session.`n`nIf this issue persists, please join the discord and ask for assistance.","Sprinkler", "T30"))
 		Loop {
 			UserInput := InputBox("Enter sprinkler slot manually", "Sprinkler","T30")
 			BoxesTimeout.Push(UserInput.Result)
-			if (RegExMatch(UserInput.Value, "[1-7]")){
+			if (UserInput.Value ~= "[1-7]"){
+				IniWrite SprinklerSlot, "settings\nm_config.ini", "Settings", "SprinklerSlot"
 				SprinklerKey := "sc00" 1+UserInput.Value
 				break
 			}
@@ -20766,8 +20773,8 @@ start(*){
 			}
 		}
 
-	} else
-		SprinklerKey:="sc00" SprinklerSlot+1
+	}
+	;special hotbar cases
 	;MicroConverterKey
 	global MicroConverterKey
 	MicroConverterKey:="None"
