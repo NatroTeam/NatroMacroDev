@@ -198,8 +198,6 @@ nm_dayOrNight(){
 
 	try {
 		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + 2*windowHeight//5 "|" windowWidth "|" 3*windowHeight//5)
-		;for i in ["ground", "dande", "stump", "pa", "clovb", "beesmas", "ant"]
-			;if ImageSearch(&FoundX, &FoundY, windowX, windowY + 2*windowHeight//5, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatday" i ".png") = 1 
 		for k, v in daybm {
 			if (Gdip_ImageSearch(pBMScreen, v, , , , , , 5) = 1) {
 				result := 1
@@ -215,8 +213,6 @@ nm_dayOrNight(){
 	} else {
 		try {
 			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + windowHeight//2 "|" windowWidth "|" windowHeight//2)
-			;for i in ["a", "b"] {
-				;if ImageSearch(&FoundX, &FoundY, windowX, windowY + windowHeight//2, windowX + windowWidth, windowY + windowHeight, "*5 nm_image_assets\grassatnight" i ".png") = 1
 			for k, v in nightbm {
 				if (Gdip_ImageSearch(pBMScreen, v, , , , , , 5) = 1)
 				{
