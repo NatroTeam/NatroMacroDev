@@ -13203,14 +13203,15 @@ nm_Bugrun(){
 					(((Mod(i, 4) = 1) || (Mod(i, 4) = 2)) ? nm_Walk(4.5, FwdKey) : nm_Walk(4.5, BackKey)) "
 					" (((Mod(i, 4) = 0) || (Mod(i, 4) = 1)) ? nm_Walk(4.5, RightKey) : nm_Walk(4.5, LeftKey)) "
 					" nm_Walk(2, FwdKey) "
-					" nm_Walk(8, FwdKey, LeftKey) "
+					" nm_Walk(10, FwdKey, LeftKey) "
 					loop 4 {
 						" nm_Walk(16, BackKey) "
 						" nm_Walk(1.5, RightKey) "
 						" nm_Walk(16, FwdKey) "
 						" nm_Walk(1.5, RightKey) "
 					}
-					" nm_Walk(16, BackKey)
+					" nm_Walk(16, BackKey) "
+					" nm_Walk(6, FwdKey, LeftKey)
 					)
 					nm_createWalk(movement)
 					KeyWait "F14", "D T5 L"
