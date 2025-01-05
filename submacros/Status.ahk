@@ -638,7 +638,7 @@ settings["DiamondEggMatchIgnore"] := {enum: 359, type: "int", section: "Collect"
 settings["CoconutBoosterCheck"] := {enum: 360, type: "int", section: "Boost", regex: "i)^(0|1)$"}
 settings["StumpBoosterCheck"] := {enum: 361, type: "int", section: "Boost", regex: "i)^(0|1)$"}
 settings["PepperBoosterCheck"] := {enum: 362, type: "int", section: "Boost", regex: "i)^(0|1)$"}
-settings["HoneyUpdateSSCheck"] := {enum: 363, type: "int", section: "Status", regex: "^(0|1)$"}
+settings["HoneyUpdateSSCheck"] := {enum: 363, type: "int", section: "Status", regex: "i)^(0|1)$"}
 settings["StickerStackVoucher"] := {enum: 364, type: "int", section: "Boost", regex: "i)^(0|1)$"}
 
 bitmaps := Map()

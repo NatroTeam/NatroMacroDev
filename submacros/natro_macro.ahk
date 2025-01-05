@@ -5471,7 +5471,10 @@ nm_StickerStackSkinsHelp(*){
 
 	If 'Hive' is checked, the macro will donate Hive Skins to the Sticker Stack after all normal Stickers have been used up. Otherwise, these will not be used.
 
-	If 'Cub' is checked, the macro will donate Cub Skins to the Sticker Stack after all normal Stickers and Hive Skins have been used up. Otherwise, these will not be used.
+	If 'Cub' is checked, the macro will donate Cub Skins to the Sticker Stack after all normal Stickers and Hive Skins (if enabled) have been used up. Otherwise, these will not be used.
+
+	If 'Voucher' is checked, the macro will donate Vouchers to the Sticker Stack after all normal Stickers, Hive Skins, and Cubs (if enabled) have been used up. Otherwise, these will not be used.
+
 	)", "Sticker Stack Skins", 0x40000 " T60"
 }
 nm_StickerPrinterCheck(*){
@@ -11431,7 +11434,7 @@ nm_StickerStack(){
 						sleep 150
 						Click
 						sleep 100
-						; voucher separate for astetic
+						; voucher separate for aesthetic
 						if ((++i >= 4) && !InStr(stack, "Skin") && !(stack="Voucher")) { ; Yes/No prompt appeared too many times, assume this is not a regular sticker
 							Gdip_DisposeImage(pBMScreen)
 							nm_setStatus("Error", "Yes/No appeared too many times!")
