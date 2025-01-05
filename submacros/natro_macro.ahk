@@ -19764,7 +19764,7 @@ ba_placePlanter(fieldName, planter, planterNum, atField:=0){
 		LostPlanters.=planterName
 		%planterName%Check := 0
 		MainGui[planterName "Check"].Value := 0
-		nm_setStatus("Missing", planterName "!" planterName " has been deselected.")
+		nm_setStatus("Missing", planterName "! " planterName " has been deselected.")
 		ba_saveConfig_()
 		return 0
 	}
