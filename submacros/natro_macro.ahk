@@ -6549,13 +6549,11 @@ ba_gatherFieldSippingSwitch_(*){
 ba_maxAllowedPlantersSwitch(*){
 	global
 	MaxAllowedPlanters := MainGui["MaxAllowedPlanters"].Value
-	if(MaxAllowedPlanters=0){
-		MainGui["PlanterMode"].Value := 1
-		ba_planterSwitch()
-	} else {
-		MainGui["PlanterMode"].Value := 2
-	}
-	ba_saveConfig_()
+	if(!MaxAllowedPlanters)
+		MainGui["PlanterMode"].Value:=1, ba_planterSwitch()
+	else
+		MainGui["MaxAllowedPlanters"].Enabled:=0, MainGui["PlanterMode"].Value := 2
+	ba_saveConfig_(), MainGui["MaxAllowedPlanters"].Enabled:=1
 }
 ba_saveConfig_(*){ ;//todo: needs replacing!
 	global
