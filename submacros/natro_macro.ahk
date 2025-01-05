@@ -702,7 +702,8 @@ nm_importConfig()
 		, "StickerStackMode", 0
 		, "StickerStackTimer", 900
 		, "StickerStackHive", 0
-		, "StickerStackCub", 0)
+		, "StickerStackCub", 0
+		, "StickerStackVoucher", 0)
 
 	config["Quests"] := Map("QuestGatherMins", 5
 		, "QuestGatherReturnBy", "Walk"
@@ -2927,7 +2928,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
 ;stickers
 MainGui.SetFont("w700")
-MainGui.Add("GroupBox", "x300 y130 w190 h105", "Stickers")
+MainGui.Add("GroupBox", "x300 y130 w191 h105", "Stickers")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("CheckBox", "x305 yp+16 vStickerStackCheck Disabled Checked" StickerStackCheck, "Sticker Stack").OnEvent("Click", nm_StickerStackCheck)
 MainGui.Add("Text", "xp+6 yp+13 +BackgroundTrans", "\__")
@@ -2936,22 +2937,22 @@ MainGui.Add("Text", "x+12 yp w" ((StickerStackMode = 0) ? 85 : 68) " vStickerSta
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vSSMLeft Disabled", "<").OnEvent("Click", nm_StickerStackMode)
 MainGui.Add("Button", "xp+96 yp w12 h16 vSSMRight Disabled", ">").OnEvent("Click", nm_StickerStackMode)
 MainGui.Add("UpDown", "xp-18 yp h16 -16 Range900-86400 vStickerStackTimer Disabled Hidden" (StickerStackMode = 0), StickerStackTimer).OnEvent("Change", nm_StickerStackTimer)
-MainGui.Add("Button", "xp+32 yp+1 w12 h14 vStickerStackModeHelp Disabled", "?").OnEvent("Click", nm_StickerStackModeHelp)
+MainGui.Add("Button", "xp+36 yp+1 w12 h14 vStickerStackModeHelp Disabled", "?").OnEvent("Click", nm_StickerStackModeHelp)
 MainGui.Add("Text", "xs yp+17 w36 +Center +BackgroundTrans", "Item:")
 MainGui.Add("Text", "x+12 yp w85 vStickerStackItem +Center +BackgroundTrans", StickerStackItem)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vSSILeft Disabled", "<").OnEvent("Click", nm_StickerStackItem)
 MainGui.Add("Button", "xp+96 yp w12 h16 vSSIRight Disabled", ">").OnEvent("Click", nm_StickerStackItem)
-MainGui.Add("Button", "xp+14 yp+1 w12 h14 vStickerStackItemHelp Disabled", "?").OnEvent("Click", nm_StickerStackItemHelp)
-MainGui.Add("Text", "xs yp+17 w36 +Center +BackgroundTrans", "Skins:")
-MainGui.Add("CheckBox", "x+14 yp vStickerStackHive Disabled Checked" StickerStackHive, "Hive").OnEvent("Click", nm_StickerStackSkins)
-MainGui.Add("CheckBox", "x+2 yp vStickerStackCub Disabled Checked" StickerStackCub, "Cub").OnEvent("Click", nm_StickerStackSkins)
-MainGui.Add("Button", "xs+146 yp w12 h14 vStickerStackSkinsHelp Disabled", "?").OnEvent("Click", nm_StickerStackSkinsHelp)
+MainGui.Add("Button", "xp+18 yp+1 w12 h14 vStickerStackItemHelp Disabled", "?").OnEvent("Click", nm_StickerStackItemHelp)
+MainGui.Add("Text", "xs-27 yp+17 w36 +Center +BackgroundTrans", "Skins:")
+MainGui.Add("CheckBox", "x332 yp vStickerStackHive Disabled Checked" StickerStackHive, "Hive").OnEvent("Click", nm_StickerStackSkins)
+MainGui.Add("CheckBox", "x375 yp vStickerStackCub Disabled Checked" StickerStackCub, "Cub").OnEvent("Click", nm_StickerStackSkins)
+MainGui.Add("CheckBox", "x416 yp w36 vStickerStackVoucher Disabled Checked" StickerStackVoucher, "Voucher").OnEvent("Click", nm_StickerStackSkins)
+MainGui.Add("Button", "xs+150 yp w12 h14 vStickerStackSkinsHelp Disabled", "?").OnEvent("Click", nm_StickerStackSkinsHelp)
 MainGui.Add("CheckBox", "x305 yp+19 w86 h13 vStickerPrinterCheck Disabled Checked" StickerPrinterCheck, "Sticker Printer").OnEvent("Click", nm_StickerPrinterCheck)
 MainGui.Add("Text", "x+0 yp w24 +Center +BackgroundTrans", "Egg:")
 MainGui.Add("Text", "x+12 yp w48 vStickerPrinterEgg +Center +BackgroundTrans", StickerPrinterEgg)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vSPELeft Disabled", "<").OnEvent("Click", nm_StickerPrinterEgg)
 MainGui.Add("Button", "xp+59 yp w12 h16 vSPERight Disabled", ">").OnEvent("Click", nm_StickerPrinterEgg)
-
 ;QUESTS TAB
 ;------------------------
 TabCtrl.UseTab("Quests")
@@ -3679,6 +3680,7 @@ nm_TabBoostLock(){
 	MainGui["StickerStackModeHelp"].Enabled := 0
 	MainGui["StickerStackHive"].Enabled := 0
 	MainGui["StickerStackCub"].Enabled := 0
+	MainGui["StickerStackVoucher"].Enabled := 0
 	MainGui["StickerStackSkinsHelp"].Enabled := 0
 	MainGui["StickerPrinterCheck"].Enabled := 0
 	MainGui["SPELeft"].Enabled := 0
@@ -3732,6 +3734,7 @@ nm_TabBoostUnLock(){
 		if InStr(StickerStackItem, "Sticker") {
 			MainGui["StickerStackHive"].Enabled := 1
 			MainGui["StickerStackCub"].Enabled := 1
+			MainGui["StickerStackVoucher"].Enabled := 1
 		}
 	}
 	MainGui["StickerPrinterCheck"].Enabled := 1
@@ -5366,6 +5369,7 @@ nm_StickerStackCheck(*){
 	if (((c = 1) && InStr(StickerStackItem, "Sticker")) || (c = 0)) {
 		MainGui["StickerStackHive"].Enabled := c
 		MainGui["StickerStackCub"].Enabled := c
+		MainGui["StickerStackVoucher"].Enabled := c
 	}
 	IniWrite StickerStackCheck, "settings\nm_config.ini", "Boost", "StickerStackCheck"
 }
@@ -5384,7 +5388,7 @@ nm_StickerStackItem(GuiCtrl, *){
 		i := (StickerStackItem = "Sticker") ? 2 : 3
 
 	MainGui["StickerStackItem"].Text := StickerStackItem := val[(GuiCtrl.Name = "SSIRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
-	MainGui["StickerStackHive"].Enabled := MainGui["StickerStackCub"].Enabled := (InStr(StickerStackItem, "Sticker") > 0)
+	MainGui["StickerStackHive"].Enabled := MainGui["StickerStackCub"].Enabled := MainGui["StickerStackVoucher"].Enabled := (InStr(StickerStackItem, "Sticker") > 0)
 	IniWrite StickerStackItem, "settings\nm_config.ini", "Boost", "StickerStackItem"
 }
 nm_StickerStackMode(GuiCtrl?, *){
@@ -5431,7 +5435,7 @@ nm_StickerStackSkins(GuiCtrl, *){
 	%GuiCtrl.Name% := GuiCtrl.Value
 	if (%GuiCtrl.Name% = 1) {
 		%GuiCtrl.Name% := GuiCtrl.Value := 0
-		if (msgbox("You have selected to use " StrReplace(GuiCtrl.Name, "StickerStack") " Skins on the Sticker Stack!`nAre you sure you want to enable this?", "WARNING!!", 0x40034 " T60") = "Yes")
+		if (msgbox("You have enabled the use of " StrReplace(GuiCtrl.Name, "StickerStack") . (GuiCtrl.Name != "StickerStackVoucher" ? " Skins":"s") " on the Sticker Stack!`nAre you sure you want to enable this?", "WARNING!!", 0x40034 " T60") = "Yes")
 			%GuiCtrl.Name% := GuiCtrl.Value := 1
 	}
 	IniWrite GuiCtrl.Value, "settings\nm_config.ini", "Boost", GuiCtrl.Name
@@ -11348,7 +11352,7 @@ nm_Boost(){
 	nm_toAnyBooster()
 }
 nm_StickerStack(){
-	global StickerStackCheck, LastStickerStack, StickerStackItem, StickerStackMode, StickerStackTimer, StickerStackHive, StickerStackCub, SC_E, bitmaps
+	global StickerStackCheck, LastStickerStack, StickerStackItem, StickerStackMode, StickerStackTimer, StickerStackHive, StickerStackCub, StickerStackVoucher, SC_E, bitmaps
 
 	if (StickerStackCheck && (nowUnix()-LastStickerStack)>StickerStackTimer) {
 		loop 2 {
@@ -11368,12 +11372,12 @@ nm_StickerStack(){
 				; detect stack boost time
 				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-275 "|" windowY+4*windowHeight//10 "|550|220")
 				Loop 1 {
-					if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerstackdigits"][")"], &pos, 275, , , 25, 20) = 1) {
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerstackdigits"][")"], &pos, 275, , , 45, 20) = 1) {
 						x := SubStr(pos, 1, InStr(pos, ",")-1)
 						(digits := Map()).Default := ""
 						Loop 10 {
 							n := 10-A_Index
-							Gdip_ImageSearch(pBMScreen, bitmaps["stickerstackdigits"][n], &pos, x, , , 25, 20, , , 4, , "`n")
+							Gdip_ImageSearch(pBMScreen, bitmaps["stickerstackdigits"][n], &pos, x, , , 45, 20, , , 4, , "`n")
 							Loop Parse pos, "`n"
 								if (A_Index & 1)
 									digits[Integer(A_LoopField)] := n
@@ -11394,9 +11398,10 @@ nm_StickerStack(){
 				}
 
 				; check if sticker is available to donate
-				if (InStr(StickerStackItem, "Sticker") && (((Gdip_ImageSearch(pBMScreen, bitmaps["stickernormal"], &pos, , , 200, , 10) = 1) && (stack := "Sticker"))
-					|| ((StickerStackHive = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickerhive"], &pos, , , 275, , 10) = 1) && (stack := "Hive Skin"))
-					|| ((StickerStackCub = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickercub"], &pos, , , 275, , 10) = 1) && (stack := "Cub Skin")))) {
+				if (InStr(StickerStackItem, "Sticker") && (((Gdip_ImageSearch(pBMScreen, bitmaps["stickernormal"], &pos, , , 275, , 25) = 1) && (stack := "Sticker"))
+					|| ((StickerStackHive = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickerhive"], &pos, , , 275, , 25) = 1) && (stack := "Hive Skin"))
+					|| ((StickerStackCub = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickercub"], &pos, , , 275, , 25) = 1) && (stack := "Cub Skin"))
+					|| ((StickerStackVoucher = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickervoucher"], &pos, , , 275, , 25) = 1) && (stack := "Voucher")))) {
 					nm_setStatus("Stacking", stack)
 					MouseMove windowX+windowWidth//2-275+SubStr(pos, 1, InStr(pos, ",")-1)+26, windowY+4*windowHeight//10+SubStr(pos, InStr(pos, ",")+1)-10 ; select sticker
 					if (StickerStackMode = 0)
@@ -11426,7 +11431,8 @@ nm_StickerStack(){
 						sleep 150
 						Click
 						sleep 100
-						if ((++i >= 4) && !InStr(stack, "Skin")) { ; Yes/No prompt appeared too many times, assume this is not a regular sticker
+						; voucher separate for astetic
+						if ((++i >= 4) && !InStr(stack, "Skin") && !(stack="Voucher")) { ; Yes/No prompt appeared too many times, assume this is not a regular sticker
 							Gdip_DisposeImage(pBMScreen)
 							nm_setStatus("Error", "Yes/No appeared too many times!")
 							Sleep 500
@@ -20774,12 +20780,12 @@ start(*){
 			(
 			"You have enabled the Sticker option for Sticker Stack!
 			Consider trading all of your valuable stickers to alternative account, to ensure that you do not lose any valuable stickers."
-			(((StickerStackHive + StickerStackCub > 0) &&
+			(((StickerStackHive + StickerStackCub + StickerStackVoucher > 0) &&
 			(
 			"
 
 			EXTRA WARNING!!
-			You have enabled the donation of:" ((StickerStackHive = 1) ? "`n- Hive Skins" : "") ((StickerStackCub = 1) ? "`n- Cub Skins" : "") "
+			You have enabled the donation of:" ((StickerStackHive = 1) ? "`n- Hive Skins" : "") ((StickerStackCub = 1) ? "`n- Cub Skins" : "") ((StickerStackVoucher = 1) ? "`n- Vouchers" : "") "
 			Make sure this is correct because the macro WILL use them!"
 			)
 			) || "")
