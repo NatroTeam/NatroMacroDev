@@ -21207,6 +21207,14 @@ blc_mutations(*) {
 	script :=
 (
 '
+/************************************************************************
+ * @description Auto-Jelly is a macro for the game Bee Swarm Simulator on Roblox. It automatically rolls bees for mutations and stops when a bee with the desired mutation is found. It also has the ability to stop on mythic and gifted bees.
+ * @file auto-jelly.ahk
+ * @author ninju | .ninju.
+ * @date 2024/07/24
+ * @version 0.0.1
+ ***********************************************************************/
+
 #SingleInstance Force
 #Requires AutoHotkey v2.0
 #Warn VarUnset, Off
@@ -21215,14 +21223,32 @@ blc_mutations(*) {
 #include %A_ScriptDir%\lib\Roblox.ahk
 #include %A_ScriptDir%\lib\Gdip_ImageSearch.ahk
 ;==================================
-CoordMode "Mouse", "Screen"
+SendMode("Event")
+CoordMode(`'Pixel`', `'Screen`')
+CoordMode(`'Mouse`', `'Screen`')
+;==================================
 pToken := Gdip_Startup()
-OnExit((*) =>( Gdip_Shutdown(pToken), closefunction(), ExitApp() ), -1)
+OnExit((*) => (closefunction()), -1)
 OnError (e, mode) => (mode = "Return") ? -1 : 0
 stopToggle(*) {
 	global stopping := true
 }
-traySetIcon(".\nm_image_assets\auryn.ico")
+class __ArrEx extends Array {
+	static __New() {
+		Super.Prototype.includes := ObjBindMethod(this, `'includes`')
+	}
+	static includes(arr, val) {
+		for i, j in arr {
+			if j = val
+				return i
+		}
+		return 0
+	}
+}
+
+if A_ScreenDPI !== 96
+    throw Error("This macro requires a display-scale of 100%")
+traySetIcon(".\nm_image_assets\birb.ico")
 sendMode("event")
 getConfig() {
 	global
@@ -21288,6 +21314,8 @@ getConfig() {
 	for i, section in config.OwnProps()
 		for key, value in section.OwnProps()
 			%key% := value
+    if !FileExist(".\settings")
+        DirCreate(".\settings")
 	inipath := ".\settings\mutations.ini"
 	if FileExist(inipath) {
 		loop parse FileRead(inipath), "``n", "``r" A_Space A_Tab {
@@ -21328,19 +21356,19 @@ extrasettings:=[
 ]
 getConfig()
 (bitmaps := Map()).CaseSense:=0
-#Include %A_ScriptDir%\nm_image_assets\mutatorgui\bitmaps.ahk
-#include %A_ScriptDir%\nm_image_assets\mutator\bitmaps.ahk
-#include %A_ScriptDir%\nm_image_assets\offset\bitmaps.ahk
+#Include .\nm_image_assets\mutator\bitmaps.ahk
+#include .\nm_image_assets\mutatorgui\bitmaps.ahk
+#include .\nm_image_assets\offset\bitmaps.ahk
 startGui() {
 	global
 	local i,j,y,hBM,x
-	(mgui := Gui("+E" (0x00080000) " +OwnDialogs -Caption", "Auto-Jelly")).OnEvent("Close", closefunction)
-	mgui.Show("NA")
+	(mgui := Gui("+E" (0x00080000) " +OwnDialogs -Caption -DPIScale", "Auto-Jelly")).OnEvent("Close", ExitApp)
+	mgui.Show()
 	for i, j in [
 		{name:"move", options:"x0 y0 w" w " h36"},
-		{name:"selectall", options:"x" w-330 " y220 w40 h18"}, 
-		{name:"mutations", options:"x" w-170 " y220 w40 h18"}, 
-		{name:"close", options:"x" w-40 " y5 w28 h28"}, 
+		{name:"selectall", options:"x" w-330 " y220 w40 h18"},
+		{name:"mutations", options:"x" w-170 " y220 w40 h18"},
+		{name:"close", options:"x" w-40 " y5 w28 h28"},
 		{name:"roll", options:"x10 y" h-42 " w" w-56 " h30"},
 		{name:"help", options:"x" w-40 " y" h-42 " w28 h28"}
 	]
@@ -21493,7 +21521,7 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 }
 WM_MOUSEMOVE(wParam, lParam, msg, hwnd) {
 	global
-	local ctrl, hover_ctrl
+	local ctrl, hover_ctrl, tt := 0
 	MouseGetPos(,,,&ctrl,2)
 	if !ctrl || mgui["move"].hwnd = ctrl || mgui["close"].hwnd = ctrl
 		return
@@ -21501,9 +21529,13 @@ WM_MOUSEMOVE(wParam, lParam, msg, hwnd) {
 	hovercontrol := mgui[ctrl].name
 	hover_ctrl := mgui[ctrl].hwnd
 	DrawGUI()
-	while ctrl = hover_ctrl
+	while ctrl = hover_ctrl {
 		sleep(20),MouseGetPos(,,,&ctrl,2)
+		if A_Index > 120 && beeArr.includes(hovercontrol) && !tt
+			tt:=1,ToolTip(hovercontrol . " Bee")
+	}
 	hovercontrol := ""
+	ToolTip()
 	ReplaceSystemCursors()
 	DrawGUI()
 }
@@ -21588,7 +21620,7 @@ blc_start() {
 		ActivateRoblox()
 		click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
 		sleep 800
-		pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.45*windowHeight - 180 "|" 320 "|" 80)
+		pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.425*windowHeight - 200 "|" 320 "|" 140)
 		if mythicStop
 			for i, j in ["Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
 				if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
@@ -21604,6 +21636,7 @@ blc_start() {
 					break 2	
 				}	
 			}
+        found := 0
 		for i, j in selectedBees {
 			if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
 				if (!mutations || !ocr_enabled || !selectedMutations.length) {
@@ -21613,6 +21646,7 @@ blc_start() {
 					else
 						continue 2
 				}
+                found := 1
 				break
 			}
 		}
@@ -21620,7 +21654,6 @@ blc_start() {
 		if !found
 			continue
 		pBitmap := Gdip_BitmapFromScreen(windowX + Round(0.5 * windowWidth - 320) "|" windowY + yOffset + Round(0.4 * windowHeight + 17) "|210|90")
-		Gdip_setBitmapToClipboard(pBitmap)
 		pEffect := Gdip_CreateEffect(5, -60,30)
 		Gdip_BitmapApplyEffect(pBitmap, pEffect)
 		Gdip_DisposeEffect(pEffect)
@@ -21644,6 +21677,7 @@ blc_start() {
 }
 closeFunction(*) {
 	global xPos, yPos
+	Gdip_Shutdown(pToken)
 	ReplaceSystemCursors()
 	try {
 		mgui.getPos(&xp, &yp)
