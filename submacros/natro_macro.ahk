@@ -21249,7 +21249,6 @@ class __ArrEx extends Array {
 if A_ScreenDPI !== 96
     throw Error("This macro requires a display-scale of 100%")
 traySetIcon(".\nm_image_assets\birb.ico")
-sendMode("event")
 getConfig() {
 	global
 	local k, v, p, c, i, section, key, value, inipath, config, f, ini
