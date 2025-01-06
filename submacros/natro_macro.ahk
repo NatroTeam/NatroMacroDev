@@ -337,7 +337,8 @@ nm_importConfig()
 		, "TimersHotkey", "F5"
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
-		, "FDCWarn", 1)
+		, "FDCWarn", 1
+		, "SprinklerSlot", "")
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -20742,37 +20743,55 @@ start(*){
 		}
 	}
 	;find sprinkler in hotbar
-	pBMScreen := Gdip_BitmapFromScreen(WindowX+WindowWidth*0.5-260 "|" WindowY+WindowHeight-101 "|" 75*7 "|" 66)
-	if (Gdip_ImageSearch(pBMScreen, bitmaps["Sprinkler"], &pos, , , , , 60, , 4) = 1) { ;high variation needed; transparent BG
-		x := SubStr(pos, 1, InStr(pos, ",") - 1)
-		SprinklerSlot := x//75+1
-	}
-	Gdip_DisposeImage(pBMScreen)
-	;set key for sprinkler 
-	if (IsSet(SprinklerSlot) && SprinklerSlot ~= "[1-7]"){
-		SprinklerKey:="sc00" SprinklerSlot+1
-		IniWrite SprinklerSlot, "settings\nm_config.ini", "Settings", "SprinklerSlot"
-	} else if ForceStart ;no message boxes when forced to start
-		SprinklerKey := ""
-	else { ; sprinkler slot could not be detected
-		BoxesTimeout := []
-		BoxesTimeout.Push(Msgbox("Could not determine the hotbar slot of your sprinkler.`n`nYou can set the sprinkler slot manually after you press `"OK`" for this session.`n`nIf this issue persists, please join the discord and ask for assistance.","Sprinkler", "T30"))
-		Loop {
-			UserInput := InputBox("Enter sprinkler slot manually", "Sprinkler","T30")
-			BoxesTimeout.Push(UserInput.Result)
-			if (UserInput.Value ~= "[1-7]"){
-				IniWrite SprinklerSlot, "settings\nm_config.ini", "Settings", "SprinklerSlot"
-				SprinklerKey := "sc00" 1+UserInput.Value
-				break
+	SetSprinkler()
+	SetSprinkler(){
+		global SprinklerKey := ""
+		if SprinklerType = "None"
+			return
+
+		OldSprinklerSlot := SprinklerSlot
+
+		pBMScreen := Gdip_BitmapFromScreen(WindowX+WindowWidth*0.5-260 "|" WindowY+WindowHeight-101 "|" 75*7 "|" 66)
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["Sprinkler"], &pos, , , , , 60, , 4) = 1) { ;high variation needed; transparent BG
+			x := SubStr(pos, 1, InStr(pos, ",") - 1)
+			SprinklerSlot := x//75+1
+		}
+		Gdip_DisposeImage(pBMScreen)
+
+		if !ForceStart {
+			if !SprinklerSlot || !(SprinklerSlot ~= "[1-7]") { ; sprinkler slot could not be detected
+				Msgbox("Could not determine the hotbar slot of your sprinkler.`n`nYou can set the sprinkler slot manually after you press `"OK`".`n`nIf this issue persists, please join the discord and ask for assistance.","Sprinkler", "T30")
+				ManualSetSprinkler()
 			}
-			if UserInput.Value
-				Msgbox("Invalid input, numbers 1-7 only.", "Sprinkler", "T60")
-			if ObjHasValue(BoxesTimeout, "Timeout"){ ;if user takes too long to input
-				SprinklerKey := ""
-				break
+			if OldSprinklerSlot && OldSprinklerSlot != SprinklerSlot {
+				if (MsgBox("Your sprinkler slot has changed since you last launched the macro!`n`nPlease make sure this is correct, your sprinkler is currently detected in slot " SprinklerSlot "`n`nTo enter your sprinkler slot manually, press `"Cancel`"`nOtherwise, if slot  " SprinklerSlot " does contain your sprinkler, press `"OK`"", "Warning", "O/C Icon! Default2") = "Cancel")
+					ManualSetSprinkler()
 			}
+			SprinklerKey:="sc00" SprinklerSlot + 1
+			IniWrite SprinklerSlot, "settings\nm_config.ini", "Settings", "SprinklerSlot"
+		} else if (SprinklerSlot ~= "[1-7]") {
+			SprinklerKey:="sc00" SprinklerSlot + 1
+			IniWrite SprinklerSlot, "settings\nm_config.ini", "Settings", "SprinklerSlot"
 		}
 
+		ManualSetSprinkler(){
+			BoxesTimeout := []
+			Loop {
+				UserInput := InputBox("Enter sprinkler slot manually", "Sprinkler","T30")
+				BoxesTimeout.Push(UserInput.Result)
+				if (UserInput.Value ~= "[1-7]"){
+					IniWrite SprinklerSlot, "settings\nm_config.ini", "Settings", "SprinklerSlot"
+					SprinklerKey := "sc00" 1+UserInput.Value
+					return
+				}
+				if UserInput.Value
+					Msgbox("Invalid input, numbers 1-7 only.", "Sprinkler", "T60")
+				if ObjHasValue(BoxesTimeout, "Timeout"){ ;if user takes too long to input
+					SprinklerKey := ""
+					return
+				}
+			}
+		}
 	}
 	;special hotbar cases
 	;MicroConverterKey
