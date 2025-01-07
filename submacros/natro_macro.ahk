@@ -11699,14 +11699,16 @@ nm_toBooster(location){
 			if location = "red"
 				nm_Move(2000*round(18/MoveSpeedNum, 3), FwdKey, RightKey) ; red needs additional steps to avoid the leaderboard area
 			Loop 10 {
-				for k,v in %location%BoosterFields{
+				for k,v in %location%BoosterFields {
 					if nm_fieldBoostCheck(v, 1)
 					{
 						nm_setStatus("Boosted", v), RecentFBoost := v
 						break 2
 					}
+
 				}
-				Sleep 200
+				
+				sleep 200
 				If A_Index = 10 
 					nm_setStatus("Failed", "Could not find field boost!")
 			} 
@@ -11774,10 +11776,31 @@ nm_AutoFieldBoost(fieldName){
 	}
 }
 nm_fieldBoostCheck(fieldName, variant:=0){
-	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+30 "|" WindowWidth "|50")
-	result := Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant], , , , , , (variant=1) ? 30 : 50)
+
+	GetRobloxClientPos(hwnd:=GetRobloxHWND())
+	pBMScreen:=Gdip_BitmapFromScreen(windowX "|" windowY + GetYOffset(hwnd) + 36 "|" windowWidth "|" 38)
+	loop Floor(windowWidth/38) ; flooring because you won't have half of an icon
+	{ 
+		ico:=(A_Index-1)*38
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],,ico,,ico+38,,(variant=1 || variant=0) ? 35 : 50)) ; testing tighter variation
+		{ ; check with original 30 not 35
+			p:=PixelGetColor(ico+windowX, windowY+GetYOffset(hwnd)+73)
+			if ((p & 0xFF0000 >= 0xa60000) && (p & 0xFF0000 <= 0xcf0000)) ; a6b2b8-blackBG|cfdbe1-whiteBG
+			&& ((p & 0x00FF00 >= 0x00b200) && (p & 0x00FF00 <= 0x00db00))
+			&& ((p & 0x0000FF >= 0x0000b8) && (p & 0x0000FF <= 0x0000e1))
+				continue ; winds: keep searching, winds and booster may both have boosted the field
+			else if ((p & 0xFF0000 >= 0xb80000) && (p & 0xFF0000 <= 0xe10000)) ; b8a43a-blackBG|e1cd63-whiteBG
+				&& ((p & 0x00FF00 >= 0x00a400) && (p & 0x00FF00 <= 0x00cd00))
+				&& ((p & 0x0000FF >= 0x00003a) && (p & 0x0000FF <= 0x000063)) 
+				{
+					Gdip_DisposeImage(pBMScreen)
+					return 1 ; booster
+				}	
+		}
+	}
 	Gdip_DisposeImage(pBMScreen)
-	return (result=1 ? 1 : 0)
+	return 0
+
 }
 nm_fieldBoostBooster(){
 	global CurrentField, FieldBooster, AFBuseBooster, FieldLastBoosted, FieldBoostStacks, FieldLastBoostedBy, FieldNextBoostedBy, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, FieldBoostStacks
