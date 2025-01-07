@@ -4699,9 +4699,9 @@ nm_MondoAction(GuiCtrl?, *){
 }
 nm_MondoLootDirection(GuiCtrl, *){
 	global MondoLootDirection
-	static val := ["Left", "Right", "Random"], l := val.Length
+	static val := ["Left", "Right", "Random", "Ignore"], l := val.Length
 
-	i := (MondoLootDirection = "Left") ? 1 : (MondoLootDirection = "Right") ? 2 : 3
+	i := (MondoLootDirection = "Left") ? 1 : (MondoLootDirection = "Right") ? 2 : (MondoLootDirection = "Random") ? 3 : 4
 
 	MainGui["MondoLootDirection"].Text := MondoLootDirection := val[(GuiCtrl.Name = "MLDRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
 	IniWrite MondoLootDirection, "settings\nm_config.ini", "Collect", "MondoLootDirection"
@@ -6782,7 +6782,7 @@ nm_WebhookGUI(*){
 		, "PhantomPingCheck", 20
 		, "UnexpectedDeathPingCheck", 21
 		, "EmergencyBalloonPingCheck", 22
-		, "HoneyUpdateSSCheck", 361)
+		, "HoneyUpdateSSCheck", 363)
 
 	str_enum := Map("webhook", 1
 		, "bottoken", 2
@@ -9167,7 +9167,7 @@ nm_PlanterTimeUpdate(FieldName, SetStatus := 1)
 }
 ;syspalk if you're reading this hi
 ;(+) Keep this in for the final
-nm_HealthDetection()
+nm_HealthDetection(w:=0)
 {
 	static pBMHealth, pBMDamage
 	HealthBars := []
@@ -9180,7 +9180,10 @@ nm_HealthDetection()
 	}
 	ActivateRoblox()
 	GetRobloxClientPos()
-	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight)
+	if w = 1 ; king beetle, right half search only to avoid false detections
+		pBMScreen := Gdip_BitmapFromScreen((windowX + windowWidth//2) "|" windowY "|" windowWidth//2 "|" windowHeight)
+	else
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight)	
 	G := Gdip_GraphicsFromImage(pBMScreen)
 	pBrush := Gdip_BrushCreateSolid(0xff000000)
 	while ((Gdip_ImageSearch(pBMScreen, pBMHealth, &HPStart, , , , , , , 5) > 0) || (Gdip_ImageSearch(pBMScreen, pBMDamage, &HPStart, , , , , , , 5) > 0))
@@ -11706,14 +11709,16 @@ nm_toBooster(location){
 			if location = "red"
 				nm_Move(2000*round(18/MoveSpeedNum, 3), FwdKey, RightKey) ; red needs additional steps to avoid the leaderboard area
 			Loop 10 {
-				for k,v in %location%BoosterFields{
+				for k,v in %location%BoosterFields {
 					if nm_fieldBoostCheck(v, 1)
 					{
 						nm_setStatus("Boosted", v), RecentFBoost := v
 						break 2
 					}
+
 				}
-				Sleep 200
+				
+				sleep 200
 				If A_Index = 10 
 					nm_setStatus("Failed", "Could not find field boost!")
 			} 
@@ -11781,10 +11786,31 @@ nm_AutoFieldBoost(fieldName){
 	}
 }
 nm_fieldBoostCheck(fieldName, variant:=0){
-	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+30 "|" WindowWidth "|50")
-	result := Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant], , , , , , (variant=1) ? 30 : 50)
+
+	GetRobloxClientPos(hwnd:=GetRobloxHWND())
+	pBMScreen:=Gdip_BitmapFromScreen(windowX "|" windowY + GetYOffset(hwnd) + 36 "|" windowWidth "|" 38)
+	loop Floor(windowWidth/38) ; flooring because you won't have half of an icon
+	{ 
+		ico:=(A_Index-1)*38
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],,ico,,ico+38,,(variant=1 || variant=0) ? 35 : 50)) ; testing tighter variation
+		{ ; check with original 30 not 35
+			p:=PixelGetColor(ico+windowX, windowY+GetYOffset(hwnd)+73)
+			if ((p & 0xFF0000 >= 0xa60000) && (p & 0xFF0000 <= 0xcf0000)) ; a6b2b8-blackBG|cfdbe1-whiteBG
+			&& ((p & 0x00FF00 >= 0x00b200) && (p & 0x00FF00 <= 0x00db00))
+			&& ((p & 0x0000FF >= 0x0000b8) && (p & 0x0000FF <= 0x0000e1))
+				continue ; winds: keep searching, winds and booster may both have boosted the field
+			else if ((p & 0xFF0000 >= 0xb80000) && (p & 0xFF0000 <= 0xe10000)) ; b8a43a-blackBG|e1cd63-whiteBG
+				&& ((p & 0x00FF00 >= 0x00a400) && (p & 0x00FF00 <= 0x00cd00))
+				&& ((p & 0x0000FF >= 0x00003a) && (p & 0x0000FF <= 0x000063)) 
+				{
+					Gdip_DisposeImage(pBMScreen)
+					return 1 ; booster
+				}	
+		}
+	}
 	Gdip_DisposeImage(pBMScreen)
-	return (result=1 ? 1 : 0)
+	return 0
+
 }
 nm_fieldBoostBooster(){
 	global CurrentField, FieldBooster, AFBuseBooster, FieldLastBoosted, FieldBoostStacks, FieldLastBoostedBy, FieldNextBoostedBy, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, FieldBoostStacks
@@ -13441,7 +13467,7 @@ nm_Bugrun(){
 				;(+) Update health detection
 				loop 20
 				{
-					kBeetle:= nm_HealthDetection()
+					kBeetle:= nm_HealthDetection(1)
 					if(kBeetle.Length > 0)
 					{
 						found:=1
@@ -14290,39 +14316,41 @@ nm_Mondo(){
 							sleep 250
 						}
 						if (success = 1) {
-							repeat := 0
-							;loot mondo after death
-							if (MondoLootDirection = "Random")
-								dir := Random(0, 1)
-							else
-								dir := (MondoLootDirection = "Right")
+							if !(MondoLootDirection = "Ignore") {
+								repeat := 0
+								;loot mondo after death
+								if (MondoLootDirection = "Random")
+									dir := Random(0, 1)
+								else
+									dir := (MondoLootDirection = "Right")
 
-							if (dir = 0)
-								tc := "left", afc := "right"
-							else
-								tc := "right", afc := "left"
+								if (dir = 0)
+									tc := "left", afc := "right"
+								else
+									tc := "right", afc := "left"
 
-							nm_setStatus("Looting")
-							movement :=
-							(
-							"send '{" RotLeft "}'
-							" nm_Walk(7.5, FwdKey, RightKey) "
-							" nm_Walk(7.5, %tc%Key)
-							)
-							nm_createWalk(movement)
-							KeyWait "F14", "D T5 L"
-							KeyWait "F14", "T30 L"
-							nm_endWalk()
+								nm_setStatus("Looting")
+								movement :=
+								(
+								"send '{" RotLeft "}'
+								" nm_Walk(7.5, FwdKey, RightKey) "
+								" nm_Walk(7.5, %tc%Key)
+								)
+								nm_createWalk(movement)
+								KeyWait "F14", "D T5 L"
+								KeyWait "F14", "T30 L"
+								nm_endWalk()
 
-							if(!DisableToolUse)
-								click "down"
-							DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
-							n := s, f := s+450000000 ; 45 seconds loot timeout
-							while ((n < f) && (A_Index <= 12)) {
-								nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
-								DllCall("GetSystemTimeAsFileTime","int64p",&n)
+								if(!DisableToolUse)
+									click "down"
+								DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
+								n := s, f := s+450000000 ; 45 seconds loot timeout
+								while ((n < f) && (A_Index <= 12)) {
+									nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
+									DllCall("GetSystemTimeAsFileTime","int64p",&n)
+								}
+								click "up"
 							}
-							click "up"
 						}
 					}
 				}
