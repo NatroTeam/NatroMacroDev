@@ -9492,7 +9492,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		; hive check
 		if hivedown
 			sendinput "{" RotDown "}"
-		region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
+		region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth//3 "|" windowHeight//4
 		sconf := windowWidth**2//3200
 		loop 4 {
 			sleep 250+KeyDelay
