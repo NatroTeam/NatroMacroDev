@@ -1855,13 +1855,15 @@ nm_command(command)
 		switch params[2], 0 {
 			case "priority", "priorityList", "priorityListNumeric":
 			prioritystring := ''
-			for i, j in (priorityListNumeric ?? IniRead(A_ScriptDir "\..\settings\nm_config.ini", "settings", "PriorityListNumeric", '12345678')) {
+			for i, j in StrSplit(priorityListNumeric ?? IniRead(A_ScriptDir "\..\settings\nm_config.ini", "settings", "PriorityListNumeric", '12345678')) {
 				if !defaultPriorityList.Has(i) {
 					UpdateInt("PriorityListNumeric", 12345678, "settings")
-					discord.SendEmbed("1 - " defaultPriorityList[1] "\n2 - " defaultPriorityList[2] "\n3 - " defaultPriorityList[3] "\n4 - " defaultPriorityList[4] "\n5 - " defaultPriorityList[5] "\n6 - " defaultPriorityList[6])
+					discord.SendEmbed("1 - " defaultPriorityList[1] "\n2 - " defaultPriorityList[2] "\n3 - " defaultPriorityList[3] "\n4 - " defaultPriorityList[4] "\n5 - " defaultPriorityList[5] "\n6 - " defaultPriorityList[6], 0x2b2d31 ,,,, id)
 				}
 				prioritystring .= "\n" . i " - " defaultPriorityList[i]
 			}
+			discord.SendEmbed(prioritystring, 0x2b2d31, , , , id)
+
 			default:
 			k := StrReplace(Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name))), " ")
 			str := ""
