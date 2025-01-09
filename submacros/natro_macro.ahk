@@ -338,7 +338,7 @@ nm_importConfig()
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
 		, "FDCWarn", 1
-        , "priorityListNumeric", 123456789)
+        , "priorityListNumeric", 12345678)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -21212,7 +21212,7 @@ nm_priorityListGui(*) {
 	#Include "%A_ScriptDir%\nm_image_assets\webhook_gui\bitmaps.ahk"
 
 	;;config
-	defaultList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
+	defaultList := ["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 	priorityList := []
 	for i in StrSplit(' priorityListNumeric ')
 		priorityList.push(defaultList[i])
@@ -21298,7 +21298,7 @@ nm_priorityListGui(*) {
 		}
 		Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid(accentColors[5]), 15, h-50, w-62, 30, 8)
 		Gdip_FillRoundedRectangle(G, pBrush, w-45, h-50, 30, 30, 8), Gdip_DeleteBrush(pBrush)
-		if (default := (priorityList[1] == defaultList[1] && priorityList[2] == defaultList[2] && priorityList[3] == defaultList[3] && priorityList[4] == defaultList[4] && priorityList[5] == defaultList[5] && priorityList[6] == defaultList[6] && priorityList[7] == defaultList[7] && priorityList[8] == defaultList[8] && priorityList[9] == defaultList[9]))
+		if (default := (priorityList[1] == defaultList[1] && priorityList[2] == defaultList[2] && priorityList[3] == defaultList[3] && priorityList[4] == defaultList[4] && priorityList[5] == defaultList[5] && priorityList[6] == defaultList[6] && priorityList[7] == defaultList[7] && priorityList[8] == defaultList[8]))
 			Gdip_FillRoundedRectangle(G, pBrush := Gdip_BrushCreateSolid("0x50000000"), 17, h-48, w-66, 26, 8), Gdip_DeleteBrush(pBrush), priorityGui["Reset"].enabled := false
         else
             priorityGui["Reset"].enabled := true
@@ -21326,8 +21326,8 @@ nm_priorityListGui(*) {
 			case "close":
 				ExitApp()
 			case "Reset":
-				priorityList := ["Night", "Mondo", "Preset", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
-				updateInt("priorityListNumeric", 123456789)
+				priorityList := ["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
+				updateInt("priorityListNumeric", 12345678)
 				nm_priorityGui()
 			case "ToolTip":
 				Msgbox("Priority List``r``n``r``nDrag and drop to reorder the priority list.``r``nPress Reset to reset the priority list back to default.``nNote:``n - The priority List will not overwrite interrupts.``n - In one loop each task will be completed.``n - The Default priority is usually optimal for most players.","Priority List",0x40040)
@@ -21382,9 +21382,9 @@ nm_priorityListGui(*) {
 	{
 		IniWrite value, "settings\nm_config.ini", "settings", name
 		if WinExist("natro_macro.ahk ahk_class AutoHotkey")
-			PostMessage 0x5552, 361, value
+			PostMessage 0x5552, 366, value
 		if WinExist("Status.ahk ahk_class AutoHotkey")
-			PostMessage 0x5552, 361, value
+			PostMessage 0x5552, 366, value
 	}
 
 	ExitFunc(*)

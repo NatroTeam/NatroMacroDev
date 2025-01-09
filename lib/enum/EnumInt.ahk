@@ -358,4 +358,9 @@
 	, "GoldEggMatchIgnore"
 	, "DiamondEggMatchIgnore"
 	, "CoconutBoosterCheck"
+	, ""
+	, ""
+	, ""
+	, ""
+	, ""
     , "priorityListNumeric"]
