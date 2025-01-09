@@ -198,7 +198,7 @@ nm_dayOrNight(){
 
 	try {
 		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + 2*windowHeight//5 "|" windowWidth "|" 3*windowHeight//5)
-		for k, v in daybm {
+		for k, v in bitmaps["day"] {
 			if (Gdip_ImageSearch(pBMScreen, v, , , , , , 6) = 1) {
 				result := 1
 				Gdip_DisposeImage(pBMScreen)
@@ -213,7 +213,7 @@ nm_dayOrNight(){
 	} else {
 		try {
 			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + windowHeight//2 "|" windowWidth "|" windowHeight//2)
-			for k, v in nightbm {
+			for k, v in bitmaps["night"] {
 				if (Gdip_ImageSearch(pBMScreen, v, , , , , , 4) = 1)
 				{
 					result := 1
