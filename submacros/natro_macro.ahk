@@ -21244,7 +21244,7 @@ nm_priorityListGui(*) {
 	]
 
 	nm_priorityGui()
-	Msgbox("Reminder:``n``nChanging priority does not nessisarily affect the order of actions, but rather the order in which they are executed.","Priority list",0x40040)
+	Msgbox("Warning:``n``nThis option will change the ORDER in which the macro attempts each task, but not necessarily the AMOUNT OF TIME spent on each task.``n``nIf you have enabled any Gather Interrupts, or options requiring interrupts, those will also override the order you specify here. For example:``n- if you enable Vicious Bee or Night Memory Match, it will interrupt gather to attempt these every night time even if you place these lower on the priority list.``n- if you enable Gather Interrupt for Quests or Bug Kills, it will interrupt gather to do these tasks every time they come off cool-down, even if you place them lower on the priority list.``n``nGenerally, the DEFAULT ORDER is recommended in most cases.","Priority list",0x40040)
 
 	priorityGui["moveRegion"].move(0, 0, w-42, 30)
 	priorityGui["close"].move(w-42, 4, 28, 28)
@@ -21330,7 +21330,7 @@ nm_priorityListGui(*) {
 				updateInt("priorityListNumeric", 12345678)
 				nm_priorityGui()
 			case "ToolTip":
-				Msgbox("Priority List``r``n``r``nDrag and drop to reorder the priority list.``r``nPress Reset to reset the priority list back to default.``nNote:``n - The priority List will not overwrite interrupts.``n - In one loop each task will be completed.``n - The Default priority is usually optimal for most players.","Priority List",0x40040)
+				Msgbox("Priority List``r``n``r``nDrag and drop to reorder the priority list.``r``nPress Reset to reset the priority list back to default.``n``nNote:``n - The priority list will not override interrupts, e.g., for bug kills or vicious bee.``n - In one loop each task will be completed.``n - The DEFAULT priority is usually optimal for most players.","Priority List",0x40040)
 			default:
 				MouseGetPos(,&y)
 				priorityGui.GetPos(,&wy)
