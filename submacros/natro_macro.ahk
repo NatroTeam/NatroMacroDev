@@ -108,7 +108,7 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 
 ; set version identifier
-VersionID := "1.0.0.2"
+VersionID := "1.0.0.3"
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
@@ -392,7 +392,8 @@ nm_importConfig()
 		, "NightAnnouncementWebhook", ""
 		, "DebugLogEnabled", 1
 		, "SessionTotalHoney", 0
-		, "HoneyAverage", 0)
+		, "HoneyAverage", 0
+		, "HoneyUpdateSSCheck", 1)
 
 	config["Gather"] := Map("FieldName1", "Sunflower"
 		, "FieldName2", "None"
@@ -701,7 +702,8 @@ nm_importConfig()
 		, "StickerStackMode", 0
 		, "StickerStackTimer", 900
 		, "StickerStackHive", 0
-		, "StickerStackCub", 0)
+		, "StickerStackCub", 0
+		, "StickerStackVoucher", 0)
 
 	config["Quests"] := Map("QuestGatherMins", 5
 		, "QuestGatherReturnBy", "Walk"
@@ -2010,7 +2012,7 @@ Run
 '"' WebhookEasterEgg '" "' ssCheck '" "' ssDebugging '" "' CriticalSSCheck '" "' AmuletSSCheck '" "' MachineSSCheck '" "' BalloonSSCheck '" "' ViciousSSCheck '" '
 '"' DeathSSCheck '" "' PlanterSSCheck '" "' HoneySSCheck '" "' criticalCheck '" "' discordUID '" "' CriticalErrorPingCheck '" "' DisconnectPingCheck '" "' GameFrozenPingCheck '" '
 '"' PhantomPingCheck '" "' UnexpectedDeathPingCheck '" "' EmergencyBalloonPingCheck '" "' commandPrefix '" "' NightAnnouncementCheck '" "' NightAnnouncementName '" '
-'"' NightAnnouncementPingID '" "' NightAnnouncementWebhook '" "' PrivServer '" "' DebugLogEnabled '" "' MonsterRespawnTime '"'
+'"' NightAnnouncementPingID '" "' NightAnnouncementWebhook '" "' PrivServer '" "' DebugLogEnabled '" "' MonsterRespawnTime '" "' HoneyUpdateSSCheck '"'
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2917,7 +2919,7 @@ Loop 6
 	MainGui.Add("Text", "x108 y" (95 + 20 * A_Index) " w62 vHBTimeText" i " +Center Hidden").OnEvent("Click", nm_HotbarEditTime)
 	MainGui.Add("UpDown", "x170 y" (94 + 20 * A_Index) " w10 h16 -16 Range1-99999 vHotbarTime" i " Hidden Disabled", HotbarTime%i%).OnEvent("Change", nm_HotbarTimeUpDown)
 	MainGui.Add("Text", "x188 y" (94 + 20 * A_Index) " w62 vHBConditionText" i " +Center Hidden")
-	(GuiCtrl := MainGui.Add("UpDown", "x250 y" (94 + 20 * A_Index) " w10 h16 -16 Range1-100 vHotbarMax" i " Hidden Disabled", HotbarMax%i%)).Section := "Boost", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("UpDown", "x250 y" (94 + 20 * A_Index) " w10 h16 -16 Range1-100 vHotbarMax" i " Hidden Disabled", HotbarMax%i%)).Section := "Boost", GuiCtrl.OnEvent("Change", nm_hotbarMaxUpDown)
 	SetLoadingProgress(31+A_Index)
 }
 nm_HotbarWhile()
@@ -2927,7 +2929,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
 ;stickers
 MainGui.SetFont("w700")
-MainGui.Add("GroupBox", "x300 y130 w190 h105", "Stickers")
+MainGui.Add("GroupBox", "x300 y130 w191 h105", "Stickers")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("CheckBox", "x305 yp+16 vStickerStackCheck Disabled Checked" StickerStackCheck, "Sticker Stack").OnEvent("Click", nm_StickerStackCheck)
 MainGui.Add("Text", "xp+6 yp+13 +BackgroundTrans", "\__")
@@ -2936,22 +2938,22 @@ MainGui.Add("Text", "x+12 yp w" ((StickerStackMode = 0) ? 85 : 68) " vStickerSta
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vSSMLeft Disabled", "<").OnEvent("Click", nm_StickerStackMode)
 MainGui.Add("Button", "xp+96 yp w12 h16 vSSMRight Disabled", ">").OnEvent("Click", nm_StickerStackMode)
 MainGui.Add("UpDown", "xp-18 yp h16 -16 Range900-86400 vStickerStackTimer Disabled Hidden" (StickerStackMode = 0), StickerStackTimer).OnEvent("Change", nm_StickerStackTimer)
-MainGui.Add("Button", "xp+32 yp+1 w12 h14 vStickerStackModeHelp Disabled", "?").OnEvent("Click", nm_StickerStackModeHelp)
+MainGui.Add("Button", "xp+36 yp+1 w12 h14 vStickerStackModeHelp Disabled", "?").OnEvent("Click", nm_StickerStackModeHelp)
 MainGui.Add("Text", "xs yp+17 w36 +Center +BackgroundTrans", "Item:")
 MainGui.Add("Text", "x+12 yp w85 vStickerStackItem +Center +BackgroundTrans", StickerStackItem)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vSSILeft Disabled", "<").OnEvent("Click", nm_StickerStackItem)
 MainGui.Add("Button", "xp+96 yp w12 h16 vSSIRight Disabled", ">").OnEvent("Click", nm_StickerStackItem)
-MainGui.Add("Button", "xp+14 yp+1 w12 h14 vStickerStackItemHelp Disabled", "?").OnEvent("Click", nm_StickerStackItemHelp)
-MainGui.Add("Text", "xs yp+17 w36 +Center +BackgroundTrans", "Skins:")
-MainGui.Add("CheckBox", "x+14 yp vStickerStackHive Disabled Checked" StickerStackHive, "Hive").OnEvent("Click", nm_StickerStackSkins)
-MainGui.Add("CheckBox", "x+2 yp vStickerStackCub Disabled Checked" StickerStackCub, "Cub").OnEvent("Click", nm_StickerStackSkins)
-MainGui.Add("Button", "xs+146 yp w12 h14 vStickerStackSkinsHelp Disabled", "?").OnEvent("Click", nm_StickerStackSkinsHelp)
+MainGui.Add("Button", "xp+18 yp+1 w12 h14 vStickerStackItemHelp Disabled", "?").OnEvent("Click", nm_StickerStackItemHelp)
+MainGui.Add("Text", "xs-27 yp+17 w36 +Center +BackgroundTrans", "Skins:")
+MainGui.Add("CheckBox", "x332 yp vStickerStackHive Disabled Checked" StickerStackHive, "Hive").OnEvent("Click", nm_StickerStackSkins)
+MainGui.Add("CheckBox", "x375 yp vStickerStackCub Disabled Checked" StickerStackCub, "Cub").OnEvent("Click", nm_StickerStackSkins)
+MainGui.Add("CheckBox", "x416 yp w36 vStickerStackVoucher Disabled Checked" StickerStackVoucher, "Voucher").OnEvent("Click", nm_StickerStackSkins)
+MainGui.Add("Button", "xs+150 yp w12 h14 vStickerStackSkinsHelp Disabled", "?").OnEvent("Click", nm_StickerStackSkinsHelp)
 MainGui.Add("CheckBox", "x305 yp+19 w86 h13 vStickerPrinterCheck Disabled Checked" StickerPrinterCheck, "Sticker Printer").OnEvent("Click", nm_StickerPrinterCheck)
 MainGui.Add("Text", "x+0 yp w24 +Center +BackgroundTrans", "Egg:")
 MainGui.Add("Text", "x+12 yp w48 vStickerPrinterEgg +Center +BackgroundTrans", StickerPrinterEgg)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vSPELeft Disabled", "<").OnEvent("Click", nm_StickerPrinterEgg)
 MainGui.Add("Button", "xp+59 yp w12 h16 vSPERight Disabled", ">").OnEvent("Click", nm_StickerPrinterEgg)
-
 ;QUESTS TAB
 ;------------------------
 TabCtrl.UseTab("Quests")
@@ -3683,6 +3685,7 @@ nm_TabBoostLock(){
 	MainGui["StickerStackModeHelp"].Enabled := 0
 	MainGui["StickerStackHive"].Enabled := 0
 	MainGui["StickerStackCub"].Enabled := 0
+	MainGui["StickerStackVoucher"].Enabled := 0
 	MainGui["StickerStackSkinsHelp"].Enabled := 0
 	MainGui["StickerPrinterCheck"].Enabled := 0
 	MainGui["SPELeft"].Enabled := 0
@@ -3736,6 +3739,7 @@ nm_TabBoostUnLock(){
 		if InStr(StickerStackItem, "Sticker") {
 			MainGui["StickerStackHive"].Enabled := 1
 			MainGui["StickerStackCub"].Enabled := 1
+			MainGui["StickerStackVoucher"].Enabled := 1
 		}
 	}
 	MainGui["StickerPrinterCheck"].Enabled := 1
@@ -4701,9 +4705,9 @@ nm_MondoAction(GuiCtrl?, *){
 }
 nm_MondoLootDirection(GuiCtrl, *){
 	global MondoLootDirection
-	static val := ["Left", "Right", "Random"], l := val.Length
+	static val := ["Left", "Right", "Random", "Ignore"], l := val.Length
 
-	i := (MondoLootDirection = "Left") ? 1 : (MondoLootDirection = "Right") ? 2 : 3
+	i := (MondoLootDirection = "Left") ? 1 : (MondoLootDirection = "Right") ? 2 : (MondoLootDirection = "Random") ? 3 : 4
 
 	MainGui["MondoLootDirection"].Text := MondoLootDirection := val[(GuiCtrl.Name = "MLDRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
 	IniWrite MondoLootDirection, "settings\nm_config.ini", "Collect", "MondoLootDirection"
@@ -5269,6 +5273,12 @@ nm_HotbarEditTime(GuiCtrl, *){
 	else if (time != "")
 		MsgBox "You must enter a valid number of seconds between 1 and 99999!", "Hotbar Slot Time", 0x40030 " T20"
 }
+nm_hotbarMaxUpDown(GuiCtrl, *){
+	global
+	local i := SubStr(GuiCtrl.Name, -1)
+	MainGui["HBConditionText" i].Text := "Until: " GuiCtrl.Value "%"
+	IniWrite (HotbarMax%i% := GuiCtrl.Value), "settings\nm_config.ini", "Boost", "HotbarMax" i
+}
 nm_ShrineIndexOption(*) {
 	global ShrineIndexOption, ShrineIndex
 	ShrineIndexOption := MainGui["ShrineIndexOption"].Value
@@ -5371,6 +5381,7 @@ nm_StickerStackCheck(*){
 	if (((c = 1) && InStr(StickerStackItem, "Sticker")) || (c = 0)) {
 		MainGui["StickerStackHive"].Enabled := c
 		MainGui["StickerStackCub"].Enabled := c
+		MainGui["StickerStackVoucher"].Enabled := c
 	}
 	IniWrite StickerStackCheck, "settings\nm_config.ini", "Boost", "StickerStackCheck"
 }
@@ -5389,7 +5400,7 @@ nm_StickerStackItem(GuiCtrl, *){
 		i := (StickerStackItem = "Sticker") ? 2 : 3
 
 	MainGui["StickerStackItem"].Text := StickerStackItem := val[(GuiCtrl.Name = "SSIRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
-	MainGui["StickerStackHive"].Enabled := MainGui["StickerStackCub"].Enabled := (InStr(StickerStackItem, "Sticker") > 0)
+	MainGui["StickerStackHive"].Enabled := MainGui["StickerStackCub"].Enabled := MainGui["StickerStackVoucher"].Enabled := (InStr(StickerStackItem, "Sticker") > 0)
 	IniWrite StickerStackItem, "settings\nm_config.ini", "Boost", "StickerStackItem"
 }
 nm_StickerStackMode(GuiCtrl?, *){
@@ -5436,7 +5447,7 @@ nm_StickerStackSkins(GuiCtrl, *){
 	%GuiCtrl.Name% := GuiCtrl.Value
 	if (%GuiCtrl.Name% = 1) {
 		%GuiCtrl.Name% := GuiCtrl.Value := 0
-		if (msgbox("You have selected to use " StrReplace(GuiCtrl.Name, "StickerStack") " Skins on the Sticker Stack!`nAre you sure you want to enable this?", "WARNING!!", 0x40034 " T60") = "Yes")
+		if (msgbox("You have enabled the use of " StrReplace(GuiCtrl.Name, "StickerStack") . (GuiCtrl.Name != "StickerStackVoucher" ? " Skins":"s") " on the Sticker Stack!`nAre you sure you want to enable this?", "WARNING!!", 0x40034 " T60") = "Yes")
 			%GuiCtrl.Name% := GuiCtrl.Value := 1
 	}
 	IniWrite GuiCtrl.Value, "settings\nm_config.ini", "Boost", GuiCtrl.Name
@@ -5472,7 +5483,10 @@ nm_StickerStackSkinsHelp(*){
 
 	If 'Hive' is checked, the macro will donate Hive Skins to the Sticker Stack after all normal Stickers have been used up. Otherwise, these will not be used.
 
-	If 'Cub' is checked, the macro will donate Cub Skins to the Sticker Stack after all normal Stickers and Hive Skins have been used up. Otherwise, these will not be used.
+	If 'Cub' is checked, the macro will donate Cub Skins to the Sticker Stack after all normal Stickers and Hive Skins (if enabled) have been used up. Otherwise, these will not be used.
+
+	If 'Voucher' is checked, the macro will donate Vouchers to the Sticker Stack after all normal Stickers, Hive Skins, and Cubs (if enabled) have been used up. Otherwise, these will not be used.
+
 	)", "Sticker Stack Skins", 0x40000 " T60"
 }
 nm_StickerPrinterCheck(*){
@@ -6557,13 +6571,11 @@ ba_gatherFieldSippingSwitch_(*){
 ba_maxAllowedPlantersSwitch(*){
 	global
 	MaxAllowedPlanters := MainGui["MaxAllowedPlanters"].Value
-	if(MaxAllowedPlanters=0){
-		MainGui["PlanterMode"].Value := 1
-		ba_planterSwitch()
-	} else {
-		MainGui["PlanterMode"].Value := 2
-	}
-	ba_saveConfig_()
+	if(!MaxAllowedPlanters)
+		MainGui["PlanterMode"].Value:=1, ba_planterSwitch()
+	else
+		MainGui["MaxAllowedPlanters"].Enabled:=0, MainGui["PlanterMode"].Value := 2
+	ba_saveConfig_(), MainGui["MaxAllowedPlanters"].Enabled:=1
 }
 ba_saveConfig_(*){ ;//todo: needs replacing!
 	global
@@ -6760,6 +6772,7 @@ nm_WebhookGUI(*){
 	PhantomPingCheck := ' PhantomPingCheck '
 	UnexpectedDeathPingCheck := ' UnexpectedDeathPingCheck '
 	EmergencyBalloonPingCheck := ' EmergencyBalloonPingCheck '
+	HoneyUpdateSSCheck := ' HoneyUpdateSSCheck '
 
 	enum := Map("discordMode", 1
 		, "discordCheck", 2
@@ -6780,7 +6793,8 @@ nm_WebhookGUI(*){
 		, "GameFrozenPingCheck", 19
 		, "PhantomPingCheck", 20
 		, "UnexpectedDeathPingCheck", 21
-		, "EmergencyBalloonPingCheck", 22)
+		, "EmergencyBalloonPingCheck", 22
+		, "HoneyUpdateSSCheck", 363)
 
 	str_enum := Map("webhook", 1
 		, "bottoken", 2
@@ -6788,7 +6802,7 @@ nm_WebhookGUI(*){
 		, "ReportChannelID", 4
 		, "discordUID", 5)
 
-	w := 500, h := 480
+	w := 500, h := 500
 	DiscordGui := Gui("-Caption +E0x80000 +E0x8000000 +LastFound +AlwaysOnTop +ToolWindow +OwnDialogs -DPIScale")
 	hMain := DiscordGui.Hwnd
 	DiscordGui.OnEvent("Close", (*) => ExitApp()), DiscordGui.OnEvent("Escape", (*) => ExitApp())
@@ -6821,11 +6835,11 @@ nm_WebhookGUI(*){
 	{
 		global
 		local k,v,x,y,w,h,str
-		static ss_list := ["critical","amulet","machine","balloon","vicious","death","planter","honey"]
+		static ss_list := ["critical","amulet","machine","balloon","vicious","death","planter","honey", "honeyUpdate"]
 		static ping_list := ["criticalerror","disconnect","gamefrozen","phantom","unexpecteddeath","emergencyballoon"]
 
 		Gdip_GraphicsClear(G)
-		w := 500, h := 400 + discordMode * 80
+		w := 500, h := 420 + discordMode * 80
 
 		; edge shadow
 		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_CreateLineBrushFromRect(0, 0, w, h, 0x00000000, 0x78000000), 14, 6, w-16, h-16, 12), Gdip_DeleteBrush(pBrush)
@@ -6903,42 +6917,42 @@ nm_WebhookGUI(*){
 		}
 
 		; screenshots
-		Gdip_DrawImage(G, bitmaps["text_screenshots"], 22, h-262)
+		Gdip_DrawImage(G, bitmaps["text_screenshots"], 22, h-282)
 		x := 30 + Gdip_GetImageWidth(bitmaps["text_screenshots"])
-		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(ssCheck ? 0xff4bb543 : 0xffff3333), x, h-266, 40, 24, 12), Gdip_DeleteBrush(pBrush)
-		Gdip_FillEllipse(G, pBrush := Gdip_BrushCreateSolid(0xffffffff), x + (ssCheck ? 19 : 3), h-263, 18, 18), Gdip_DeleteBrush(pBrush)
-		DiscordGui["SSCheck"].Move(x, h-266, 40, 24), DiscordGui["SSCheck"].Visible := discordCheck
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(ssCheck ? 0xff4bb543 : 0xffff3333), x, h-286, 40, 24, 12), Gdip_DeleteBrush(pBrush)
+		Gdip_FillEllipse(G, pBrush := Gdip_BrushCreateSolid(0xffffffff), x + (ssCheck ? 19 : 3), h-283, 18, 18), Gdip_DeleteBrush(pBrush)
+		DiscordGui["SSCheck"].Move(x, h-286, 40, 24), DiscordGui["SSCheck"].Visible := discordCheck
 		for k,v in ss_list
 		{
 			if (%v%SSCheck = 1)
-				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), 24, h-263 + k * 26, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], 25, h-262 + k * 26)
+				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), 24, h-283 + k * 26, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], 25, h-282 + k * 26)
 			else
-				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), 25, h-262 + k * 26, 18, 18, 4), Gdip_DeletePen(pPen)
-			DiscordGui[v "SSCheck"].Move(25, h-262 + k * 26, 18, 18), DiscordGui[v "SSCheck"].Visible := (discordCheck && ssCheck)
-			Gdip_DrawImage(G, bitmaps["text_" v], 52, h-258 + k * 26)
+				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), 25, h-282 + k * 26, 18, 18, 4), Gdip_DeletePen(pPen)
+			DiscordGui[v "SSCheck"].Move(25, h-282 + k * 26, 18, 18), DiscordGui[v "SSCheck"].Visible := (discordCheck && ssCheck)
+			Gdip_DrawImage(G, bitmaps["text_" v], 52, h-278 + k * 26)
 		}
 
 		; pings
-		Gdip_DrawImage(G, bitmaps["text_userid"], w//2+16, h-263)
+		Gdip_DrawImage(G, bitmaps["text_userid"], w//2+16, h-283)
 		x := w//2+24 + Gdip_GetImageWidth(bitmaps["text_userid"])
-		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(criticalCheck ? 0xff4bb543 : 0xffff3333), x, h-266, 40, 24, 12), Gdip_DeleteBrush(pBrush)
-		Gdip_FillEllipse(G, pBrush := Gdip_BrushCreateSolid(0xffffffff), x + (criticalCheck ? 19 : 3), h-263, 18, 18), Gdip_DeleteBrush(pBrush)
-		DiscordGui["CriticalCheck"].Move(x, h-266, 40, 24), DiscordGui["CriticalCheck"].Visible := discordCheck
-		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff323942), w//2+14, h-236, w//2-36, 40, 15), Gdip_DeleteBrush(pBrush)
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(criticalCheck ? 0xff4bb543 : 0xffff3333), x, h-286, 40, 24, 12), Gdip_DeleteBrush(pBrush)
+		Gdip_FillEllipse(G, pBrush := Gdip_BrushCreateSolid(0xffffffff), x + (criticalCheck ? 19 : 3), h-283, 18, 18), Gdip_DeleteBrush(pBrush)
+		DiscordGui["CriticalCheck"].Move(x, h-286, 40, 24), DiscordGui["CriticalCheck"].Visible := discordCheck
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff323942), w//2+14, h-256, w//2-36, 40, 15), Gdip_DeleteBrush(pBrush)
 		pBrush := Gdip_BrushCreateSolid(0xff222932)
-		Gdip_FillRoundedRectanglePath(G, pBrush, w//2+14, h-236, w//2-76, 40, 15), Gdip_FillRectangle(G, pBrush, w-94, h-236, 32, 40)
+		Gdip_FillRoundedRectanglePath(G, pBrush, w//2+14, h-256, w//2-76, 40, 15), Gdip_FillRectangle(G, pBrush, w-94, h-256, 32, 40)
 		Gdip_DeleteBrush(pBrush)
-		Gdip_DrawOrientedString(G, discordUID, "Calibri", 16, 1, w//2+14, h-226, w//2-74, 40, 0, pBrush := Gdip_BrushCreateSolid(0xffffffff), 0, 1), Gdip_DeleteBrush(pBrush)
-		Gdip_DrawImage(G, bitmaps["paste"], w-58, h-236, 32, 40)
-		DiscordGui["PasteUserID"].Move(w-55, h-236, 26, 40), DiscordGui["PasteUserID"].Visible := (discordCheck && criticalCheck)
+		Gdip_DrawOrientedString(G, discordUID, "Calibri", 16, 1, w//2+14, h-246, w//2-74, 40, 0, pBrush := Gdip_BrushCreateSolid(0xffffffff), 0, 1), Gdip_DeleteBrush(pBrush)
+		Gdip_DrawImage(G, bitmaps["paste"], w-58, h-256, 32, 40)
+		DiscordGui["PasteUserID"].Move(w-55, h-256, 26, 40), DiscordGui["PasteUserID"].Visible := (discordCheck && criticalCheck)
 		for k,v in ping_list
 		{
 			if (%v%PingCheck = 1)
-				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), w//2+18, h-211 + k * 26, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], w//2+19, h-210 + k * 26)
+				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), w//2+18, h-231 + k * 26, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], w//2+19, h-230 + k * 26)
 			else
-				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), w//2+19, h-210 + k * 26, 18, 18, 4), Gdip_DeletePen(pPen)
-			DiscordGui[v "PingCheck"].Move(w//2+19, h-210 + k * 26, 18, 18), DiscordGui[v "PingCheck"].Visible := (discordCheck && criticalCheck)
-			Gdip_DrawImage(G, bitmaps["text_" v], w//2+46, h-206 + k * 26)
+				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), w//2+19, h-230 + k * 26, 18, 18, 4), Gdip_DeletePen(pPen)
+			DiscordGui[v "PingCheck"].Move(w//2+19, h-230 + k * 26, 18, 18), DiscordGui[v "PingCheck"].Visible := (discordCheck && criticalCheck)
+			Gdip_DrawImage(G, bitmaps["text_" v], w//2+46, h-226 + k * 26)
 		}
 
 		; grey out disabled options
@@ -6947,9 +6961,9 @@ nm_WebhookGUI(*){
 		else
 		{
 			if (ssCheck = 0)
-				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), 16, h-240, w//2-24, 210), Gdip_DeleteBrush(pBrush)
+				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), 16, h-260, w//2-24, 235), Gdip_DeleteBrush(pBrush)
 			if (criticalCheck = 0)
-				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), w//2+8, h-240, w//2-24, 210), Gdip_DeleteBrush(pBrush)
+				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), w//2+8, h-260, w//2-24, 235), Gdip_DeleteBrush(pBrush)
 		}
 
 		UpdateLayeredWindow(hMain, hdc, , , w, h)
@@ -6997,7 +7011,7 @@ nm_WebhookGUI(*){
 			UpdateInt("criticalCheck")
 
 			case "MainChannelCheck", "ReportChannelCheck", "CriticalSSCheck", "AmuletSSCheck", "MachineSSCheck", "BalloonSSCheck", "ViciousSSCheck", "DeathSSCheck", "PlanterSSCheck", "HoneySSCheck"
-				, "CriticalErrorPingCheck", "DisconnectPingCheck", "GameFrozenPingCheck", "PhantomPingCheck", "UnexpectedDeathPingCheck", "EmergencyBalloonPingCheck":
+				, "CriticalErrorPingCheck", "DisconnectPingCheck", "GameFrozenPingCheck", "PhantomPingCheck", "UnexpectedDeathPingCheck", "EmergencyBalloonPingCheck", "HoneyUpdateSSCheck":
 			k := name
 			ControlGetPos &ctrl_x, &ctrl_y, &ctrl_w, &ctrl_h, hCtrl
 			%k% := !%k%
@@ -7074,7 +7088,7 @@ nm_WebhookGUI(*){
 			}
 			ReplaceSystemCursors()
 
-			case "MainChannelCheck", "ReportChannelCheck", "CriticalSSCheck", "AmuletSSCheck", "MachineSSCheck", "BalloonSSCheck", "ViciousSSCheck", "DeathSSCheck", "PlanterSSCheck", "HoneySSCheck", "CriticalErrorPingCheck", "DisconnectPingCheck", "GameFrozenPingCheck", "PhantomPingCheck", "UnexpectedDeathPingCheck", "EmergencyBalloonPingCheck":
+			case "MainChannelCheck", "ReportChannelCheck", "CriticalSSCheck", "AmuletSSCheck", "MachineSSCheck", "BalloonSSCheck", "ViciousSSCheck", "DeathSSCheck", "PlanterSSCheck", "HoneySSCheck", "CriticalErrorPingCheck", "DisconnectPingCheck", "GameFrozenPingCheck", "PhantomPingCheck", "UnexpectedDeathPingCheck", "EmergencyBalloonPingCheck", "HoneyUpdateSSCheck":
 			hover_ctrl := hCtrl
 			k := name
 			ControlGetPos &hover_x, &hover_y, &hover_w, &hover_h, hCtrl
@@ -9165,7 +9179,7 @@ nm_PlanterTimeUpdate(FieldName, SetStatus := 1)
 }
 ;syspalk if you're reading this hi
 ;(+) Keep this in for the final
-nm_HealthDetection()
+nm_HealthDetection(w:=0)
 {
 	static pBMHealth, pBMDamage
 	HealthBars := []
@@ -9178,7 +9192,10 @@ nm_HealthDetection()
 	}
 	ActivateRoblox()
 	GetRobloxClientPos()
-	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight)
+	if w = 1 ; king beetle, right half search only to avoid false detections
+		pBMScreen := Gdip_BitmapFromScreen((windowX + windowWidth//2) "|" windowY "|" windowWidth//2 "|" windowHeight)
+	else
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight)	
 	G := Gdip_GraphicsFromImage(pBMScreen)
 	pBrush := Gdip_BrushCreateSolid(0xff000000)
 	while ((Gdip_ImageSearch(pBMScreen, pBMHealth, &HPStart, , , , , , , 5) > 0) || (Gdip_ImageSearch(pBMScreen, pBMDamage, &HPStart, , , , , , , 5) > 0))
@@ -11353,7 +11370,7 @@ nm_Boost(){
 	nm_toAnyBooster()
 }
 nm_StickerStack(){
-	global StickerStackCheck, LastStickerStack, StickerStackItem, StickerStackMode, StickerStackTimer, StickerStackHive, StickerStackCub, SC_E, bitmaps
+	global StickerStackCheck, LastStickerStack, StickerStackItem, StickerStackMode, StickerStackTimer, StickerStackHive, StickerStackCub, StickerStackVoucher, SC_E, bitmaps
 
 	if (StickerStackCheck && (nowUnix()-LastStickerStack)>StickerStackTimer) {
 		loop 2 {
@@ -11373,12 +11390,12 @@ nm_StickerStack(){
 				; detect stack boost time
 				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-275 "|" windowY+4*windowHeight//10 "|550|220")
 				Loop 1 {
-					if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerstackdigits"][")"], &pos, 275, , , 25, 20) = 1) {
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerstackdigits"][")"], &pos, 275, , , 45, 20) = 1) {
 						x := SubStr(pos, 1, InStr(pos, ",")-1)
 						(digits := Map()).Default := ""
 						Loop 10 {
 							n := 10-A_Index
-							Gdip_ImageSearch(pBMScreen, bitmaps["stickerstackdigits"][n], &pos, x, , , 25, 20, , , 4, , "`n")
+							Gdip_ImageSearch(pBMScreen, bitmaps["stickerstackdigits"][n], &pos, x, , , 45, 20, , , 4, , "`n")
 							Loop Parse pos, "`n"
 								if (A_Index & 1)
 									digits[Integer(A_LoopField)] := n
@@ -11399,9 +11416,11 @@ nm_StickerStack(){
 				}
 
 				; check if sticker is available to donate
-				if (InStr(StickerStackItem, "Sticker") && (((Gdip_ImageSearch(pBMScreen, bitmaps["stickernormal"], &pos, , , 200, , 10) = 1) && (stack := "Sticker"))
-					|| ((StickerStackHive = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickerhive"], &pos, , , 275, , 10) = 1) && (stack := "Hive Skin"))
-					|| ((StickerStackCub = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickercub"], &pos, , , 275, , 10) = 1) && (stack := "Cub Skin")))) {
+				if (InStr(StickerStackItem, "Sticker") && (((Gdip_ImageSearch(pBMScreen, bitmaps["stickernormal"], &pos, , , 275, , 25) = 1) && (stack := "Sticker"))
+					|| ((Gdip_ImageSearch(pBMScreen, bitmaps["stickernormalalt"], &pos, , , 275, , 25) = 1) && (stack := "Sticker"))
+					|| ((StickerStackHive = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickerhive"], &pos, , , 275, , 25) = 1) && (stack := "Hive Skin"))
+					|| ((StickerStackCub = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickercub"], &pos, , , 275, , 25) = 1) && (stack := "Cub Skin"))
+					|| ((StickerStackVoucher = 1) && (Gdip_ImageSearch(pBMScreen, bitmaps["stickervoucher"], &pos, , , 275, , 25) = 1) && (stack := "Voucher")))) {
 					nm_setStatus("Stacking", stack)
 					MouseMove windowX+windowWidth//2-275+SubStr(pos, 1, InStr(pos, ",")-1)+26, windowY+4*windowHeight//10+SubStr(pos, InStr(pos, ",")+1)-10 ; select sticker
 					if (StickerStackMode = 0)
@@ -11431,7 +11450,8 @@ nm_StickerStack(){
 						sleep 150
 						Click
 						sleep 100
-						if ((++i >= 4) && !InStr(stack, "Skin")) { ; Yes/No prompt appeared too many times, assume this is not a regular sticker
+						; voucher separate for aesthetic
+						if ((++i >= 4) && !InStr(stack, "Skin") && !(stack="Voucher")) { ; Yes/No prompt appeared too many times, assume this is not a regular sticker
 							Gdip_DisposeImage(pBMScreen)
 							nm_setStatus("Error", "Yes/No appeared too many times!")
 							Sleep 500
@@ -11701,14 +11721,16 @@ nm_toBooster(location){
 			if location = "red"
 				nm_Move(2000*round(18/MoveSpeedNum, 3), FwdKey, RightKey) ; red needs additional steps to avoid the leaderboard area
 			Loop 10 {
-				for k,v in %location%BoosterFields{
+				for k,v in %location%BoosterFields {
 					if nm_fieldBoostCheck(v, 1)
 					{
 						nm_setStatus("Boosted", v), RecentFBoost := v
 						break 2
 					}
+
 				}
-				Sleep 200
+				
+				sleep 200
 				If A_Index = 10 
 					nm_setStatus("Failed", "Could not find field boost!")
 			} 
@@ -11776,10 +11798,31 @@ nm_AutoFieldBoost(fieldName){
 	}
 }
 nm_fieldBoostCheck(fieldName, variant:=0){
-	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+30 "|" WindowWidth "|50")
-	result := Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant], , , , , , (variant=1) ? 30 : 50)
+
+	GetRobloxClientPos(hwnd:=GetRobloxHWND())
+	pBMScreen:=Gdip_BitmapFromScreen(windowX "|" windowY + GetYOffset(hwnd) + 36 "|" windowWidth "|" 38)
+	loop Floor(windowWidth/38) ; flooring because you won't have half of an icon
+	{ 
+		ico:=(A_Index-1)*38
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],,ico,,ico+38,,(variant=1 || variant=0) ? 35 : 50)) ; testing tighter variation
+		{ ; check with original 30 not 35
+			p:=PixelGetColor(ico+windowX, windowY+GetYOffset(hwnd)+73)
+			if ((p & 0xFF0000 >= 0xa60000) && (p & 0xFF0000 <= 0xcf0000)) ; a6b2b8-blackBG|cfdbe1-whiteBG
+			&& ((p & 0x00FF00 >= 0x00b200) && (p & 0x00FF00 <= 0x00db00))
+			&& ((p & 0x0000FF >= 0x0000b8) && (p & 0x0000FF <= 0x0000e1))
+				continue ; winds: keep searching, winds and booster may both have boosted the field
+			else if ((p & 0xFF0000 >= 0xb80000) && (p & 0xFF0000 <= 0xe10000)) ; b8a43a-blackBG|e1cd63-whiteBG
+				&& ((p & 0x00FF00 >= 0x00a400) && (p & 0x00FF00 <= 0x00cd00))
+				&& ((p & 0x0000FF >= 0x00003a) && (p & 0x0000FF <= 0x000063)) 
+				{
+					Gdip_DisposeImage(pBMScreen)
+					return 1 ; booster
+				}	
+		}
+	}
 	Gdip_DisposeImage(pBMScreen)
-	return (result=1 ? 1 : 0)
+	return 0
+
 }
 nm_fieldBoostBooster(){
 	global CurrentField, FieldBooster, AFBuseBooster, FieldLastBoosted, FieldBoostStacks, FieldLastBoostedBy, FieldNextBoostedBy, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, FieldBoostStacks
@@ -13436,7 +13479,7 @@ nm_Bugrun(){
 				;(+) Update health detection
 				loop 20
 				{
-					kBeetle:= nm_HealthDetection()
+					kBeetle:= nm_HealthDetection(1)
 					if(kBeetle.Length > 0)
 					{
 						found:=1
@@ -14285,39 +14328,41 @@ nm_Mondo(){
 							sleep 250
 						}
 						if (success = 1) {
-							repeat := 0
-							;loot mondo after death
-							if (MondoLootDirection = "Random")
-								dir := Random(0, 1)
-							else
-								dir := (MondoLootDirection = "Right")
+							if !(MondoLootDirection = "Ignore") {
+								repeat := 0
+								;loot mondo after death
+								if (MondoLootDirection = "Random")
+									dir := Random(0, 1)
+								else
+									dir := (MondoLootDirection = "Right")
 
-							if (dir = 0)
-								tc := "left", afc := "right"
-							else
-								tc := "right", afc := "left"
+								if (dir = 0)
+									tc := "left", afc := "right"
+								else
+									tc := "right", afc := "left"
 
-							nm_setStatus("Looting")
-							movement :=
-							(
-							"send '{" RotLeft "}'
-							" nm_Walk(7.5, FwdKey, RightKey) "
-							" nm_Walk(7.5, %tc%Key)
-							)
-							nm_createWalk(movement)
-							KeyWait "F14", "D T5 L"
-							KeyWait "F14", "T30 L"
-							nm_endWalk()
+								nm_setStatus("Looting")
+								movement :=
+								(
+								"send '{" RotLeft "}'
+								" nm_Walk(7.5, FwdKey, RightKey) "
+								" nm_Walk(7.5, %tc%Key)
+								)
+								nm_createWalk(movement)
+								KeyWait "F14", "D T5 L"
+								KeyWait "F14", "T30 L"
+								nm_endWalk()
 
-							if(!DisableToolUse)
-								click "down"
-							DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
-							n := s, f := s+450000000 ; 45 seconds loot timeout
-							while ((n < f) && (A_Index <= 12)) {
-								nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
-								DllCall("GetSystemTimeAsFileTime","int64p",&n)
+								if(!DisableToolUse)
+									click "down"
+								DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
+								n := s, f := s+450000000 ; 45 seconds loot timeout
+								while ((n < f) && (A_Index <= 12)) {
+									nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
+									DllCall("GetSystemTimeAsFileTime","int64p",&n)
+								}
+								click "up"
 							}
-							click "up"
 						}
 					}
 				}
@@ -17003,9 +17048,10 @@ nm_hotbar(boost:=0){
 		;snowflake
 		else if(beesmasActive && (ActiveHotkeys[key][1]="Snowflake") && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
 			GetRobloxClientPos()
+			offsetY := GetYOffset()
 			;check that roblox window exists
 			if (windowWidth > 0) {
-				pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY+30 "|" windowWidth "|50")
+				pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+30 "|" windowWidth "|50")
 				;check that: science buff visible and e button not visible (buffs not obscured)
 				if ((Gdip_ImageSearch(pBMArea, bitmaps["science"]) = 1) && (Gdip_ImageSearch(pBMArea, bitmaps["e_button"]) = 0)) {
 					if (Gdip_ImageSearch(pBMArea, bitmaps["snowflake_identifier"], &pos, , 20, , , , , 7) = 1) {
@@ -19751,7 +19797,7 @@ ba_getNextPlanter(nextfield){
 }
 ba_placePlanter(fieldName, planter, planterNum, atField:=0){
 	global BambooFieldCheck, BlueFlowerFieldCheck, CactusFieldCheck, CloverFieldCheck, CoconutFieldCheck, DandelionFieldCheck, MountainTopFieldCheck, MushroomFieldCheck, PepperFieldCheck, PineTreeFieldCheck, PineappleFieldCheck, PumpkinFieldCheck, RoseFieldCheck, SpiderFieldCheck, StrawberryFieldCheck, StumpFieldCheck, SunflowerFieldCheck, MaxAllowedPlanters, LostPlanters, bitmaps
-
+	global PlasticPlanterCheck, CandyPlanterCheck, BlueClayPlanterCheck, RedClayPlanterCheck, TackyPlanterCheck, PesticidePlanterCheck, HeatTreatedPlanterCheck, HydroponicPlanterCheck, PetalPlanterCheck, PlanterCheckOfPlenty, PaperPlanterCheck, TicketPlanterCheck
 	nm_updateAction("Planters")
 
 	nm_setShiftLock(0)
@@ -19769,8 +19815,10 @@ ba_placePlanter(fieldName, planter, planterNum, atField:=0){
 
 	if (planterPos = 0) ; planter not in inventory
 	{
-		nm_setStatus("Missing", planterName)
 		LostPlanters.=planterName
+		%planterName%Check := 0
+		MainGui[planterName "Check"].Value := 0
+		nm_setStatus("Error", planterName " is not in your inventory! This planter has been deselected.")
 		ba_saveConfig_()
 		return 0
 	}
@@ -19888,7 +19936,7 @@ ba_harvestPlanter(planterNum){
 	nm_setShiftLock(0)
 	nm_Reset(1, ((GatherPlanterLoot = 1) && ((fieldname = "Rose") || (fieldname = "Pine Tree") || (fieldname = "Pumpkin") || (fieldname = "Cactus") || (fieldname = "Spider"))) ? min(20000, (60-HiveBees)*1000) : 0)
 	nm_setStatus("Traveling", planterName . " (" . fieldName . ")")
-	nm_gotoPlanter(fieldName)
+	nm_gotoPlanter(fieldName, 1)
 	nm_setStatus("Collecting", (planterName . " (" . fieldName . ")"))
 	while ((A_Index <= 5) && !(findPlanter := (nm_imgSearch("e_button.png",10)[1] = 0)))
 		Sleep 200
@@ -20503,7 +20551,8 @@ mp_HarvestPlanter(PlanterIndex) {
 	nm_Reset(nm_Reset(1, ((MFieldName = "Rose") || (MFieldName = "Pine Tree") || (MFieldName = "Pumpkin") || (MFieldName = "Cactus") || (MFieldName = "Spider")) ? min(20000, (60-HiveBees)*1000) : 0))
 
 	nm_setStatus("Traveling", MPlanterName . " (" . MFieldName . ")")
-	nm_gotoPlanter(MFieldName)
+	nm_gotoPlanter(MFieldName, 1)
+
 	if ((!MPuffModeA) || (!MPuffMode%PlanterIndex%) || (PlanterHarvestNow%PlanterIndex%))
 		nm_setStatus("Collecting", (MPlanterName . " (" . MFieldName . ")"))
 	else
@@ -20514,8 +20563,8 @@ mp_HarvestPlanter(PlanterIndex) {
 		nm_setStatus("Searching", (MPlanterName . " (" . MFieldName . ")"))
 		findPlanter := nm_searchForE()
 	}
+	;check for phantom planter, if not found
 	if (findPlanter = 0) {
-		;check for phantom planter
 		nm_setStatus("Checking", "Phantom Planter: " . MPlanterName)
 
 		planterPos := nm_InventorySearch(MPlanterName, "up", 4) ;~ new function
@@ -20569,6 +20618,7 @@ mp_HarvestPlanter(PlanterIndex) {
 		return 1
 	}
 	else {
+		; harvest planter
 		sendinput "{" SC_E " down}"
 		Sleep 100
 		sendinput "{" SC_E " up}"
@@ -20613,11 +20663,12 @@ mp_HarvestPlanter(PlanterIndex) {
 			}
 		}
 		else {
-			loop 3 {
+			loop 10 {
+				MouseMove windowX+350, windowY+offsetY+100
 				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-52 "|500|150")
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1) {
 					MouseMove windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1), windowY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1)
-					Sleep 150
+					Sleep 200
 					Click
 					sleep 100
 					Gdip_DisposeImage(pBMScreen)
@@ -20662,6 +20713,7 @@ mp_HarvestPlanter(PlanterIndex) {
 		PostSubmacroMessage("StatMonitor", 0x5555, 4, 1)
 		IniWrite TotalPlantersCollected, "settings\nm_config.ini", "Status", "TotalPlantersCollected"
 		IniWrite SessionPlantersCollected, "settings\nm_config.ini", "Status", "SessionPlantersCollected"
+
 		;gather loot
 		if (MGatherPlanterLoot = 1)
 			{
@@ -20680,7 +20732,6 @@ mp_HarvestPlanter(PlanterIndex) {
 					sleep 200
 				}
 			}
-			;nm_setStatus("Holding", "Inside if MConvertFullBagHarvest=1 && BackpackPercent>=95 " (MPlanterName . " (" . MFieldName . ")")) ; //testing
 			nm_walkFrom(MFieldName)
 			DisconnectCheck()
 			nm_findHiveSlot()
@@ -20784,12 +20835,12 @@ start(*){
 			(
 			"You have enabled the Sticker option for Sticker Stack!
 			Consider trading all of your valuable stickers to alternative account, to ensure that you do not lose any valuable stickers."
-			(((StickerStackHive + StickerStackCub > 0) &&
+			(((StickerStackHive + StickerStackCub + StickerStackVoucher > 0) &&
 			(
 			"
 
 			EXTRA WARNING!!
-			You have enabled the donation of:" ((StickerStackHive = 1) ? "`n- Hive Skins" : "") ((StickerStackCub = 1) ? "`n- Cub Skins" : "") "
+			You have enabled the donation of:" ((StickerStackHive = 1) ? "`n- Hive Skins" : "") ((StickerStackCub = 1) ? "`n- Cub Skins" : "") ((StickerStackVoucher = 1) ? "`n- Vouchers" : "") "
 			Make sure this is correct because the macro WILL use them!"
 			)
 			) || "")

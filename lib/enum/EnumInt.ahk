@@ -360,4 +360,6 @@
 	, "CoconutBoosterCheck"
 	, "StumpBoosterCheck"
 	, "PepperBoosterCheck"
-	, "MGatherPlanterLoot"]
+  , "HoneyUpdateSSCheck"
+	, "StickerStackVoucher"
+  , "MGatherPlanterLoot"]
