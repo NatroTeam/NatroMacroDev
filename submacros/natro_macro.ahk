@@ -337,7 +337,8 @@ nm_importConfig()
 		, "TimersHotkey", "F5"
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
-		, "FDCWarn", 1)
+		, "FDCWarn", 1
+		, "EnableBeesmasTime", 0)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -2713,7 +2714,10 @@ MainGui.Add("Picture", "+BackgroundTrans x247 yp-3 w20 h20 vBeesmasImage")
 (GuiCtrl := MainGui.Add("CheckBox", "xp+130 ys+6 vSamovarCheck Disabled", "Samovar")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vLidArtCheck Disabled", "Lid Art")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vGummyBeaconCheck Disabled", "Gummy Beacon")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
+if (EnableBeesmasTime > nowUnix())
+	nm_EnableBeesmas(1)
+else
+	try AsyncHttpRequest("GET", "ahttps://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
 ;Blender
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x305 y42 w190 h105 vBlenderGroupBox", "Blender")
@@ -4812,20 +4816,38 @@ ba_AddBlenderItem(*){
 }
 nm_BeesmasHandler(req)
 {
-	global
-	local hBM, k, v
-
 	if (req.readyState != 4)
 		return
 
 	if (req.status = 200)
 		nm_EnableBeesmas(Trim(req.responseText, " `t`r`n"))
 }
-BeesmasActiveFail(*) => ((MsgBox("Could not fetch Beesmas data from GitHub!`r`nTo enable Beesmas features automatically, make sure you have a working internet connection and then reload the macro!`r`n`r`nIf you would like to enable Beesmas manually, select `"Yes`"", "Error", 0x1134 " Owner" MainGui.Hwnd) = "Yes") ? nm_EnableBeesmas(1) : "")
+BeesmasActiveFail(*){
+	if MsgBox('
+		(
+		Could not fetch Beesmas data from GitHub!
+		To enable Beesmas features automatically, make sure you have a working internet connection and then reload the macro!
+		
+		If you would like to enable Beesmas manually, select "Yes". This will open a menu where you can specifiy the amount of days you would like to manually enable beesmas for.
+		)', "Error", 0x1134 " Owner" MainGui.Hwnd) = "Yes" {
+		input := InputBox("How many days would you like to enable beesmas for?`r`n1 = 1 day`r`n7 = 1 week`r`n14 = 2 weeks`r`n...`r`nMake sure to round the days up.", "Manual Beesmas Enable", "T30")
+		if (input.Result != "OK")
+			return
+		if (input.Value > 0 && input.Value < 90){
+			IniWrite nowUnix()+Round(input.Value)*86400, "settings\nm_config.ini", "Settings", "EnableBeesmasTime" ; divied by seconds in a day (result is now unix in days)
+			nm_EnableBeesmas(1)
+			Msgbox("Success! Beesmas is manually enabled for " Round(input.Value) " days.", "Manual Beesmas Enable", "Iconi")
+		}
+		else if (input.Value > 90){
+			MsgBox("You set the value to be higher than 90, which could be unnecessary. Make sure to set the value according to the beesmas timer on the right of the screen.",  "Manual Beesmas Enable", "IconX")
+		}
+		else {
+			MsgBox("That input doesn't seem right, make sure you're entering a number between 1 and 90.",  "Manual Beesmas Enable", "IconX")
+		}
+	}
+}
 nm_EnableBeesmas(toggle){
 	global beesmasActive
-	if (toggle != 1 && toggle != 0)
-		return
 	if toggle {
 		beesmasActive := 1
 
