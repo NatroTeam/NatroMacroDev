@@ -8471,7 +8471,7 @@ nm_ContributorsHandler(req)
 	if (req.readyState != 4)
 		return
 
-	nm_ContributorsImage(1, (req.status = 200) ? StrSplit(req.responseText, "`n", " `t")
+	nm_ContributorsImage(1, (req.status = 200) ? StrSplit(req.responseText || "Error while loading,red`ncontributors!,red`n`nMake sure you have,red`na working internet,red`nconnection and then,red`nreload the macro.,red", "`n", " `t")
 		: ["Error while loading,red", "contributors!,red", "", "Make sure you have,red", "a working internet,red", "connection and then,red", "reload the macro.,red"])
 }
 nm_ContributorsImage(page:=1, contributors:=""){
