@@ -9257,7 +9257,6 @@ PostSubmacroMessage(submacro, args*){
 }
 nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	global resetTime, youDied, VBState, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, MultiReset, bitmaps
-	static hivedown := 0
 	;check for game frozen conditions
 	if (GameFrozenCounter>=3) { ;3 strikes
 		nm_setStatus("Detected", "Roblox Game Frozen, Restarting")
@@ -9408,26 +9407,8 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		}
 		SetKeyDelay PrevKeyDelay
 
-		if hivedown
-			sendinput "{" RotDown "}"
-		region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
-		sconf := windowWidth**2//3200
-		loop 4 {
-			sleep 250+KeyDelay
-			pBMScreen := Gdip_BitmapFromScreen(region), s := 0
-			for i, k in ["day", "night", "day-gifted", "night-gifted", "noshadow-gifted", "noshadow-day", "noshadow-night", "wing"] {
-				s := Max(s, Gdip_ImageSearch(pBMScreen, bitmaps["hive"][k], , , , , , 4, , , sconf))
-				if (s >= sconf) {
-					Gdip_DisposeImage(pBMScreen)
-					HiveConfirmed := 1
-					sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
-					Send "{" ZoomOut " 5}"
-					break 2
-				}
-			}
-			Gdip_DisposeImage(pBMScreen)
-			sendinput "{" RotRight " 4}" ((A_Index = 2) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
-		}
+		if nm_SetHiveCameraDirection(4) ; 2 possible orientations; facing hive or facing the mountain
+			HiveConfirmed := 1
 	}
 	;convert
 	(convert=1) && nm_convert()
@@ -9452,6 +9433,28 @@ nm_ConfirmAtHive(){
 	}
 	Gdip_DisposeImage(pBMScreen)
 	return 0
+}
+nm_SetHiveCameraDirection(rotations){
+	static hivedown := 0
+	if hivedown
+		sendinput "{" RotDown "}"
+	region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
+	sconf := windowWidth**2//3200
+	loop (maxindex := 8/rotations*2) { ; 2 full rotations
+		sleep 250+KeyDelay
+		pBMScreen := Gdip_BitmapFromScreen(region), s := 0
+		for i, k in ["day", "night", "day-gifted", "night-gifted", "noshadow-gifted", "noshadow-day", "noshadow-night", "wing"] {
+			s := Max(s, Gdip_ImageSearch(pBMScreen, bitmaps["hive"][k], , , , , , 4, , , sconf))
+			if (s >= sconf) {
+				Gdip_DisposeImage(pBMScreen)
+				sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
+				Send "{" ZoomOut " 5}"
+				return 1
+			}
+		}
+		Gdip_DisposeImage(pBMScreen)
+		sendinput "{" RotRight " " rotations "}" ((maxindex/2 = A_Index) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
+	}
 }
 nm_setShiftLock(state, *){
 	global bitmaps, SC_LShift, ShiftLockEnabled
@@ -14788,7 +14791,7 @@ nm_GoGather(){
 			if BeesmasActive && ((interruptReason = "") || InStr(interruptReason, "Backpack exceeds"))
 				nm_Wreath()
 			nm_findHiveSlot()
-		}
+		} ;reset back otherwise
 	}
 	nm_currentFieldDown()
 	utc_min := FormatTime(A_NowUTC, "m")
@@ -14799,24 +14802,16 @@ nm_GoGather(){
 		pBMScreen := Gdip_BitmapFromScreen(WindowX+WindowWidth*0.5-260 "|" WindowY+WindowHeight-101 "|" 75*7 "|" 66) ;hotbar
 		if (Gdip_ImageSearch(pBMScreen,bitmaps["whirligig"], , , , , ,10, ,3) = 1) {
 			Gdip_DisposeImage(pBMScreen)
-			switch FieldName
-			{
-				case "Sunflower", "Strawberry", "Rose", "Pepper":
-					loop 2 
-						Send "{" RotLeft "}"
-				case "Dandelion", "Blue Flower", "Bamboo", "Stump":
-					loop 2 
-						Send "{" RotRight "}"
-			}
-			Send "{" WhirligigKey "}"
-			sleep(2500+KeyDelay)
-			if nm_ConfirmAtHive()
+			Send "{" WhirligigKey "}{ " RotUp " 10}{ " RotDown " 4}{" ZoomIn " 10}"
+			sleep(2000) ; make sure the player is on the ground
+			if nm_SetHiveCameraDirection(1)
 				HiveConfirmed := 1
 			else 
 				nm_setStatus("Warning", "Unable to confirm hive!")
 			
 			LastWhirligig:=nowUnix()
 			IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
+			nm_convert() ;convert all pollen, then reset if needed.
 		} else {
 			nm_setStatus("Warning", "No Whirligigs")
 			Gdip_DisposeImage(pBMScreen)
