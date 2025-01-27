@@ -21499,7 +21499,7 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 			blc_start()
 		case "help":
 			ReplaceSystemCursors()	
-			Msgbox("- Select the bees and mutations you want``n- put a neonberry on the bee you want to change``n- make sure your in-game Auto-Jelly settings are right``n- use one royal jelly on the bee and click yes.``n``nThen click on Roll.``nTo stop press the escape key``n``nStops:``n- GiftedStop stops on any gifted bee ignoring the``n  mutation and your bee selection``n- MythicStop stops on any gifted bee ignoring the``n  mutation and your bee selection", "Auto-Jelly Help", "0x40040")
+			Msgbox("This feature allows you to roll royal jellies until you obtain your specified bees and/or mutations!``n``nTo use:``n- Select the bees and mutations you want``n- Make sure your in-game Auto-Jelly settings are right``n- Put a neonberry on the bee you want to change (if trying ``n  to obtain a mutated bee) ``n- Use one royal jelly on the bee and click Yes``n- Click on Roll.``n``nTo stop: ``n- Press the escape key``n``nAdditional options:``n- Stop on Gifteds stops on any gifted bee, ``n  ignoring the mutation and your bee selection``n- Stop on Mythics stops on any mythic bee, ``n  ignoring the mutation and your bee selection", "Auto-Jelly Help", "0x40040")
 		case "selectAll":
 			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
 		case "Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley":
@@ -21624,7 +21624,7 @@ blc_start() {
 			for i, j in ["Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
 				if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
 					Gdip_DisposeImage(pBitmap)
-					msgbox "Found a myhic bee!", "Auto-Jelly", 0x40040
+					msgbox "Found a mythic bee!", "Auto-Jelly", 0x40040
 					break 2
 				}
 		if giftedStop
