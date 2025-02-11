@@ -91,6 +91,7 @@ OnMessage(0x5552, nm_setGlobalInt, 255)
 OnMessage(0x5553, nm_setGlobalStr, 255)
 OnMessage(0x5556, nm_sendHeartbeat)
 
+nm_getCPUPercentage()
 discord.SendEmbed("Connected to Discord!", 5066239)
 
 planters := Map(), planters.CaseSense := 0
@@ -931,6 +932,16 @@ nm_command(command)
 					{
 						"name": "' commandPrefix 'restart",
 						"value": "Restarts your computer",
+						"inline": true
+					},
+					{
+						"name": "' commandPrefix 'performance [ram|cpu]",
+						"value": "Get the current RAM or CPU usage",
+						"inline": true
+					},
+					{
+						"name": "",
+						"value": "",
 						"inline": true
 					}]
 				}],
@@ -2321,6 +2332,50 @@ nm_command(command)
 			postdata .= "]}"
 			discord.SendMessageAPI(postdata)
 		}
+		case "performance":
+			if (!(params.has(2) && params[2]))
+				return (command_buffer.RemoveAt(1), discord.SendEmbed("Missing required parameter!\n``````?performance [cpu|ram]``````", 16711731, , , , id))
+			switch params[2], 0 {
+				case "cpu":
+					discord.SendEmbed("CPU Usage: " nm_getCPUPercentage() "%", 5066239, , , , id)
+				case "ram":
+					ramObj := nm_getRAMUsage()
+					postdata :=	
+					(
+					'{
+						"allowed_mentions": {
+						"parse": []
+						},
+						"message_reference": {
+							"message_id": "' id '",
+							"fail_if_not_exists": false
+						},
+						"embeds": [{
+							"color": "5066239",
+							"title": "RAM Usage",
+							"fields": [{
+								"name": "Used Memory",
+								"value": "``' ramObj.usedMemory 'GB``",
+								"inline": true
+							},
+							{
+								"name": "Total Memory",
+								"value": "``' ramObj.totalMemory 'GB``",
+								"inline": true
+							},
+							{
+								"name": "Percentage Used",
+								"value": "``' ramObj.percentage '%``",
+								"inline": false
+							}]
+						}]
+					}
+					'
+					)
+					discord.SendMessageAPI(postdata)
+				default:
+					discord.SendEmbed("Invalid parameter!\n``````?performance [cpu|ram]``````", 16711731, , , , id)
+			}
 
 
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
@@ -2718,4 +2773,24 @@ ExitFunc(*)
 	for k,v in arr
 		nm_status(v)
 	ExitApp
+}
+
+nm_getCPUPercentage() {
+    static pIdleTime := 0, pKernelTime := 0, pUserTime := 0
+	if !pIdleTime
+		return (DllCall("GetSystemTimes", "int64*", &pIdleTime , "int64*", &pKernelTime, "int64*", &pUserTime))
+	DllCall("GetSystemTimes", "int64*", &pIdleTime2:=0 , "int64*", &pKernelTime2:=0, "int64*", &pUserTime2:=0)
+    load := ((s:=pKernelTime-pKernelTime2 + pUserTime - pUserTime2) - pIdleTime+pIdleTime2 ) * 100//s
+	pIdleTime := pIdleTime2, pKernelTime := pKernelTime2, pUserTime := pUserTime2
+	return load
+}
+
+nm_getRAMUsage() {
+	static MEMORYSTATUSEX := Buffer(64, 0)
+	NumPut("uint",64, MEMORYSTATUSEX)
+	DllCall("Kernel32.dll\GlobalMemoryStatusEx", "Ptr", MEMORYSTATUSEX.Ptr)
+	percentage := NumGet(MEMORYSTATUSEX, 4, "uint")
+	totalMemory := NumGet(MEMORYSTATUSEX,8,"int64")
+	freeMemory := NumGet(MEMORYSTATUSEX, 16, "int64")
+	return {totalMemory:Round(totalMemory / 1073741824, 1), freeMemory: Round(freeMemory / 1073741824, 1), percentage: percentage, usedMemory: Round((totalMemory - freeMemory) / 1073741824, 1)}
 }
