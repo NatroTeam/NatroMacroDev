@@ -27,7 +27,7 @@ class RapidOcr {
 	__New(config?, dllpath?) {
 		static init := 0
 		if (!init) {
-			init := DllCall('LoadLibrary', 'str', dllpath ?? A_LineFile '\..\' (A_PtrSize * 8) 'bit\RapidOcrOnnx.dll', 'ptr')
+			init := DllCall('LoadLibrary', 'str', dllpath ?? A_LineFile '\..\\RapidOcrOnnx.dll', 'ptr')
 			if (!init)
 				Throw OSError()
 		}

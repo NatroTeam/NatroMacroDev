@@ -35,8 +35,6 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Warn VarUnset, Off
 ;OnError (e, mode) => (mode = "Return") ? -1 : 0
 
-
-
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Screen"
 CoordMode "Pixel", "Screen"
@@ -1956,7 +1954,6 @@ try Hotkey StopHotkey, stop, "On"
 pToken := Gdip_Startup()
 currentWalk := {pid:"", name:""} ; stores "pid" (script process ID) and "name" (pattern/movement name)
 ocr := RapidOcr({ models: './lib/models', det: '.\lib\models\ch_PP-OCRv4_det_infer.onnx', rec: '.\lib\models\ch_PP-OCRv4_rec_infer.onnx', cls: '.\lib\models\ch_ppocr_mobile_v2.0_cls_infer.onnx', keys: '.\lib\models\ppocr_keys_v1.txt', numThread: 1 }, '.\lib\RapidOcrOnnx.dll')
-
 pBitmap := Gdip_CreateBitmapFromClipboard()
 msgbox ocr.ocr_from_pbitmap(pBitmap, RapidOcr.OcrParam.Default())
 Gdip_DisposeImage(pBitmap)
