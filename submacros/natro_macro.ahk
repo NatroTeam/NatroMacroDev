@@ -40,6 +40,159 @@ CoordMode "Mouse", "Screen"
 CoordMode "Pixel", "Screen"
 SendMode "Event"
 
+; ///////////////////////////////////////////////////////////// AUTO RBC SHYT LOL ////////////////////////////////////////////////
+
+nm_ocr(){
+	; DllCall("QueryPerformanceFrequency", "int64p", &freq := 0)
+	; DllCall("QueryPerformanceCounter", "int64p", &start := 0)
+	; DllCall("QueryPerformanceCounter", "int64p", &end := 0)
+	; msgbox "Time: " (end - start) / freq
+	pBitmap := Gdip_BitmapFromScreen()
+	msgbox ocr.ocr_from_pbitmap(pBitmap, RapidOcr.OcrParam.Default())
+	Gdip_DisposeImage(pBitmap)
+}
+
+nm_detectCogmower() ; STOLE DETECTHELATH LOL
+{
+	static pBMHealth, pBMDamage
+	HealthBars := []
+	if !(IsSet(pBMHealth) && IsSet(pBMDamage))
+	{
+		pBMHealth := Gdip_CreateBitmap(1,4)
+		pGraphics := Gdip_GraphicsFromImage(pBMHealth), Gdip_GraphicsClear(pGraphics, 0xff1fe744), Gdip_DeleteGraphics(pGraphics)
+		pBMDamage := Gdip_CreateBitmap(1,4)
+		pGraphics := Gdip_GraphicsFromImage(pBMDamage), Gdip_GraphicsClear(pGraphics, 0xff6b131a), Gdip_DeleteGraphics(pGraphics)
+	}
+	ActivateRoblox()
+	GetRobloxClientPos()
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight)
+	G := Gdip_GraphicsFromImage(pBMScreen)
+	pBrush := Gdip_BrushCreateSolid(0xff000000)
+	while ((Gdip_ImageSearch(pBMScreen, pBMHealth, &HPStart, , , , , , , 5) > 0) || (Gdip_ImageSearch(pBMScreen, pBMDamage, &HPStart, , , , , , , 5) > 0))
+	{
+		x := SubStr(HPStart, 1, InStr(HPStart, ",")-1), y := SubStr(HPStart, InStr(HPStart, ",")+1)
+		x1 := x, y1 := y
+		Loop (windowWidth - x)
+		{
+			i := x + A_Index - 1
+			switch Gdip_GetPixel(pBMScreen, i, y)
+			{
+				case 4280280900:
+				x1++
+
+				case 4285207322:
+				x2 := i
+
+				default:
+				Break
+			}
+		}
+		Loop (windowHeight - y)
+		{
+			switch Gdip_GetPixel(pBMScreen, x, y1)
+			{
+				case 4280280900, 4285207322:
+				y1++
+
+				default:
+				Break
+			}
+		}
+		HealthBarPercent := (x1 > x) ? ((IsSet(x2) && (x2 > x)) ? Round((x1-x)/(x2-x)*100, 2) : 100.00) : 0.00
+		Gdip_FillRectangle(G, pBrush, x, y, i-x, y1-y)
+		HealthBars.Push(HealthBarPercent)
+		if (A_Index > 100)
+		{
+			Break
+		}
+	}
+	Gdip_DeleteBrush(pBrush), Gdip_DisposeImage(pBMScreen), Gdip_DeleteGraphics(G)
+	MsgBox HealthBars
+}
+nm_buyDrives(test:=1){
+	nm_gtr("")
+}
+
+nm_gtr(location, waitEnd:=1)
+{
+	global HiveConfirmed:=0
+	path := paths["gtr"][StrReplace(location, " ")]
+	nm_setShiftLock(0)
+	nm_createPath(path)
+	KeyWait "F14", "D T5 L"
+	if waitEnd
+	{
+		KeyWait "F14", "T120 L"
+		nm_endWalk()
+	}
+}
+nm_RBC(test:=0)
+{
+	HyperSleep(250)
+	; First stage, GET TO ROBO BEAR
+	nm_reset()
+	nm_setStatus("Travelling", "RoboBear")
+	nm_gtr("challenge")
+	; 2nd stage // Begin dialogue - Demure comments 
+	nm_setStatus("Beginning", "RoboBear Challenge")
+	Sleep 500
+	searchRet := nm_imgSearch("e_button.png",30,"high")
+	If (searchRet[1] = 0) {
+		success:=1
+		SendInput "{" SC_E " down}"
+		Sleep 100
+		SendInput "{" SC_E " up}"
+		Sleep 2000
+		hwnd := GetRobloxHWND()
+		offsetY := GetYOffset(hwnd)
+		Loop 3
+		{
+			GetRobloxClientPos(hwnd)
+			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-50 "|" windowY+2*windowHeight//3 "|100|" windowHeight//3)
+			if (Gdip_ImageSearch(pBMScreen, bitmaps["dialog"], &pos, , , , , 10, , 3) != 1) {
+				Gdip_DisposeImage(pBMScreen)
+				break
+			}
+			Gdip_DisposeImage(pBMScreen)
+			MouseMove windowX+windowWidth//2, windowY+2*windowHeight//3+SubStr(pos, InStr(pos, ",")+1)-15
+			Click
+			Sleep 150
+		}
+	}
+	; Stage 3 // Spend Pass: Begin rbc // Simple coords though I'm not sure if this requires gdip image search.
+	MouseMove windowX+windowWidth//2, windowY+2*windowHeight//3+SubStr(pos, InStr(pos, ",")+1)-72
+	Click
+	loop 3 ; Click past Robo bears yap
+	{
+		Click
+	}
+}
+nm_processQuest(){
+	; Stage 1 // Get Raw Quest Text // TY NINJU  
+	nm_ocr()
+	; Stage 2 // nm_ocr should give raw quest text once it works so I'll do regexs
+	
+}
+nm_evalAttack(PreScroll:=10), Attemps:=50{ ; Remis idea im not stupid pls, add bitmaps later, doesnt work rn
+	nm_OpenMenu("settings")
+	; Coords
+	MouseMove windowX, windowY - 50
+	loop PreScroll
+	{
+		Send "{WheelUp}"
+	}
+	; Find attack stat
+	loop Attempts
+	{
+		Send "{WheelDown}"
+		remi:=Gdip_BitmapFromScreen()
+		If (Gdip_ImageSearch(bitmaps["atk"], remi, , , , , 2)){
+			break
+		}
+	}
+}
+F8::nm_detectCogmower()
+
 ; check for the correct AHK version before starting
 RunWith32() {
 	if (A_PtrSize != 4) {
@@ -254,7 +407,8 @@ nm_importPaths()
 				"rose", "spider", "strawberry", "stump", "sunflower"], ; go to planter
 		"gtq", ["black", "brown", "bucko", "honey", "polar", "riley"], ; go to questgiver
 		"wf",  ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
-				"rose", "spider", "strawberry", "stump", "sunflower"]  ; walk from (field to hive)
+				"rose", "spider", "strawberry", "stump", "sunflower"],  ; walk from (field to hive)
+		"gtr", ["challenge"]
 	)
 
 	global paths := Map()
