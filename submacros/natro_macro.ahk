@@ -42,6 +42,18 @@ SendMode "Event"
 
 ; ///////////////////////////////////////////////////////////// AUTO RBC SHYT LOL ////////////////////////////////////////////////
 
+
+; ========= RBC Variables ===========
+; Update later to determine from gui
+userColorRbc := "blue"
+gooQuestCurrent := False
+rbcRound := 0
+rbcFields := ["sunflower", "dandelion", "mushroom", "blue flower", "clover", "straw", "spider", "bam", "pineapple", "cactus", "pumpkin", "pine tree", "rose", "mountain top"]
+
+; ========= END RBC Variables =========
+
+
+
 nm_ocr(){
 	; DllCall("QueryPerformanceFrequency", "int64p", &freq := 0)
 	; DllCall("QueryPerformanceCounter", "int64p", &start := 0)
@@ -191,7 +203,143 @@ nm_evalAttack(PreScroll:=10), Attemps:=50{ ; Remis idea im not stupid pls, add b
 		}
 	}
 }
+
+; by SnarlingBard
+if (userColorRbc == "blue"){
+	nm_EvaluateQuests := blueEvaluateQuests
+} else if (userColorRbc == "red") {
+	nm_EvaluateQuests := redEvaluateQuests
+} else if (userColorRbc == "white") {
+	nm_EvaluateQuests := whiteEvaluateQuests
+}
+
+; Modular. Takes in text and returns which quest to choose. Currently doesn't support upgrade that does +1 quests
+blueEvaluateQuests(text) {
+    global gooQuestCurrent
+    ; sendEmbed("Quests. Round " round)
+    gooQuest1 := False
+	gooQuest2 := False
+    quest1 := ''
+    quest2 := ''
+    fieldQuest1 := False
+    fieldQuest2 := False
+    ; result := OCR.FromRect(703, 334, 510, 375)
+    ; resultText := result.Text
+    ; sendWebhook("OCR Result from reading quests")
+    ; sendWebhook(resultText)
+    pos := InStr(text, "quest b")
+
+    if pos > 0 {
+        part1 := SubStr(text, 1, pos - 1)
+        part2 := SubStr(text, pos + StrLen("quest b"))
+        part1 := StrLower(part1)
+        part2 := StrLower(part2)
+
+        ; Check if `part1` has two fields
+        quest1 := nm_detectMultiFieldQuests(part1, rbcFields, fieldQuest1)
+        if InStr(part1, "goo") {
+            gooQuest1 := True
+        }
+        ; Check if `part2` has two fields
+        quest2 := nm_detectMultiFieldQuests(part2, rbcFields, fieldQuest2)
+        if InStr(part2, "goo") {
+            gooQuest2 := True
+        }
+        if ((InStr(part1, "mount") && A_Min > 54) || 
+            (InStr(part1, "mount") && A_Min < 15))
+        {
+            quest1 := "bad"
+        }
+
+		if ((InStr(part1, "mushroom") && round > 7) || 
+            (InStr(part1, "straw") && round > 7) || 
+            (InStr(part1, "rose") && round > 7))
+		{
+			quest1 := "hard"
+		}
+
+        if ((InStr(part2, "mount") && A_Min > 54) || 
+            (InStr(part2, "mount") && A_Min < 15))
+        {
+            quest2 := "bad"
+        }
+
+		if ((InStr(part2, "mushroom") && round > 7) || 
+            (InStr(part2, "straw") && round > 7) || 
+            (InStr(part2, "rose") && round > 7))
+		{
+			quest2:= "hard"
+		}
+    }
+    if !IsObject(quest1) {
+        quest1 := [quest1, false]
+    }
+    if !IsObject(quest2) {
+        quest2 := [quest2, false]
+    }
+    return [quest1, quest2]
+}
+	
+nm_detectMultiFieldQuests(part, fields, fieldQuest) {
+	global rbcRound
+    quest := ''
+    fieldList := []
+    
+    ; Identify fields in the given part of the quest text
+    for field in fields {
+        if InStr(part, field) {
+            fieldQuest := True
+            fieldList.Push(field)
+        }
+    }
+
+    ; If two fields are found, combine them
+	
+	if fieldList.Length = 1 {
+		quest := [nm_getFieldName(fieldList[1]),false]
+	} else if fieldQuest = False {
+        ; Fallback to other quest types if no field was found
+        quest := [check_non_field_quests(part),false]
+    } else if fieldList.Length = 3 {
+		if InStr(part, "honey") {
+            quest := [nm_getFieldName(fieldList[1]) . " " . nm_getFieldName(fieldList[2] . " " nm_getFieldName(fieldList[3])), true]
+        } else {
+            quest := [nm_getFieldName(fieldList[1]) . " " . nm_getFieldName(fieldList[2] . " " nm_getFieldName(fieldList[3])), false]
+        }
+	} else {
+		if InStr(part, "honey") {
+            quest := [nm_getFieldName(fieldList[1]) . " " . nm_getFieldName(fieldList[2]), true]
+        } else {
+            quest := [nm_getFieldName(fieldList[1]) . " " . nm_getFieldName(fieldList[2]), false]
+        }
+	}
+    return quest
+}
+
+; Used to get abbreviations to use %path%
+nm_getFieldName(field) {
+    abbreviations := Map(
+        "pine tree", "pinetree",
+        "bam", "bamboo",
+        "straw", "strawberry",
+        "pineapple", "pineapple",
+        "sunflower", "sunflower",
+        "dandelion", "dandelion",
+        "clover", "clover",
+        "blue flower", "blueflower",
+        "mountain top", "mountaintop",
+        "pumpkin", "pumpkin",
+        "spider", "spider",
+        "cactus", "cactus",
+        "rose", "rose",
+        "mushroom", "mushroom"
+    )
+    return abbreviations.Has(field) ? abbreviations[field] : field
+}
+
 F8::nm_detectCogmower()
+
+; ///////////////////////////////////////////////////////////// END AUTO RBC SHYT LOL ////////////////////////////////////////////////
 
 ; check for the correct AHK version before starting
 RunWith32() {
