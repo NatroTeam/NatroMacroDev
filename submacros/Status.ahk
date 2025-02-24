@@ -81,6 +81,8 @@ DebugLogEnabled := A_Args[34]
 
 MonsterRespawnTime := A_Args[35]
 
+HoneyUpdateSSCheck := A_Args[36]
+
 pToken := Gdip_Startup()
 OnExit(ExitFunc)
 OnMessage(0x004A, nm_sendPostData, 255)
@@ -88,6 +90,7 @@ OnMessage(0xC2, nm_setStatus, 255)
 OnMessage(0x5552, nm_setGlobalInt, 255)
 OnMessage(0x5553, nm_setGlobalStr, 255)
 OnMessage(0x5556, nm_sendHeartbeat)
+OnMessage(0x5559, nm_sendItemPicture)
 
 discord.SendEmbed("Connected to Discord!", 5066239)
 
@@ -260,7 +263,7 @@ settings["BlenderItem2"] := {enum: 63, type: "str", section: "Blender", regex: "
 settings["BlenderItem3"] := {enum: 64, type: "str", section: "Blender", regex: "i)^(blueextract|redextract|glue|oil|enzymes|gumdrops|tropicaldrink|mooncharms|glitter|starjelly|purplepotion|softwax|hardwax|swirledwax|causticwax|fielddice|smoothdice|loadeddice|supersmoothie|Turpentine|None)$"}
 settings["StickerStackItem"] := {enum: 65, type: "str", section: "Boost", regex: "i)^(tickets|sticker|sticker\+tickets)$"}
 settings["StickerPrinterEgg"] := {enum: 66, type: "str", section: "Boost", regex: "i)^(Basic|Silver|Gold|Diamond|Mythic)$"}
-settings["MondoLootDirection"] := {enum: 67, type: "str", section: "Collect", regex: "i)^(Left|Right|Random)$"}
+settings["MondoLootDirection"] := {enum: 67, type: "str", section: "Collect", regex: "i)^(Left|Right|Random|Ignore)$"}
 settings["PlanterName1"] := {enum: 68, type: "str", section: "Planters", regex: "i)^(PlasticPlanter|CandyPlanter|BlueClayPlanter|RedClayPlanter|TackyPlanter|PesticidePlanter|HeatTreatedPlanter|HydroponicPlanter|PetalPlanter|PlanterOfPlenty|PaperPlanter|TicketPlanter)$"}
 settings["PlanterName2"] := {enum: 69, type: "str", section: "Planters", regex: "i)^(PlasticPlanter|CandyPlanter|BlueClayPlanter|RedClayPlanter|TackyPlanter|PesticidePlanter|HeatTreatedPlanter|HydroponicPlanter|PetalPlanter|PlanterOfPlenty|PaperPlanter|TicketPlanter)$"}
 settings["PlanterName3"] := {enum: 70, type: "str", section: "Planters", regex: "i)^(PlasticPlanter|CandyPlanter|BlueClayPlanter|RedClayPlanter|TackyPlanter|PesticidePlanter|HeatTreatedPlanter|HydroponicPlanter|PetalPlanter|PlanterOfPlenty|PaperPlanter|TicketPlanter)$"}
@@ -634,6 +637,11 @@ settings["SilverEggMatchIgnore"] := {enum: 357, type: "int", section: "Collect"}
 settings["GoldEggMatchIgnore"] := {enum: 358, type: "int", section: "Collect"}
 settings["DiamondEggMatchIgnore"] := {enum: 359, type: "int", section: "Collect"}
 settings["CoconutBoosterCheck"] := {enum: 360, type: "int", section: "Boost", regex: "i)^(0|1)$"}
+settings["StumpBoosterCheck"] := {enum: 361, type: "int", section: "Boost", regex: "i)^(0|1)$"}
+settings["PepperBoosterCheck"] := {enum: 362, type: "int", section: "Boost", regex: "i)^(0|1)$"}
+settings["HoneyUpdateSSCheck"] := {enum: 363, type: "int", section: "Status", regex: "i)^(0|1)$"}
+settings["StickerStackVoucher"] := {enum: 364, type: "int", section: "Boost", regex: "i)^(0|1)$"}
+settings["MGatherPlanterLoot"] := {enum: 365, type: "int", section: "Planters", regex: "i)^(0|1)$"}
 settings["PriorityListNumeric"] := {enum: 366, type: "int", section: "Settings", regex: "i)^[1-8]{8}$"}
 
 bitmaps := Map()
@@ -704,11 +712,12 @@ nm_status(status)
 			|| ((BalloonSSCheck = 1) && (stateString = "Converting: Balloon"))
 			|| ((ViciousSSCheck = 1) && InStr(stateString, "Completed: Vicious Bee"))
 			|| ((DeathSSCheck = 1) && (state = "You Died"))
+			|| ((state = "Detected") && InStr(stateString, "Night"))
 			|| ((PlanterSSCheck = 1) && (((state = "Detected") || (state = "Screenshot") || (state = "Holding")) && InStr(stateString, "Planter")))
 			|| ((HoneySSCheck = 1) && InStr(stateString, "Reporting: Daily Honey LB") && ((discordMode = 0) || (channel := (StrLen(ReportChannelID) < 17) ? MainChannelID : ReportChannelID)))
 			|| ((ssDebugging = 1) && ((state = "Placing") || (state = "Collecting") || (state = "Failed") || InStr(stateString, "Next Quest Step")))
-			|| ((state = "Gathering") && !InStr(objective, "Ended") && (pBM := CreateHoneyBitmap(1, 0)))
-			|| ((state = "Converting") && (objective = "Backpack") && (pBM := CreateHoneyBitmap()))))
+			|| ((state = "Gathering") && !InStr(objective, "Ended") && (HoneyUpdateSSCheck) && (pBM := CreateHoneyBitmap(1, 0)))
+			|| ((state = "Converting") && (objective = "Backpack") && (HoneyUpdateSSCheck) && (pBM := CreateHoneyBitmap()))))
 		{
 			if !IsSet(pBM)
 				hwnd := GetRobloxHWND(), GetRobloxClientPos(hwnd), pBM := Gdip_BitmapFromScreen((windowWidth > 0) ? (windowX "|" windowY "|" windowWidth "|" windowHeight) : 0)
@@ -721,7 +730,7 @@ nm_status(status)
 		if (ssCheck = 1)
 		{
 			global HoneyUpdate
-			if (((state = "Gathering") && !InStr(objective, "Ended")) || ((state = "Converting") && !InStr(objective, "Refreshed") && !InStr(objective, "Emptied")))
+			if (HoneyUpdateSSCheck && (((state = "Gathering") && !InStr(objective, "Ended")) || ((state = "Converting") && !InStr(objective, "Refreshed") && !InStr(objective, "Emptied"))))
 				HoneyUpdate := (WebhookEasterEgg = 1) ? colors[colorIndex := Mod(colorIndex, 7) + 1] : color
 			else if (state != "Detected")
 				HoneyUpdate := 0
@@ -760,7 +769,8 @@ nm_status(status)
 nm_honey()
 {
 	static id := ""
-
+	if !HoneyUpdateSSCheck
+		return id := ""
 	if HoneyUpdate
 	{
 		payload_json := '{"embeds": [{"description": "[' A_Hour ':' A_Min ':' A_Sec '] Current Honey/Pollen", "color": "' HoneyUpdate '", "image": {"url": "attachment://honey.png"}}], "attachments": []}'
@@ -924,6 +934,11 @@ nm_command(command)
 					{
 						"name": "' commandPrefix 'restart",
 						"value": "Restarts your computer",
+						"inline": true
+					},
+					{
+						"name": "' commandPrefix 'finditem [item]",
+						"value": "finds an item in your inventory and send you a screenshot",
 						"inline": true
 					}]
 				}],
@@ -2366,6 +2381,22 @@ nm_command(command)
 			postdata .= "]}"
 			discord.SendMessageAPI(postdata)
 		}
+		
+		case "FindItem":
+		static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "Snowflake", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "MagicBean", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
+		UI := SubStr(command.content, StrLen(commandPrefix)+10) ; user input
+		if !(UI) {
+			command_buffer.RemoveAt(1)
+			return discord.SendEmbed("Missing item name!\n``````?finditem [itemname]``````", 16711731, , , , id)
+		}
+		closestItem:=findClosestItem(items,UI)
+		if closestItem.dist > 6 || not closestItem.item
+			discord.SendEmbed("Item ``" UI "`` is not valid", 5066239, , , , id)
+		else
+			DetectHiddenWindows 1
+			if WinExist("natro_macro ahk_class AutoHotkey")
+				SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)	
+			DetectHiddenWindows 0
 
 
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
@@ -2376,6 +2407,39 @@ nm_command(command)
 	}
 
 	command_buffer.RemoveAt(1)
+	LevenshteinDistance(s1, s2) {
+		len1 := StrLen(s1), len2 := StrLen(s2)
+		s1 := StrSplit(s1), s2 := StrSplit(s2)
+		d := {}, d.0 := { 0: 0 }
+		Loop len1
+			d.%A_Index% := { 0: A_Index }
+		Loop len2
+			d.0.%A_Index% := A_Index
+		Loop len1 {
+			i := A_Index
+			Loop len2 {
+				j := A_Index  ; only for simplicity
+				cost := s1[i] != s2[j]
+				d.%i%.%j% := Min(d.%i - 1%.%j% + 1, d.%i%.%j - 1% + 1, d.%i - 1%.%j - 1% + cost)
+			}
+		}
+		return d.%len1%.%len2%
+	}
+	findClosestItem(arr,needle) {
+		dist := StrLen(needle)
+		for i,v in arr
+			if (d := LevenshteinDistance(needle, v)) < dist
+				dist := d, item := v
+		if !IsSet(item)
+			return {item:0,dist:100} ;large dist to break
+		return {item:item,dist:dist}
+	}
+	ObjHasValue(obj, value) {
+		for k,v in obj
+			if (v = value)
+			return k
+		return 0
+	}
 }
 
 class discord
@@ -2751,6 +2815,25 @@ nm_sendHeartbeat(*)
 		PostMessage 0x5556, 3
 	}
 	return 0
+}
+
+nm_sendItemPicture(wParam, lParam,*) {
+	critical
+	switch wParam {
+		case 0:
+			switch lParam {
+				case 0:
+					discord.SendEmbed("No Roblox window found!", 16711731)
+				case 1:
+					discord.SendEmbed("Item was not found.", 16711731)
+				case 2:
+					discord.SendEmbed("Can't open inventory!", 16711731)
+			}
+		default:
+			GetRobloxClientPos()
+			discord.SendEmbed("Item Found!", 5066239, , (pBMScreen := Gdip_BitmapFromScreen(windowX "|" wParam "|306|97")))
+			Gdip_DisposeImage(pBMScreen)
+	}
 }
 
 ExitFunc(*)
