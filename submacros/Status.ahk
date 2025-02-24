@@ -946,7 +946,7 @@ nm_command(command)
 					  {
 						"title": "Priority List",
 						"color": 2829617,
-						"description": "To change the priority list, use the following command:\n``````\n' commandPrefix 'set priorityListNumeric [numbers|default]\n``````\nEach digit represents its slot in the default priority list.\nFor example:\n``````\n' commandPrefix 'set priorityListNumeric 12345678\n``````\n\n**Default Priority List**\n1 - Night\n2 - Mondo\n3 - Planter\n4 - Bugrun\n5 - Collect\n6 - Quest Rotate\n7 - Boost\n8 - Go Gather"
+						"description": "To change the priority list, use the following command:\n``````\n' commandPrefix 'set priorityListNumeric [numbers|default]\n``````\nEach digit represents its slot in the default priority list.\nFor example:\n``````\n' commandPrefix 'set priorityListNumeric 12345678\n``````\n\n**Default Priority List**``````ansi\n1 - Night\n2 - Mondo\n3 - Planter\n4 - Bugrun\n5 - Collect\n6 - Quest Rotate\n7 - Boost\n8 - Go Gather``````"
 					  }
 					],
 					"allowed_mentions": {
@@ -1824,7 +1824,7 @@ nm_command(command)
 					newList .= "\n" i " - " defaultPriorityList[j]
 				}
 				UpdateInt("PriorityListNumeric", value, "Settings")
-				discord.SendEmbed("**New Priority List**: ``````" newList "``````\nnumeric: ``" (priorityListNumeric ?? IniRead(A_ScriptDir . "\..\settings\nm_config.ini", "settings", "PriorityListNumeric")) "``", 2829617, , , , id)
+				discord.SendEmbed("**New Priority List**: ``````" newList "``````\n\nnumeric: ``" (priorityListNumeric ?? IniRead(A_ScriptDir . "\..\settings\nm_config.ini", "settings", "PriorityListNumeric")) "``", 2829617, , , , id)
 			}
 			else
 				discord.SendEmbed("``" ((StrLen(value) > 0) ? value : "<blank>") "`` is not an acceptable value for ``PriorityListNumeric``!\n``" commandPrefix "help priority`` for help", 16711731, , , , id)
@@ -1854,7 +1854,7 @@ nm_command(command)
 		case "get":
 		switch params[2], 0 {
 			case "priority", "priorityList", "priorityListNumeric":
-			prioritystring := ''
+			prioritystring := '``````ansi'
 			for i, j in StrSplit(priorityListNumeric ?? IniRead(A_ScriptDir "\..\settings\nm_config.ini", "settings", "PriorityListNumeric", '12345678')) {
 				if !defaultPriorityList.Has(i) {
 					UpdateInt("PriorityListNumeric", 12345678, "settings")
@@ -1862,7 +1862,7 @@ nm_command(command)
 				}
 				prioritystring .= "\n" . i " - " defaultPriorityList[i]
 			}
-			discord.SendEmbed(prioritystring, 0x2b2d31, , , , id)
+			discord.SendEmbed(prioritystring .= "\n``````\n\nnumeric: ``" (priorityListNumeric ?? IniRead(A_ScriptDir "\..\settings\nm_config.ini", "settings", "PriorityListNumeric", '12345678')) "``", 0x2b2d31, , , , id)
 
 			default:
 			k := StrReplace(Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name))), " ")
@@ -2077,15 +2077,15 @@ nm_command(command)
 			{
 				n := params[3]
 				IniWrite "None", "settings\nm_config.ini", "Shrine", "ShrineItem" n
-                IniWrite "0", "settings\nm_config.ini", "Shrine", "ShrineAmount" n
-                Iniwrite "1", "settings\nm_config.ini", "Shrine", "ShrineIndex" n
+				IniWrite "0", "settings\nm_config.ini", "Shrine", "ShrineAmount" n
+				Iniwrite "1", "settings\nm_config.ini", "Shrine", "ShrineIndex" n
 				Iniwrite "0", "settings\nm_config.ini", "Shrine", "LastShrine"
 				DetectHiddenWindows 1
 				if WinExist("natro_macro ahk_class AutoHotkey") {
-                    PostMessage 0x5552, 230+n, 0 ; ShrineAmount
-                    PostMessage 0x5553, 56+n, 9 ; ShrineIndex
-                    PostMessage 0x5553, 54+n, 9 ; ShrineItem
-                }
+					PostMessage 0x5552, 230+n, 0 ; ShrineAmount
+					PostMessage 0x5553, 56+n, 9 ; ShrineIndex
+					PostMessage 0x5553, 54+n, 9 ; ShrineItem
+				}
 				discord.SendEmbed("Cleared Slot " n "!", 5066239, , , , id)
 			}
 			else
@@ -2144,9 +2144,9 @@ nm_command(command)
 			{
 				n := params[3]
 				IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderCount" n
-                Iniwrite 0, "settings\nm_config.ini", "Blender", "BlenderTime" n
-                IniWrite n, "settings\nm_config.ini", "Blender", "BlenderRot"
-                IniWrite 1, "settings\nm_config.ini", "Blender", "BlenderEnd"
+				Iniwrite 0, "settings\nm_config.ini", "Blender", "BlenderTime" n
+				IniWrite n, "settings\nm_config.ini", "Blender", "BlenderRot"
+				IniWrite 1, "settings\nm_config.ini", "Blender", "BlenderEnd"
 				discord.SendEmbed("Readied Slot " n "!", 5066239, , , , id)
 			}
 			else
@@ -2157,18 +2157,18 @@ nm_command(command)
 			{
 				n := params[3]
 				IniWrite "None", "settings\nm_config.ini", "Blender", "BlenderItem" n
-                IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderAmount" n
-                IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderCount" n
-                Iniwrite 1, "settings\nm_config.ini", "Blender", "BlenderIndex" n
-                Iniwrite 0, "settings\nm_config.ini", "Blender", "BlenderTime" n
-                IniWrite n, "settings\nm_config.ini", "Blender", "BlenderRot"
+				IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderAmount" n
+				IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderCount" n
+				Iniwrite 1, "settings\nm_config.ini", "Blender", "BlenderIndex" n
+				Iniwrite 0, "settings\nm_config.ini", "Blender", "BlenderTime" n
+				IniWrite n, "settings\nm_config.ini", "Blender", "BlenderRot"
 				DetectHiddenWindows 1
 				if WinExist("natro_macro ahk_class AutoHotkey") {
-                    PostMessage 0x5552, 232+n, 0 ; BlenderAmount
-                    PostMessage 0x5552, 238+n, 0 ; BlenderTime
-                    PostMessage 0x5553, 58+n, 8 ; BlenderIndex
-                    PostMessage 0x5553, 61+n, 8 ; BlenderItem
-                }
+					PostMessage 0x5552, 232+n, 0 ; BlenderAmount
+					PostMessage 0x5552, 238+n, 0 ; BlenderTime
+					PostMessage 0x5553, 58+n, 8 ; BlenderIndex
+					PostMessage 0x5553, 61+n, 8 ; BlenderItem
+				}
 				discord.SendEmbed("Cleared Slot " n "!", 5066239, , , , id)
 
 			}
