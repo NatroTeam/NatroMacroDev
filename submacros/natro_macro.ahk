@@ -7381,29 +7381,21 @@ nm_ServerLink(GuiCtrl, *){
 	k := GuiCtrl.Name
 	str := GuiCtrl.Value
 
-	RegExMatch(str, "i)((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/([a-z]{2}\/)?games\/1537690962\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*", &NewPrivServer)
-	if ((StrLen(str) > 0) && !IsObject(NewPrivServer))
+	RegExMatch(str, "i)((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/([a-z]{2}\/)?games\/1537690962\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*", &NewPrivLink)
+	RegExMatch(str, "i)((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/share\?code=.{32}&type=Server", &NewShareCode)
+
+	if ((StrLen(str) > 0) && !(IsObject(NewPrivLink) || IsObject(NewShareCode)))
 	{
 		GuiCtrl.Value := %k%
 		SendMessage 0xB1, p-2, p-2, GuiCtrl
-		if InStr(str, "/share?code")
-			nm_ShowErrorBalloonTip(GuiCtrl, "Unresolved Private Server Link", "
-				(
-				You entered a 'share?code' link!
-				To fix this:
-				 1. Paste this link into your browser
-				 2. Wait for Bee Swarm Simulator to load
-				 3. Copy the link at the top of your browser.
-				)")
-		else
-			nm_ShowErrorBalloonTip(GuiCtrl, "Invalid Private Server Link", "Make sure your link is:`r`n- copied correctly and completely`r`n- for Bee Swarm Simulator by Onett")
+		nm_ShowErrorBalloonTip(GuiCtrl, "Invalid Private Server Link", "Make sure your link is:`r`n- copied correctly and completely`r`n- for Bee Swarm Simulator by Onett")
 	}
 	else
 	{
-		GuiCtrl.Value := %k% := IsObject(NewPrivServer) ? NewPrivServer[0] : ""
+		GuiCtrl.Value := %k% := IsObject(NewPrivLink) ? NewPrivLink[0] : (IsObject(NewShareCode) ? NewShareCode[0] : "")
 		IniWrite %k%, "settings\nm_config.ini", "Settings", k
 
-		if (k = "PrivServer")
+		if (k = "PrivServer") ;night announcement
 			PostSubmacroMessage("Status", 0x5553, 10, 6)
 	}
 }
@@ -9365,12 +9357,12 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("GroupBox", "x5 y114 w240 h50", "Priorities")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
-	MainGui.Add("Text", "x15 y44", "3 Fails:")
-	MainGui.Add("Edit", "x55 y42 w180 h18 vFallbackServer1", FallbackServer1).OnEvent("Change", nm_ServerLink)
-	MainGui.Add("Text", "x15 y66", "6 Fails:")
-	MainGui.Add("Edit", "x55 y64 w180 h18 vFallbackServer2", FallbackServer2).OnEvent("Change", nm_ServerLink)
-	MainGui.Add("Text", "x15 y88", "9 Fails:")
-	MainGui.Add("Edit", "x55 y86 w180 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
+	MainGui.Add("Text", "x15 y44", "Backup 1:")
+	MainGui.Add("Edit", "x65 y42 w170 h18 vFallbackServer1", FallbackServer1).OnEvent("Change", nm_ServerLink)
+	MainGui.Add("Text", "x15 y66", "Backup 2:")
+	MainGui.Add("Edit", "x65 y64 w170 h18 vFallbackServer2", FallbackServer2).OnEvent("Change", nm_ServerLink)
+	MainGui.Add("Text", "x15 y88", "Backup 3:")
+	MainGui.Add("Edit", "x65 y86 w170 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
@@ -16873,24 +16865,32 @@ DisconnectCheck(testCheck := 0)
 	}
 
 	; obtain link codes from Private Server and Fallback Server links
-	linkCodes := Map()
-	for k,v in ["PrivServer", "FallbackServer1", "FallbackServer2", "FallbackServer3"] {
-		if (%v% && (StrLen(%v%) > 0)) {
-			if RegexMatch(%v%, "i)(?<=privateServerLinkCode=)(.{32})", &linkCode)
-				linkCodes[k] := linkCode[0]
+	PossibleServers := Map()
+	for index,server in ["PrivServer", "FallbackServer1", "FallbackServer2", "FallbackServer3"] {
+		if (%server% && (StrLen(%server%) > 0)) {
+			(PossibleServers[index] := Map()).CaseSense := 0, PossibleServers[index]["link"] := %server% ;httplink used for browser reconnect
+			if RegexMatch(%server%, "i)(?<=privateServerLinkCode=)(.{32})", &linkCode)
+				PossibleServers[index]["code"] := linkCode[0], PossibleServers[index]["type"] := "LinkCode"
+			else if RegexMatch(%server%, "i)(?<=share\?code=)(.{32})(?=&type=Server)", &ShareCode)
+				PossibleServers[index]["code"] :=  ShareCode[0], PossibleServers[index]["type"] := "ShareCode"
 			else
-				nm_setStatus("Error", ServerLabels[k] " Invalid")
+				nm_setStatus("Error", ServerLabels[index] " Invalid")
 		}
 	}
 
 	; main reconnect loop
+	usingBrowser := false
 	Loop {
 		;Decide Server
-		server := ((A_Index <= 20) && linkCodes.Has(n := (A_Index-1)//5 + 1)) ? n : ((PublicFallback = 0) && (n := ObjMinIndex(linkcodes))) ? n : 0
-
+		server := ((A_Index <= 20) && PossibleServers.Has(n := (A_Index-1)//5 + 1)) ? n : ((PublicFallback = 0) && (n := ObjMinIndex(PossibleServers))) ? n : 0
+		;tooltip(reconnect_debug := "server: " server "(" ServerLabels[server] " : " PossibleServers[server]["type"] "): [" A_Index "]`n" PossibleServers[server]["code"])
 		;Wait For Success
 		i := A_Index, success := 0
 		Loop 5 {
+			;Close browser tabs if browser was used
+			if usingBrowser
+				CloseBrowserTabs()
+			usingBrowser := false
 			;START
 			switch (ReconnectMethod = "Browser") ? 0 : Mod(i, 5) {
 				case 1,2:
@@ -16898,12 +16898,12 @@ DisconnectCheck(testCheck := 0)
 				CloseRoblox()
 				;Run Server Deeplink
 				nm_setStatus("Attempting", ServerLabels[server])
-				try Run '"roblox://placeID=1537690962' (server ? ("&linkCode=" linkCodes[server]) : "") '"'
+				RunDeeplink(PossibleServers[server]["type"], PossibleServers[server]["code"])
 
 				case 3,4:
 				;Run Server Deeplink (without closing)
 				nm_setStatus("Attempting", ServerLabels[server])
-				try Run '"roblox://placeID=1537690962' (server ? ("&linkCode=" linkCodes[server]) : "") '"'
+				RunDeeplink(PossibleServers[server]["type"], PossibleServers[server]["code"])
 
 				default:
 				if server {
@@ -16911,20 +16911,13 @@ DisconnectCheck(testCheck := 0)
 					CloseRoblox()
 					;Run Server Link (legacy method w/ browser)
 					nm_setStatus("Attempting", ServerLabels[server] " (Browser)")
-					if ((success := LegacyReconnect(linkCodes[server], i)) = 1) {
-						if (ReconnectMethod != "Browser") {
-							ReconnectMethod := "Browser"
-							nm_setStatus("Warning", "Deeplink reconnect failed, switched to legacy reconnect (browser) for this session!")
-						}
-						break
-					}
-					else
-						continue 2
+					RunBrowser(PossibleServers[server]["link"])
+					usingBrowser := true
 				} else {
 					;Close Roblox
 					(i = 1) && CloseRoblox()
 					;Run Server Link (spam deeplink method)
-					try Run '"roblox://placeID=1537690962"'
+					RunDeeplink()
 				}
 			}
 			;STAGE 1 - wait for Roblox window
@@ -17002,6 +16995,8 @@ DisconnectCheck(testCheck := 0)
 		;Successful Reconnect
 		if (success = 1)
 		{
+			if usingBrowser
+				CloseBrowserTabs(), Sleep(1000) ;addition sleep, prevent not tabbing back to roblox
 			ActivateRoblox()
 			GetRobloxClientPos()
 			MouseMove windowX + windowWidth//2, windowY + windowHeight//2
@@ -17036,142 +17031,56 @@ DisconnectCheck(testCheck := 0)
 			if (testCheck || (nm_claimHiveSlot() = 1))
 				return 1
 		}
-	}
-}
-LegacyReconnect(linkCode, i)
-{
-	global bitmaps
-	static cmd := Buffer(512), init := (DllCall("shlwapi\AssocQueryString", "Int",0, "Int",1, "Str","http", "Str","open", "Ptr",cmd.Ptr, "IntP",512),
-		DllCall("Shell32\SHEvaluateSystemCommandTemplate", "Ptr",cmd.Ptr, "PtrP",&pEXE:=0,"Ptr",0,"PtrP",&pPARAMS:=0))
-	, exe := (pEXE > 0) ? StrGet(pEXE) : ""
-	, params := (pPARAMS > 0) ? StrGet(pPARAMS) : ""
 
-	url := "https://www.roblox.com/games/1537690962?privateServerLinkCode=" linkCode
-	if ((StrLen(exe) > 0) && (StrLen(params) > 0))
-		ShellRun(exe, StrReplace(params, "%1", url)), success := 0
-	else
-		Run '"' url '"'
+		RunDeeplink(type:="", code:=""){
+			switch type {
+				case "LinkCode":
+					try Run '"roblox://placeID=1537690962&linkcode=' code '"'
+				case "ShareCode":
+					try Run '"roblox://navigation/share_links?code=' code '&type=Server"'
+				default:
+					try Run '"roblox://placeID=1537690962"'
+			}
+		}
 
-	Loop 1 {
-		;STAGE 1 - wait for Roblox Launcher
-		Loop 120 {
-			if WinExist("Roblox") {
+		RunBrowser(url){
+			static cmd := Buffer(512), init := (DllCall("shlwapi\AssocQueryString", "Int",0, "Int",1, "Str","http", "Str","open", "Ptr",cmd.Ptr, "IntP",512),
+			DllCall("Shell32\SHEvaluateSystemCommandTemplate", "Ptr",cmd.Ptr, "PtrP",&pEXE:=0,"Ptr",0,"PtrP",&pPARAMS:=0))
+			, exe := (pEXE > 0) ? StrGet(pEXE) : ""
+			, params := (pPARAMS > 0) ? StrGet(pPARAMS) : ""
+
+			;seems like ShellRun is less consistent
+			if ((StrLen(exe) > 0) && (StrLen(params) > 0))
+				ShellRun(exe, StrReplace(params, "%1", url)) , tooltip(reconnect_debug . "`nShellRun")
+			else
+				Run('"' url '"'), tooltip(reconnect_debug . "`nRun")
+		}
+
+		CloseBrowserTabs(){
+			for hwnd in WinGetList(,, "Program Manager")
+			{
+				p := WinGetProcessName("ahk_id " hwnd)
+				if (InStr(p, "Roblox") || InStr(p, "AutoHotkey"))
+					continue ; skip roblox and AHK windows
+				title := WinGetTitle("ahk_id " hwnd)
+				if (title = "")
+					continue ; skip empty title windows
+				s := WinGetStyle("ahk_id " hwnd)
+				if ((s & 0x8000000) || !(s & 0x10000000))
+					continue ; skip NoActivate and invisible windows
+				s := WinGetExStyle("ahk_id " hwnd)
+				if ((s & 0x80) || (s & 0x40000) || (s & 0x8))
+					continue ; skip ToolWindow and AlwaysOnTop windows
+				try
+				{
+					WinActivate "ahk_id " hwnd
+					Sleep 500
+					Send "^{w}"
+				}
 				break
 			}
-			if (A_Index = 120) {
-				nm_setStatus("Error", "No Roblox Found`nRetry: " i)
-				Sleep 1000
-				break 2
-			}
-			Sleep 1000 ; timeout 2 mins, slow internet / not logged in
-		}
-		;STAGE 2 - wait for RobloxPlayerBeta.exe
-		Loop 180 {
-			if WinExist("Roblox ahk_exe RobloxPlayerBeta.exe") {
-				WinActivate
-				nm_setStatus("Detected", "Roblox Open")
-				break
-			}
-			if (A_Index = 180) {
-				nm_setStatus("Error", "No Roblox Found`nRetry: " i)
-				Sleep 1000
-				break 2
-			}
-			Sleep 1000 ; timeout 3 mins, wait for any Roblox update to finish
-		}
-		;STAGE 3 - wait for loading screen (or loaded game)
-		Loop 180 {
-			if (hwnd := WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) {
-				WinActivate
-				GetRobloxClientPos(hwnd)
-			} else {
-				nm_setStatus("Error", "Disconnected during Reconnect`nRetry: " i)
-				Sleep 1000
-				break 2
-			}
-			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+30 "|" windowWidth "|150")
-			if (Gdip_ImageSearch(pBMScreen, bitmaps["loading"], , , , , , 4) = 1)
-			{
-				Gdip_DisposeImage(pBMScreen)
-				nm_setStatus("Detected", "Game Open")
-				break
-			}
-			if (Gdip_ImageSearch(pBMScreen, bitmaps["science"], , , , , , 2) = 1)
-			{
-				Gdip_DisposeImage(pBMScreen)
-				nm_setStatus("Detected", "Game Loaded")
-				success := 1
-				break 2
-			}
-			Gdip_DisposeImage(pBMScreen)
-			if (nm_imgSearch("disconnected.png",25, "center")[1] = 0){
-				nm_setStatus("Error", "Disconnected during Reconnect`nRetry: " i)
-				Sleep 1000
-				break 2
-			}
-			if (A_Index = 180) {
-				nm_setStatus("Error", "No BSS Found`nRetry: " i)
-				Sleep 1000
-				break 2
-			}
-			Sleep 1000 ; timeout 3 mins, slow loading
-		}
-		;STAGE 4 - wait for loaded game
-		Loop 240 {
-			if (hwnd := WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) {
-				WinActivate
-				GetRobloxClientPos(hwnd)
-			} else {
-				nm_setStatus("Error", "Disconnected during Reconnect`nRetry: " i)
-				Sleep 1000
-				break 2
-			}
-			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+30 "|" windowWidth "|150")
-			if ((Gdip_ImageSearch(pBMScreen, bitmaps["loading"], , , , , , 4) = 0) || (Gdip_ImageSearch(pBMScreen, bitmaps["science"], , , , , , 2) = 1))
-			{
-				Gdip_DisposeImage(pBMScreen)
-				nm_setStatus("Detected", "Game Loaded")
-				success := 1
-				break 2
-			}
-			Gdip_DisposeImage(pBMScreen)
-			if (nm_imgSearch("disconnected.png",25, "center")[1] = 0){
-				nm_setStatus("Error", "Disconnected during Reconnect`nRetry: " i)
-				Sleep 1000
-				break 2
-			}
-			if (A_Index = 240) {
-				nm_setStatus("Error", "BSS Load Timeout`nRetry: " i)
-				Sleep 1000
-				break 2
-			}
-			Sleep 1000 ; timeout 4 mins, slow loading
 		}
 	}
-	;Close Browser Tab
-	for hwnd in WinGetList(,, "Program Manager")
-	{
-		p := WinGetProcessName("ahk_id " hwnd)
-		if (InStr(p, "Roblox") || InStr(p, "AutoHotkey"))
-			continue ; skip roblox and AHK windows
-		title := WinGetTitle("ahk_id " hwnd)
-		if (title = "")
-			continue ; skip empty title windows
-		s := WinGetStyle("ahk_id " hwnd)
-		if ((s & 0x8000000) || !(s & 0x10000000))
-			continue ; skip NoActivate and invisible windows
-		s := WinGetExStyle("ahk_id " hwnd)
-		if ((s & 0x80) || (s & 0x40000) || (s & 0x8))
-			continue ; skip ToolWindow and AlwaysOnTop windows
-		try
-		{
-			WinActivate "ahk_id " hwnd
-			Sleep 500
-			Send "^{w}"
-		}
-		break
-	}
-	return success
 }
 /*
 ShellRun by Lexikos
