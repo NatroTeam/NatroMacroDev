@@ -2063,7 +2063,8 @@ A_TrayMenu.Add()
 A_TrayMenu.Add("Open Logs", (*) => ListLines())
 A_TrayMenu.Add("Copy Logs", copyLogFile)
 A_TrayMenu.Add()
-
+A_TrayMenu.Add("Edit Roblox FPS", robloxFPSGui)
+A_TrayMenu.Add()
 A_TrayMenu.Add("Edit This Script", (*) => Edit())
 A_TrayMenu.Add("Suspend Hotkeys", (*) => (A_TrayMenu.ToggleCheck("Suspend Hotkeys"), Suspend()))
 A_TrayMenu.Add()
@@ -9362,7 +9363,8 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("GroupBox", "x5 y24 w240 h90", "Fallback Private Servers")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
-	MainGui.Add("GroupBox", "x5 y114 w240 h50", "Priorities")
+	MainGui.Add("GroupBox", "x5 y114 w240 h55", "Priorities")
+	MainGui.Add("GroupBox", "xpp yp+hp wp hp", "Roblox FPS")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
 	MainGui.Add("Text", "x15 y44", "3 Fails:")
@@ -9390,7 +9392,8 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("CheckBox", "x362 y174 vTestReset Checked", "Reset")
 	MainGui.Add("CheckBox", "x413 y174 vTestMsgBox", "MsgBox")
 	MainGui.Add("Button", "x325 y197 w100 h24", "Start Test").OnEvent("Click", nm_testButton)
-	MainGui.Add("Button", "x15 y130 w220 h25 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "x15 y132 w220 h26 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "xp yp+62 wp hp", "Edit FPS").OnEvent("Click", robloxFPSGui)
 	if (init = 1)
 	{
 		TabCtrl.Choose("Advanced")
@@ -9753,6 +9756,53 @@ copyLogFile(*) {
 	MsgBox("Copied Debug stats to your clipboard.", "Copy Debug Logs", 0x40040)
 }
 
+robloxFPSGui(*) {
+	global fpsUnlockerGui
+	static path := DirExist(A_AppData "\..\local\roblox\versions") ? A_AppData "\..\local\roblox\versions" : DirExist("C:\Program Files\Roblox\Versions") ? "C:\Program Files\Roblox\Versions" : "", RobloxPath := ""
+    if !path {
+        MsgBox
+        (
+        'Unable to find Roblox Path.
+        Please select the Roblox path manually.'
+        ),,0x40030
+        path := FileSelect("D2", A_AppData "\..\local", "Select Roblox Path")
+		if !path
+			return
+    }
+	if !RobloxPath
+		loop files path "\*", "D" {
+			if FileExist(A_LoopFileFullPath "\RobloxPlayerBeta.exe")
+				RobloxPath := A_LoopFileFullPath
+		}
+	if isSet(fpsUnlockerGui) && fpsUnlockerGui is Gui
+		fpsUnlockerGui.destroy()
+	prevFPS := FileExist(RobloxPath "\ClientSettings\ClientAppSettings.json") ? ((clientAppSettings:=JSON.Parse(FileRead(RobloxPath "\ClientSettings\ClientAppSettings.json"))) && clientAppSettings.has("DFIntTaskSchedulerTargetFps") ? clientAppSettings["DFIntTaskSchedulerTargetFps"] : 30) : 30
+	fpsUnlockerGui := Gui("+E0x8000008 -MinimizeBox", "FPS")
+	fpsUnlockerGui.Show("w70 h45")
+	fpsUnlockerGui.AddText("vFPSCountLabel w35 x5", "FPS")
+	fpsUnlockerGui.AddText("vFPSCountEdit yp xp+20 w50 Right")
+	fpsUnlockerGui.AddUpDown("vFPSCount Range15-500", prevFPS)
+	fpsUnlockerGui.AddButton("x5 yp+20 w70","Apply").OnEvent("Click",(*) => WriteFPSCount(fpsUnlockerGui["FPSCount"].value))
+	WriteFPSCount(fpsCount) {
+		if fpsCount < 25
+			if msgbox(
+				(
+				'An FPS count of less than 25 is not recommended
+				Are you sure you want to proceed?'
+				),,0x40134
+			) != "Yes"
+				return fpsUnlockerGui["FPSCount"].Value := prevFPS
+		if !DirExist(RobloxPath "\ClientSettings")
+			DirCreate(RobloxPath "\ClientSettings")
+		f := FileOpen(RobloxPath "\ClientSettings\ClientAppSettings.json", "rw")
+		ClientAppSettings := JSON.parse(f.Read(),true,false), f.Close()
+		f := FileOpen(RobloxPath "\ClientSettings\ClientAppSettings.json", "w")
+		ClientAppSettings.DFIntTaskSchedulerTargetFps := fpsCount
+		f.Write(JSON.stringify(ClientAppSettings))
+		f.Close()
+		fpsUnlockerGui.Destroy()
+	}
+}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; MAIN LOOP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
