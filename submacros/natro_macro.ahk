@@ -341,7 +341,7 @@ nm_importConfig()
 		, "FDCWarn", 1
 		, "EnableBeesmasTime", 0
 		, "priorityListNumeric", 12345678
-    , "EnableBeesmasTime", 0)
+		, "EnableBeesmasTime", 0)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
