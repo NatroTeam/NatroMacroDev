@@ -2717,7 +2717,7 @@ MainGui.Add("Picture", "+BackgroundTrans x247 yp-3 w20 h20 vBeesmasImage")
 if (EnableBeesmasTime > nowUnix())
 	nm_EnableBeesmas(1)
 else
-	try AsyncHttpRequest("GET", "ahttps://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
+	try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
 ;Blender
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x305 y42 w190 h105 vBlenderGroupBox", "Blender")
