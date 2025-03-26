@@ -7193,7 +7193,7 @@ nm_HiveBeesHelp(*){
 nm_AnnounceGuidWarn(GuiCtrl, *){
 	global AnnounceGuidingStar
 	if GuiCtrl.Value = 0
-		IniWrite (GuiCtrl.Value := AnnounceGuidingStar := 0), "settings\nm_config.ini", "Settings", "AnnounceGuidingStar"
+		IniWrite (AnnounceGuidingStar := 0), "settings\nm_config.ini", "Settings", "AnnounceGuidingStar"
 	else {
 		if (MsgBox("
 		(
