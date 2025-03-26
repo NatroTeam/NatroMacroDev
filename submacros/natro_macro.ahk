@@ -9357,6 +9357,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("GroupBox", "x5 yp+90 w240 h115", "Danger Zone")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
+	MainGui.Add("GroupBox", "x5 y114 w240 h50", "Priorities")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
 	MainGui.Add("Text", "x15 y44", "3 Fails:")
