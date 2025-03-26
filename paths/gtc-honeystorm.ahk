@@ -22,9 +22,8 @@ else
 	send "{" FwdKey " up}{" LeftKey " up}{space}"
 	Sleep 1500
 	nm_Walk(10, FwdKey, LeftKey)
-	nm_Walk(10, BackKey)
-	nm_Walk(7, BackKey, RightKey)
-	nm_Walk(9, BackKey)
+	nm_Walk(4, RightKey)
+	nm_Walk(22.5, BackKey)
 	send "{" RotRight " 2}"
 }
 Sleep 250
