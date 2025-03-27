@@ -1751,20 +1751,20 @@ nm_importFieldDefaults()
 		, "invertFB", 0
 		, "invertLR", 0)
 
-	FieldDefault["Trading Hub"] := Map("pattern", "Squares"
-		, "size", "M"
-		, "width", 5
-		, "camera", "None"
-		, "turns", 1
-		, "sprinkler", "Center"
-		, "distance", 1
+	FieldDefault["Trading Hub"] := Map("pattern", "CornerXSnake"
+		, "size", "L"
+		, "width", 6
+		, "camera", "Left"
+		, "turns", 2
+		, "sprinkler", "Left"
+		, "distance", 9
 		, "percent", 100
 		, "gathertime", 10
 		, "convert", "Rejoin"
 		, "drift", 0
 		, "shiftlock", 0
 		, "invertFB", 0
-		, "invertLR", 0)
+		, "invertLR", 1)
 	
 	global StandardFieldDefault := ObjFullyClone(FieldDefault)
 
@@ -4633,13 +4633,16 @@ nm_PasteGatherSettings(GuiCtrl, *){
 		, "PatternReps", "^[1-9]$"
 		, "PatternShift", "^(0|1)$"
 		, "PatternSize", "i)^(XS|S|M|L|XL)$"
-		, "ReturnType", "i)^(Walk|Reset|Rejoin)$"
+		, "ReturnType", "i)^(Walk|Reset)$"
 		, "RotateDirection", "i)^(None|Left|Right)$"
 		, "RotateTimes", "^[1-4]$"
 		, "SprinklerDist", "^([1-9]|10)$"
 		, "SprinklerLoc", "i)^(Center|Upper Left|Upper|Upper Right|Right|Lower Right|Lower|Lower Left|Left)$"
 		, "UntilMins", "^\d{1,4}$"
 		, "UntilPack", "^(5|10|15|20|25|30|35|40|45|50|55|60|65|70|75|80|85|90|95|100)$"), q := Chr(34)
+	static tradinghubrestrictions := Map("DriftCheck", "^0$"
+		, "ReturnType", "i)^Rejoin$"
+		, "UntilPack", "^100$")
 	local i := SubStr(GuiCtrl.Name, -1), obj, ctrl
 
 	If (!RegExMatch(A_Clipboard, "^\s*\{.*\}\s*$")){
@@ -4665,7 +4668,13 @@ nm_PasteGatherSettings(GuiCtrl, *){
 	}
 	for k,v in validation {
 		if obj.Has(k) {
-			if (obj[k] ~= v) {
+			if (obj[k] ~= v) || ((obj["Name"] = "Trading Hub") && (k = "ReturnType") && (obj[k] ~= tradinghubrestrictions["ReturnType"])) {
+				if obj["Name"] = "Trading Hub" {
+					if !(obj[k] ~= tradinghubrestrictions[k]) {
+						MsgBox "The " k " you tried to import is not allowed with the Trading Hub. Make sure you did not modify the copied string.", "WARNING!!", 0x1030 " T60"
+						return
+					}
+				}
 				Field%k%%i% := obj[k]
 				IniWrite obj[k], "settings\nm_config.ini", "Gather", "Field" k i
 				ctrl := MainGui["Field" k i]
@@ -17268,8 +17277,8 @@ ShellRun(prms*)
 nm_InTradingHub(){
 	send "{" ZoomOut " 5}"
 	GetRobloxClientPos()
-	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY+36 "|" windowWidth//2+200 "|" windowHeight-offsetY-36)
-	if (Gdip_ImageSearch(pBMScreen, bitmaps["TradingHubGreen"], , , , 200, 120, 10) = 1) {
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight)
+	if (Gdip_ImageSearch(pBMScreen, bitmaps["TradingHubGreen"], , , , 200, 120, 25) = 1) { ; this color changes so much
 		Gdip_DisposeImage(pBMScreen)
 		return 1
 	}
