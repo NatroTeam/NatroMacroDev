@@ -4847,21 +4847,23 @@ BeesmasActiveFail(*){
 		To enable Beesmas features automatically, make sure you have a working internet connection and then reload the macro!
 		
 		If you would like to enable Beesmas manually, select "Yes". This will open a menu where you can specifiy the amount of days you would like to manually enable beesmas for.
-		)', "Error", 0x1134 " Owner" MainGui.Hwnd) = "Yes" {
+		)', "Error", 0x1134 " Owner" MainGui.Hwnd) != "Yes"
+			return
+	loop {
 		input := InputBox("How many days would you like to enable beesmas for?`r`n1 = 1 day`r`n7 = 1 week`r`n14 = 2 weeks`r`n...`r`nMake sure to round the days up.", "Manual Beesmas Enable", "T30")
 		if (input.Result != "OK")
 			return
 		if (input.Value > 0 && input.Value < 90){
 			IniWrite nowUnix()+Round(input.Value)*86400, "settings\nm_config.ini", "Settings", "EnableBeesmasTime" ; divied by seconds in a day (result is now unix in days)
 			nm_EnableBeesmas(1)
-			Msgbox("Success! Beesmas is manually enabled for " Round(input.Value) " days.", "Manual Beesmas Enable", "Iconi")
+			return Msgbox("Success! Beesmas is manually enabled for " Round(input.Value) " days.", "Manual Beesmas Enable", "Iconi")
 		}
-		else if (input.Value > 90){
-			MsgBox("You set the value to be higher than 90, which could be unnecessary. Make sure to set the value according to the beesmas timer on the right of the screen.",  "Manual Beesmas Enable", "IconX")
+		if (input.Value > 90) {
+			if MsgBox("You set the value to be higher than 90, which could be unnecessary. Make sure to set the value according to the beesmas timer on the right of the screen.",  "Manual Beesmas Enable", "IconX 0x5") == "Cancel"
+				return
 		}
-		else {
-			MsgBox("That input doesn't seem right, make sure you're entering a number between 1 and 90.",  "Manual Beesmas Enable", "IconX")
-		}
+		else if MsgBox("That input doesn't seem right, make sure you're entering a number between 1 and 90.",  "Manual Beesmas Enable", "IconX 0x5") == "Cancel"
+			return
 	}
 }
 nm_EnableBeesmas(toggle){
