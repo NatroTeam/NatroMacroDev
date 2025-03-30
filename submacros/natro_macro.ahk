@@ -339,7 +339,6 @@ nm_importConfig()
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
 		, "FDCWarn", 1
-		, "EnableBeesmasTime", 0
 		, "priorityListNumeric", 12345678
 		, "EnableBeesmasTime", 0)
 
