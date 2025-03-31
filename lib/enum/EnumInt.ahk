@@ -360,6 +360,7 @@
 	, "CoconutBoosterCheck"
 	, "StumpBoosterCheck"
 	, "PepperBoosterCheck"
-  , "HoneyUpdateSSCheck"
+	, "HoneyUpdateSSCheck"
 	, "StickerStackVoucher"
-  , "MGatherPlanterLoot"]
+	, "MGatherPlanterLoot"
+	, "prioritylistnumeric"]
