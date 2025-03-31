@@ -4575,7 +4575,7 @@ nm_PasteGatherSettings(GuiCtrl, *){
 		, "UntilPack", "^(5|10|15|20|25|30|35|40|45|50|55|60|65|70|75|80|85|90|95|100)$"), q := Chr(34)
 	local i := SubStr(GuiCtrl.Name, -1), obj, ctrl
 
-	If (!RegExMatch(A_Clipboard, "^\s*\{.*\}\s*$")){
+	If (!RegExMatch(GuiCtrl.hasProp("customValue") ? GuiCtrl.customValue : A_Clipboard, "s)^\s*\{.*\}\s*$")){
 		MsgBox "Your String Format is incorrect!`nMake sure you also copy the " q "{" q " and the " q "}" q, "WARNING!!", 0x1030 " T60"
 		Return
 	}
@@ -22054,59 +22054,62 @@ nm_WM_COPYDATA(wParam, lParam, *){
 	Critical
 	global LastGuid, PMondoGuid, MondoAction, MondoBuffCheck, currentWalk, FwdKey, BackKey, LeftKey, RightKey, SC_Space
 	StringAddress := NumGet(lParam + 2*A_PtrSize, "Ptr")  ; Retrieves the CopyDataStruct's lpData member.
-	StringText := StrGet(StringAddress)  ; Copy the string out of the structure.
-	if(wParam=1){ ;guiding star detected
-		nm_setStatus("Detected", "Guiding Star in " . StringText)
-		;pause
-		DetectHiddenWindows 1
-		if WinExist("ahk_class AutoHotkey ahk_pid " currentWalk.pid)
-			Send "{F16}"
-		else
-		{
-			FwdKeyState:=GetKeyState(FwdKey)
-			BackKeyState:=GetKeyState(BackKey)
-			LeftKeyState:=GetKeyState(LeftKey)
-			RightKeyState:=GetKeyState(RightKey)
-			SpaceKeyState:=GetKeyState(SC_Space)
-			PauseState:=state
-			PauseObjective:=objective
-			sendinput "{" FwdKey " up}{" BackKey " up}{" LeftKey " up}{" RightKey " up}{" SC_Space " up}"
-			click "up"
-		}
-		;Announce Guiding Star
-		;calculate mins
-		GSMins:=SubStr("0" Mod(A_Min+10, 60), -2)
-		Sleep 200
-		Send "{Text}/<<Guiding Star>> in " StringText " until __:" GSMins "`n"
-		sleep 250
-		;set LastGuid
-		LastGuid:=nowUnix()
-		IniWrite LastGuid, "settings\nm_config.ini", "Boost", "LastGuid"
-		if(PMondoGuid && MondoBuffCheck && MondoAction="Guid") {
-			nm_mondo()
-			DetectHiddenWindows 0
-			return 0
-		} else {
+	(wParam != 2) && StringText := StrGet(StringAddress)  ; Copy the string out of the structure.
+	switch wParam {
+		case 1: ;guiding star detected
+			nm_setStatus("Detected", "Guiding Star in " . StringText)
+			;pause
+			DetectHiddenWindows 1
 			if WinExist("ahk_class AutoHotkey ahk_pid " currentWalk.pid)
 				Send "{F16}"
 			else
 			{
-				if(FwdKeyState)
-					sendinput "{" FwdKey " down}"
-				if(BackKeyState)
-					sendinput "{" BackKey " down}"
-				if(LeftKeyState)
-					sendinput "{" LeftKey " down}"
-				if(RightKeyState)
-					sendinput "{" RightKey " down}"
-				if(SpaceKeyState)
-					sendinput "{" SC_Space " down}"
+				FwdKeyState:=GetKeyState(FwdKey)
+				BackKeyState:=GetKeyState(BackKey)
+				LeftKeyState:=GetKeyState(LeftKey)
+				RightKeyState:=GetKeyState(RightKey)
+				SpaceKeyState:=GetKeyState(SC_Space)
+				PauseState:=state
+				PauseObjective:=objective
+				sendinput "{" FwdKey " up}{" BackKey " up}{" LeftKey " up}{" RightKey " up}{" SC_Space " up}"
+				click "up"
 			}
-		}
-		DetectHiddenWindows 0
-	}
-	else {
-		InStr(StringText, ": ") ? nm_setStatus(SubStr(StringText, 1, InStr(StringText, ": ")-1), SubStr(StringText, InStr(StringText, ": ")+2)) : nm_setStatus(StringText)
+			;Announce Guiding Star
+			;calculate mins
+			GSMins:=SubStr("0" Mod(A_Min+10, 60), -2)
+			Sleep 200
+			Send "{Text}/<<Guiding Star>> in " StringText " until __:" GSMins "`n"
+			sleep 250
+			;set LastGuid
+			LastGuid:=nowUnix()
+			IniWrite LastGuid, "settings\nm_config.ini", "Boost", "LastGuid"
+			if(PMondoGuid && MondoBuffCheck && MondoAction="Guid") {
+				nm_mondo()
+				DetectHiddenWindows 0
+				return 0
+			} else {
+				if WinExist("ahk_class AutoHotkey ahk_pid " currentWalk.pid)
+					Send "{F16}"
+				else
+				{
+					if(FwdKeyState)
+						sendinput "{" FwdKey " down}"
+					if(BackKeyState)
+						sendinput "{" BackKey " down}"
+					if(LeftKeyState)
+						sendinput "{" LeftKey " down}"
+					if(RightKeyState)
+						sendinput "{" RightKey " down}"
+					if(SpaceKeyState)
+						sendinput "{" SC_Space " down}"
+				}
+			}
+			DetectHiddenWindows 0
+		case 2:
+			obj := ObjFromPtrAddRef(StringAddress)
+			msgbox obj.Name
+
+		case 0: InStr(StringText, ": ") ? nm_setStatus(SubStr(StringText, 1, InStr(StringText, ": ")-1), SubStr(StringText, InStr(StringText, ": ")+2)) : nm_setStatus(StringText)
 	}
 	return 0
 }

@@ -1878,7 +1878,30 @@ nm_command(command)
 				prioritystring .= "\n" . i " - " defaultPriorityList[i]
 			}
 			discord.SendEmbed(prioritystring .= "\n``````\n\nnumeric: ``" (priorityListNumeric ?? IniRead(A_ScriptDir "\..\settings\nm_config.ini", "settings", "PriorityListNumeric", '12345678')) "``", 0x2b2d31, , , , id)
-
+			case "GatherSettings1", "GatherSettings2", "GatherSettings3":
+				index := SubStr(params[2], -1)
+				GatherSettings := read_gather_settings()
+				str :=
+					(
+					'{' . '\n'
+					'  \"Name\": \"' GatherSettings["FieldName" index] '\",' . '\n'
+					'  \"Pattern\": \"' GatherSettings["FieldPattern" index] '\",' . '\n'
+					'  \"DriftCheck\": \"' GatherSettings["FieldDriftCheck" index] '\",' . '\n'
+					'  \"PatternInvertFB\": \"' GatherSettings["FieldPatternInvertFB" index] '\",' . '\n'
+					'  \"PatternInvertLR\": \"' GatherSettings["FieldPatternInvertLR" index] '\",' . '\n'
+					'  \"PatternReps\": \"' GatherSettings["FieldPatternReps" index] '\",' . '\n'
+					'  \"PatternShift\": \"' GatherSettings["FieldPatternShift" index] '\",' . '\n'
+					'  \"PatternSize\": \"' GatherSettings["FieldPatternSize" index] '\",' . '\n'
+					'  \"ReturnType\": \"' GatherSettings["FieldReturnType" index] '\",' . '\n'
+					'  \"RotateDirection\": \"' GatherSettings["FieldRotateDirection" index] '\",' . '\n'
+					'  \"RotateTimes\": \"' GatherSettings["FieldRotateTimes" index] '\",' . '\n'
+					'  \"SprinklerDist\": \"' GatherSettings["FieldSprinklerDist" index] '\",' . '\n'
+					'  \"SprinklerLoc\": \"' GatherSettings["FieldSprinklerLoc" index] '\",' . '\n'
+					'  \"UntilMins\": \"' GatherSettings["FieldUntilMins" index] '\",' . '\n'
+					'  \"UntilPack\": \"' GatherSettings["FieldUntilPack" index] '\"' . '\n'
+					'}' . '\n'
+					)
+				discord.SendEmbed('``````json\n' str '``````', 0x2b2d31,,,, id)
 			default:
 			k := StrReplace(Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name))), " ")
 			str := ""
@@ -2439,6 +2462,18 @@ nm_command(command)
 			if (v = value)
 			return k
 		return 0
+	}
+	read_gather_settings() {
+		(settings := Map()).CaseSense := false, settings.Default := ""
+		content := FileRead(A_WorkingDir "/settings/nm_config.ini"), k := 0
+		loop parse content, "`n", "`r`t" {
+			if (!k && (k := (A_LoopField == "[Gather]"), 1)) || !A_LoopField || (temp:=SubStr(A_LoopField, 1, 1)) == ";"
+				Continue
+			if temp == "["
+				return settings
+			settings[SubStr(A_LoopField, 1, (temp:=InStr(A_LoopField, "=")) - 1)] := SubStr(A_LoopField, temp + 1)
+		}
+		return settings
 	}
 }
 
