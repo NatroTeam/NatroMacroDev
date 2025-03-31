@@ -11,7 +11,7 @@ Natro Macro is distributed in the hope that it will be useful. This does not giv
 
 You should have received a copy of the license along with Natro Macro. If not, please redownload from an official source.
 */
-
+;THIS IS A TEST
 ;Compiler directives (currently not in use):
 ;@Ahk2Exe-SetName Natro Macro
 ;@Ahk2Exe-SetDescription Natro Macro
