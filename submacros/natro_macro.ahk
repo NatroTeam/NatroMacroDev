@@ -107,6 +107,7 @@ OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
+OnMessage(0x555A, (wp,*) => nm_PasteGatherSettings({name:wp}))
 
 ; set version identifier
 VersionID := "1.0.1"
@@ -4573,11 +4574,11 @@ nm_PasteGatherSettings(GuiCtrl, *){
 		, "SprinklerLoc", "i)^(Center|Upper Left|Upper|Upper Right|Right|Lower Right|Lower|Lower Left|Left)$"
 		, "UntilMins", "^\d{1,4}$"
 		, "UntilPack", "^(5|10|15|20|25|30|35|40|45|50|55|60|65|70|75|80|85|90|95|100)$"), q := Chr(34)
-	local i := SubStr(GuiCtrl.Name, -1), obj, ctrl
+	local i := SubStr(GuiCtrl.Name, -1), obj, ctrl, rc := !(GuiCtrl is Gui.Control)
 
-	If (!RegExMatch(GuiCtrl.hasProp("customValue") ? GuiCtrl.customValue : A_Clipboard, "s)^\s*\{.*\}\s*$")){
-		MsgBox "Your String Format is incorrect!`nMake sure you also copy the " q "{" q " and the " q "}" q, "WARNING!!", 0x1030 " T60"
-		Return
+	If (!RegExMatch(A_Clipboard, "s)^\s*\{.*\}\s*$")){
+		(!rc) && MsgBox("Your String Format is incorrect!`nMake sure you also copy the " q "{" q " and the " q "}" q, "WARNING!!", 0x1030 " T60")
+		Return 1
 	}
 	obj := json.parse(A_Clipboard)
 	if obj.Has("Name") {
@@ -4585,16 +4586,22 @@ nm_PasteGatherSettings(GuiCtrl, *){
 			FieldName%i% := obj["Name"]
 			IniWrite obj["Name"], "settings\nm_config.ini", "Gather", "FieldName" i
 			MainGui["FieldName" i].Text := FieldName%i%
-		} else
-			MsgBox "The Field Name you tried to import is NOT valid!`nMake sure you copied the string correctly.`nSpecific: " obj["Name"], "WARNING!!", 0x1030 " T60"
+		} else {
+			if rc
+				return 2
+			MsgBox("The Field Name you tried to import is NOT valid!`nMake sure you copied the string correctly.`nSpecific: " obj["Name"], "WARNING!!", 0x1030 " T60")
+		}
 	}
 	if obj.Has("Pattern") {
 		if ObjHasValue(patternlist, obj["Pattern"]) {
 			FieldPattern%i% := obj["Pattern"]
 			IniWrite obj["Pattern"], "settings\nm_config.ini", "Gather", "FieldPattern" i
 			MainGui["FieldPattern" i].Text := FieldPattern%i%
-		} else
+		} else {
+			if rc
+				return 3
 			MsgBox "The Pattern you tried to import is NOT valid!`nMake sure you copied the string correctly and have the pattern installed.`nSpecific: " obj["Pattern"], "WARNING!!", 0x1030 " T60"
+		}
 	}
 	for k,v in validation {
 		if obj.Has(k) {
@@ -4608,11 +4615,15 @@ nm_PasteGatherSettings(GuiCtrl, *){
 					default:
 					ctrl.Value := obj[k]
 				}
-			} else
+			} else {
+				if rc
+					return 4
 				MsgBox "The item you tried to import is NOT valid!`nMake sure you copied the string correctly.`nSpecific: " k ":" obj[k], "WARNING!!", 0x1030 " T60"
+			}
 		}
 	}
 	nm_FieldSelect%i%()
+	return 0
 }
 nm_WebhookEasterEgg(){
 	global WebhookEasterEgg
@@ -22054,7 +22065,7 @@ nm_WM_COPYDATA(wParam, lParam, *){
 	Critical
 	global LastGuid, PMondoGuid, MondoAction, MondoBuffCheck, currentWalk, FwdKey, BackKey, LeftKey, RightKey, SC_Space
 	StringAddress := NumGet(lParam + 2*A_PtrSize, "Ptr")  ; Retrieves the CopyDataStruct's lpData member.
-	(wParam != 2) && StringText := StrGet(StringAddress)  ; Copy the string out of the structure.
+	StringText := StrGet(StringAddress)  ; Copy the string out of the structure.
 	switch wParam {
 		case 1: ;guiding star detected
 			nm_setStatus("Detected", "Guiding Star in " . StringText)
@@ -22105,11 +22116,7 @@ nm_WM_COPYDATA(wParam, lParam, *){
 				}
 			}
 			DetectHiddenWindows 0
-		case 2:
-			obj := ObjFromPtrAddRef(StringAddress)
-			msgbox obj.Name
-
-		case 0: InStr(StringText, ": ") ? nm_setStatus(SubStr(StringText, 1, InStr(StringText, ": ")-1), SubStr(StringText, InStr(StringText, ": ")+2)) : nm_setStatus(StringText)
+		default: InStr(StringText, ": ") ? nm_setStatus(SubStr(StringText, 1, InStr(StringText, ": ")-1), SubStr(StringText, InStr(StringText, ": ")+2)) : nm_setStatus(StringText)
 	}
 	return 0
 }

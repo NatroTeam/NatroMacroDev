@@ -807,7 +807,7 @@ nm_command(command)
 	, defaultPriorityList := ["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 
 	id := command.id, params := []
-	Loop Parse SubStr(command.content, StrLen(commandPrefix)+1), A_Space
+	Loop Parse SubStr(command.content, StrLen(commandPrefix)+1), A_Space . "`n", "`r"
 		if (A_LoopField != "")
 			params.Push(A_LoopField)
 	params.Length := 10, params.Default := ""
@@ -1843,6 +1843,43 @@ nm_command(command)
 			}
 			else
 				discord.SendEmbed("``" ((StrLen(value) > 0) ? value : "<blank>") "`` is not an acceptable value for ``PriorityListNumeric``!\n``" commandPrefix "help priority`` for help", 16711731, , , , id)
+			case "GatherSettings1", "GatherSettings2", "GatherSettings3":
+			index := SubStr(params[2], -1)
+			value := Trim(RegExReplace(SubStr(command.content, InStr(command.content, params[2])+StrLen(params[2])),
+				"s)(``````[^ \n]*|``)\n?"
+			))
+			; <blank> is not a valid value
+			if !value || !(value ~= "s)^\s*\{.*\}\s*$")
+			{
+				discord.SendEmbed("``" ((StrLen(value) > 0) ? value : "<blank>") "`` is not an acceptable value for ``" params[2] "``!\n``?set GatherSettings" index "`` must be followed by a valid JSON object", 16711731, , , , id)
+				return command_buffer.RemoveAt(1)
+			}
+			DetectHiddenWindows 1
+			if WinExist("natro_macro ahk_class AutoHotkey") {
+				data := ClipboardAll()
+				A_Clipboard := value
+				err := 0
+				switch SendMessage(0x555A, index) {
+					case 0:
+					A_Clipboard := data
+					discord.SendEmbed("Successfully changed GatherSettings" index, 5066239, , , , id)
+					DetectHiddenWindows 0
+					return command_buffer.RemoveAt(1)
+					case 1:
+					err := "Invalid JSON"
+					case 2:
+					err := "Invalid Field"
+					case 3:
+					err := "Invalid Pattern"
+					case 4:
+					err := "Invalid Value"
+					default:
+					err := "Unknown Error"
+				}
+				A_Clipboard := data
+				DetectHiddenWindows 0
+				discord.SendEmbed("Setting GatherSettings" index " failed with error: ``" err "``", 16711731, , , , id)
+			}
 			default:
 			Loop 1
 			{
