@@ -12300,7 +12300,7 @@ nm_StickerStack(){
 
 	if (StickerStackCheck && (nowUnix()-LastStickerStack)>StickerStackTimer) {
 		loop 2 {
-			nm_Reset()
+			nm_Reset(,,)
 			nm_setStatus("Traveling", "Sticker Stack" ((A_Index > 1) ? " (Attempt 2)" : ""))
 
 			nm_gotoCollect("stickerstack")
