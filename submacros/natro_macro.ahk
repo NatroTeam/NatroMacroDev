@@ -17917,14 +17917,8 @@ nm_hotbar(boost:=0){
 		, HotbarMax2, HotbarMax3, HotbarMax4, HotbarMax5, HotbarMax6, HotbarMax7
 		, LastHotkey2, LastHotkey3, LastHotkey4, LastHotkey5, LastHotkey6, LastHotkey7
 		, beesmasActive, QuestBoostCheck
-	;whileNames:=["Always", "Attacking", "Gathering", "At Hive"]
-	;ActiveHotkeys.push([val, slot, HBSecs, LastHotkey%slot%])
+
 	for key, val in ActiveHotkeys {
-		;ActiveLen:=ActiveHotkeys.Length
-		;temp1:=ActiveHotkeys[1][1]
-		;temp2:=ActiveHotkeys[key][2]
-		;temp3:=ActiveHotkeys[key][3]
-		;temp4:=ActiveHotkeys[key][4]
 		;always
 		if(ActiveHotkeys[key][1]="Always" && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
 			HotkeyNum:=ActiveHotkeys[key][2]
