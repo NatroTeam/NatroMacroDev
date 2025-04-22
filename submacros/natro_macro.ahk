@@ -17974,6 +17974,7 @@ nm_hotbar(boost:=0){
 			ActiveHotkeys[key][4]:=LastHotkeyN
 			break
 		}
+		;jellybean
 		else if((state = "Gathering" || fieldOverrideReason = "Boost") && (QuestBoostCheck = 0 || (QuestBoostCheck = 1 && fieldOverrideReason="Quest")) && (nowUnix()-GatherStartTime)>60 && ActiveHotkeys[key][1]="Jellybean" && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
 			HotkeyNum:=ActiveHotkeys[key][2]
 			send "{sc00" HotkeyNum+1 "}"
