@@ -33,7 +33,7 @@ class EmbedBuilder {
         return this
     }
     add_field(name, value, inline := false) {
-        field := { name: name, value: value, inline: inline, base: { __Class: 'EmbedField', to_string: field_to_string } }
+        field := { name: name, value: value, inline: inline, base: { to_string: field_to_string } }
         this.fields.push(field)
         return this
 
@@ -96,6 +96,13 @@ class EmbedBuilder {
     set_url(url) {
         this.url := url
         return this
+    }
+    to_json() {
+        out := {}
+        for prop, value in this.OwnProps() {
+            out.%prop% := value
+        }
+        return out
     }
     class Footer {
         to_string() {
