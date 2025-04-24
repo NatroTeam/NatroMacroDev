@@ -1990,6 +1990,9 @@ QuestRedBoost := 0
 HiveConfirmed := 0
 ShiftLockEnabled := 0
 
+ForceStart := 0
+RemoteStart := 0
+
 ;ensure Gui will be visible
 if (GuiX && GuiY)
 {
@@ -3224,7 +3227,7 @@ try {
 
 SetTimer Background, 2000
 if (A_Args.Has(1) && (A_Args[1] = 1)){
-	global ForceStart := 1
+	ForceStart := 1
 	SetTimer start, -1000
 }
 
@@ -9343,12 +9346,6 @@ nm_showAdvancedSettings(*){
 nm_AdvancedGUI(init:=0){
 	global
 	local hBM, GuiCtrl
-	DangerInfo() => MsgBox("
-	(
-	These settings could case the macro to not function correctly, or for your roblox account to be at risk.
-
-	Read each warning CAREFULLY. If you are unsure about any of these settings, it is recommended to leave them off.
-	)")
 	
 	TabCtrl.UseTab("Advanced")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -9366,7 +9363,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("Text", "x15 y88", "9 Fails:")
 	MainGui.Add("Edit", "x55 y86 w180 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
 	;danger
-	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", (*) => DangerInfo())
+	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
 	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
@@ -9400,6 +9397,12 @@ nm_AdvancedGUI(init:=0){
 		)", "Advanced Settings", 0x40040 " T20"
 	}
 }
+DangerInfo(*) => MsgBox("
+	(
+	These settings could case the macro to not function correctly, or for your roblox account to be at risk.
+
+	Read each warning CAREFULLY. If you are unsure about any of these settings, it is recommended to leave them off.
+	)")
 nm_TestInfinite(*){
 	global
 	MainGui["TestCount"].Enabled := !(TestInfinite := MainGui["TestInfinite"].Value)
@@ -21691,6 +21694,10 @@ Background(){
 ; HOTKEYS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;START MACRO
+/**
+ * Force start: errors/info are suppressed.
+ * RC start: errors/info are sent to status instead of msgboxes.
+ */
 start(*){
 	global
 	SetKeyDelay 100+KeyDelay
@@ -21698,9 +21705,6 @@ start(*){
 	MainGui["StartButton"].Enabled := 0
 	Hotkey StartHotkey, "Off"
 	nm_setStatus("Begin", "Macro")
-
-	ForceStart := ForceStart ?? 0 ;Force start: errors/info are suppressed.
-	RemoteStart := RemoteStart ?? 0 ;RC start: errors/info are sent to status instead of msgboxes.
 	
 	for i in StrSplit(priorityListNumeric)
 		priorityList.push(defaultPriorityList[i])
