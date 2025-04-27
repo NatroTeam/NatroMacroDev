@@ -1989,7 +1989,7 @@ QuestBlueBoost := 0
 QuestRedBoost := 0
 HiveConfirmed := 0
 ShiftLockEnabled := 0
-
+items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "Snowflake", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "MagicBean", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
 ForceStart := 0
 RemoteStart := 0
 
@@ -10539,7 +10539,6 @@ nm_AmuletPrompt(decision:=0, type:=0, *){
 }
 nm_FindItem(chosenItem, *) {
 	global shiftLockEnabled, bitmaps
-	static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "Snowflake", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "MagicBean", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
 	GetRobloxClientPos()
 	DetectHiddenWindows 1
 	if windowWidth == 0 {
@@ -10586,6 +10585,20 @@ nm_FindItem(chosenItem, *) {
 	DetectHiddenWindows 0
 	nm_OpenMenu()
 	nm_setShiftLock(Prev_ShiftLock)
+}
+nm_ItemScreenshot(item){
+	if MachineSSCheck = 0
+		return 
+	
+	if (items.ObjHasValue(item) = 0) 
+		MsgBox("Item " item " not found")
+
+	for index, v in items {
+		if (v = item) {
+			nm_FindItem(index)
+			return 1
+		}
+	}
 }
 nm_gotoRamp(){
 	global FwdKey, RightKey, HiveSlot, state, objective, HiveConfirmed
@@ -10815,6 +10828,7 @@ nm_Clock(){
 				sendinput "{" SC_E " up}"
 				Sleep 500
 				nm_setStatus("Collected", "Wealth Clock")
+				nm_ItemScreenshot("Ticket")
 				break
 			}
 		}
@@ -11058,6 +11072,8 @@ nm_Ant() { ;collect Ant Pass then do Challenge
 				Sleep 500
 				nm_setStatus("Collected", "Ant Pass")
 				++AntPassNum
+				if !(QuestAnt || AntPassAction="challenge")
+					nm_ItemScreenshot("AntPass")
 				break
 			}
 			else {
@@ -11201,6 +11217,7 @@ nm_RoboPass(){
 				Sleep 500
 				nm_setStatus("Collected", "Robo Pass")
 				++RoboPassNum
+				nm_ItemScreenshot("RoboPass")
 				break
 			}
 			else {
@@ -11359,6 +11376,7 @@ nm_CoconutDis(){
 				sendinput "{" SC_E " up}"
 				sleep 500
 				nm_setStatus("Collected", "Coconut Dispenser")
+				nm_ItemScreenshot("Coconut")
 				break
 			}
 		}
@@ -11409,6 +11427,7 @@ nm_GlueDis(){
 				sendinput "{" SC_E " up}"
 				Sleep 1000
 				nm_setStatus("Collected", "Glue Dispenser")
+				nm_ItemScreenshot("Glue")
 				break
 			}
 		}
@@ -11564,6 +11583,7 @@ nm_Feast(){ ; Beesmas Feast
 				nm_endWalk()
 
 				nm_setStatus("Collected", "Beesmas Feast")
+				nm_ItemScreenshot("Bitterberry")
 				break
 			}
 		}
@@ -11592,6 +11612,7 @@ nm_GingerbreadHouse(){
 				sendinput "{" SC_E " up}"
 				Sleep 3000
 				nm_setStatus("Collected", "Gingerbread House")
+				nm_ItemScreenshot("GingerbreadBear")
 				break
 			}
 		}
@@ -11710,6 +11731,7 @@ nm_Samovar(){
 				nm_endWalk()
 
 				nm_setStatus("Collected", "Samovar")
+				nm_ItemScreenshot("Honeysuckle")
 				break
 			}
 		}
@@ -12168,6 +12190,8 @@ nm_Honeystorm(fromSnowMachine:=0){
 				KeyWait "F14", "T35 L"
 				nm_endWalk()
 				Click "Up"
+				if (fromSnowMachine && A_Index = 1)
+					nm_ItemScreenshot("Snowflake")
 
 				if (!collected && HoneystormCheck) ;try again if Honeystorm collection failed but enabled
 					continue
@@ -12667,6 +12691,7 @@ nm_toBooster(location){
 			If (location = "coconut") {
 				LastCoconutDis:=nowUnix()-7200
 				IniWrite LastCoconutDis, "settings\nm_config.ini", "Collect", "LastCoconutDis"
+				nm_ItemScreenshot("Coconut")
 			} else {
 				Last%location%Boost:=nowUnix()-1500
 				IniWrite Last%location%Boost, "settings\nm_config.ini", "Collect", "Last" location "Boost"
