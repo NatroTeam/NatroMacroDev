@@ -14782,7 +14782,8 @@ nm_GoGather(){
 		;check any planter progress
 		nm_PlanterTimeUpdate(FieldName)
 		;whirligig
-		if ((WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && !PFieldBoosted) || (WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && PFieldBoosted && GatherFieldBoosted)){
+		if (WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180
+		&& (!PFieldBoosted || (PFieldBoosted && GatherFieldBoosted))){
 			WhirligigReturn()
 		} else if(FieldReturnType="walk") { ;walk back
 			nm_walkFrom(FieldName)
@@ -14800,7 +14801,7 @@ nm_GoGather(){
 
 	WhirligigReturn(){
 		pBMScreen := Gdip_BitmapFromScreen(WindowX+WindowWidth*0.5-260 "|" WindowY+WindowHeight-101 "|" 75*7 "|" 66) ;hotbar
-		if (Gdip_ImageSearch(pBMScreen,bitmaps["whirligig"], , , , , ,10, ,3) = 1) {
+		if (Gdip_ImageSearch(pBMScreen,bitmaps["whirligigslot"], , , , , , 10, ,3) = 1) {
 			Gdip_DisposeImage(pBMScreen)
 			Send "{" WhirligigKey "}{ " RotUp " 10}{ " RotDown " 4}{" ZoomIn " 10}"
 			sleep(2000) ; make sure the player is on the ground
