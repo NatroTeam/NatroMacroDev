@@ -29,6 +29,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
+#include "Mod.ahk"
 
 #Warn VarUnset, Off
 OnError (e, mode) => (mode = "Return") ? -1 : 0
@@ -81,6 +82,30 @@ ElevateScript()
 exe_path32 := A_AhkPath
 exe_path64 := (A_Is64bitOS && FileExist("submacros\AutoHotkey64.exe")) ? (A_WorkingDir "\submacros\AutoHotkey64.exe") : A_AhkPath
 
+LoadMods() {
+	(!DirExist("./mods") && DirCreate("./mods"))
+	(!FileExist("./mods/imports.ahk") && FileAppend("", "./mods/imports.ahk"))
+    changed := 0
+    content := FileRead("./mods/imports.ahk")
+
+	str := ""
+    loop files "./mods/*", "D" {
+		mod_name := A_LoopFileName
+        if FileExist(A_LoopFileFullPath "\natro_macro\import.ahk") {
+            str .= '#include "*i ' A_LoopFileFullPath '\natro_macro\import.ahk"`n'
+        }
+	}
+    if str == content
+        return 0
+	f:=FileOpen("./mods/imports.ahk", "w")
+	f.Write(str)
+	f.Close()
+    ; reload script
+	ReloadScript(exe_path32)
+    ExitApp()
+}
+LoadMods()
+
 ; close any remnant running natro scripts and start heartbeat
 CloseScripts(hb:=0) {
 	list := WinGetList("ahk_class AutoHotkey ahk_exe " exe_path32)
@@ -110,6 +135,80 @@ OnMessage(0x5559, nm_FindItem)
 
 ; set version identifier
 VersionID := "1.0.1"
+
+for k,v in ["PMondoGuid","PMondoGuidComplete","PFieldBoosted","PFieldGuidExtend","PFieldGuidExtendMins","PFieldBoostExtend","PPopStarExtend"]
+	%v%:=0
+; Initialize Mods
+(mods := Map()).CaseSense := 0
+(events := Map()).CaseSense := 0
+event_lsit := [
+	"Start",
+	"Stop",
+	"Pause",
+	"Unpause",
+	"GuiLoaded",
+	"ConfigImported",
+	"MainLoopNight",
+	"MainLoopMondo",
+	"MainLoopPlanter",
+	"MainLoopBugrun",
+	"MainLoopCollect",
+	"MainLoopQuestRotate",
+	"MainLoopBoost",
+	"MainLoopGoGather",
+	"MessageReceived", ; (wParam, lParam, msg, hwnd)
+	"Heartbeat",
+	"Disconnect",
+	"FailedReconnect",
+	"SuccessfulReconnect",
+	"Died",
+	"Reset",
+	"Night",
+	"ViciousBeeFound", ; (field)
+	"ViciousBeeKilled", ; (field, time)
+	"MemoryMatch", ; (type)
+	"MondoDead",
+	"MondoBuff",
+	"PlanterCollected", ; (type, field)
+	"PlanterPlaced",
+	"Clock",
+	"Honeystorm",
+	"AntChallenge",
+	"Dispenser", ; (type)
+	"BeesmasCollector", ; (type)
+	"BlenderCollected", ; (item, amount)
+	"BlenderAdded", ; (item, amount)
+	"AmuletPrompt", ; (type)
+	"BossKilled", ; (type)
+	"GatherInterrupt", ; (type, field)
+	"HotbarBoost", ; (type)
+	"WindShrine", ; (item, winds)
+	"StickerStack", ; (item, boost)
+	"StickerPrinter", ; (printing_item, printed_item)
+	"AFB",
+	"QuestCompleted", ; (questgiver, questname)
+	"QuestReturned", ; (questgiver, questname)
+	"QuestReceived", ; (questgiver, questname)
+	"StatusMessage", ; (State, Message)
+	"BalloonConverted",
+	"BackpackConverted",
+	"BackpackFull",
+	"DailyReconnect",
+	"FailedHttpRequest", ; (request, error)
+	"GuiStarted",
+	"GUIGatherTab",
+	"GuiCollectTab",
+	"GuiKillTab",
+	"GuiBoostTab",
+	"GuiQuestTab",
+	"GuiPlantersTab",
+	"GuiStatusTab",
+	"GuiSettingsTab",
+	"GuiMiscTab",
+	"GuiCreditsTab",
+	"GuiAdvancedTab"
+]
+#include "*i %A_ScriptDir%\..\mods\imports.ahk"
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
@@ -837,6 +936,10 @@ nm_importConfig()
 		, "TimerX", 150
 		, "TimerY", 150
 		, "TimersOpen", 0)
+	
+	for k,v in mods {
+		config[k] := v["config"]
+	}
 
 	local k, v, i, j
 	for k,v in config ; load the default values as globals, will be overwritten if a new value exists when reading
@@ -859,6 +962,7 @@ nm_importConfig()
 
 	local file := FileOpen(inipath, "w-d")
 	file.Write(ini), file.Close()
+	event("ConfigImported")
 }
 nm_importConfig()
 
@@ -2107,7 +2211,6 @@ nm_AutoUpdateHandler(req)
 			MainGui["ImageGitHubLink"].Move(494 - VersionWidth - 23), MainGui["ImageGitHubLink"].Redraw()
 			MainGui["ImageDiscordLink"].Move(494 - VersionWidth - 48), MainGui["ImageDiscordLink"].Redraw()
 			try MainGui["SecretButton"].Move(494-VersionWidth-104), MainGui["SecretButton"].Redraw()
-
 			if (LatestVer != IgnoreUpdateVersion)
 				nm_AutoUpdateGUI()
 		}
@@ -2257,6 +2360,7 @@ nm_MajorUpdateHelp(*)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 OnExit(GetOut)
 MainGui := Gui((AlwaysOnTop ? "+AlwaysOnTop " : "") "+Border +OwnDialogs", "Natro Macro (Loading 0%)")
+event("GuiStarted")
 WinSetTransparent 255-floor(GuiTransparency*2.55), MainGui
 MainGui.Show("x" GuiX " y" GuiY " w490 h275")
 SetLoadingProgress(percent) => MainGui.Title := "Natro Macro (Loading " Round(percent) "%)"
@@ -2288,9 +2392,6 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Button", "x5 y260 w65 h20 -Wrap Disabled vStartButton", " Start (" StartHotkey ")").OnEvent("Click", nm_StartButton)
 MainGui.Add("Button", "x75 y260 w65 h20 -Wrap Disabled vPauseButton", " Pause (" PauseHotkey ")").OnEvent("Click", nm_PauseButton)
 MainGui.Add("Button", "x145 y260 w65 h20 -Wrap Disabled vStopButton", " Stop (" StopHotkey ")").OnEvent("Click", nm_StopButton)
-for k,v in ["PMondoGuid","PMondoGuidComplete","PFieldBoosted","PFieldGuidExtend","PFieldGuidExtendMins","PFieldBoostExtend","PPopStarExtend"]
-	%v%:=0
-#include "*i %A_ScriptDir%\..\settings\personal.ahk"
 
 ; add tabs
 TabArr := ["Gather","Collect/Kill","Boost","Quests","Planters","Status","Settings","Misc","Credits"], (BuffDetectReset = 1) && TabArr.Push("Advanced")
@@ -3206,6 +3307,7 @@ MainGui.Add("Text", "xs+6 ys+34 vMHarvestText Section" hidden, "Harvest every")
 MainGui.Add("Text", "xs+65 ys w48 vMHarvestInterval +Center +BackgroundTrans " hidden, MHarvestInterval)
 MainGui.Add("Button", "x471 ys w11 h14 vMHILeft Disabled" hidden, "<").OnEvent("Click", nm_MHarvestInterval)
 MainGui.Add("Button", "x484 ys w11 h14 vMHIRight Disabled" hidden, ">").OnEvent("Click", nm_MHarvestInterval)
+#include "*i %A_ScriptDir%\..\settings\personal.ahk"
 
 SetLoadingProgress(99)
 
@@ -3216,6 +3318,13 @@ SetLoadingProgress(100)
 ;unlock tabs
 nm_LockTabs(0)
 nm_setStatus("Startup", "UI")
+event("GuiLoaded")
+mod_string := "```````nmods`n"
+for k,v in mods {
+	mod_string .= "`t\" k "`n"
+}
+mod_string .= "``````"
+nm_setStatus("Mods loaded", "Successfully loaded " mods.Count " mod" (mods.Count = 1 ? "" : "s") mod_string)
 TabCtrl.Focus()
 MainGui.Title := "Natro Macro"
 MainGui["StartButton"].Enabled := 1
@@ -9757,12 +9866,13 @@ copyLogFile(*) {
 ; MAIN LOOP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 nm_Start(){
+	event("Start")
 	ActivateRoblox()
 	global serverStart := nowUnix()
 	Loop 
 		for i in priorityList
 			(%"nm_" i%)()
-	nm_planter() => (mp_Planter(),ba_planter())
+	nm_planter() => (event("MainLoopPlanter"), mp_Planter(),ba_planter())
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10751,7 +10861,7 @@ nm_findHiveSlot(){
 ;//todo: add: 1. cooldown detection, set Last__ according to detected time, 2. remove double loop for going to collects unless cooldown could not be detected
 nm_Collect(){
 	global GatherFieldBoostedStart, LastGlitter, resetTime
-
+	event("MainLoopCollect")
 	if ((VBState=1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
 		return
 
@@ -12282,6 +12392,7 @@ nm_StickerPrinter(){
 
 ;//todo: pending rewrite of detections?
 nm_Boost(){
+	event("MainLoopBoost")
 	if(VBState=1 || nm_MondoInterrupt())
 		return
 
@@ -12946,7 +13057,7 @@ nm_Bugrun(){
 		, SprinklerType
 		, TotalBossKills, SessionBossKills, TotalBugKills, SessionBugKills
 		, KingBeetleAmuletMode, ShellAmuletMode
-
+	event("MainLoopBugrun")
 	;interrupts
 	if ((VBState=1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
 		return
@@ -15121,6 +15232,7 @@ nm_Mondo(){
 	global VBState
 	;mondo buff
 	global MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter
+	event("MainLoopMondo")
 	if(VBState=1)
 		return
 	if nm_MondoInterrupt(){
@@ -15329,7 +15441,7 @@ nm_GoGather(){
 		, GameFrozenCounter
 		, BlackQuestCheck, BrownQuestCheck, BuckoQuestCheck, RileyQuestCheck, PolarQuestCheck
 		, BlackQuestComplete, BrownQuestComplete, BuckoQuestComplete, RileyQuestComplete, PolarQuestComplete
-
+	event("MainLoopBoost")
 	;VICIOUS BEE
 	if (VBState = 1)
 		return
@@ -16854,6 +16966,7 @@ DisconnectCheck(testCheck := 0)
 	; end any residual movement and set reconnect start time
 	Click "Up"
 	nm_endWalk()
+	event("Disconnec")
 	ReconnectStart := nowUnix()
 	nm_updateAction("Reconnect")
 
@@ -17032,10 +17145,12 @@ DisconnectCheck(testCheck := 0)
 				PostSubmacroMessage("Status", 0x5553, 10, 6)
 			}
 			PostSubmacroMessage("Status", 0x5552, 221, (server = 0))
-
+			event("SuccessfulReconnect")
 			if (testCheck || (nm_claimHiveSlot() = 1))
 				return 1
 		}
+		else
+			event("FailedReconnect")
 	}
 }
 LegacyReconnect(linkCode, i)
@@ -17519,6 +17634,7 @@ nm_ViciousCheck(){
 	return killed
 }
 nm_Night(){
+	event("MainLoopNight")
 	nm_NightMemoryMatch()
 	nm_locateVB()
 }
@@ -18038,7 +18154,7 @@ nm_hotbar(boost:=0){
 ;quest functions //todo: pending rewrite: lots of code duplication and inefficiencies!
 nm_QuestRotate(){
 	global QuestGatherField, RotateQuest, BlackQuestCheck, BlackQuestComplete, LastBlackQuest, BrownQuestCheck, BuckoQuestCheck, BuckoQuestComplete, RileyQuestCheck, RileyQuestComplete, HoneyQuestCheck, PolarQuestCheck, GatherFieldBoostedStart, LastGlitter, MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, VBState, bitmaps
-
+	event("MainLoopQuestRotate")
 	if ((BlackQuestCheck=0) && (BrownQuestCheck=0) && (BuckoQuestCheck=0) && (RileyQuestCheck=0) && (HoneyQuestCheck=0) && (PolarQuestCheck=0))
 		return
 	if ((VBState=1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
@@ -21950,6 +22066,7 @@ stop(*){
 	IniWrite SessionGatherTime, "settings\nm_config.ini", "Status", "SessionGatherTime"
 	IniWrite TotalConvertTime, "settings\nm_config.ini", "Status", "TotalConvertTime"
 	IniWrite SessionConvertTime, "settings\nm_config.ini", "Status", "SessionConvertTime"
+	event("Stop")
 	nm_setStatus("End", "Macro")
 	DetectHiddenWindows 1
 	MacroState:=0
@@ -22028,6 +22145,7 @@ nm_Pause(*){
 		nm_LockTabs(0)
 	}
 	Pause -1
+	event(A_IsPaused ? "Pause" : "Unpause")
 }
 ;AUTOCLICKER
 autoclicker(*){
@@ -22135,6 +22253,7 @@ nm_ForceReconnect(wParam, *){
 }
 nm_sendHeartbeat(*){
 	Critical
+	SetTimer((*)=>event("Heartbeat"), -1)
 	PostSubmacroMessage("Heartbeat", 0x5556, 1)
 	return 0
 }
@@ -22296,4 +22415,18 @@ nm_UpdateGUIVar(var)
 			MainGui[k].Value := %k%
 		}
 	}
+}
+event(eventname, args*) {
+    if !events.has(eventname) || !events[eventname] is Array || events[eventname].length = 0
+        return
+    for i, callback in events[eventname] {
+        if callback.HasProp("Call") {
+            try {
+                (callback)(args*)
+            }
+            catch Any as e {
+                nm_setStatus "Error", "Error in event callback: " eventname "`n" e.message
+            }
+        }
+    }
 }

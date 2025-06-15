@@ -3,6 +3,8 @@
 
 # Settings
 settings/*
+# Mods
+mods/*
 
 # Miscellaneous
 *~
