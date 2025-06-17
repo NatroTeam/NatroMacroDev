@@ -10474,6 +10474,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		nm_SolveMemoryMatch()
 
 		nm_setStatus("Resetting", "Character " . Mod(A_Index, 10))
+		event("Reset")
 		MouseMove windowX+350, windowY+offsetY+100
 		PrevKeyDelay:=A_KeyDelay
 		SetKeyDelay 250+KeyDelay
@@ -10932,6 +10933,7 @@ nm_Clock(){
 
 		LastClock:=nowUnix()
 		IniWrite LastClock, "settings\nm_config.ini", "Collect", "LastClock"
+		event("Clock")
 		if beesmasActive
 			nm_Stockings(1)
 	}
@@ -11210,6 +11212,7 @@ nm_Ant() { ;collect Ant Pass then do Challenge
 					nm_setStatus("Attacking", "Ant Challenge")
 					Sleep 500
 					send "{" SC_1 "}"
+					event("AntChallenge")
 					movement :=
 					(
 					nm_Walk(9, BackKey) "
@@ -11312,6 +11315,7 @@ nm_RoboPass(){
 				Sleep 500
 				nm_setStatus("Collected", "Robo Pass")
 				++RoboPassNum
+				event("Dispenser")
 				break
 			}
 			else {
@@ -11358,6 +11362,7 @@ nm_HoneyDis(){
 				sendinput "{" SC_E " up}"
 				Sleep 500
 				nm_setStatus("Collected", "Honey Dispenser")
+				event("Dispenser")
 				break
 			}
 		}
@@ -11386,6 +11391,7 @@ nm_TreatDis(){
 				sendinput "{" SC_E " up}"
 				Sleep 500
 				nm_setStatus("Collected", "Treat Dispenser")
+				event("Dispenser")
 				break
 			}
 		}
@@ -11414,6 +11420,7 @@ nm_BlueberryDis(){
 				sendinput "{" SC_E " up}"
 				sleep 500
 				nm_setStatus("Collected", "Blueberry Dispenser")
+				event("Dispenser")
 				break
 			}
 		}
@@ -11442,6 +11449,7 @@ nm_StrawberryDis(){
 				sendinput "{" SC_E " up}"
 				sleep 500
 				nm_setStatus("Collected", "Strawberry Dispenser")
+				event("Dispenser")
 				break
 			}
 		}
@@ -11470,6 +11478,7 @@ nm_CoconutDis(){
 				sendinput "{" SC_E " up}"
 				sleep 500
 				nm_setStatus("Collected", "Coconut Dispenser")
+				event("Dispenser")
 				break
 			}
 		}
@@ -11520,6 +11529,7 @@ nm_GlueDis(){
 				sendinput "{" SC_E " up}"
 				Sleep 1000
 				nm_setStatus("Collected", "Glue Dispenser")
+				event("Dispenser")
 				break
 			}
 		}
@@ -11548,6 +11558,7 @@ nm_RoyalJellyDis(){
 				sendinput "{" SC_E " up}"
 				Sleep 500
 				nm_setStatus("Collected", "Royal Jelly Dispenser")
+				event("Dispenser")
 				sleep 10000
 				break
 			}
@@ -12291,6 +12302,7 @@ nm_Honeystorm(fromSnowMachine:=0){
 	updateConfig() {
 		LastHoneystorm:=nowUnix()
 		IniWrite LastHoneystorm, "settings\nm_config.ini", "Collect", "LastHoneystorm"
+		event("Honeystorm")
 	}
 }
 nm_HoneyLB(){ ;Daily Honey LB
@@ -15241,6 +15253,7 @@ nm_Mondo(){
 		If (mondobuff[1] = 0) {
 			LastMondoBuff:=nowUnix()
 			IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
+			event("MondoBuff")
 			return
 		}
 		repeat:=1
@@ -15369,6 +15382,7 @@ nm_Mondo(){
 							sleep 250
 						}
 						if (success = 1) {
+							event("MondoDead")
 							nm_setStatus("Defeated", "Mondo")
 							repeat := 0
 							if !(MondoLootDirection = "Ignore") {
@@ -15417,6 +15431,7 @@ nm_Mondo(){
 		}
 		LastMondoBuff:=nowUnix()
 		IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
+		event("MondoBuff")
 	}
 }
 nm_GoGather(){
@@ -15442,7 +15457,7 @@ nm_GoGather(){
 		, GameFrozenCounter
 		, BlackQuestCheck, BrownQuestCheck, BuckoQuestCheck, RileyQuestCheck, PolarQuestCheck
 		, BlackQuestComplete, BrownQuestComplete, BuckoQuestComplete, RileyQuestComplete, PolarQuestComplete
-	event("MainLoopBoost")
+	event("MainLoopGoGather")
 	;VICIOUS BEE
 	if (VBState = 1)
 		return
@@ -16967,7 +16982,7 @@ DisconnectCheck(testCheck := 0)
 	; end any residual movement and set reconnect start time
 	Click "Up"
 	nm_endWalk()
-	event("Disconnec")
+	event("Disconnect")
 	ReconnectStart := nowUnix()
 	nm_updateAction("Reconnect")
 
@@ -17050,6 +17065,7 @@ DisconnectCheck(testCheck := 0)
 				}
 				if (A_Index = 240) {
 					nm_setStatus("Error", "No Roblox Found`nRetry: " i)
+					event("FailedReconnect")
 					break 2
 				}
 				Sleep 1000 ; timeout 4 mins, wait for any Roblox update to finish
@@ -17090,6 +17106,7 @@ DisconnectCheck(testCheck := 0)
 				ActivateRoblox()
 				if !GetRobloxClientPos() {
 					nm_setStatus("Warning", "Disconnected during Reconnect")
+					event("FailedReconnect")
 					continue 2
 				}
 				pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY+30 "|" windowWidth "|" windowHeight-30)
@@ -17102,6 +17119,7 @@ DisconnectCheck(testCheck := 0)
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["disconnected"], , , , , , 2) = 1) {
 					Gdip_DisposeImage(pBMScreen)
 					nm_setStatus("Warning", "Disconnected during Reconnect")
+					event("FailedReconnect")
 					continue 2
 				}
 				Gdip_DisposeImage(pBMScreen)
@@ -17587,6 +17605,7 @@ nm_ViciousCheck(){
 		if(nm_imgSearch("VBfoundSymbol2.png", 50, "highright")[1]=0){
 			VBState:=2
 			VBLastKilled:=nowUnix()
+			event("ViciousBeeFound")
 			;send VBState to background.ahk
 			PostSubmacroMessage("background", 0x5554, 3, VBState)
 			PostSubmacroMessage("background", 0x5554, 5, VBLastKilled)
@@ -17623,6 +17642,7 @@ nm_ViciousCheck(){
 				IniWrite TotalViciousKills, "settings\nm_config.ini", "Status", "TotalViciousKills"
 				IniWrite SessionViciousKills, "settings\nm_config.ini", "Status", "SessionViciousKills"
 				killed := 1
+				event("ViciousBeeKilled")
 			}
 		} else { ;it has been greater than 10 minutes since VB was found
 				VBState:=0
@@ -20932,6 +20952,7 @@ ba_placePlanter(fieldName, planter, planterNum, atField:=0){
 				sleep 100
 				Gdip_DisposeImage(pBMScreen)
 				MouseMove windowX+350, windowY+offsetY+100
+				event("PlanterPlaced")
 				break 2
 			}
 			Gdip_DisposeImage(pBMScreen)
@@ -21074,6 +21095,7 @@ ba_harvestPlanter(planterNum){
 					Gdip_DisposeImage(pBMScreen)
 					If PlanterHarvestNow%planterNum%
 						IniWrite 0, "settings\nm_config.ini", "Planters", "PlanterHarvestNow" planterNum
+					event("PlanterCollected")
 					break
 				}
 				Gdip_DisposeImage(pBMScreen)
@@ -21436,6 +21458,7 @@ mp_PlantPlanter(PlanterIndex) {
 				sleep 100
 				Gdip_DisposeImage(pBMScreen)
 				MouseMove windowX+350, windowY+offsetY+100
+				event("PlanterPlaced")
 				break 2
 			}
 			Gdip_DisposeImage(pBMScreen)
@@ -21715,6 +21738,7 @@ mp_HarvestPlanter(PlanterIndex) {
 					sleep 100
 					Gdip_DisposeImage(pBMScreen)
 					MouseMove windowX+350, windowY+offsetY+100
+					event("PlanterCollected")
 					break
 				}
 				Gdip_DisposeImage(pBMScreen)
@@ -22262,8 +22286,9 @@ nm_backgroundEvent(wParam, lParam, *){
 	Critical
 	global youDied, NightLastDetected, VBState, BackpackPercent, BackpackPercentFiltered, FieldGuidDetected, HasPopStar, PopStarActive
 	static arr:=["youDied", "NightLastDetected", "VBState", "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive"]
-
 	var := arr[wParam], %var% := lParam
+	((var == "youDied") && event("died"))
+	((var == "VBState") && event("night"))
 	return 0
 }
 nm_setGlobalStr(wParam, lParam, *)
