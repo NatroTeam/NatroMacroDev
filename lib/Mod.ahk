@@ -17,5 +17,6 @@ class ModBuilder extends Map {
     }
     add_setting(key, value) {
         this["config"][key] := value
+        return this
     }
 }

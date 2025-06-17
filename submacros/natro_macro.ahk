@@ -2242,11 +2242,12 @@ nm_AutoUpdateGUI(*)
 
 	UpdateGui.SetFont("s8 w700")
 	local MajorUpdate := (StrSplit(VersionID, ".")[1] < StrSplit(LatestVer, ".")[1])
-	UpdateGui.Add("GroupBox", "x50 y+4 w200 h" (MajorUpdate ? 74 : 50), "Options")
+	UpdateGui.Add("GroupBox", "x8 y+4 w284 h" (MajorUpdate ? 74 : 50), "Options")
 	UpdateGui.SetFont("Norm")
 	UpdateGui.Add("CheckBox", "xp+8 yp+16 Checked vCopySettings", "Copy Settings")
 	UpdateGui.Add("CheckBox", "xp+92 yp vCopyPatterns Checked" (!MajorUpdate) " Disabled" MajorUpdate, "Copy Patterns")
-	UpdateGui.Add("CheckBox", "xp-92 yp+16 vCopyPaths Checked" (!MajorUpdate) " Disabled" MajorUpdate, "Copy Paths")
+	UpdateGui.Add("CheckBox", "xp+92 yp vCopyMods Disabled" MajorUpdate, "Copy Mods")
+	UpdateGui.Add("CheckBox", "xp-184 yp+16 vCopyPaths Checked" (!MajorUpdate) " Disabled" MajorUpdate, "Copy Paths")
 	UpdateGui.Add("CheckBox", "xp+92 yp vDeleteOld", "Delete v" VersionID)
 	if MajorUpdate
 		UpdateGui.Add("Button", "x60 y+5 w180 h18", "Why are some options disabled?").OnEvent("Click", nm_MajorUpdateHelp)
@@ -2307,6 +2308,7 @@ nm_UpdateButton(*)
 	olddir := A_WorkingDir
 	CopySettings := UpdateGui["CopySettings"].Value
 	CopyPatterns := UpdateGui["CopyPatterns"].Value
+	CopyMods := UpdateGui["CopyMods"].Value
 	CopyPaths := UpdateGui["CopyPaths"].Value
 	DeleteOld := UpdateGui["DeleteOld"].Value
 	changedpaths := ""
@@ -2343,8 +2345,7 @@ nm_UpdateButton(*)
 			return
 		}
 	}
-
-	Run '"' A_WorkingDir '\submacros\update.bat" "' url '" "' olddir '" "' CopySettings '" "' CopyPatterns '" "' CopyPaths '" "' DeleteOld '" "' changedpaths '"'
+	Run '"' A_WorkingDir '\submacros\update.bat" "' url '" "' olddir '" "' CopySettings '" "' CopyPatterns '" "' CopyPaths '" "' DeleteOld '" "' CopyMods '" "' changedpaths '"'
 	ExitApp
 }
 nm_MajorUpdateHelp(*)

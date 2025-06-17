@@ -61,7 +61,7 @@ echo:
     :: copy paths
     if %~5 == 1 (
         echo %blue%Copying paths...%reset%
-        robocopy "%~2\paths" "!folder!\paths" /E /XF %~7 > nul
+        robocopy "%~2\paths" "!folder!\paths" /E /XF %~8 > nul
         echo %blue%Copy complete^^!%reset%
         echo:
     )
@@ -70,6 +70,13 @@ echo:
         echo %blue%Deleting %~nx2...%reset%
         rd /s /q "%~2" >nul
         echo %blue%Deleted successfully^^!%reset%
+        echo:
+    )
+    :: copy mods
+    if %~7 == 1 (
+        echo %blue%Copying mods...%reset%
+        robocopy "%~2\mods" "!folder!\mods" /E > nul
+        echo %blue%Copy complete^^!%reset%
         echo:
     )
     :: update autostart
