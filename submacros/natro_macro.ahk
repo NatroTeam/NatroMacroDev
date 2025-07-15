@@ -107,6 +107,7 @@ OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
+OnMessage(0x5560, nm_copyDebugLog)
 
 ; set version identifier
 VersionID := "1.0.1"
@@ -338,7 +339,8 @@ nm_importConfig()
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
 		, "FDCWarn", 1
-		, "priorityListNumeric", 12345678)
+		, "priorityListNumeric", 12345678
+		, "DebugHotkey", "F6")
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -2063,7 +2065,7 @@ TraySetIcon "nm_image_assets\auryn.ico"
 A_TrayMenu.Delete()
 A_TrayMenu.Add()
 A_TrayMenu.Add("Open Logs", (*) => ListLines())
-A_TrayMenu.Add("Copy Logs", copyLogFile)
+A_TrayMenu.Add("Copy Logs", nm_copyDebugLog)
 A_TrayMenu.Add()
 
 A_TrayMenu.Add("Edit This Script", (*) => Edit())
@@ -2124,7 +2126,7 @@ nm_AutoUpdateGUI(*)
 			UpdateGui.Destroy(), UpdateGui := ""
 	}
 	GuiClose()
-	UpdateGui := Gui("+Border +Owner" MainGui.Hwnd " -MinimizeBox", "Natro Macro Update")
+	UpdateGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Natro Macro Update")
 	UpdateGui.OnEvent("Close", GuiClose), UpdateGui.OnEvent("Escape", GuiClose)
 	UpdateGui.SetFont("s9 cDefault Norm", "Tahoma")
 	UpdateText := UpdateGui.Add("Text", "x20 w260 +Center +BackgroundTrans", "A newer version of Natro Macro was found!`nDo you want to update now?")
@@ -2510,7 +2512,7 @@ MainGui.Add("Button", "x175 y124 w150 h40 vBondCalculatorButton Disabled", "Bond
 MainGui.Add("Button", "x175 y184 w150 h42 vAutoClickerGUI Disabled", "AutoClicker`nSettings").OnEvent("Click", nm_AutoClickerButton)
 ;macro tools
 MainGui.Add("Button", "x340 y40 w150 h20 vHotkeyGUI Disabled", "Change Hotkeys").OnEvent("Click", nm_HotkeyGUI)
-MainGui.Add("Button", "x340 y62 w150 h20 vDebugLogGUI Disabled", "Debug Log Options").OnEvent("Click", nm_DebugLogGUI)
+MainGui.Add("Button", "x340 y62 w150 h20 vDebugLogGUI Disabled", "Debug Options").OnEvent("Click", nm_DebugLogGUI)
 MainGui.Add("Button", "x340 y84 w150 h20 vAutoStartManagerGUI Disabled", "Auto-Start Manager").OnEvent("Click", nm_AutoStartManager)
 ;discord tools
 MainGui.Add("Button", "x340 y124 w150 h40 vNightAnnouncementGUI Disabled", "Night Detection`nAnnouncement").OnEvent("Click", nm_NightAnnouncementGUI)
@@ -3223,6 +3225,7 @@ try {
 	Hotkey PauseHotkey, nm_pause, "On"
 	Hotkey AutoClickerHotkey, autoclicker, "On T2"
 	Hotkey TimersHotkey, timers, "On"
+	Hotkey DebugHotkey, nm_copyDebugLog, "On"
 }
 
 SetTimer Background, 2000
@@ -4143,6 +4146,37 @@ nm_ShowErrorBalloonTip(Ctrl, Title, Text){
 		, "Ptr", StrPtr(Text)
 		, "UInt", 3, EBT)
 	DllCall("SendMessage", "UPtr", Ctrl.Hwnd, "UInt", 0x1503, "Ptr", 0, "Ptr", EBT.Ptr, "Ptr")
+}
+
+;cursor changing
+ReplaceSystemCursors(IDC := "")
+{
+	static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
+	static SysCursors := Map("IDC_APPSTARTING", 32650
+		, "IDC_ARROW", 32512
+		, "IDC_CROSS", 32515
+		, "IDC_HAND", 32649
+		, "IDC_HELP", 32651
+		, "IDC_IBEAM", 32513
+		, "IDC_NO", 32648
+		, "IDC_SIZEALL", 32646
+		, "IDC_SIZENESW", 32643
+		, "IDC_SIZENWSE", 32642
+		, "IDC_SIZEWE", 32644
+		, "IDC_SIZENS", 32645
+		, "IDC_UPARROW", 32516
+		, "IDC_WAIT", 32514)
+	if !IDC
+		DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
+	else
+	{
+		hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
+		for k, v in SysCursors
+		{
+			hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
+			DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
+		}
+	}
 }
 
 ;text control positioning functions
@@ -5534,7 +5568,7 @@ nm_BoostedFieldSelectButton(*){
 			BoostedFieldSelectGui.Destroy(), BoostedFieldSelectGui := ""
 	}
 	GuiClose()
-	BoostedFieldSelectGui := Gui("+AlwaysOnTop +Border", "Select boosted gather fields")
+	BoostedFieldSelectGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Select boosted gather fields")
 	BoostedFieldSelectGui.OnEvent("Close", GuiClose)
 	BoostedFieldSelectGui.Add("Text", "x9 y10", "
 	(
@@ -5586,7 +5620,7 @@ nm_autoFieldBoostGui(*){
 			AFBGui.Destroy(), AFBGui := ""
 	}
 	GuiClose()
-	AFBGui := Gui("+Border", "Auto Field Boost Settings")
+	AFBGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Auto Field Boost Settings")
 	AFBGui.OnEvent("Close", GuiClose)
 	AFBGui.SetFont("s8 cDefault Norm", "Tahoma")
 	AFBGui.Add("CheckBox", "x5 y5 vAutoFieldBoostActive Checked" AutoFieldBoostActive, "Activate Automatic Field Boost for Gathering Field:").OnEvent("Click", nm_autoFieldBoostCheck)
@@ -7274,7 +7308,7 @@ nm_ResetFieldDefaultGUI(*){
 			FieldDefaultGui.Destroy(), FieldDefaultGui := ""
 	}
 	GuiClose()
-	FieldDefaultGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Reset Field Defaults")
+	FieldDefaultGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Reset Field Defaults")
 	FieldDefaultGui.OnEvent("Close", GuiClose)
 	FieldDefaultGui.SetFont("s9 cDefault Norm", "Tahoma")
 	i := 0
@@ -8083,7 +8117,7 @@ nm_AutoClickerButton(*)
 			AutoClickerGui.Destroy(), AutoClickerGui := ""
 	}
 	GuiClose()
-	AutoClickerGui := Gui("+AlwaysOnTop +Border", "AutoClicker")
+	AutoClickerGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "AutoClicker")
 	AutoClickerGui.OnEvent("Close", GuiClose)
 	AutoClickerGui.SetFont("s8 cDefault w700", "Tahoma")
 	AutoClickerGui.Add("GroupBox", "x5 y2 w161 h80", "Settings")
@@ -8129,21 +8163,27 @@ nm_HotkeyGUI(*){
 	HotkeyGui.OnEvent("Close", GuiClose)
 	HotkeyGui.SetFont("s8 cDefault Bold", "Tahoma")
 	HotkeyGui.Add("GroupBox", "x5 y2 w190 h144", "Change Hotkeys")
-	HotkeyGui.Add("GroupBox", "x5 y146 w190 h34", "Settings")
 	HotkeyGui.SetFont("Norm")
 	HotkeyGui.Add("Text", "x10 y23 w60 +BackgroundTrans", "Start:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Pause:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Stop:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "AutoClicker:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Timers:")
+	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Debug Report:")
 	HotkeyGui.Add("Hotkey", "x70 y20 w120 h18 vStartHotkeyEdit", StartHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vPauseHotkeyEdit", PauseHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vStopHotkeyEdit", StopHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vAutoClickerHotkeyEdit", AutoClickerHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vTimersHotkeyEdit", TimersHotkey).OnEvent("Change", nm_saveHotkey)
-	HotkeyGui.Add("Button", "x30 yp+24 w140 h20", "Restore Defaults").OnEvent("Click", nm_ResetHotkeys)
-	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 y162 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
-	HotkeyGui.Show("w190 h175")
+	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vDebugHotkeyEdit", DebugHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Button", "x30 yp+20 w140 h20", "Restore Defaults").OnEvent("Click", nm_ResetHotkeys)
+
+	HotkeyGui.SetFont("s8 cDefault Bold", "Tahoma")
+	HotkeyGui.Add("GroupBox", "x5 yp+22 w190 h34", "Settings")
+	HotkeyGui.SetFont("Norm")
+	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 yp+16 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+
+	HotkeyGui.Show("w190 h190")
 }
 nm_ResetHotkeys(*){
 	global
@@ -8153,17 +8193,20 @@ nm_ResetHotkeys(*){
 		Hotkey StopHotkey, stop, "Off"
 		Hotkey AutoClickerHotkey, autoclicker, "Off"
 		Hotkey TimersHotkey, timers, "Off"
+		Hotkey DebugHotkey, nm_copyDebugLog, "Off"
 	}
 	IniWrite (StartHotkey := "F1"), "settings\nm_config.ini", "Settings", "StartHotkey"
 	IniWrite (PauseHotkey := "F2"), "settings\nm_config.ini", "Settings", "PauseHotkey"
 	IniWrite (StopHotkey := "F3"), "settings\nm_config.ini", "Settings", "StopHotkey"
 	IniWrite (AutoClickerHotkey := "F4"), "settings\nm_config.ini", "Settings", "AutoClickerHotkey"
 	IniWrite (TimersHotkey := "F5"), "settings\nm_config.ini", "Settings", "TimersHotkey"
+	IniWrite (DebugHotkey := "F6"), "settings\nm_config.ini", "Settings", "DebugHotkey"
 	HotkeyGui["StartHotkeyEdit"].Value := "F1"
 	HotkeyGui["PauseHotkeyEdit"].Value := "F2"
 	HotkeyGui["StopHotkeyEdit"].Value := "F3"
 	HotkeyGui["AutoClickerHotkeyEdit"].Value := "F4"
 	HotkeyGui["TimersHotkeyEdit"].Value := "F5"
+	HotkeyGui["DebugHotkeyEdit"].Value := "F6"
 	MainGui["StartButton"].Text := " Start (F1)"
 	MainGui["PauseButton"].Text := " Pause (F2)"
 	MainGui["StopButton"].Text := " Stop (F3)"
@@ -8175,11 +8218,12 @@ nm_ResetHotkeys(*){
 		Hotkey StopHotkey, stop, "On"
 		Hotkey AutoClickerHotkey, autoclicker, "On T2"
 		Hotkey TimersHotkey, timers, "On"
+		Hotkey DebugHotkey, nm_copyDebugLog, "On"
 	}
 }
 nm_saveHotkey(GuiCtrl, *){
 	global
-	local k, v, l, NewHotkey, StartHotkeyEdit, PauseHotkeyEdit, StopHotkeyEdit, TimersHotkeyEdit, AutoClickerHotkeyEdit
+	local k, v, l, NewHotkey, StartHotkeyEdit, PauseHotkeyEdit, StopHotkeyEdit, TimersHotkeyEdit, AutoClickerHotkeyEdit, DebugHotkeyEdit
 	k := GuiCtrl.Name, %k% := GuiCtrl.Value
 
 	v := StrReplace(k, "Edit")
@@ -8199,15 +8243,16 @@ nm_saveHotkey(GuiCtrl, *){
 			return
 		}
 
-		if ((StrLen(%k%) = 0) || (%k% = StartHotkey) || (%k% = PauseHotkey) || (%k% = StopHotkey) || (%k% = AutoClickerHotkey) || (%k% = TimersHotkey)) ; do not allow empty or already used hotkey (not necessary in most cases)
+		if ((StrLen(%k%) = 0) || (%k% = StartHotkey) || (%k% = PauseHotkey) || (%k% = StopHotkey) || (%k% = AutoClickerHotkey) || (%k% = TimersHotkey) || (%k% = DebugHotkey)) ; do not allow empty or already used hotkey (not necessary in most cases)
 			GuiCtrl.Value := %v%
 		else ; update the hotkey
 		{
 			l := StrReplace(v, "Hotkey")
-			try Hotkey %v%, (l = "Pause") ? nm_Pause : %l%, "Off"
+			try Hotkey %v%, (l = "Pause") ? nm_Pause : (l = "Debug") ? nm_copyDebugLog : %l%, "Off"
 			IniWrite (%v% := %k%), "settings\nm_config.ini", "Settings", v
-			MainGui[l "Button"].Text := ((l = "Timers") ? " Show " : (l = "AutoClicker") ? "" : " ") l " (" %v% ")"
-			try Hotkey %v%, (l = "Pause") ? nm_Pause : %l%, (v = "AutoClickerHotkey") ? "On T2" : "On"
+			if l != "Debug"
+				MainGui[l "Button"].Text := ((l = "Timers") ? " Show " : (l = "AutoClicker") ? "" : " ") l " (" %v% ")"
+			try Hotkey %v%, (l = "Pause") ? nm_Pause : (l = "Debug") ? nm_copyDebugLog : %l%, (v = "AutoClickerHotkey") ? "On T2" : "On"
 		}
 	}
 }
@@ -8218,12 +8263,12 @@ nm_DebugLogGUI(*){
 			DebugLogGui.Destroy(), DebugLogGui := ""
 	}
 	GuiClose()
-	DebugLogGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Debug Log Options")
+	DebugLogGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Debug Options")
 	DebugLogGui.OnEvent("Close", GuiClose)
 	DebugLogGui.SetFont("s8 cDefault Norm", "Tahoma")
 	DebugLogGui.Add("CheckBox", "x10 y6 vDebugLogEnabled Checked" DebugLogEnabled, "Enable Debug Logging").OnEvent("Click", nm_DebugLogCheck)
 	DebugLogGui.Add("Button", "xp+140 y5 h16", "Go To File").OnEvent("Click", (*) => Run('explorer.exe /e, /n, /select,"' A_WorkingDir '\settings\debug_log.txt"'))
-	DebugLogGui.Add("Button", "xp yp+20 hp wp", "Copy Logs").OnEvent("Click", copyLogFile)
+	DebugLogGui.Add("Button", "x10 yp+20 hp w200", "Copy Logs (" DebugHotkey ")").OnEvent("Click", nm_copyDebugLog)
 	DebugLogGui.Show("w210 h36")
 }
 nm_DebugLogCheck(*){
@@ -8268,7 +8313,7 @@ nm_AutoStartManager(*){
 			ASMGui.Destroy(), ASMGui := ""
 	}
 	GuiClose()
-	ASMGui := Gui("+AlwaysOnTop -MinimizeBox", "Auto-Start Manager")
+	ASMGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Auto-Start Manager")
 	ASMGui.OnEvent("Close", GuiClose)
 	ASMGui.SetFont("s11 cDefault Bold", "Tahoma")
 	ASMGui.Add("Text", "x0 y4 vStatusLabel", "Current Status: ")
@@ -8359,7 +8404,7 @@ nm_NightAnnouncementGUI(*){
 			NightGui.Destroy(), NightGui := ""
 	}
 	GuiClose()
-	NightGui := Gui("+AlwaysOnTop +Border", "Announce Night Detection")
+	NightGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Announce Night Detection")
 	NightGui.OnEvent("Close", GuiClose)
 	NightGui.SetFont("s8 cDefault Bold", "Tahoma")
 	NightGui.Add("GroupBox", "x5 y2 w290 h65", "Settings")
@@ -9713,44 +9758,156 @@ nm_priorityListGui(*) {
 
 	return (PGUIPID := exec.ProcessID)
 }
+nm_copyDebugLog(param:="", *) {
+	static os_version := "", processorName := "", RAMAmount := 0
+	, robloxtype:="", robloxpath:="", uwppath:=""
 
-copyLogFile(*) {
-	static tempPath := A_Temp "\debug_log.txt", os_version := "Cannot detect OS version", processorName := '', RAMAmount := 0
-	alt := !!GetKeyState("Control")
-	if ((!processorName) || (os_version = "Cannot detect OS version"))
-		winmgmts := ComObjGet("winmgmts:")
-	if (os_version = "Cannot detect OS version") {
-		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_OperatingSystem")
-			os_version := Trim(StrReplace(StrReplace(StrReplace(StrReplace(objItem.Caption, "Microsoft"), "Майкрософт"), "مايكروسوفت"), "微软"))
-	}
-	if (!processorName){
-		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_Processor")
-			processorName := Trim(objItem.Name)
-	}
-	if (!RAMAmount) {
-		MEMORYSTATUSEX := Buffer(64,0)
-		NumPut("uint", 64, MEMORYSTATUSEX)
-		DllCall("kernel32\GlobalMemoryStatusEx", "ptr", MEMORYSTATUSEX)
-		RAMAmount := Round(NumGet(MEMORYSTATUSEX, 8, "int64") / 1073741824, 1)
-	}
-	out :=	
+	fromRC := (param is number && param = 1)
+
+	ReplaceSystemCursors("IDC_WAIT") ; wait cursor: getting sys components takes a bit (!): not animated
+
+	debugReport :=
 	(
 	'``````md
-	# Info -----------------------------------------------
-	OSVersion: ' os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')
-	AutoHotkey Version: ' A_AhkVersion '; ' (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? "Using included AHK" : "Using installed AHK") '
-	Natro Version: ' VersionID '
-	Installation Path: ' StrReplace(A_WorkingDir, A_UserName, '<user>')
-	. (processorName ? '`r`nCPU: ' processorName : '')
-	. (RAMAmount ? '`r`nRAM: ' RAMAmount 'GB' : '')
+	<NM Debug>
+	PC Info
+	-----------------------------------------------'
+	PcInfo()
 	'
-	# Latest Logs ----------------------------------------
+
+	Macro Info
+	-----------------------------------------------'
+	MacroInfo()
 	'
+
+	Roblox Info
+	-----------------------------------------------'
+	RobloxInfo()
+	'
+
+	Detected Problems
+	-----------------------------------------------'
+	DetectedProblems()
+	'
+
+	Recent issues
+	-----------------------------------------------'
+	RecentIssues()
+	'``````'
 	)
-	LatestDebuglog := FileRead(".\settings\debug_log.txt")
-	out .= SubStr(LatestDebugLog, InStr(LatestDebuglog, "`n", , ,-(alt ? 40 : 26)) + 1) "``````" ;InStr: retrieve the last 25 lines of the debug log (log is oldest to newest) [Integer] | SubStr: retrieve the content of the last 25 lines
-	A_Clipboard := out
-	MsgBox("Copied Debug stats to your clipboard.", "Copy Debug Logs", 0x40040)
+	A_Clipboard := debugReport
+	ReplaceSystemCursors() ;reset back
+	if !fromRC
+		MsgBox("Copied Debug report to your clipboard.", "Copy Debug Logs", 0x40040)
+
+	return 1
+
+	PcInfo(){
+		static DisplayScale := Map(
+		96, 100,
+		120, 125,
+		144, 150,
+		192, 200
+		)
+		if fromRC {
+			return 
+			(
+			'
+			%OS%
+			* Resolution: ' A_ScreenWidth 'x' A_ScreenHeight ' (' DisplayScale[A_ScreenDPI] '%)
+			%CPU%
+			%RAM%'
+			)
+		}
+		winmgmts := ComObjGet("winmgmts:")
+		if (!os_version) {
+			for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_OperatingSystem")
+				os_version := Trim(StrReplace(StrReplace(StrReplace(StrReplace(objItem.Caption, "Microsoft"), "Майкрософт"), "مايكروسوفت"), "微软"))
+		}
+		if (!processorName){
+			for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_Processor")
+				processorName := Trim(objItem.Name)
+		}
+		if (!RAMAmount) {
+			MEMORYSTATUSEX := Buffer(64,0)
+			NumPut("uint", 64, MEMORYSTATUSEX)
+			DllCall("kernel32\GlobalMemoryStatusEx", "ptr", MEMORYSTATUSEX)
+			RAMAmount := Round(NumGet(MEMORYSTATUSEX, 8, "int64") / 1073741824, 1)
+		}
+
+		return
+		(
+		'
+		* OS: ' os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')
+		* Resolution: ' A_ScreenWidth 'x' A_ScreenHeight ' (' DisplayScale[A_ScreenDPI] '%)'
+		. (processorName ? '`n* CPU: ' processorName : '')
+		. (RAMAmount ? '`n* RAM: ' RAMAmount ' GB' : '')
+		)
+	}
+	MacroInfo(){
+		return 
+		(
+		'
+		* AHK Version: ' A_AhkVersion (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? ' (built-in)' : ' (installed)') '
+		* Natro Version: ' VersionID ' (' ((VerCompare(VersionID, LatestVer) = 0) ? 'latest' : 'outdated') ')
+		* Installation Path: ``' StrReplace(A_WorkingDir, A_UserName, '<user>') '``'
+	)
+	}
+	RobloxInfo(){
+		if (!robloxtype) {
+			try robloxpath := RegRead("HKCR\roblox\shell\open\command")
+			try uwppath := RegRead("HKCR\roblox")
+
+			if (InStr(robloxpath, "Bloxstrap"))
+				robloxtype := "Bloxstrap"
+			else if (InStr(robloxpath, "RobloxPlayerInstaller"))
+				robloxtype := "Web Version"
+			else if robloxpath
+				robloxtype := "Custom (Web)"
+			else if (uwppath = "URL:Roblox")
+				robloxtype := "UWP"
+			else 
+				robloxtype := "Not found"
+		}
+		return 
+		(
+		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, A_UserName, '<user>'), '%1'), '"')) : '') '``
+		* Default app: ' robloxtype
+		)
+	}
+	DetectedProblems(){
+		problems := 0
+		return (
+			checkProblem((A_ScreenDPI != 96), 'Display Scale not 100%')
+			checkProblem((robloxtype = "Not found" || robloxtype = "Custom"),'Roblox not found or using a custom install')
+			checkProblem((robloxtype = "Bloxstrap"), 'Using Bloxstrap (check config)')
+			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 800), 'Low Screen Resolution')
+			checkProblem((offsetfail ?? 0), 'Recent Yoffset Fail')
+			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro version')
+
+			(problems = 0 ? '`n<None>' : '`n`n> Total: ' problems)
+		)
+		checkProblem(condition, text) => ((condition) ? ('`r`n' (++problems) '. ' text) : '')
+	}
+	RecentIssues(){
+		if (DebugLogEnabled = 0)
+			return '`n<Debugging disabled>'
+		latestDebuglog := FileRead('.\settings\debug_log.txt')
+		latestLogs := SubStr(latestDebugLog, InStr(latestDebuglog, '`n', 0, -1, -250))
+		issues := '', totalissues := 0
+
+		loop parse latestLogs, '`r`n' {
+			if InStr(A_LoopField, 'Error') || InStr(A_LoopField, 'Warning') || InStr(A_LoopField, 'Failed'){
+				issues .= (++totalissues) '. ' A_LoopField
+				if totalissues > 10
+					break
+			}
+		}
+		if !issues
+			return '`n<None>'
+
+		return '`n' issues '`n`n> Total: ' totalissues
+	}
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
