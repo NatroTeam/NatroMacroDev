@@ -309,6 +309,7 @@ nm_importConfig()
 		, "DisableToolUse", 0
 		, "AnnounceGuidingStar", 0
 		, "EnablePowerfulCommands", 0
+		, "AllowedUIDs", ""
 		, "NewWalk", 1
 		, "HiveSlot", 6
 		, "HiveBees", 50
@@ -7279,6 +7280,12 @@ nm_EnablePowerfulCommands(GuiCtrl, *){
 			IniWrite (GuiCtrl.Value := EnablePowerfulCommands := 0), "settings\nm_config.ini", "Settings", "EnablePowerfulCommands"
 	}
 }
+nm_saveAllowedUIDs(GuiCtrl, *) {
+	global AllowedUIDs
+	p := EditGetCurrentCol(GuiCtrl)
+	AllowedUIDs := GuiCtrl.Value
+	IniWrite AllowedUIDs, "settings\nm_config.ini", "Settings", "AllowedUIDs"
+}
 nm_ResetConfig(*){
 	if (MsgBox("
 	(
@@ -9391,8 +9398,10 @@ nm_AdvancedGUI(init:=0){
 	;danger
 	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
 	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
-	GuiCtrl := MainGui.Add("CheckBox", "x10 y154 vEnablePowerfulCommands Disabled Checked" EnablePowerfulCommands, "Enable Powerful Commands").OnEvent("Click", nm_EnablePowerfulCommands)
-	MainGui.Add("Button", "xp+150 yp w12 h14","?").OnEvent("Click", RCCommandInfo)
+	GuiCtrl := MainGui.Add("CheckBox", "x10 y150 vEnablePowerfulCommands Disabled Checked" EnablePowerfulCommands, "Enable Powerful Commands").OnEvent("Click", nm_EnablePowerfulCommands)
+	MainGui.Add("Button", "xp+152 yp w12 h14","?").OnEvent("Click", RCCommandInfo)
+	MainGui.Add("Text", "x10 y170", "UIDs:")
+	MainGui.Add("Edit", "xp+28 yp w180 h18 vAllowedUIDs", AllowedUIDs).OnEvent("Change", nm_saveAllowedUIDs)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test

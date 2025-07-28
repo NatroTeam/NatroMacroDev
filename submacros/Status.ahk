@@ -2397,6 +2397,56 @@ nm_command(command)
 				SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)	
 			DetectHiddenWindows 0
 
+		case "whitelist":
+			{
+				currentUIDs := IniRead("settings\nm_config.ini", "Settings", "AllowedUIDs", "")
+				action := params[2]
+				uid := params[3]
+			
+				; 17-20 digits UID only
+				if !RegExMatch(uid, "^\d{17,20}$")
+				{
+					discord.SendEmbed("Invalid Discord UID specified. Obtain a valid UID by right clicking a users profile and clicking on 'Copy User ID'.", 16711731, , , , id)
+				}
+			
+				if (action == "add")
+				{
+					if (InStr(currentUIDs, uid) || uid == discordUID)
+					{
+						discord.SendEmbed("This UID is already whitelisted!", 16776960, , , , id)
+					}
+					else
+					{
+						if (currentUIDs == "")
+							newUIDs := uid
+						else
+							newUIDs := currentUIDs . "," . uid
+			
+						IniWrite(newUIDs, "settings\nm_config.ini", "Settings", "AllowedUIDs")
+						discord.SendEmbed("Successfully added UID to whitelist: " uid, 65311, , , , id)
+					}
+				}
+				else if (action == "remove")
+				{
+					if (!InStr(currentUIDs, uid))
+					{
+						discord.SendEmbed("UID is not in whitelist; nothing was removed.", 16776960, , , , id)
+					}
+					else
+					{
+						updated := StrReplace(currentUIDs, uid)
+						updated := Trim(updated, ",")
+			
+						IniWrite(updated, "settings\nm_config.ini", "Settings", "AllowedUIDs")
+
+						discord.SendEmbed("Removed UID from whitelist: " uid "`nCurrent list: " updated, 39270, , , , id)
+					}
+				}
+				else
+				{
+					discord.SendEmbed("Incorrect usage. Must be in the format [prefix]whitelist [add/remove] UID", 16711731, , , , id)
+				}
+			}
 
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
