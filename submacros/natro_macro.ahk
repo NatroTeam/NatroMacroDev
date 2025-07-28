@@ -9365,6 +9365,7 @@ nm_AdvancedGUI(init:=0){
 	;danger
 	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
 	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
+	MainGui.Add("Button", "x90 y154 w12 h14","?").OnEvent("Click", RCCommandInfo)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
@@ -9402,6 +9403,14 @@ DangerInfo(*) => MsgBox("
 	These settings could case the macro to not function correctly, or for your roblox account to be at risk.
 
 	Read each warning CAREFULLY. If you are unsure about any of these settings, it is recommended to leave them off.
+	)")
+RCCommandInfo(*) => MsgBox("
+	(
+	This checkbox enables powerful Remote Control commands.
+	These include restart, upload, and download. 
+
+	DO NOT enable this unless you know what you are doing.
+	Enabling these can put your account and device at risk to malicious actors.
 	)")
 nm_TestInfinite(*){
 	global
