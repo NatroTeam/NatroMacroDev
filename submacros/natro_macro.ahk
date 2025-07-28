@@ -5241,14 +5241,13 @@ nm_HotbarWhile(GuiCtrl?, *){
 
 				case "Jellybean":
 				HotbarTime%i% := MainGui["HotbarTime" i].Value
-				MainGui["HBText" i].Text := "@ Boosted"
 				MainGui["HBTimeText" i].Text := hmsFromSeconds(HotbarTime%i%)
 				MainGui["HBConditionText" i].Visible := 0
 				MainGui["BoostedHotbarEnable" i].Visible := 1
 				MainGui["HotbarMax" i].Visible := 0
-				MainGui["HBText" i].Visible := 1
+				MainGui["HBText" i].Visible := 0
 				MainGui["HotbarTime" i].Visible := 1
-				MainGui["HBTimeText" i].Visible := BoostedHotbarEnable%i% ? 1 : 0
+				MainGui["HBTimeText" i].Visible := 1
 
 				case "snowflake":
 				if (beesmasActive = 0)
