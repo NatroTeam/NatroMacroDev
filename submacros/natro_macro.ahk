@@ -308,6 +308,7 @@ nm_importConfig()
 		, "GatherDoubleReset", 1
 		, "DisableToolUse", 0
 		, "AnnounceGuidingStar", 0
+		, "EnablePowerfulCommands", 0
 		, "NewWalk", 1
 		, "HiveSlot", 6
 		, "HiveBees", 50
@@ -3951,6 +3952,7 @@ nm_TabSettingsLock(){
 	MainGui["GatherDoubleReset"].Enabled := 0
 	MainGui["DisableToolUse"].Enabled := 0
 	MainGui["AnnounceGuidingStar"].Enabled := 0
+	MainGui["EnablePowerfulCommands"].Enabled := 0
 	MainGui["NewWalk"].Enabled := 0
 	MainGui["HiveSlot"].Enabled := 0
 	MainGui["HiveBees"].Enabled := 0
@@ -3990,6 +3992,7 @@ nm_TabSettingsUnLock(){
 	MainGui["GatherDoubleReset"].Enabled := 1
 	MainGui["DisableToolUse"].Enabled := 1
 	MainGui["AnnounceGuidingStar"].Enabled := 1
+	MainGui["EnablePowerfulCommands"].Enabled := 1
 	MainGui["NewWalk"].Enabled := 1
 	MainGui["HiveSlot"].Enabled := 1
 	MainGui["HiveBees"].Enabled := 1
@@ -7253,6 +7256,29 @@ nm_AnnounceGuidWarn(GuiCtrl, *){
 			IniWrite (GuiCtrl.Value := AnnounceGuidingStar := 0), "settings\nm_config.ini", "Settings", "AnnounceGuidingStar"
 	}
 }
+nm_EnablePowerfulCommands(GuiCtrl, *){
+	global EnablePowerfulCommands
+	if GuiCtrl.Value = 0
+		IniWrite (EnablePowerfulCommands := 0), "settings\nm_config.ini", "Settings", "EnablePowerfulCommands"
+	else {
+		if (MsgBox("
+		(
+		WARNING:
+		These commands have been used by malicious actors in the past to gain access to devices.
+		DO NOT enable these commands unless you find it necessary.
+
+		DESCRIPTION:
+		When enabled, these commands will be allowed WHEN sent by whitelisted users. 
+		Add whitelisted users by pasting discord user ids (UID) of trusted users OR by having a trusted user use ?whitelist add UID
+		(If the webhook feature of pinging a user is enabled, the user who will be pinged has FULL access to RC commands by default.)
+
+		Pressing "Cancel" will disable this feature.
+		)", "Enable Powerful Commands", 0x40031)="Ok")
+			IniWrite (GuiCtrl.Value := EnablePowerfulCommands := 1), "settings\nm_config.ini", "Settings", "EnablePowerfulCommands"
+		 else 
+			IniWrite (GuiCtrl.Value := EnablePowerfulCommands := 0), "settings\nm_config.ini", "Settings", "EnablePowerfulCommands"
+	}
+}
 nm_ResetConfig(*){
 	if (MsgBox("
 	(
@@ -9365,7 +9391,8 @@ nm_AdvancedGUI(init:=0){
 	;danger
 	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
 	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
-	MainGui.Add("Button", "x90 y154 w12 h14","?").OnEvent("Click", RCCommandInfo)
+	GuiCtrl := MainGui.Add("CheckBox", "x10 y154 vEnablePowerfulCommands Disabled Checked" EnablePowerfulCommands, "Enable Powerful Commands").OnEvent("Click", nm_EnablePowerfulCommands)
+	MainGui.Add("Button", "xp+150 yp w12 h14","?").OnEvent("Click", RCCommandInfo)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
