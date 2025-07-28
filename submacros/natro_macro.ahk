@@ -38,6 +38,8 @@ CoordMode "Mouse", "Screen"
 CoordMode "Pixel", "Screen"
 SendMode "Event"
 
+; test github connection
+
 ; check for the correct AHK version before starting
 RunWith32() {
 	if (A_PtrSize != 4) {
