@@ -658,6 +658,12 @@ nm_importConfig()
 		, "LastHotkey5", 1
 		, "LastHotkey6", 1
 		, "LastHotkey7", 1
+		, "BoostedHotbarEnable2", 0
+		, "BoostedHotbarEnable3", 0
+		, "BoostedHotbarEnable4", 0
+		, "BoostedHotbarEnable5", 0
+		, "BoostedHotbarEnable6", 0
+		, "BoostedHotbarEnable7", 0
 		, "LastWhirligig", 1
 		, "LastEnzymes", 1
 		, "LastGlitter", 1
@@ -2920,6 +2926,7 @@ Loop 6
 	MainGui.Add("Text", "x108 y" (95 + 20 * A_Index) " w62 vHBTimeText" i " +Center Hidden").OnEvent("Click", nm_HotbarEditTime)
 	MainGui.Add("UpDown", "x170 y" (94 + 20 * A_Index) " w10 h16 -16 Range1-99999 vHotbarTime" i " Hidden Disabled", HotbarTime%i%).OnEvent("Change", nm_HotbarTimeUpDown)
 	MainGui.Add("Text", "x188 y" (94 + 20 * A_Index) " w62 vHBConditionText" i " +Center Hidden")
+	MainGui.Add("CheckBox", "x200 y" (94 + 20 * A_Index) " +center vBoostedHotbarEnable" i " Disabled Checked Hidden", "Boosted").OnEvent("Click", nm_toggleBoostedHotbarEnable)
 	(GuiCtrl := MainGui.Add("UpDown", "x250 y" (94 + 20 * A_Index) " w10 h16 -16 Range1-100 vHotbarMax" i " Hidden Disabled", HotbarMax%i%)).Section := "Boost", GuiCtrl.OnEvent("Change", nm_hotbarMaxUpDown)
 	SetLoadingProgress(31+A_Index)
 }
@@ -3660,6 +3667,12 @@ nm_TabBoostLock(){
 	MainGui["BoostChaserCheck"].Enabled := 0
 	MainGui["AutoFieldBoostButton"].Enabled := 0
 	MainGui["BoostedFieldSelectButton"].Enabled := 0
+	MainGui["BoostedHotbarEnable2"].Enabled := 0
+	MainGui["BoostedHotbarEnable3"].Enabled := 0
+	MainGui["BoostedHotbarEnable4"].Enabled := 0
+	MainGui["BoostedHotbarEnable5"].Enabled := 0
+	MainGui["BoostedHotbarEnable6"].Enabled := 0
+	MainGui["BoostedHotbarEnable7"].Enabled := 0
 	MainGui["HotbarWhile2"].Enabled := 0
 	MainGui["HotbarWhile3"].Enabled := 0
 	MainGui["HotbarWhile4"].Enabled := 0
@@ -3711,6 +3724,12 @@ nm_TabBoostUnLock(){
 	MainGui["BoostChaserCheck"].Enabled := 1
 	MainGui["AutoFieldBoostButton"].Enabled := 1
 	MainGui["BoostedFieldSelectButton"].Enabled := 1
+	MainGui["BoostedHotbarEnable2"].Enabled := 1
+	MainGui["BoostedHotbarEnable3"].Enabled := 1
+	MainGui["BoostedHotbarEnable4"].Enabled := 1
+	MainGui["BoostedHotbarEnable5"].Enabled := 1
+	MainGui["BoostedHotbarEnable6"].Enabled := 1
+	MainGui["BoostedHotbarEnable7"].Enabled := 1
 	MainGui["HotbarWhile2"].Enabled := 1
 	MainGui["HotbarWhile3"].Enabled := 1
 	MainGui["HotbarWhile4"].Enabled := 1
@@ -5166,6 +5185,7 @@ nm_HotbarWhile(GuiCtrl?, *){
 		, HotbarMax2, HotbarMax3, HotbarMax4, HotbarMax5, HotbarMax6, HotbarMax7
 		, hHB2, hHB3, hHB4, hHB5, hHB6, hHB7
 		, PFieldBoosted, hotbarwhilelist, beesmasActive, MainGui
+		, BoostedHotbarEnable2, BoostedHotbarEnable3, BoostedHotbarEnable4, BoostedHotbarEnable5, BoostedHotbarEnable6, BoostedHotbarEnable7
 
 	Loop 6 {
 		i := A_Index + 1
@@ -5178,6 +5198,7 @@ nm_HotbarWhile(GuiCtrl?, *){
 				MainGui["HotbarTime" i].Visible := 0
 				MainGui["HBTimeText" i].Visible := 0
 				MainGui["HBConditionText" i].Visible := 0
+				MainGui["BoostedHotbarEnable" i].Visible := 0
 				MainGui["HotbarMax" i].Visible := 0
 				MainGui["HBText" i].Visible := 1
 
@@ -5186,14 +5207,16 @@ nm_HotbarWhile(GuiCtrl?, *){
 				MainGui["HotbarTime" i].Visible := 0
 				MainGui["HBTimeText" i].Visible := 0
 				MainGui["HBConditionText" i].Visible := 0
+				MainGui["BoostedHotbarEnable" i].Visible := 0
 				MainGui["HotbarMax" i].Visible := 0
 				MainGui["HBText" i].Visible := 1
 
 				case "enzymes":
-				MainGui["HBText" i].Text := PFieldBoosted ? "@ Boosted" : "@ Converting Balloon"
+				MainGui["HBText" i].Text := BoostedHotbarEnable%i% ? "@ Boosted" : "@ Converting Balloon"
 				MainGui["HotbarTime" i].Visible := 0
 				MainGui["HBTimeText" i].Visible := 0
 				MainGui["HBConditionText" i].Visible := 0
+				MainGui["BoostedHotbarEnable" i].Visible := 1
 				MainGui["HotbarMax" i].Visible := 0
 				MainGui["HBText" i].Visible := 1
 
@@ -5202,6 +5225,7 @@ nm_HotbarWhile(GuiCtrl?, *){
 				MainGui["HotbarTime" i].Visible := 0
 				MainGui["HBTimeText" i].Visible := 0
 				MainGui["HBConditionText" i].Visible := 0
+				MainGui["BoostedHotbarEnable" i].Visible := 0
 				MainGui["HotbarMax" i].Visible := 0
 				MainGui["HBText" i].Visible := 1
 
@@ -5209,7 +5233,7 @@ nm_HotbarWhile(GuiCtrl?, *){
 				HotbarTime%i% := MainGui["HotbarTime" i].Value
 				MainGui["HBTimeText" i].Text := hmsFromSeconds(HotbarTime%i%)
 				MainGui["HBConditionText" i].Visible := 0
-				MainGui["AtHiveWhileBoosted" i].Visible := 0
+				MainGui["BoostedHotbarEnable" i].Visible := 0
 				MainGui["HotbarMax" i].Visible := 0
 				MainGui["HBText" i].Visible := 0
 				MainGui["HotbarTime" i].Visible := 1
@@ -5217,13 +5241,14 @@ nm_HotbarWhile(GuiCtrl?, *){
 
 				case "Jellybean":
 				HotbarTime%i% := MainGui["HotbarTime" i].Value
+				MainGui["HBText" i].Text := "@ Boosted"
 				MainGui["HBTimeText" i].Text := hmsFromSeconds(HotbarTime%i%)
 				MainGui["HBConditionText" i].Visible := 0
-				MainGui["AtHiveWhileBoosted" i].Visible := 1
+				MainGui["BoostedHotbarEnable" i].Visible := 1
 				MainGui["HotbarMax" i].Visible := 0
-				MainGui["HBText" i].Visible := 0
+				MainGui["HBText" i].Visible := 1
 				MainGui["HotbarTime" i].Visible := 1
-				MainGui["HBTimeText" i].Visible := 1
+				MainGui["HBTimeText" i].Visible := BoostedHotbarEnable%i% ? 1 : 0
 
 				case "snowflake":
 				if (beesmasActive = 0)
@@ -5236,6 +5261,7 @@ nm_HotbarWhile(GuiCtrl?, *){
 						MainGui["HotbarTime" i].Visible := 0
 						MainGui["HBTimeText" i].Visible := 0
 						MainGui["HBConditionText" i].Visible := 0
+						MainGui["BoostedHotbarEnable" i].Visible := 0
 						MainGui["HotbarMax" i].Visible := 0
 						MainGui["HBText" i].Visible := 0
 					}
@@ -5250,6 +5276,7 @@ nm_HotbarWhile(GuiCtrl?, *){
 					MainGui["HotbarTime" i].Visible := 1
 					MainGui["HBTimeText" i].Visible := 1
 					MainGui["HBConditionText" i].Visible := 1
+					MainGui["BoostedHotbarEnable" i].Visible := 1
 					MainGui["HotbarMax" i].Visible := 1
 				}
 
@@ -5257,6 +5284,7 @@ nm_HotbarWhile(GuiCtrl?, *){
 				MainGui["HotbarTime" i].Visible := 0
 				MainGui["HBTimeText" i].Visible := 0
 				MainGui["HBConditionText" i].Visible := 0
+				MainGui["BoostedHotbarEnable" i].Visible := 0
 				MainGui["HotbarMax" i].Visible := 0
 				MainGui["HBText" i].Visible := 0
 
@@ -5264,6 +5292,7 @@ nm_HotbarWhile(GuiCtrl?, *){
 				HotbarTime%i% := MainGui["HotbarTime" i].Value
 				MainGui["HBTimeText" i].Text := hmsFromSeconds(HotbarTime%i%)
 				MainGui["HBConditionText" i].Visible := 0
+				MainGui["BoostedHotbarEnable" i].Visible := 0
 				MainGui["HotbarMax" i].Visible := 0
 				MainGui["HBText" i].Visible := 0
 				MainGui["HotbarTime" i].Visible := 1
@@ -16350,6 +16379,7 @@ nm_convert(){
 		, BackpackPercent, BackpackPercentFiltered
 		, PFieldBoosted, GatherFieldBoosted, GatherFieldBoostedStart, LastGlitter, GlitterKey
 		, GameFrozenCounter, LastConvertBalloon, ConvertBalloon, ConvertMins, HiveBees, ConvertDelay, ConvertGatherFlag
+		, BoostedHotbarEnable2, BoostedHotbarEnable3, BoostedHotbarEnable4, BoostedHotbarEnable5, BoostedHotbarEnable6, BoostedHotbarEnable7
 
 	if ((VBState = 1) || nm_MondoInterrupt())
 		return
@@ -16443,10 +16473,16 @@ nm_convert(){
 					return
 				}
 				inactiveHoney := (nm_activeHoney() = 0) ? inactiveHoney + 1 : 0
-				if(((EnzymesKey!="none") && (!PFieldBoosted || (PFieldBoosted && GatherFieldBoosted))) && (nowUnix()-LastEnzymes)>600 && (inactiveHoney = 0)) {
-					Send "{" EnzymesKey "}"
-					LastEnzymes:=nowUnix()
-					IniWrite LastEnzymes, "settings\nm_config.ini", "Boost", "LastEnzymes"
+				if(((EnzymesKey!="none") && ((nowUnix() - LastBoostedFieldTime) < 15 * 60 || (GatherFieldBoosted))) && (nowUnix()-LastEnzymes)>600 && (inactiveHoney == 0)) {
+					slotNum := ""
+					if RegExMatch(EnzymesKey, "\d+$", &slotNum) {
+						slotNum := slotNum[0]  ; slotNum[0] contains the match
+						if BoostedHotbarEnable%slotNum% {
+							Send "{" EnzymesKey "}"
+							LastEnzymes := nowUnix()
+							IniWrite LastEnzymes, "settings\nm_config.ini", "Boost", "LastEnzymes"
+						}
+					}
 				}
 				if (BalloonConvertTime>60 && inactiveHoney>30) {
 					nm_setStatus("Interupted", "Inactive Honey")
@@ -17926,12 +17962,20 @@ nm_locateVB(){
 	PostSubmacroMessage("background", 0x5554, 3, VBState)
 	return
 }
+nm_toggleBoostedHotbarEnable(GuiCtrl, *) {
+	global BoostedHotbarEnable2, BoostedHotbarEnable3, BoostedHotbarEnable4, BoostedHotbarEnable5, BoostedHotbarEnable6, BoostedHotbarEnable7
+	local i := SubStr(GuiCtrl.Name, -1)
+	BoostedHotbarEnable%i% := MainGui["BoostedHotbarEnable" i].Value
+	IniWrite BoostedHotbarEnable%i%, "settings\nm_config.ini", "Boost", "BoostedHotbarEnable" i
+	nm_HotbarWhile()
+}
+
 nm_hotbar(boost:=0){
 	global state, fieldOverrideReason, GatherStartTime, ActiveHotkeys, bitmaps
 		, HotbarMax2, HotbarMax3, HotbarMax4, HotbarMax5, HotbarMax6, HotbarMax7
 		, LastHotkey2, LastHotkey3, LastHotkey4, LastHotkey5, LastHotkey6, LastHotkey7
 		, beesmasActive, QuestBoostCheck
-		, GatherFieldBoosted
+		, GatherFieldBoosted , BoostedHotbarEnable2, BoostedHotbarEnable3, BoostedHotbarEnable4, BoostedHotbarEnable5, BoostedHotbarEnable6, BoostedHotbarEnable7
 		; , EnableGlitterUse
 	;whileNames:=["Always", "Attacking", "Gathering", "At Hive"]
 	;ActiveHotkeys.push([val, slot, HBSecs, LastHotkey%slot%])
@@ -17991,7 +18035,7 @@ nm_hotbar(boost:=0){
 			break
 		}
 		;jellybean
-		else if(ActiveHotkeys[key][1]="Jellybean" && (state = "Gathering" || fieldOverrideReason = "Boost") && (QuestBoostCheck = 0 || (QuestBoostCheck = 1 && fieldOverrideReason="Quest")) && (nowUnix()-GatherStartTime)>60 && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
+		else if(ActiveHotkeys[key][1]="Jellybean" && (state = "Gathering" || fieldOverrideReason = "Boost" || InStr(state, "Gathering")) && (QuestBoostCheck = 0 || (QuestBoostCheck = 1 && fieldOverrideReason="Quest")) && ((BoostedHotbarEnable%ActiveHotkeys[key][2]%) || !BoostedHotbarEnable%ActiveHotkeys[key][2]%) && (nowUnix()-GatherStartTime)>60 && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
 			HotkeyNum:=ActiveHotkeys[key][2]
 			send "{sc00" HotkeyNum+1 "}"
 			LastHotkeyN:=nowUnix()
@@ -18018,7 +18062,7 @@ nm_hotbar(boost:=0){
 		; 	break
 		; }
 		;snowflake
-		else if(beesmasActive && (ActiveHotkeys[key][1]="Snowflake") && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
+		else if(beesmasActive && (ActiveHotkeys[key][1]="Snowflake") && ((BoostedHotbarEnable%ActiveHotkeys[key][2]%) || !BoostedHotbarEnable%ActiveHotkeys[key][2]%) && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
 			GetRobloxClientPos()
 			offsetY := GetYOffset()
 			;check that roblox window exists
@@ -22298,6 +22342,10 @@ nm_UpdateGUIVar(var)
 
 		case "HotbarTime2", "HotbarTime3", "HotbarTime4", "HotbarTime5", "HotbarTime6", "HotbarTime7":
 		MainGui[k].Value := %k%
+		nm_HotbarWhile()
+
+		case "BoostedHotbarEnable2", "BoostedHotbarEnable3", "BoostedHotbarEnable4", "BoostedHotbarEnable5", "BoostedHotbarEnable6", "BoostedHotbarEnable7":
+		MainGui[k].Text := %k%
 		nm_HotbarWhile()
 
 		Case "SnailTime":
