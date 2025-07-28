@@ -2439,7 +2439,7 @@ nm_command(command)
 			
 						IniWrite(updated, "settings\nm_config.ini", "Settings", "AllowedUIDs")
 
-						discord.SendEmbed("Removed UID from whitelist: " uid "`nCurrent list: " updated, 39270, , , , id)
+						discord.SendEmbed("Removed UID from whitelist: Current list: " updated, 65311, , , , id)
 					}
 				}
 				else
@@ -2625,11 +2625,14 @@ class discord
 			return -1
 
 		Loop (n := (messages := this.GetRecentMessages(channel)).Length)
+		
 		{
 			i := n - A_Index + 1
-			(SubStr(content := Trim(messages[i]["content"]), 1, StrLen(commandPrefix)) = commandPrefix) && command_buffer.Push({content:content, id:messages[i]["id"], url:messages[i]["attachments"].Has(1) ? messages[i]["attachments"][1]["url"] : ""})
+			(SubStr(content := Trim(messages[i]["content"]), 1, StrLen(commandPrefix)) = commandPrefix) && command_buffer.Push({content:content, id:messages[i]["id"], url:messages[i]["attachments"].Has(1) ? messages[i]["attachments"][1]["url"] : "", authorID: messages[i].Has("author") && messages[i]["author"].Has("id") ? messages[i]["author"]["id"] : ""})
 		}
 	}
+
+
 
 	static GetRecentMessages(channel)
 	{
