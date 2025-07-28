@@ -813,7 +813,7 @@ nm_command(command)
 
 	allowed := IniRead("settings\nm_config.ini", "Settings", "AllowedUIDs", "")
 	EnabledRCProtection := IniRead("settings\nm_config.ini", "Settings", "EnablePowerfulCommands") 
-	if (command.authorID = discordUID) {
+	if (command.authorID = discordUID && !InStr(allowed, command.authorID)) {
 		discord.SendEmbed("Command author same as pinged user: " . command.authorID . ";\n add your ID to whitelist using " . commandPrefix . "whitelist add " . discordUID . " to stop getting this reminder!\nYour command will still execute as normal.", 65311, , , , id)
 	} else if (!InStr(allowed, command.authorID)) {
 		discord.SendEmbed("Your are not an allowed user! RC command has been ignored.\nYour UID: " . command.authorID . ";\nAllowed Users : " . allowed . ";\nIf you want to send RC commands, ask a whitelisted user to add your ID using " . commandPrefix . "whitelist add " . command.authorID, 65311, , , , id)
@@ -1943,41 +1943,42 @@ nm_command(command)
 
 
 		case "upload":
-		discord.SendFile(Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name))), id)
-
+		if (EnabledRCProtection) {
+			discord.SendFile(Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name))), id)
+		}
 
 		case "download":
-		if (url := command.url)
-		{
-			path := StrReplace(RTrim(StrReplace(Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name))), "/", "\"), "\"), "\\", "\"), message := ""
-			if (StrLen(path) > 0)
-			{
-				if !FileExist(path)
+		if (EnabledRCProtection) {
+			if (url := command.url) {
+				path := StrReplace(RTrim(StrReplace(Trim(SubStr(command.content, InStr(command.content, name)+StrLen(name))), "/", "\"), "\"), "\\", "\"), message := ""
+				if (StrLen(path) > 0)
 				{
-					try
-						DirCreate(path), message .= 'Created folder ``' StrReplace(StrReplace(path, "\", "\\"), '"', '\"') '``\n'
-					catch as e
-						message .= "DirCreate Error:\n" e.Message " " e.What "\n\n"
-				}
-				if InStr(FileExist(path), "D")
-				{
-					SplitPath url, &filename
-					(pos := InStr(filename, "?")) && (filename := SubStr(filename, 1, pos-1))
-					try
+					if !FileExist(path)
 					{
-						Download url, (path .= "\" filename)
-						discord.SendEmbed(message .= 'Downloaded ``' StrReplace(StrReplace(path, "\", "\\"), '"', '\"') '``', 5066239, , , , id)
+						try
+							DirCreate(path), message .= 'Created folder ``' StrReplace(StrReplace(path, "\", "\\"), '"', '\"') '``\n'
+						catch as e
+							message .= "DirCreate Error:\n" e.Message " " e.What "\n\n"
 					}
-					catch as e
-						discord.SendEmbed(message .= "Download Error:\n" e.Message " " e.What, 16711731, , , , id)
+					if InStr(FileExist(path), "D")
+					{
+						SplitPath url, &filename
+						(pos := InStr(filename, "?")) && (filename := SubStr(filename, 1, pos-1))
+						try
+						{
+							Download url, (path .= "\" filename)
+							discord.SendEmbed(message .= 'Downloaded ``' StrReplace(StrReplace(path, "\", "\\"), '"', '\"') '``', 5066239, , , , id)
+						}
+						catch as e
+							discord.SendEmbed(message .= "Download Error:\n" e.Message " " e.What, 16711731, , , , id)
+					}
 				}
+				else
+					discord.SendEmbed("You must specify a valid directory!", 16711731, , , , id)
 			}
-			else
-				discord.SendEmbed("You must specify a valid directory!", 16711731, , , , id)
+				else
+					discord.SendEmbed("No attachment found to download!", 16711731, , , , id)
 		}
-		else
-			discord.SendEmbed("No attachment found to download!", 16711731, , , , id)
-
 
 		case "click":
 		switch params[2], 0
@@ -2072,8 +2073,11 @@ nm_command(command)
 
 
 		case "restart":
-		discord.SendEmbed("Restarting System...", 5066239, , , , id)
-		Shutdown 6
+		if (EnabledRCProtection) {
+			discord.SendEmbed("Restarting System...", 5066239, , , , id)
+			Shutdown 6
+		}
+
 
 
 		case "shrine":
