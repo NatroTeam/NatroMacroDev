@@ -1980,7 +1980,7 @@ PopStarActive:=0
 PreviousAction:="None"
 CurrentAction:="Startup"
 fieldnamelist := ["Bamboo","Blue Flower","Cactus","Clover","Coconut","Dandelion","Mountain Top","Mushroom","Pepper","Pine Tree","Pineapple","Pumpkin","Rose","Spider","Strawberry","Stump","Sunflower"]
-hotbarwhilelist := ["Never","Always","At Hive","Gathering","Attacking","Microconverter","Whirligig","Enzymes","GatherStart","Snowflake", "Jellybean"]
+hotbarwhilelist := ["Never","Always","At Hive","Gathering","Attacking","Microconverter","Whirligig","Enzymes","GatherStart","Snowflake","Jellybean","Boosted"]
 sprinklerImages := ["saturator"]
 ReconnectDelay:=0
 GatherStartTime := ConvertStartTime := 0
@@ -5204,6 +5204,26 @@ nm_HotbarWhile(GuiCtrl?, *){
 				MainGui["HBConditionText" i].Visible := 0
 				MainGui["HotbarMax" i].Visible := 0
 				MainGui["HBText" i].Visible := 1
+
+				case "boosted":
+				HotbarTime%i% := MainGui["HotbarTime" i].Value
+				MainGui["HBTimeText" i].Text := hmsFromSeconds(HotbarTime%i%)
+				MainGui["HBConditionText" i].Visible := 0
+				MainGui["AtHiveWhileBoosted" i].Visible := 0
+				MainGui["HotbarMax" i].Visible := 0
+				MainGui["HBText" i].Visible := 0
+				MainGui["HotbarTime" i].Visible := 1
+				MainGui["HBTimeText" i].Visible := 1
+
+				case "Jellybean":
+				HotbarTime%i% := MainGui["HotbarTime" i].Value
+				MainGui["HBTimeText" i].Text := hmsFromSeconds(HotbarTime%i%)
+				MainGui["HBConditionText" i].Visible := 0
+				MainGui["AtHiveWhileBoosted" i].Visible := 1
+				MainGui["HotbarMax" i].Visible := 0
+				MainGui["HBText" i].Visible := 0
+				MainGui["HotbarTime" i].Visible := 1
+				MainGui["HBTimeText" i].Visible := 1
 
 				case "snowflake":
 				if (beesmasActive = 0)
@@ -17911,6 +17931,8 @@ nm_hotbar(boost:=0){
 		, HotbarMax2, HotbarMax3, HotbarMax4, HotbarMax5, HotbarMax6, HotbarMax7
 		, LastHotkey2, LastHotkey3, LastHotkey4, LastHotkey5, LastHotkey6, LastHotkey7
 		, beesmasActive, QuestBoostCheck
+		, GatherFieldBoosted
+		; , EnableGlitterUse
 	;whileNames:=["Always", "Attacking", "Gathering", "At Hive"]
 	;ActiveHotkeys.push([val, slot, HBSecs, LastHotkey%slot%])
 	for key, val in ActiveHotkeys {
@@ -17977,6 +17999,24 @@ nm_hotbar(boost:=0){
 			ActiveHotkeys[key][4]:=LastHotkeyN
 			break
 		}
+		;boosted
+		else if((GatherFieldBoosted || InStr(state, "Boost")) && ActiveHotkeys[key][1]="Boosted" && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
+			HotkeyNum:=ActiveHotkeys[key][2]
+			send "{sc00" HotkeyNum+1 "}"
+			LastHotkeyN:=nowUnix()
+			IniWrite LastHotkeyN, "settings\nm_config.ini", "Boost", "LastHotkey" HotkeyNum
+			ActiveHotkeys[key][4]:=LastHotkeyN
+			break
+		}
+		;boosted when EnableGlitterUse implemented
+		; else if((GatherFieldBoosted || InStr(state, "Boost" || (LastBoostedFieldTime < 29 * 60 && EnableGlitterUse))) && ActiveHotkeys[key][1]="Boosted" && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
+		; 	HotkeyNum:=ActiveHotkeys[key][2]
+		; 	send "{sc00" HotkeyNum+1 "}"
+		; 	LastHotkeyN:=nowUnix()
+		; 	IniWrite LastHotkeyN, "settings\nm_config.ini", "Boost", "LastHotkey" HotkeyNum
+		; 	ActiveHotkeys[key][4]:=LastHotkeyN
+		; 	break
+		; }
 		;snowflake
 		else if(beesmasActive && (ActiveHotkeys[key][1]="Snowflake") && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
 			GetRobloxClientPos()
@@ -21878,7 +21918,7 @@ start(*){
 	;set ActiveHotkeys[]
 	global ActiveHotkeys:=[]
 	;set hotbar values for actions handled by nm_hotbar()
-	whileNames:=["Always", "Attacking", "Gathering", "At Hive", "GatherStart", "JellyBean"]
+	whileNames:=["Always", "Attacking", "Gathering", "At Hive", "GatherStart", "JellyBean", "Boosted"]
 	for key, val in whileNames {
 		loop 6 {
 			slot:=A_Index+1
