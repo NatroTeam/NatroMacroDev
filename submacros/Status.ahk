@@ -801,7 +801,7 @@ CreateHoneyBitmap(honey := 1, backpack := 1)
 
 nm_command(command)
 {
-	global commandPrefix, MacroState, planters, timers, settings, blender, shrine, priorityListNumeric
+	global commandPrefix, MacroState, planters, timers, settings, blender, shrine, priorityListNumeric, discordUID
 	static ssmode := "All"
 	, defaultPriorityList := ["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 
@@ -810,6 +810,16 @@ nm_command(command)
 		if (A_LoopField != "")
 			params.Push(A_LoopField)
 	params.Length := 10, params.Default := ""
+
+	allowed := IniRead("settings\nm_config.ini", "Settings", "AllowedUIDs", "")
+	EnabledRCProtection := IniRead("settings\nm_config.ini", "Settings", "EnablePowerfulCommands") 
+	if (command.authorID = discordUID) {
+		discord.SendEmbed("Command author same as pinged user: " . command.authorID . ";\n add your ID to whitelist using " . commandPrefix . "whitelist add " . discordUID . " to stop getting this reminder!\nYour command will still execute as normal.", 65311, , , , id)
+	} else if (!InStr(allowed, command.authorID)) {
+		discord.SendEmbed("Your are not an allowed user! RC command has been ignored.\nYour UID: " . command.authorID . ";\nAllowed Users : " . allowed . ";\nIf you want to send RC commands, ask a whitelisted user to add your ID using " . commandPrefix . "whitelist add " . command.authorID, 65311, , , , id)
+		command_buffer.RemoveAt(1)
+		return
+	}
 
 	switch (name := params[1]), 0
 	{
@@ -2411,7 +2421,7 @@ nm_command(command)
 			
 				if (action == "add")
 				{
-					if (InStr(currentUIDs, uid) || uid == discordUID)
+					if (InStr(currentUIDs, uid))
 					{
 						discord.SendEmbed("This UID is already whitelisted!", 16776960, , , , id)
 					}
