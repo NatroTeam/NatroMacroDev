@@ -1980,7 +1980,7 @@ PopStarActive:=0
 PreviousAction:="None"
 CurrentAction:="Startup"
 fieldnamelist := ["Bamboo","Blue Flower","Cactus","Clover","Coconut","Dandelion","Mountain Top","Mushroom","Pepper","Pine Tree","Pineapple","Pumpkin","Rose","Spider","Strawberry","Stump","Sunflower"]
-hotbarwhilelist := ["Never","Always","At Hive","Gathering","Attacking","Microconverter","Whirligig","Enzymes","GatherStart","Snowflake"]
+hotbarwhilelist := ["Never","Always","At Hive","Gathering","Attacking","Microconverter","Whirligig","Enzymes","GatherStart","Snowflake", "Jellybean"]
 sprinklerImages := ["saturator"]
 ReconnectDelay:=0
 GatherStartTime := ConvertStartTime := 0
@@ -17968,6 +17968,15 @@ nm_hotbar(boost:=0){
 			ActiveHotkeys[key][4]:=LastHotkeyN
 			break
 		}
+		;jellybean
+		else if(ActiveHotkeys[key][1]="Jellybean" && (state = "Gathering" || fieldOverrideReason = "Boost") && (QuestBoostCheck = 0 || (QuestBoostCheck = 1 && fieldOverrideReason="Quest")) && (nowUnix()-GatherStartTime)>60 && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
+			HotkeyNum:=ActiveHotkeys[key][2]
+			send "{sc00" HotkeyNum+1 "}"
+			LastHotkeyN:=nowUnix()
+			IniWrite LastHotkeyN, "settings\nm_config.ini", "Boost", "LastHotkey" HotkeyNum
+			ActiveHotkeys[key][4]:=LastHotkeyN
+			break
+		}
 		;snowflake
 		else if(beesmasActive && (ActiveHotkeys[key][1]="Snowflake") && (nowUnix()-ActiveHotkeys[key][4])>ActiveHotkeys[key][3]) {
 			GetRobloxClientPos()
@@ -21869,7 +21878,7 @@ start(*){
 	;set ActiveHotkeys[]
 	global ActiveHotkeys:=[]
 	;set hotbar values for actions handled by nm_hotbar()
-	whileNames:=["Always", "Attacking", "Gathering", "At Hive", "GatherStart"]
+	whileNames:=["Always", "Attacking", "Gathering", "At Hive", "GatherStart", "JellyBean"]
 	for key, val in whileNames {
 		loop 6 {
 			slot:=A_Index+1
