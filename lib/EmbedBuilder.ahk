@@ -1,5 +1,5 @@
 class EmbedBuilder {
-    fields:=[]
+    fields := []
     set_title(title) {
         this.title := title
         return this
@@ -100,11 +100,14 @@ class EmbedBuilder {
     to_json() {
         out := {}
         for prop, value in this.OwnProps() {
+            if (value is Object && value.HasProp('to_json'))
+                value := value.to_json()
             out.%prop% := value
         }
         return out
     }
     class Footer {
+        text := '', icon_url := ''
         to_string() {
             str := '{'
             if this.HasProp('text')
@@ -113,6 +116,9 @@ class EmbedBuilder {
                 str .= ',"icon_url":"' this.icon_url '"'
             str .= '}'
             return str
+        }
+        to_json() {
+            return { text: this.text, icon_url: this.icon_url }
         }
         set_text(text) {
             this.text := text
@@ -124,6 +130,14 @@ class EmbedBuilder {
         }
     }
     class Author {
+        name := '', icon_url := '', url := ''
+        to_json() {
+            return {
+                name: this.name,
+                icon_url: this.icon_url,
+                url: this.url
+            }
+        }
         to_string() {
             str := '{'
             if this.HasProp('name')

@@ -29,8 +29,11 @@ class Discord {
         }
 
         identify()
-
-
+        sender(input) {
+            if (input is String || input is ComObjArray)
+                return input
+            return JSON.stringify(input)
+        }
         ; REST Object:
         GET(self, url, requestobj) {
             getter := Type(requestobj) = "Map" ? Map.Prototype.Get : (obj, key) => obj.%key%
@@ -45,14 +48,14 @@ class Discord {
             }
             whr.SetRequestHeader("Authorization", "Bot " self.token)
             whr.SetRequestHeader("User-Agent", "Ninju's Discord Library (ahk v2)")
-            whr.Send(has(requestobj, "body") ? getter(requestobj, "body") : "")
+            whr.Send(has(requestobj, "body") ? sender(getter(requestobj, "body")) : "")
             return async ? whr : whr.ResponseText
         }
         POST(self, url, requestobj) {
             getter := Type(requestobj) = "Map" ? Map.Prototype.Get : (obj, key) => obj.%key%
             has := Type(requestobj) = "Map" ? Map.Prototype.Has : (obj, key) => obj.HasProp(key)
             whr := ComObject("WinHttp.WinHttpRequest.5.1")
-            whr.Open("POST", self.base_url . url, async := has(requestobj, "async") ? getter(requestobj, "async") : false)
+            whr.Open("POST", self.base_url . url, async := has(requestobj, "async") ? !!getter(requestobj, "async") : false)
             if has(requestobj, "headers") {
                 for key, value in getter(requestobj, "headers") is Map ? getter(requestobj, "headers") : getter(requestobj, "headers").OwnProps() {
                     whr.SetRequestHeader(key, value)
@@ -62,7 +65,7 @@ class Discord {
             whr.SetRequestHeader("User-Agent", "Ninju's Discord Library (ahk v2)")
             if !has(requestobj, "headers") || !has(getter(requestobj, "headers"), "Content-Type")
                 whr.SetRequestHeader("Content-Type", "application/json")
-            whr.Send(has(requestobj, "body") ? getter(requestobj, "body") : "")
+            whr.Send(has(requestobj, "body") ? sender(getter(requestobj, "body")) : "")
             return async ? whr : whr.ResponseText
         }
         PUT(self, url, requestobj) {
@@ -79,7 +82,7 @@ class Discord {
             whr.SetRequestHeader("User-Agent", "Ninju's Discord Library (ahk v2)")
             if !has(requestobj, "headers") || !has(getter(requestobj, "headers"), "Content-Type")
                 whr.SetRequestHeader("Content-Type", "application/json")
-            whr.Send(has(requestobj, "body") ? getter(requestobj, "body") : "")
+            whr.Send(has(requestobj, "body") ? sender(getter(requestobj, "body")) : "")
             return async ? whr : whr.ResponseText
         }
         PATCH(self, url, requestobj) {
@@ -96,7 +99,7 @@ class Discord {
             whr.SetRequestHeader("User-Agent", "Ninju's Discord Library (ahk v2)")
             if !has(requestobj, "headers") || !has(getter(requestobj, "headers"), "Content-Type")
                 whr.SetRequestHeader("Content-Type", "application/json")
-            whr.Send(has(requestobj, "body") ? getter(requestobj, "body") : "")
+            whr.Send(has(requestobj, "body") ? sender(getter(requestobj, "body")) : "")
             return async ? whr : whr.ResponseText
         }
         DELETE(self, url, requestobj) {
@@ -113,7 +116,7 @@ class Discord {
             whr.SetRequestHeader("User-Agent", "Ninju's Discord Library (ahk v2)")
             if !has(requestobj, "headers") || !has(getter(requestobj, "headers"), "Content-Type")
                 whr.SetRequestHeader("Content-Type", "application/json")
-            whr.Send(has(requestobj, "body") ? getter(requestobj, "body") : "")
+            whr.Send(has(requestobj, "body") ? sender(getter(requestobj, "body")) : "")
             return async ? whr : whr.ResponseText
         }
 
@@ -154,7 +157,7 @@ class Discord {
                     return this.%("on" . data.t)%.Call(this, data.d)
                 if this.HasMethod("onDispatch")
                     return this.onDispatch.Call(this, data.t, data.d)
-            default: FileAppend(data.op, "*")
+            default: msgbox "Unhandled opcode: " data.op "`n" msg
         }
     }
     __onclose(ws, status, reason) {
@@ -178,7 +181,7 @@ class Discord {
             data.EditReply := ObjBindMethod(this, "EditReply")
             data.delete := ObjBindMethod(this, "Delete")
             data.followUp := ObjBindMethod(this, "followUp")
-            for i, j in Map("String", 3, "Integer", 4, "Boolean", 5, "User", 6, "Channel", 7, "Role", 8, "Mentionable", 9, "Number", 10)
+            for i, j in Map("String", 3, "Integer", 4, "Boolean", 5, "User", 6, "Channel", 7, "Role", 8, "Mentionable", 9, "Number", 10, "Attachment", 11)
                 data.get%i%option := ObjBindMethod(this, "getOption", j), data.getSub%i%option := ObjBindMethod(this, "getSubcommandOption", j)
             return data
         }
@@ -311,12 +314,17 @@ class Discord {
     class Result {
         __New(success?) {
             this.success := IsSet(success)
-            this.successValue := success
+            this.successValue := success ?? ''
         }
         unwrap_or(default) {
             if this.success
                 return this.successValue
             return default
+        }
+        unwrap() {
+            if this.success
+                return this.successValue
+            throw Error("Unwrap failed: Result is not successful")
         }
     }
 }

@@ -32,7 +32,7 @@
 #include Routes.ahk
 #include SlashCommandBuilder.ahk
 
-OnError (e, mode) => (mode = "Return") ? -1 : 0
+;OnError (e, mode) => (mode = "Return") ? -1 : 0
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
 
@@ -340,7 +340,8 @@ dispatch_handler(self, event, data) {
 
 
                         case "click":
-                            x := interaction.getIntegerOption("x"), y := interaction.getIntegerOption("y"), amount := interaction.getIntegerOption("amount").unwrap_or(1), mode := interaction.getStringOption("mode").unwrap_or("Screen")
+                            x := interaction.getIntegerOption("x").unwrap_or(0), y := interaction.getIntegerOption("y").unwrap_or(0), amount := interaction.getIntegerOption("amount").unwrap_or(1), mode := interaction.getStringOption("mode").unwrap_or("Screen"), button := interaction.getStringOption("button").unwrap_or("Left")
+                            old_coordmode := A_CoordModePixel
                             switch mode, 0 {
                                 case "Screen", "Window", "Client":
                                 CoordMode 'Pixel', mode
@@ -348,12 +349,13 @@ dispatch_handler(self, event, data) {
                                 MouseGetPos(&current_x, &current_y)
                                 x := current_x + x, y := current_y + y
                             }
-                            SendEvent("{Click " x ", " y " " amount "}")
+                            SendEvent("{Click " x " " y " " button " " amount "}")
+                            CoordMode 'Pixel', old_coordmode
                             interaction.Reply({
                                 embeds: [
                                     EmbedBuilder()
                                     .set_title("Click")
-                                    .set_description("Clicked at " x ", " y " " amount " times")
+                                    .set_description("Clicked at " x " " y " " amount " times")
                                     .set_color(0x7380FF)
                                     .set_footer(footer => footer
                                         .set_text("Natro Macro")
@@ -361,11 +363,76 @@ dispatch_handler(self, event, data) {
                                     )
                                 ]
                             })
+
+                        case "activate":
+                            window := interaction.getStringOption("window").unwrap_or("")
+                            if !window
+                                return interaction.Reply({
+                                    embeds: [
+                                        EmbedBuilder()
+                                        .set_title("Activate")
+                                        .set_description("You must specify a window name")
+                                        .set_color(0xFF0000)
+                                        .set_footer(footer => footer
+                                            .set_text("Natro Macro")
+                                            .set_icon_url("https://images-ext-1.discordapp.net/external/DsQbewHGLgTcm5Y4zLygjiBeEdh1RhljcTnNoNDEHJM/%3Fsize%3D1024/https/cdn.discordapp.com/icons/1012610056921038868/a_f917c2351e5226c7c4f61edfb4e11927.gif?width=461&height=461")
+                                        )
+                                    ]
+                                })
+                            if !WinExist(window)
+                                return interaction.Reply({
+                                    embeds: [
+                                        EmbedBuilder()
+                                        .set_title("Activate")
+                                        .set_description("Window not found: " window)
+                                        .set_color(0xFF0000)
+                                        .set_footer(footer => footer
+                                            .set_text("Natro Macro")
+                                            .set_icon_url("https://images-ext-1.discordapp.net/external/DsQbewHGLgTcm5Y4zLygjiBeEdh1RhljcTnNoNDEHJM/%3Fsize%3D1024/https/cdn.discordapp.com/icons/1012610056921038868/a_f917c2351e5226c7c4f61edfb4e11927.gif?width=461&height=461")
+                                        )
+                                    ]
+                                })
+                            WinActivate(window)
+                            interaction.Reply({
+                                embeds: [
+                                    EmbedBuilder()
+                                    .set_title("Activate")
+                                    .set_description("Activated window: " window)
+                                    .set_color(0x7380FF)
+                                    .set_footer(footer => footer
+                                        .set_text("Natro Macro")
+                                        .set_icon_url("https://images-ext-1.discordapp.net/external/DsQbewHGLgTcm5Y4zLygjiBeEdh1RhljcTnNoNDEHJM/%3Fsize%3D1024/https/cdn.discordapp.com/icons/1012610056921038868/a_f917c2351e5226c7c4f61edfb4e11927.gif?width=461&height=461")
+                                    )
+                                ]
+                            })
+                        case "download":
+                            file := interaction.getAttachmentOption("file").unwrap_or("")
+                            if (file) {
+                                url := interaction.data.resolved.attachments.%file%.url
+                                msgbox url
+                            }
+                            msgbox file
+
                     }
             }
     }
 }
 ready_handler(self, data) {
+    req := self.rest.POST(
+        Routes.channelMessages(MainChannelID), {
+            body: {
+                embeds: [
+                    EmbedBuilder()
+                    .set_title("Ready")
+                    .set_footer(footer => footer
+                        .set_text("Natro Macro")
+                        .set_icon_url("https://images-ext-1.discordapp.net/external/DsQbewHGLgTcm5Y4zLygjiBeEdh1RhljcTnNoNDEHJM/%3Fsize%3D1024/https/cdn.discordapp.com/icons/1012610056921038868/a_f917c2351e5226c7c4f61edfb4e11927.gif?width=461&height=461")
+                    ).to_json()
+                ]
+            },
+            async: true
+        }
+    )
     self.application_id := data.application.id
     command_str := '['
     for name, command in commands {
@@ -388,7 +455,6 @@ ready_handler(self, data) {
     }
     command_str := SubStr(command_str, 1, -1) . ']'
     return self.rest.put(Routes.applicationCommands(self.application_id), {
-        body: command_str,
-        async: true
+        body: command_str
     })
 }
