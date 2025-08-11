@@ -338,7 +338,8 @@ nm_importConfig()
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
 		, "FDCWarn", 1
-		, "priorityListNumeric", 12345678)
+		, "priorityListNumeric", 12345678
+		, "EnableBeesmasTime", 0)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -2717,7 +2718,10 @@ MainGui.Add("Picture", "+BackgroundTrans x247 yp-3 w20 h20 vBeesmasImage")
 (GuiCtrl := MainGui.Add("CheckBox", "xp+130 ys+6 vSamovarCheck Disabled", "Samovar")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vLidArtCheck Disabled", "Lid Art")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vGummyBeaconCheck Disabled", "Gummy Beacon")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
+if (EnableBeesmasTime > nowUnix())
+	nm_EnableBeesmas(1)
+else
+	try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
 ;Blender
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x305 y42 w190 h105 vBlenderGroupBox", "Blender")
@@ -4823,38 +4827,56 @@ ba_AddBlenderItem(*){
 }
 nm_BeesmasHandler(req)
 {
-	global
-	local hBM, k, v
-
 	if (req.readyState != 4)
 		return
 
 	if (req.status = 200)
-	{
-		switch Trim(req.responseText, " `t`r`n")
-		{
-			case 1:
-			beesmasActive := 1
-
-			MainGui["BeesmasGroupBox"].Text := "Beesmas (Active)"
-
-			hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["beesmas"])
-			MainGui["BeesmasImage"].Value := "HBITMAP:*" hBM
-			DllCall("DeleteObject", "ptr", hBM)
-
-			for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
-				MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
-
-			sprinklerImages.Push("saturatorWS")
-			MainGui["BeesmasFailImage"].Value := ""
-
-			case 0:
-			MainGui["BeesmasFailImage"].Value := ""
-		}
-	}
+		nm_EnableBeesmas(Trim(req.responseText, " `t`r`n"))
 }
 BeesmasActiveFail(*){
-	MsgBox "Could not fetch Beesmas data from GitHub!`r`nTo use Beesmas features, make sure you have a working internet connection and then reload the macro!", "Error", 0x1030 " Owner" MainGui.Hwnd
+	if MsgBox('
+		(
+		Could not fetch Beesmas data from GitHub!
+		To enable Beesmas features automatically, make sure you have a working internet connection and then reload the macro!
+		
+		If you would like to enable Beesmas manually, select "Yes". This will open a menu where you can specifiy the amount of days you would like to manually enable beesmas for.
+		)', "Error", 0x1134 " Owner" MainGui.Hwnd) != "Yes"
+			return
+	loop {
+		input := InputBox("How many days would you like to enable beesmas for?`r`n1 = 1 day`r`n7 = 1 week`r`n14 = 2 weeks`r`n...`r`nMake sure to round the days up.", "Manual Beesmas Enable", "T30")
+		if (input.Result != "OK")
+			return
+		if (input.Value > 0 && input.Value < 90){
+			IniWrite nowUnix()+Round(input.Value)*86400, "settings\nm_config.ini", "Settings", "EnableBeesmasTime" ; divied by seconds in a day (result is now unix in days)
+			nm_EnableBeesmas(1)
+			return Msgbox("Success! Beesmas is manually enabled for " Round(input.Value) " days.", "Manual Beesmas Enable", "Iconi")
+		}
+		if (input.Value > 90) {
+			if MsgBox("You set the value to be higher than 90, which could be unnecessary. Make sure to set the value according to the beesmas timer on the right of the screen.",  "Manual Beesmas Enable", "IconX 0x5") == "Cancel"
+				return
+		}
+		else if MsgBox("That input doesn't seem right, make sure you're entering a number between 1 and 90.",  "Manual Beesmas Enable", "IconX 0x5") == "Cancel"
+			return
+	}
+}
+nm_EnableBeesmas(toggle){
+	global beesmasActive
+	if toggle {
+		beesmasActive := 1
+
+		MainGui["BeesmasGroupBox"].Text := "Beesmas (Active)"
+
+		hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["beesmas"])
+		MainGui["BeesmasImage"].Value := "HBITMAP:*" hBM
+		DllCall("DeleteObject", "ptr", hBM)
+
+		for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
+			MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
+
+		sprinklerImages.Push("saturatorWS")
+		MainGui["BeesmasFailImage"].Value := ""
+	}
+	else MainGui["BeesmasFailImage"].Value := ""
 }
 nm_NightMemoryMatchCheck(*){
 	global NightMemoryMatchCheck
