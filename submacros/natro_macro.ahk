@@ -199,7 +199,7 @@ nm_importPatterns()
 
 			' nm_KeyVars() '
 
-			size:=1, reps:=1, facingcorner:=0
+			size:=1, reps:=1, facingcorner:=0, OnlyOnce:=0
 			FieldName:=FieldPattern:=FieldPatternSize:=FieldReturnType:=FieldSprinklerLoc:=FieldRotateDirection:=""
 			FieldUntilPack:=FieldPatternReps:=FieldPatternShift:=FieldSprinklerDist:=FieldRotateTimes:=FieldDriftCheck:=FieldPatternInvertFB:=FieldPatternInvertLR:=FieldUntilMins:=0
 
@@ -16096,6 +16096,8 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 		: 1 ; medium (default)
 
 	DetectHiddenWindows 1
+	if ((index = 2) && WinExist("ahk_class AutoHotkey ahk_pid " currentWalk.pid))
+		DetectHiddenWindows(1), PostMessage(0x5552, 1, 0), DetectHiddenWindows(0) ; update OnlyOnce (needed because the walk script is repeatedly called and not repeatedly reopened)
 	if ((index = 1) || !WinExist("ahk_class AutoHotkey ahk_pid " currentWalk.pid))
 		nm_createWalk(patterns[pattern], "pattern",
 			(
@@ -16119,6 +16121,7 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 			FieldRotateDirection:="' FieldRotateDirection '"
 			FieldRotateTimes:=' FieldRotateTimes '
 			FieldDriftCheck:=' FieldDriftCheck '
+			OnlyOnce:=' (index=1) '
 			nm_CameraRotation(Dir, count) {
 				Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Mod(Abs(LR), 8) "}{" Rot%(UD > 0 ? "Up" : "Down")% " " Abs(UD) "}"), -1)
 				send "{" Rot%Dir% " " count "}"
@@ -16196,6 +16199,7 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	KeyHistory 0
 	ListLines 0
 	OnExit(ExitFunc)
+	OnMessage(0x5552, nm_setGlobalInt, 255)
 
 	#Include "%A_ScriptDir%\lib"
 	#Include "Gdip_All.ahk"
@@ -16278,6 +16282,18 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	{
 		Send "{' LeftKey ' up}{' RightKey ' up}{' FwdKey ' up}{' BackKey ' up}{' SC_Space ' up}{F14 up}{' SC_E ' up}"
 		try Gdip_Shutdown(pToken)
+	}
+
+	nm_setGlobalInt(wParam, lParam, *)
+	{
+		global
+		Critical
+		local var
+		; enumeration
+		arr := ["OnlyOnce"]
+
+		var := arr[wParam], %var% := lParam
+		return 0
 	}
 	'
 	)) ; this is just ahk code, it will be executed as a new script
