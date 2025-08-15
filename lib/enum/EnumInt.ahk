@@ -363,4 +363,6 @@
 	, "HoneyUpdateSSCheck"
 	, "StickerStackVoucher"
 	, "MGatherPlanterLoot"
-	, "prioritylistnumeric"]
+	, "prioritylistnumeric"
+	, "dayOrNight"
+	, "CheckNight"]

@@ -29,9 +29,9 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
+#include "ErrorHandling.ahk"
 
 #Warn VarUnset, Off
-OnError (e, mode) => (mode = "Return") ? -1 : 0
 
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Screen"
@@ -543,7 +543,6 @@ nm_importConfig()
 		, "StingerSpiderCheck", 1
 		, "StingerCloverCheck", 1
 		, "StingerDailyBonusCheck", 0
-		, "NightLastDetected", 1
 		, "VBLastKilled", 1
 		, "MondoSecs", 120
 		, "NormalMemoryMatchCheck", 0
@@ -783,7 +782,6 @@ nm_importConfig()
 		, "PlanterManualCycle1", 1
 		, "PlanterManualCycle2", 1
 		, "PlanterManualCycle3", 1
-		, "dayOrNight", "Day"
 		, "PlanterMode", 0
 		, "nPreset", "Blue"
 		, "MaxAllowedPlanters", 3
@@ -1964,7 +1962,7 @@ priorityList:=[], defaultPriorityList:=["Night", "Mondo", "Planter", "Bugrun", "
 for x in StrSplit(priorityListNumeric)
 	priorityList.push(defaultPriorityList[x])
 
-VBState:=0
+CheckNight:=0
 LostPlanters:=""
 QuestFields:=""
 youDied:=0
@@ -8507,6 +8505,7 @@ blc_mutations(*) {
 	#Include %A_ScriptDir%\lib\Gdip_All.ahk
 	#include %A_ScriptDir%\lib\Roblox.ahk
 	#include %A_ScriptDir%\lib\Gdip_ImageSearch.ahk
+	#include %A_ScriptDir%\lib\ErrorHandling.ahk
 	;==================================
 	SendMode("Event")
 	CoordMode(`'Pixel`', `'Screen`')
@@ -8514,7 +8513,6 @@ blc_mutations(*) {
 	;==================================
 	pToken := Gdip_Startup()
 	OnExit((*) => (closefunction()), -1)
-	OnError (e, mode) => (mode = "Return") ? -1 : 0
 	stopToggle(*) {
 		global stopping := true
 	}
@@ -10256,7 +10254,7 @@ PostSubmacroMessage(submacro, args*){
 	DetectHiddenWindows 0
 }
 nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
-	global resetTime, youDied, VBState, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, MultiReset, bitmaps
+	global resetTime, youDied, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, MultiReset, bitmaps
 	static hivedown := 0
 	;check for game frozen conditions
 	if (GameFrozenCounter>=3) { ;3 strikes
@@ -10267,18 +10265,19 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	DisconnectCheck()
 	nm_setShiftLock(0)
 	nm_OpenMenu()
-	if(youDied && not instr(objective, "mondo") && VBState=0){
+	if(youDied && !(instr(objective, "mondo") || CheckNight)){ ; add extra time if player died before reset expect when fighting bosses
 		wait:=max(wait, 20000)
 	}
 	;mondo or coconut crab likely killed you here! skip over this field if possible
 	if(youDied && (currentField="mountain top" || currentField="coconut"))
 		nm_currentFieldDown()
 	youDied:=0
-	nm_AutoFieldBoost(currentField)
-	;checkAll bypass to avoid infinite recursion here
+	nm_AutoFieldBoost(currentField) ; start rolling dice in background() if needed
+
+	; High priority interrupts. Will interrupt any reset not marked with the checkAll flag. Added to avoid infinite recursion
 	if(checkAll=1) {
 		nm_fieldBoostBooster()
-		nm_locateVB()
+		nm_Night()
 	}
 	if(force=1) {
 		HiveConfirmed:=0
@@ -10388,7 +10387,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		MouseMove windowX+350, windowY+offsetY+100
 		PrevKeyDelay:=A_KeyDelay
 		SetKeyDelay 250+KeyDelay
-		Loop (VBState = 0) ? (1 + MultiReset + (GatherDoubleReset && (CheckAll=2))) : 1
+		Loop 1
 		{
 			resetTime:=nowUnix()
 			PostSubmacroMessage("background", 0x5554, 1, resetTime)
@@ -10774,7 +10773,7 @@ nm_findHiveSlot(){
 nm_Collect(){
 	global GatherFieldBoostedStart, LastGlitter, resetTime
 
-	if ((VBState=1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
+	if (nm_NightInterrupt() || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
 		return
 
 	;MACHINES
@@ -11851,7 +11850,7 @@ nm_MemoryMatch(MemoryMatchGame) {
 
 	success := deaths := 0
 	loop 2 {
-		nm_reset(0, 0, 0)
+		nm_reset(MemoryMatchGame = "Night" ? 1 : 0, 0, 0)
 		nm_SetStatus("Traveling", MemoryMatchGame " Memory Match" ((A_Index > 1) ? " (Attempt 2)" : "" ))
 		nm_GoToCollect(MemoryMatchGame "mm", 0)
 		loop 720 { ; 3 min timeout
@@ -12304,7 +12303,7 @@ nm_StickerPrinter(){
 
 ;//todo: pending rewrite of detections?
 nm_Boost(){
-	if(VBState=1 || nm_MondoInterrupt())
+	if(nm_NightInterrupt() || nm_MondoInterrupt())
 		return
 
 	nm_StickerStack()
@@ -12439,7 +12438,7 @@ nm_StickerStack(){
 	}
 }
 nm_shrine(){
-	global GatherFieldBoostedStart, LastGlitter, VBState, LastShrine, ShrineCheck, ShrineItem1, ShrineItem2, ShrineAmount1, ShrineAmount2, ShrineIndex1, ShrineIndex2, ShrineRot
+	global GatherFieldBoostedStart, LastGlitter, LastShrine, ShrineCheck, ShrineItem1, ShrineItem2, ShrineAmount1, ShrineAmount2, ShrineIndex1, ShrineIndex2, ShrineRot
 
 	nm_ShrineRotation() ; make sure ShrineRot hasnt changed
 	if (ShrineCheck && (nowUnix()-LastShrine)>3600) { ;1 hour
@@ -12649,7 +12648,7 @@ nm_toBooster(location){
 	static blueBoosterFields:=["Pine Tree", "Bamboo", "Blue Flower", "Stump"], redBoosterFields:=["Rose", "Strawberry", "Mushroom", "Pepper"], mountainBoosterfields:=["Cactus", "Pumpkin", "Pineapple", "Spider", "Clover", "Dandelion", "Sunflower"], coconutBoosterfields:=["Coconut"]
 	
 	Loop 2 {
-		nm_Reset(0)
+		nm_Reset(AFBuseBooster ? 1 : 0)
 		nm_setStatus("Traveling", ((location="Mountain") ? "Mountain Top Booster" : StrTitle(location) " Field Booster") . ((A_Index=2) ? " (Attempt 2)" : ""))
 		(location="coconut") ? (nm_gotoCollect("coconutdis")) : (nm_gotoBooster(location))
 		if (nm_imgSearch("e_button.png",30,"high")[1] = 0) {
@@ -12945,7 +12944,7 @@ nm_fieldBoostGlitter(){
 
 ;//todo: pending rewrite! health detection bugs, generally inefficient
 nm_Bugrun(){
-	global youDied, VBState, MoveMethod, MoveSpeedNum, currentWalk, objective, HiveBees, MonsterRespawnTime, DisableToolUse
+	global youDied, MoveMethod, MoveSpeedNum, currentWalk, objective, HiveBees, MonsterRespawnTime, DisableToolUse
 		, QuestLadybugs, QuestRhinoBeetles, QuestSpider, QuestMantis, QuestScorpions, QuestWerewolf
 		, BuckoRhinoBeetles, BuckoMantis, RileyLadybugs, RileyScorpions, RileyAll
 		, GatherFieldBoostedStart, LastGlitter
@@ -12970,7 +12969,7 @@ nm_Bugrun(){
 		, KingBeetleAmuletMode, ShellAmuletMode
 
 	;interrupts
-	if ((VBState=1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
+	if (nm_NightInterrupt() || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
 		return
 
 	nm_setShiftLock(0)
@@ -12979,7 +12978,7 @@ nm_Bugrun(){
 	if(((BugrunSpiderCheck || QuestSpider || RileyAll) && (nowUnix()-LastBugrunSpider)>floor(1830*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) && HiveBees>=5){ ;30 minutes
 		nm_updateAction("Bugrun")
 		loop 1 {
-			if(VBState=1)
+			if nm_NightInterrupt()
 				return
 			;spider
 			BugRunField:="Spider"
@@ -13038,7 +13037,7 @@ nm_Bugrun(){
 					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
 					Sleep 500
 					Click "Up"
-					if(VBState=1)
+					if nm_NightInterrupt()
 						return
 				}
 			}
@@ -13070,7 +13069,7 @@ nm_Bugrun(){
 				nm_endWalk()
 				Click "Up"
 			}
-			if(VBState=1)
+			if nm_NightInterrupt()
 				return
 			;head to ladybugs?
 			if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) {
@@ -13094,7 +13093,7 @@ nm_Bugrun(){
 	;Ladybugs
 	if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll)  && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;5 minutes
 		loop 1 {
-			if(VBState=1)
+			if nm_NightInterrupt()
 				return
 			if(HiveBees>=5) {
 				;strawberry
@@ -13159,7 +13158,7 @@ nm_Bugrun(){
 						sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
 						Sleep 500
 						Click "Up"
-						if(VBState=1)
+						if nm_NightInterrupt()
 							return
 					}
 				}
@@ -13190,7 +13189,7 @@ nm_Bugrun(){
 					nm_endWalk()
 					Click "Up"
 				}
-				if(VBState=1)
+				if nm_NightInterrupt()
 					return
 				;mushroom
 				BugRunField:="mushroom"
@@ -13269,10 +13268,8 @@ nm_Bugrun(){
 					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
 					Sleep 500
 					Click "Up"
-					if(VBState=1)
-					{
+					if nm_NightInterrupt()
 						return
-					}
 				}
 			}
 			TotalBugKills:=TotalBugKills+1
@@ -13298,14 +13295,14 @@ nm_Bugrun(){
 			}
 		}
 	}
-	if(VBState=1)
+	if nm_NightInterrupt()
 		return
 	nm_Mondo()
 	;Ladybugs and/or Rhino Beetles
 	if(((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))
 		|| ((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)  && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))){ ;5 minutes
 		loop 1 {
-			if(VBState=1)
+			if nm_NightInterrupt()
 				return
 			;clover
 			success:=0
@@ -13367,7 +13364,7 @@ nm_Bugrun(){
 					}
 					SendInput "{" RotDown " 4}"
 					click "up"
-					if(VBState=1)
+					if nm_NightInterrupt()
 						return
 				}
 
@@ -13410,12 +13407,12 @@ nm_Bugrun(){
 			}
 		}
 	}
-	if(VBState=1)
+	if nm_NightInterrupt()
 		Return
 	;Rhino Beetles
 	if((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll) && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;5 minutes
 		loop 1 {
-			if(VBState=1)
+			if nm_NightInterrupt()
 				return
 			;blue flower
 			success:=0
@@ -13490,7 +13487,7 @@ nm_Bugrun(){
 					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
 					Sleep 500
 					Click "Up"
-					if(VBState=1)
+					if nm_NightInterrupt()
 						return
 				}
 			}
@@ -13582,7 +13579,7 @@ nm_Bugrun(){
 						sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
 						Sleep 500
 						Click "Up"
-						if(VBState=1)
+						if nm_NightInterrupt()
 							return
 					}
 				}
@@ -13622,7 +13619,7 @@ nm_Bugrun(){
 			}
 		}
 	}
-	if(VBState=1)
+	if nm_NightInterrupt()
 		Return
 	;Rhino Beetles and/or Mantis
 	if(((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))
@@ -13736,7 +13733,7 @@ nm_Bugrun(){
 					Sleep 500
 					Click "Up"
 					;disableDayOrNight:=0
-					if(VBState=1)
+					if nm_NightInterrupt()
 						return
 				}
 			}
@@ -13764,14 +13761,14 @@ nm_Bugrun(){
 			}
 		}
 	}
-	if(VBState=1)
+	if nm_NightInterrupt()
 		Return
 	if(HiveBees>=15) {
 		nm_Mondo()
 		;werewolf
 		if((BugrunWerewolfCheck || QuestWerewolf || RileyAll)  && (nowUnix()-LastBugrunWerewolf)>floor(3630*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;60 minutes
 			loop 1 {
-				if(VBState=1)
+				if nm_NightInterrupt()
 					return
 				;pumpkin
 				BugRunField:="pumpkin"
@@ -13882,7 +13879,7 @@ nm_Bugrun(){
 						SendInput "{" RotDown " 4}"
 						Sleep 500
 						Click "Up"
-						if(VBState=1)
+						if nm_NightInterrupt()
 							return
 					}
 				}
@@ -13919,12 +13916,12 @@ nm_Bugrun(){
 				}
 			}
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			Return
 		;mantis
 		if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;20 minutes
 			loop 1 {
-				if(VBState=1)
+				if nm_NightInterrupt()
 					return
 				;pine tree
 				BugRunField:="pine tree"
@@ -13995,7 +13992,7 @@ nm_Bugrun(){
 						sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
 						Sleep 500
 						Click "Up"
-						if(VBState=1)
+						if nm_NightInterrupt()
 							return
 					}
 				}
@@ -14040,12 +14037,12 @@ nm_Bugrun(){
 				}
 			}
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			return
 		;scorpions
 		if((BugrunScorpionsCheck || QuestScorpions || RileyScorpions || RileyAll)  && (nowUnix()-LastBugrunScorpions)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;20 minutes
 			loop 1 {
-				if(VBState=1)
+				if nm_NightInterrupt()
 					return
 				;rose
 				BugRunField:="rose"
@@ -14177,7 +14174,7 @@ nm_Bugrun(){
 						SendInput "{" RotDown " 4}"
 						Sleep 500
 						Click "Up"
-						if(VBState=1)
+						if nm_NightInterrupt()
 							return
 					}
 				}
@@ -14219,7 +14216,7 @@ nm_Bugrun(){
 				}
 			}
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			return
 		;tunnel bear
 		if((TunnelBearCheck)  && (nowUnix()-LastTunnelBear)>floor(172800*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;48 hours
@@ -14368,7 +14365,7 @@ nm_Bugrun(){
 				}
 			}
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			return
 		;king beetle
 		if((KingBeetleCheck) && (nowUnix()-LastKingBeetle)>floor(86400*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;24 hours
@@ -14527,7 +14524,7 @@ nm_Bugrun(){
 				}
 			}
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			return
 		;Snail
 		if((StumpSnailCheck) && (nowUnix()-LastStumpSnail)>floor(345600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;4 days
@@ -14623,7 +14620,7 @@ nm_Bugrun(){
 							}
 							if(youDied)
 								break 2
-							if(VBState=1){
+							if nm_NightInterrupt() {
 								nm_endWalk()
 								Click "Up"
 								return
@@ -14686,7 +14683,7 @@ nm_Bugrun(){
 				}
 			}
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			return
 
 		;Commando
@@ -14969,7 +14966,7 @@ nm_Bugrun(){
 				}
 			}
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			return
 		;crab
 		if((CocoCrabCheck) && (nowUnix()-LastCocoCrab)>floor(129600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;1.5 days
@@ -15140,10 +15137,9 @@ nm_Bugrun(){
 }
 nm_Mondo(){
 	global youDied
-	global VBState
 	;mondo buff
 	global MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter
-	if(VBState=1)
+	if nm_NightInterrupt()
 		return
 	if nm_MondoInterrupt(){
 		mondobuff := nm_imgSearch("mondobuff.png",50,"buff")
@@ -15253,7 +15249,7 @@ nm_Mondo(){
 								count := 0
 							if(Mod(A_Index, 4)=0) { ; 1 second
 								nm_autoFieldBoost(CurrentField)
-								if(VBState=1 || AFBrollingDice || AFBuseGlitter || AFBuseBooster) {
+								if(nm_NightInterrupt() || AFBrollingDice || AFBuseGlitter || AFBuseBooster) {
 									return
 								}
 								if(youDied)
@@ -15329,7 +15325,7 @@ nm_Mondo(){
 	}
 }
 nm_GoGather(){
-	global youDied, VBState
+	global youDied
 		, TCFBKey, AFCFBKey, TCLRKey, AFCLRKey, FwdKey, LeftKey, BackKey, RightKey, RotLeft, RotRight, SC_E, KeyDelay
 		, MoveMethod
 		, CurrentFieldNum
@@ -15353,7 +15349,7 @@ nm_GoGather(){
 		, BlackQuestComplete, BrownQuestComplete, BuckoQuestComplete, RileyQuestComplete, PolarQuestComplete
 
 	;VICIOUS BEE
-	if (VBState = 1)
+	if nm_NightInterrupt()
 		return
 	;MONDO
 	if nm_MondoInterrupt()
@@ -15732,7 +15728,7 @@ nm_GoGather(){
 					interruptReason := "You Died!"
 					break
 				}
-				if (VBState=1) {
+				if CheckNight {
 					interruptReason := "Night"
 					break
 				}
@@ -16353,7 +16349,7 @@ nm_convert(){
 		, PFieldBoosted, GatherFieldBoosted, GatherFieldBoostedStart, LastGlitter, GlitterKey
 		, GameFrozenCounter, LastConvertBalloon, ConvertBalloon, ConvertMins, HiveBees, ConvertDelay, ConvertGatherFlag
 
-	if ((VBState = 1) || nm_MondoInterrupt())
+	if (nm_NightInterrupt() || nm_MondoInterrupt())
 		return
 
 	hwnd := GetRobloxHWND()
@@ -17477,66 +17473,10 @@ nm_searchForE(){
 	return success
 }
 nm_boostBypassCheck() => 0 ; always returns 0 for now: no field boost bypass implemented
-nm_ViciousCheck(){
-	global VBState ;0=no VB, 1=searching for VB, 2=VB found
-	global VBLastKilled, TotalViciousKills, SessionViciousKills, KeyDelay
-	Send "{Text}/`n"
-	Sleep 250
-	killed := 0
-	if(VBState=1){
-		if(nm_imgSearch("VBfoundSymbol2.png", 50, "highright")[1]=0){
-			VBState:=2
-			VBLastKilled:=nowUnix()
-			;send VBState to background.ahk
-			PostSubmacroMessage("background", 0x5554, 3, VBState)
-			PostSubmacroMessage("background", 0x5554, 5, VBLastKilled)
-			;nm_setStatus("VBState " . VBState, " <1>")
-			IniWrite VBLastKilled, "settings\nm_config.ini", "Collect", "VBLastKilled"
-		}
-		;check if VB was already killed by someone else
-		if(nm_imgSearch("VBdeadSymbol2.png",1, "highright")[1]=0){
-			VBState:=0
-			VBLastKilled:=nowUnix()
-			;send VBState to background.ahk
-			PostSubmacroMessage("background", 0x5554, 3, VBState)
-			PostSubmacroMessage("background", 0x5554, 5, VBLastKilled)
-			IniWrite VBLastKilled, "settings\nm_config.ini", "Collect", "VBLastKilled"
-			;nm_setStatus("VBState " . VBState, " <2>")
-			nm_setStatus("Defeated", "Vicious Bee - Other Player")
-		}
-	}
-	if(VBState=2){
-	;temp:=(nowUnix()-VBLastKilled)
-		if((nowUnix()-VBLastKilled)<(600)) { ;it has been less than 10 minutes since VB was found
-			if(nm_imgSearch("VBdeadSymbol2.png",1, "highright")[1]=0){
-				VBState:=0
-				VBLastKilled:=nowUnix()
-				;send VBState to background.ahk
-				PostSubmacroMessage("background", 0x5554, 3, VBState)
-				PostSubmacroMessage("background", 0x5554, 5, VBLastKilled)
-				IniWrite VBLastKilled, "settings\nm_config.ini", "Collect", "VBLastKilled"
-				;nm_setStatus("VBState " . VBState, " <3>")
-				;nm_setStatus("Defeated", "VB")
-				TotalViciousKills:=TotalViciousKills+1
-				SessionViciousKills:=SessionViciousKills+1
-				PostSubmacroMessage("StatMonitor", 0x5555, 2, 1)
-				IniWrite TotalViciousKills, "settings\nm_config.ini", "Status", "TotalViciousKills"
-				IniWrite SessionViciousKills, "settings\nm_config.ini", "Status", "SessionViciousKills"
-				killed := 1
-			}
-		} else { ;it has been greater than 10 minutes since VB was found
-				VBState:=0
-				;send VBState to background.ahk
-				PostSubmacroMessage("background", 0x5554, 3, VBState)
-				;nm_setStatus("VBState " . VBState, " <4>")
-				nm_setStatus("Aborted", "Vicious Fight > 10 Mins")
-		}
-	}
-	return killed
-}
 nm_Night(){
 	nm_NightMemoryMatch()
-	nm_locateVB()
+	nm_ViciousBee()
+	CheckNight := 0
 }
 nm_confirmNight(){
 	nm_setStatus("Confirming", "Night")
@@ -17556,377 +17496,292 @@ nm_confirmNight(){
 	}
 	sendinput "{" RotUp " 1}"
 	send "{" ZoomOut " 8}"
+	if findImg[1]=0
+		CheckNight := 0
 	return (findImg[1]=0)
 }
 nm_NightMemoryMatch(){
-	global VBState, NightLastDetected
-
-	if (!(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || (VBState = 0))
+	if (!(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || nm_NightInterrupt())
 		return
 
 	if !nm_confirmNight(){
-		;false positive, ABORT!
-		VBState:=0
-		PostSubmacroMessage("background", 0x5554, 3, VBState)
-		NightLastDetected:=nowUnix()-300-1 ;make NightLastDetected older than 5 minutes
-		IniWrite NightLastDetected, "settings\nm_config.ini", "Collect", "NightLastDetected"
-		nm_setStatus("Aborting", "Night Memory Match - Not Night")
 		return
 	}
 
 	nm_MemoryMatch("Night")
-	PostSubmacroMessage("background", 0x5554, 8, LastNightMemoryMatch)
 }
-nm_locateVB(){
-	global VBState, StingerCheck, StingerDailyBonusCheck, StingerPepperCheck, StingerMountainTopCheck, StingerRoseCheck, StingerCactusCheck, StingerSpiderCheck, StingerCloverCheck, NightLastDetected, VBLastKilled, FwdKey, LeftKey, BackKey, RightKey, RotLeft, RotRight, RotDown, RotUp, ZoomOut, MoveMethod, objective, DisableToolUse, dayorNight
-
-	time := nowUnix()
-	; don't run if stinger check Disabled", VB last killed less than 5m ago, night last detected more than 5m ago
-	if ((StingerCheck=0) || (StingerDailyBonusCheck=1 && (time-VBLastKilled)<79200) || (time-VBLastKilled)<300 || ((time-NightLastDetected)>300 || (time-NightLastDetected)<0) || (VBState = 0)) {
-		VBState:=0
-		;send VBState to background.ahk
-		PostSubmacroMessage("background", 0x5554, 3, VBState)
-		return
-	}
-
-	; check if VB has already been activated / killed
-	nm_ViciousCheck()
-
-	if(VBState=2){
-		nm_setStatus("Attacking", "Vicious Bee")
-		startBattle := nowUnix()
-		if(!DisableToolUse)
-			Click "Down"
-
-		killed := 0
-		while (VBState=2) { ; generic battle pattern
-			movement :=
-			(
-			nm_Walk(13.5, LeftKey) "
-			" nm_Walk(4.5, BackKey)
-			)
-			nm_createWalk(movement)
-			KeyWait "F14", "D T5 L"
-			KeyWait "F14", "T60 L"
-			nm_endWalk()
-			movement :=
-			(
-			nm_Walk(13.5, RightKey) "
-			" nm_Walk(4.5, FwdKey)
-			)
-			nm_createWalk(movement)
-			KeyWait "F14", "D T5 L"
-			KeyWait "F14", "T60 L"
-			nm_endWalk()
-			killed := nm_ViciousCheck()
+nm_NightInterrupt() => (CheckNight=1) ; set by background via SetGlobalInt
+nm_ViciousBee(){
+	nm_locateVB()
+	nm_locateVB(){ 
+		now := nowUnix()
+		; don't run if disabled or only daily bonus
+		if (StingerCheck=0)
+		|| (StingerDailyBonusCheck=1 && (now-VBLastKilled)<79200) {
+			return
 		}
-		if killed {
-			duration := DurationFromSeconds(nowUnix() - startBattle, "mm:ss")
-			nm_setStatus("Defeated", "Vicious Bee`nTime: " duration)
+
+		for , data in VicData { ; if no fields enabled, return
+			if data.enabled
+				break
+			if A_Index = VicData.Count
+				return
 		}
-		VBState:=0 ;0=no VB, 1=searching for VB, 2=VB found
-		Click "Up"
 
-		PostSubmacroMessage("background", 0x5554, 3, VBState)
-		return
-	}
-
-	; confirm night time
-	if(VBState=1){
 		if(nm_confirmNight()){
-			;night confirmed, proceed!
 			nm_setStatus("Starting", "Vicious Bee Cycle")
 		} else {
-			;false positive, ABORT!
-			VBState:=0
-			PostSubmacroMessage("background", 0x5554, 3, VBState)
-			NightLastDetected:=nowUnix()-300-1 ;make NightLastDetected older than 5 minutes
-			IniWrite NightLastDetected, "settings\nm_config.ini", "Collect", "NightLastDetected"
 			nm_setStatus("Aborting", "Vicious Bee - Not Night")
 			return
 		}
-	}
 
-	nm_updateAction("Stingers")
-	startTime:=nowUnix()
+		nm_updateAction("Stingers")
 
-	fieldsChecked := 0
-	killed := 0
-	for k,v in ["Pepper","MountainTop","Rose","Cactus","Spider","Clover"]
-	{
-		if !Stinger%v%Check
-			continue
-		else
-			fieldsChecked++
 
-		Loop 10 ; attempt each field a maximum of n (10) times
+		fieldsChecked := 0
+		VicData := Map(
+			"Pepper", Map(
+				"reps", 2,
+				"lrdist", 4000,
+				"fbdist", 900,
+				"initRight", 1500,
+				"initFwd", 1500,
+				"enabled", StingerPepperCheck
+			),
+			"MountainTop", Map(
+				"reps", 1,
+				"lrdist", 3500,
+				"fbdist", 1500,
+				"initRight", 2000,
+				"initFwd", 1600,
+				"enabled", StingerMountainTopCheck
+			),
+			"Rose", Map(
+				"reps", 2,
+				"lrdist", 3000,
+				"fbdist", 1500,
+				"initRight", 1800,
+				"initFwd", 1875,
+				"enabled", StingerRoseCheck
+			),
+			"Cactus", Map(
+				"reps", 1,
+				"lrdist", 4500,
+				"fbdist", 1500,
+				"initRight", 2000,
+				"initFwd", 750,
+				"enabled", StingerCactusCheck
+			),
+			"Spider", Map(
+				"reps", 2,
+				"lrdist", 3750,
+				"fbdist", 1500,
+				"initRight", 1000,
+				"initFwd", 1000,
+				"enabled", StingerSpiderCheck
+			),
+			"Clover", Map(
+				"reps", 2,
+				"lrdist", 4000,
+				"fbdist", 1500,
+				"initRight", 1500,
+				"initFwd", 1500,
+				"enabled", StingerCloverCheck
+			)
+		)
+
+		for field, data in VicData
 		{
-			if(VBState=0) {
-				nm_setStatus("Aborting", "No Vicious Bee")
-				break 2
+			if !data.enabled {
+				continue
 			}
 
-			if ((v = "Spider") && (A_Index = 1) && StingerSpiderCheck && StingerCactusCheck)
+			fieldloop:
+			Loop 5 ; attempt each field a maximum of 5 times
 			{
-				;walk from Cactus to Spider
-				nm_setStatus("Traveling", "Vicious Bee (" v ")")
+				nm_Reset(1, 2000, 0)
+				
+				nm_setStatus("Traveling", "Vicious Bee (" field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
+				nm_gotoField((field = "MountainTop") ? "Mountain Top" : field)
+
+				if(!DisableToolUse)
+					Click "Down"
+
+				nm_setStatus("Searching", "Vicious Bee (" field ")")
+
+				leftOrRightDist := data["lrdist"]
+				forwardOrBackDist := data["fbdist"]
+
+
+				;align
 				movement :=
 				(
-				nm_Walk(20, LeftKey) '
-				' nm_Walk(44, FwdKey, LeftKey) '
-				Loop 4
-					Send "{' RotLeft '}"
-				' nm_Walk(20, FwdKey) '
-				' nm_Walk(20, LeftKey)
+					nm_Walk(data["initRight"]*9/2000, RightKey) "
+					" nm_Walk(data["initFwd"]*9/2000, (field = "Spider") ? BackKey : FwdKey)
 				)
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T60 L"
-				nm_endWalk()
-			}
-			else
-			{
-				(fieldsChecked > 1 || A_Index > 1) && nm_Reset(0, 2000, 0)
-				nm_setStatus("Traveling", "Vicious Bee (" v ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
-				nm_gotoField((v = "MountainTop") ? "Mountain Top" : v)
 
-				if (v = "Spider")
-				{
-					movement :=
-					(
-					nm_Walk(3500*9/2000, FwdKey) "
-					" nm_Walk(3000*9/2000, LeftKey)
-					)
-					nm_createWalk(movement)
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T60 L"
-					nm_endWalk()
-				}
-			}
+				if (vic := SearchforVB(movement)).result = 'success'
+					vicEnd()
+				else if vic.result = 'inactivehoney'
+					continue fieldloop
 
-			if(!DisableToolUse)
-				Click "Down"
-
-			;search pattern
-			if (VBState=1)
-			{
-				nm_setStatus("Searching", "Vicious Bee (" v ")")
-
-				;configure
-				reps := (v = "Pepper") ? 2 : (v = "MountainTop") ? 1 : (v = "Rose") ? 2 : (v = "Cactus") ? 1 : (v = "Spider") ? 2 : 2
-				leftOrRightDist := (v = "Pepper") ? 4000 : (v = "MountainTop") ? 3500 : (v = "Rose") ? 3000 : (v = "Cactus") ? 4500 : (v = "Spider") ? 3750 : 4000
-				forwardOrBackDist := (v = "Pepper") ? 900 : (v = "MountainTop") ? 1500 : (v = "Rose") ? 1500 : (v = "Cactus") ? 1500 : (v = "Spider") ? 1500 : 1500
-
-				movement :=
+				;search patterns
+				movement1 :=
 				(
-				nm_Walk(((v = "Pepper") ? 1700 : (v = "MountainTop") ? 2000 : (v = "Rose") ? 1800 : (v = "Cactus") ? 2000 : (v = "Spider") ? 1000 : 1500)*9/2000, RightKey) "
-				" nm_Walk(((v = "Pepper") ? 1600 : (v = "MountainTop") ? 1600 : (v = "Rose") ? 1875 : (v = "Cactus") ? 750 : (v = "Spider") ? 1000 : 1500)*9/2000, (v = "Spider") ? BackKey : FwdKey)
+					nm_Walk(leftOrRightDist*9/2000, LeftKey) "
+					" nm_Walk(forwardOrBackDist*9/2000, BackKey)
+					. (field = "MountainTop") ? "`r`n" nm_Walk(leftOrRightDist*9/2000, RightKey) : ""
 				)
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T60 L"
-				nm_endWalk()
 
-				if ((v = "Pepper") || (v = "Rose") || (v = "Clover") || (v = "Cactus"))
-				{
-					Loop reps {
-						movement :=
-						(
-						nm_Walk(leftOrRightDist*9/2000, LeftKey) "
-						" nm_Walk(forwardOrBackDist*9/2000, BackKey)
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-						if(not nm_activeHoney()) {
-							Click "Up"
-							continue 2
+				movement2 := 
+				(
+					(field = "Spider") ? nm_Walk(leftOrRightDist*9/2000, LeftKey) "`r`n" nm_Walk(forwardOrBackDist*9/2000, BackKey)
+					: (field = "MountainTop") ? nm_Walk(forwardOrBackDist*9/2000, BackKey) "`r`n" nm_Walk(leftOrRightDist*9/2000, LeftKey)
+					: nm_Walk(leftOrRightDist*9/2000, RightKey) "`r`n" nm_Walk(forwardOrBackDist*9/2000, BackKey)
+				)
+
+				Loop data["reps"] {
+					; search pattern
+					loop 2 {
+						if (vic := SearchforVB(movement%A_Index%)).result = 'success' {
+							vicEnd()
+							return
+						} else if vic.result = 'otherplayer' {
+							vicEnd('Killed by another player')
+							return
+						} else if vic.result = 'inactivehoney' {
+							continue fieldloop
 						}
-						movement :=
-						(
-						nm_Walk(leftOrRightDist*9/2000, RightKey) "
-						" ((A_Index < reps) ? nm_Walk(forwardOrBackDist*9/2000, BackKey) : "")
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-						if(not nm_activeHoney()) {
-							Click "Up"
-							continue 2
-						}
-						nm_ViciousCheck()
-					}
-					if(VBState=2){
-						movement :=
-						(
-						nm_Walk(forwardOrBackDist*2*(reps-0.5)*9/2000, FwdKey) "
-						" ((v != "Cactus") ? nm_Walk(forwardOrBackDist*9/2000, BackKey) : "")
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-					}
-				}
-				else if (v = "MountainTop")
-				{
-					Loop reps {
-						movement :=
-						(
-						nm_Walk(leftOrRightDist*9/2000, LeftKey) "
-						" nm_Walk(forwardOrBackDist*9/2000, BackKey) "
-						" nm_Walk(leftOrRightDist*9/2000, RightKey)
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-						if(not nm_activeHoney()) {
-							Click "Up"
-							continue 2
-						}
-						movement :=
-						(
-						nm_Walk(forwardOrBackDist*9/2000, BackKey) "
-						" nm_Walk(leftOrRightDist*9/2000, LeftKey)
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-						if(not nm_activeHoney()) {
-							Click "Up"
-							continue 2
-						}
-						nm_ViciousCheck()
-					}
-					if(VBState=2){
-						movement :=
-						(
-						nm_Walk(leftOrRightDist*9/2000, RightKey) "
-						" nm_Walk(forwardOrBackDist*9/2000, FwdKey)
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-					}
-				}
-				else ; spider
-				{
-					Loop reps {
-						movement :=
-						(
-						nm_Walk(leftOrRightDist*9/2000, RightKey) "
-						" ((A_Index < reps) ? nm_Walk(forwardOrBackDist*9/2000, BackKey) : "")
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-						if (A_Index < reps)
-						{
-							if(not nm_activeHoney()) {
-								Click "Up"
-								continue 2
-							}
-							movement :=
-							(
-							nm_Walk(leftOrRightDist*9/2000, LeftKey) "
-							" nm_Walk(forwardOrBackDist*9/2000, BackKey)
-							)
-							nm_createWalk(movement)
-							KeyWait "F14", "D T5 L"
-							KeyWait "F14", "T60 L"
-							nm_endWalk()
-						}
-						if(not nm_activeHoney()) {
-							Click "Up"
-							continue 2
-						}
-						nm_ViciousCheck()
-					}
-					if(VBState=2){
-						movement :=
-						(
-						nm_Walk(forwardOrBackDist*2*(reps-0.5)*9/2000, FwdKey) "
-						" nm_Walk(leftOrRightDist*9/2000, LeftKey) "
-						" nm_Walk(forwardOrBackDist*9/2000, BackKey)
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
 					}
 				}
 			}
+			fieldsChecked++
+		}
 
-			;battle pattern
-			if (VBState=2) {
-				nm_setStatus("Attacking", "Vicious Bee (" v ")" ((A_Index > 1) ? " - Round " A_Index : ""))
-				(!IsSet(startBattle)) && (startBattle := nowUnix())
+		; If no vicious bee found
+		vicEnd('All fields checked')
 
-				;configure
-				breps := 1
-				leftOrRightDist := (v = "Pepper") ? 3000 : (v = "MountainTop") ? 3000 : (v = "Rose") ? 2500 : (v = "Cactus") ? 3250 : (v = "Spider") ? 2500 : 1800
-				forwardOrBackDist := (v = "Pepper") ? 1000 : (v = "MountainTop") ? 1000 : (v = "Rose") ? 1000 : (v = "Cactus") ? 750 : (v = "Spider") ? 1000 : 1000
-
-				while (VBState=2) {
-					Loop breps {
-						movement :=
-						(
-						nm_Walk(leftOrRightDist*9/2000, (v = "Spider") ? RightKey : LeftKey) "
-						" nm_Walk(forwardOrBackDist*9/2000, BackKey)
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-						if(not nm_activeHoney()) {
-							Click "Up"
-							continue 3
-						}
-						movement :=
-						(
-						nm_Walk(leftOrRightDist*9/2000, (v = "Spider") ? LeftKey : RightKey) "
-						" ((A_Index < breps) ? nm_Walk(forwardOrBackDist*9/2000, BackKey) : "")
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-						if(not nm_activeHoney()) {
-							Click "Up"
-							continue 3
-						}
-						killed := nm_ViciousCheck()
-					}
-					movement := nm_Walk(forwardOrBackDist*2*(breps-0.5)*9/2000, FwdKey)
-					nm_createWalk(movement)
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T60 L"
-					nm_endWalk()
-				}
-				if killed
-				{
-					duration := DurationFromSeconds(nowUnix() - startBattle, "mm:ss")
-					nm_setStatus("Defeated", "Vicious Bee`nTime: " duration)
-					Sleep 500
-				}
-				break 2
-			}
+		/**
+		 * End cycle and send status message
+		 */
+		vicEnd(reason:='Killed'){
 			Click "Up"
-			break
+			duration := DurationFromSeconds(nowUnix() - now, "mm:ss")
+			nm_setStatus("Completed", "Vicious Bee - " reason "`nTime: " duration "`nFields Checked:" (++fieldsChecked))
+			if reason = 'killed'
+				nm_IncrementStat("ViciousKills"), VBLastKilled:=nowUnix()
 		}
 	}
-	Click "Up"
-	duration := DurationFromSeconds(nowUnix() - startTime, "mm:ss")
-	nm_setStatus("Completed", "Vicious Bee Cycle`nTime: " duration " - Fields: " fieldsChecked " - Defeated: " ((killed) ? "Yes" : "No"))
-	VBState:=0 ;0=no VB, 1=searching for VB, 2=VB found
-	PostSubmacroMessage("background", 0x5554, 3, VBState)
-	return
+	/** 
+	 * Create a movement with vicious bee detection. Used in both find and attack VB
+	 * @returns {{result: String} or false}
+	 */
+	WalkwithVBCheck(movement){
+		nm_createWalk(movement)
+		KeyWait "F14", "D T5 L"
+		while (GetKeyState("F14") && (A_Index*25)*20 < 20000) ;20sec timeout
+		{
+			vic := nm_ViciousCheck()
+			if vic.result {
+				nm_endWalk()
+				return vic
+			}
+			if !nm_activeHoney(){
+				nm_endWalk()
+				return {result: 'inactivehoney'}
+			}
+			Sleep 40
+		}
+		nm_endWalk()
+		nm_SetStatus("Warning", "Timeout on a VB path")
+	}
+	/**
+	 * Search for vicious bee using WalkwithVBCheck()
+	 *  @returns {{result: String or false}}
+	 */
+	SearchforVB(movement){
+		vic := WalkwithVBCheck(movement)
+		if vic.result = 'found' {
+			return nm_killVB(field)
+		} else if vic.result = 'dead' {
+			nm_setStatus("Detected", "Vicious Bee - Killed by another player")
+			return {result: 'otherplayer'}
+		} else if vic.result = 'inactivehoney' {
+			nm_setStatus("Warning", "Vicious Bee - Inactive Honey - Retrying")
+			return vic
+		}
+	}
+	/**
+	 * Kill vicious bee using battle pattern after it is detected from SearchforVB()
+	 * @returns {{result: String or false}}
+	 */
+	nm_killVB(field) {
+		global state:="Attacking"
+		nm_setStatus("Attacking", "Vicious Bee (" field ")")
+
+		battlepattern :=
+		(
+			nm_Walk(4, FwdKey) "
+			" nm_Walk(4, LeftKey) "
+			" nm_Walk(4, RightKey) "
+			" nm_Walk(4, BackKey)
+		)
+
+		while A_Index*2*60 < 5 { ; 5 minute timeout
+			vic := WalkwithVBCheck(battlepattern)
+			if vic.result = 'dead' {
+				nm_setStatus("Killed", "Vicious Bee (" field ")")
+				return {result: 'success'}
+			}
+			Sleep 500
+		}
+		nm_setStatus("Aborting", "Vicious Bee - Timeout")
+		return {result: 0}
+	}
+	/**
+	 * Vicious bee detection using bottom right notification
+	 * @returns {{result: String or false}}
+	 */
+	nm_ViciousCheck() {
+		Yoffset := GetYOffset()
+		GetRobloxClientPos()
+		; right now we're searching just half the screen which could be bad on some really small resolutions. but with 800 window height it seems to do fine
+		notifWidth := 355 ;length of notifcation
+		paddingRight := 16 ; spacing between notification and end of screen
+		paddingBottom := 26 ; spacing between notification and bottom of the screen
+		pBMScreen := Gdip_BitmapFromScreen(windowX+WindowWidth-notifWidth "|" windowY+Yoffset+WindowHeight//2+paddingBottom 
+		. "|" notifWidth-paddingRight "|" WindowHeight//2-Yoffset-(paddingBottom*2))
+
+		if Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["dead"], , , , , , 40) = 1 {
+			Gdip_DisposeImage(pBMScreen)
+			return {result: 'dead'}
+		}
+
+		if Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["found"], , , , , , 40) = 1 {
+			Gdip_DisposeImage(pBMScreen)
+			return {result: 'found'}
+		}
+		
+		return {result: 0}
+	}
+}
+nm_IncrementStat(stat, amount:=1){ ; //todo: add to Quests/Bugrun when they are rewritten
+	global TotalBossKills, SessionBossKills
+	, TotalViciousKills, SessionViciousKills
+	, TotalBugKills, SessionBugKills
+	, TotalPlanters, SessionPlanters
+	, TotalQuestsDone, SessionQuestsDone
+	, TotalDisconnects, SessionDisconnects
+	StatEnum := Map("BossKills",1
+		,"ViciousKills",2
+		,"BugKills",3
+		,"Planters",4
+		,"QuestsDone",5
+		,"Disconnects",6
+	)
+	IniWrite (++Total%stat%), "settings\nm_config.ini", "Status", "Total" stat
+	IniWrite (++Session%stat%), "settings\nm_config.ini", "Status", "Session" stat
+	PostSubmacroMessage("StatMonitor", 0x5555, StatEnum[stat], amount)
 }
 nm_hotbar(boost:=0){
 	global state, fieldOverrideReason, GatherStartTime, ActiveHotkeys, bitmaps
@@ -18053,11 +17908,11 @@ nm_hotbar(boost:=0){
 
 ;quest functions //todo: pending rewrite: lots of code duplication and inefficiencies!
 nm_QuestRotate(){
-	global QuestGatherField, RotateQuest, BlackQuestCheck, BlackQuestComplete, LastBlackQuest, BrownQuestCheck, BuckoQuestCheck, BuckoQuestComplete, RileyQuestCheck, RileyQuestComplete, HoneyQuestCheck, PolarQuestCheck, GatherFieldBoostedStart, LastGlitter, MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, VBState, bitmaps
+	global QuestGatherField, RotateQuest, BlackQuestCheck, BlackQuestComplete, LastBlackQuest, BrownQuestCheck, BuckoQuestCheck, BuckoQuestComplete, RileyQuestCheck, RileyQuestComplete, HoneyQuestCheck, PolarQuestCheck, GatherFieldBoostedStart, LastGlitter, MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, bitmaps
 
 	if ((BlackQuestCheck=0) && (BrownQuestCheck=0) && (BuckoQuestCheck=0) && (RileyQuestCheck=0) && (HoneyQuestCheck=0) && (PolarQuestCheck=0))
 		return
-	if ((VBState=1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
+	if (nm_NightInterrupt() || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
 		return
 
 	;open quest log
@@ -18385,7 +18240,7 @@ nm_PolarQuestProg(){
 	}
 }
 nm_PolarQuest(){
-	global PolarQuestCheck, PolarQuest, PolarQuestComplete, QuestGatherField, QuestLadybugs, QuestRhinoBeetles, QuestSpider, QuestMantis, QuestScorpions, QuestWerewolf, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, MonsterRespawnTime, RotateQuest, TotalQuestsComplete, SessionQuestsComplete, VBState
+	global PolarQuestCheck, PolarQuest, PolarQuestComplete, QuestGatherField, QuestLadybugs, QuestRhinoBeetles, QuestSpider, QuestMantis, QuestScorpions, QuestWerewolf, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, MonsterRespawnTime, RotateQuest, TotalQuestsComplete, SessionQuestsComplete
 	if(!PolarQuestCheck)
 		return
 	nm_setShiftLock(0)
@@ -18409,7 +18264,7 @@ nm_PolarQuest(){
 		if ((QuestLadybugs && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestRhinoBeetles && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestSpider && (nowUnix()-LastBugrunSpider)>floor(1830*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestMantis && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestScorpions && (nowUnix()-LastBugrunScorpions)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestWerewolf && (nowUnix()-LastBugrunWerewolf)>floor(3600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))){
 			nm_Bugrun()
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			return
 		nm_PolarQuestProg()
 		if(PolarQuestComplete) {
@@ -18656,7 +18511,7 @@ nm_RileyQuestProg(){
 	}
 }
 nm_RileyQuest(){
-	global RileyQuestCheck, RileyQuestComplete, RileyQuest, RotateQuest, QuestGatherField, QuestAnt, QuestRedBoost, QuestFeed, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, MonsterRespawnTime, RileyLadybugs, RileyScorpions, TotalQuestsComplete, SessionQuestsComplete, VBState
+	global RileyQuestCheck, RileyQuestComplete, RileyQuest, RotateQuest, QuestGatherField, QuestAnt, QuestRedBoost, QuestFeed, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, MonsterRespawnTime, RileyLadybugs, RileyScorpions, TotalQuestsComplete, SessionQuestsComplete
 	if(!RileyQuestCheck)
 		return
 	RotateQuest:="Riley"
@@ -18686,7 +18541,7 @@ nm_RileyQuest(){
 		if((RileyLadybugs && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (RileyScorpions && (nowUnix()-LastBugrunScorpions)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) {
 			nm_Bugrun()
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			return
 		nm_RileyQuestProg()
 		if(RileyQuestComplete=1) {
@@ -18932,7 +18787,7 @@ nm_BuckoQuestProg(){
 	}
 }
 nm_BuckoQuest(){
-	global BuckoQuestCheck, BuckoQuestComplete, BuckoQuest, RotateQuest, QuestGatherField, QuestAnt, QuestBlueBoost, QuestFeed, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, MonsterRespawnTime, BuckoRhinoBeetles, BuckoMantis, TotalQuestsComplete, SessionQuestsComplete, VBState
+	global BuckoQuestCheck, BuckoQuestComplete, BuckoQuest, RotateQuest, QuestGatherField, QuestAnt, QuestBlueBoost, QuestFeed, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, MonsterRespawnTime, BuckoRhinoBeetles, BuckoMantis, TotalQuestsComplete, SessionQuestsComplete
 	if(!BuckoQuestCheck)
 		return
 	RotateQuest:="Bucko"
@@ -18962,7 +18817,7 @@ nm_BuckoQuest(){
 		if((BuckoRhinoBeetles && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (BuckoMantis && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) {
 			nm_Bugrun()
 		}
-		if(VBState=1)
+		if nm_NightInterrupt()
 			return
 		nm_BuckoQuestProg()
 		if(BuckoQuestComplete=1) {
@@ -20043,7 +19898,6 @@ ba_planter(){
 	global StrawberryFieldCheck
 	global StumpFieldCheck
 	global SunflowerFieldCheck
-	global VBState
 	global PlanterSS1, PlanterSS2, PlanterSS3
 	global MPlanterHold1, MPlanterHold2, MPlanterHold3
 	global MPlanterSmoking1, MPlanterSmoking2, MPlanterSmoking3
@@ -20063,7 +19917,7 @@ ba_planter(){
 	}
 	if (PlanterMode != 2)
 		return
-	if ((VBState=1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
+	if (nm_NightInterrupt() || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
 		return
 
 	; if enabled, take any/all planter screenshots before further planter actions
@@ -21136,7 +20990,7 @@ mp_Planter() { ;//todo: merge these manual planter functions as much as possible
 
 	If (PlanterMode != 1)
 		Return
-	if ((VBState=1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
+	if (nm_NightInterrupt() || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
 		return
 
 	; if enabled, take any/all planter screenshots before further planter actions
@@ -21706,7 +21560,7 @@ Background(){
 		nm_hotbar()
 	}
 	;bug death check
-	if(state="Gathering" || state="Searching" || (VBState=2 && state="Attacking"))
+	if(state="Gathering" || state="Searching" || (nm_NightInterrupt() && state="Attacking"))
 		nm_bugDeathCheck()
 	;stats
 	nm_setStats()
@@ -21956,8 +21810,8 @@ start(*){
 	;start ancillary macros
 	try run
 	(
-	'"' exe_path32 '" /script "' A_WorkingDir '\submacros\background.ahk" "' NightLastDetected '" "' VBLastKilled '" "' StingerCheck '" "' StingerDailyBonusCheck '" '
-	'"' AnnounceGuidingStar '" "' ReconnectInterval '" "' ReconnectHour '" "' ReconnectMin '" "' EmergencyBalloonPingCheck '" "' ConvertBalloon '" "' NightMemoryMatchCheck '" "' LastNightMemoryMatch '"'
+	'"' exe_path32 '" /script "' A_WorkingDir '\submacros\background.ahk" "' 0 '" "' 0 '" "' StingerCheck '" "' 0 '" '
+	'"' AnnounceGuidingStar '" "' ReconnectInterval '" "' ReconnectHour '" "' ReconnectMin '" "' EmergencyBalloonPingCheck '" "' ConvertBalloon '" "' NightMemoryMatchCheck '" "' 0 '"'
 	)
 	;(re)start stat monitor
 	global SessionTotalHoney, HoneyAverage
@@ -22189,8 +22043,8 @@ nm_sendHeartbeat(*){
 }
 nm_backgroundEvent(wParam, lParam, *){
 	Critical
-	global youDied, NightLastDetected, VBState, BackpackPercent, BackpackPercentFiltered, FieldGuidDetected, HasPopStar, PopStarActive
-	static arr:=["youDied", "NightLastDetected", "VBState", "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive"]
+	global youDied, BackpackPercent, BackpackPercentFiltered, FieldGuidDetected, HasPopStar, PopStarActive
+	static arr:=["youDied", 0, 0, "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive"]
 
 	var := arr[wParam], %var% := lParam
 	return 0
@@ -22346,3 +22200,9 @@ nm_UpdateGUIVar(var)
 		}
 	}
 }
+
+F9::
+{
+	nm_ViciousCheck()
+}
+
