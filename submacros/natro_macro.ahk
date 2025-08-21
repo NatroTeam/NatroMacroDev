@@ -7375,16 +7375,26 @@ nm_testReconnect(*){
 	if (DisconnectCheck(1) = 1)
 		MsgBox "Success!", "Reconnect Test", 0x1000
 }
+/**
+ * @see {https://devforum.roblox.com/t/parsing-deeplink-information-from-a-private-server-link-with-the-newer-format/3464724}
+ * @see {https://devforum.roblox.com/t/improved-private-server-links/2628225/49}
+ */
 nm_ServerLink(GuiCtrl, *){
 	global PrivServer, FallbackServer1, FallbackServer2, FallbackServer3
+	ValidShareCode := 0
 	p := EditGetCurrentCol(GuiCtrl)
 	k := GuiCtrl.Name
-	str := GuiCtrl.Value
-
+	str := Trim(GuiCtrl.Value)
 	RegExMatch(str, "i)((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/([a-z]{2}\/)?games\/1537690962\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*", &NewPrivLink)
 	RegExMatch(str, "i)((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/share\?code=.{32}&type=Server", &NewShareCode)
-
-	if ((StrLen(str) > 0) && !(IsObject(NewPrivLink) || IsObject(NewShareCode)))
+	if IsObject(NewShareCode) {
+		wr := ComObject("WinHttp.WinHttpRequest.5.1")
+		wr.Open("GET", str, 1)
+		wr.Send()
+		wr.WaitForResponse()
+		ValidShareCode := InStr(wr.ResponseText, 'content="1537690962"') ; All share code links contain a meta tag: <meta name="roblox:start_place_id" content="1537690962">. this is the BSS gameID
+	}
+	if ((StrLen(str) > 0) && !(IsObject(NewPrivLink) || ValidShareCode))
 	{
 		GuiCtrl.Value := %k%
 		SendMessage 0xB1, p-2, p-2, GuiCtrl
