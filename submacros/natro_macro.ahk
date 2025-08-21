@@ -10423,7 +10423,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		SetKeyDelay PrevKeyDelay
 
 		if nm_SetHiveCameraDirection(4) ; 2 possible orientations; facing hive or facing the mountain
-			HiveConfirmed := 1
+			break
 	}
 	;convert
 	(convert=1) && nm_convert()
@@ -10450,6 +10450,7 @@ nm_ConfirmAtHive(){
 	return 0
 }
 nm_SetHiveCameraDirection(rotations){
+	global HiveConfirmed
 	static hivedown := 0
 	if hivedown
 		sendinput "{" RotDown "}"
@@ -15952,9 +15953,7 @@ nm_GoGather(){
 			Gdip_DisposeImage(pBMScreen)
 			Send "{" WhirligigKey "}{ " RotUp " 10}{ " RotDown " 4}{" ZoomIn " 10}"
 			sleep(2000) ; make sure the player is on the ground
-			if nm_SetHiveCameraDirection(1)
-				HiveConfirmed := 1
-			else 
+			if !nm_SetHiveCameraDirection(1)
 				nm_setStatus("Warning", "Unable to confirm hive!")
 			
 			LastWhirligig:=nowUnix()
