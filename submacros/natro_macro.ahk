@@ -7827,7 +7827,8 @@ nm_BasicEggHatcher(*)
 	bitmaps["giftedstar"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAgMAAAC5YVYYAAAACVBMVEX9rDT+rDT/rDOj6H2ZAAAAFElEQVR42mNYtYoBgVYyrFoBYQMAf4AKnlh184sAAAAASUVORK5CYII=")
 	bitmaps["yes"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAB0AAAAPAQMAAAAiQ1bcAAAABlBMVEUAAAD3//lCqWtQAAAAAXRSTlMAQObYZgAAAFZJREFUeAEBSwC0/wDDAAfAAEIACGAAfgAQMAA8ABAQABgAIAgAGAAgCAAYACAYABgAP/gAGAAgAAAYAAAAABgAIAAAGAAwAAAYADAAABgAGDAAGAAP4FGfB+0KKAbEAAAAAElFTkSuQmCC")
 	#Include "%A_ScriptDir%\nm_image_assets\offset\bitmaps.ahk"
-
+	pBMC := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMC), Gdip_GraphicsClear(G,0xffae792f), Gdip_DeleteGraphics(G) ; Common
+	pBMM := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMM), Gdip_GraphicsClear(G,0xffbda4ff), Gdip_DeleteGraphics(G) ; Mythic
 	if (MsgBox("WELCOME TO THE BASIC BEE REPLACEMENT PROGRAM!!!!!``nMade by anniespony#8135``n``nMake sure BEE SLOT TO CHANGE is always visible``nDO NOT MOVE THE SCREEN OR RESIZE WINDOW FROM NOW ON.``nMAKE SURE AUTO-JELLY IS DISABLED!!", "Basic Bee Replacement Program", 0x40001) = "Cancel")
 		ExitApp
 
@@ -7860,12 +7861,15 @@ nm_BasicEggHatcher(*)
 	Hotkey "F11", ExitFunc, "On"
 	Sleep 250
 
-	pBMC := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMC), Gdip_GraphicsClear(G,0xffae792f), Gdip_DeleteGraphics(G) ; Common
-	pBMM := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMM), Gdip_GraphicsClear(G,0xffbda4ff), Gdip_DeleteGraphics(G) ; Mythic
-
 	rj := 0
 	Loop
 	{
+		if YesButton() {
+			sleep 750
+			if detect()
+				break
+			continue
+		}
 		if ((pos := (A_Index = 1) ? nm_InventorySearch("basicegg", "up", , , , 70) : (rj = 1) ? nm_InventorySearch("royaljelly", "down", , , 0, 7) : nm_InventorySearch("basicegg", "up", , , 0, 7)) = 0)
 		{
 			MsgBox "You ran out of " ((rj = 1) ? "Royal Jellies!" : "Basic Eggs!"), "Basic Bee Replacement Program", 0x40010
@@ -7881,14 +7885,8 @@ nm_BasicEggHatcher(*)
 		Loop 10
 		{
 			Sleep 100
-			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+offsetY+windowHeight//2-52 "|500|150")
-			if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1)
-			{
-				Gdip_DisposeImage(pBMScreen)
-				SendEvent "{Click " windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1) " " windowY+offsetY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1) "}"
+			if YesButton()
 				break
-			}
-			Gdip_DisposeImage(pBMScreen)
 			if (A_Index = 10)
 			{
 				rj := 1
@@ -7896,31 +7894,47 @@ nm_BasicEggHatcher(*)
 			}
 		}
 		Sleep 750
-
-		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-155 "|" windowY+offsetY+((4*windowHeight)//10 - 135) "|310|205"), rj := 0
+		if detect()
+			break
+	}
+	detect() {
+		global rj := 0
+		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-155 "|" windowY+offsetY+((4*windowHeight)//10 - 135) "|310|205")
 		if (Gdip_ImageSearch(pBMScreen, pBMM, , 50, 165, 260, 205, 2, , , 5) = 5) { ; Mythic Hatched
 			if (MsgBox("MYTHIC!!!!``nKeep this?", "Basic Bee Replacement Program", 0x40024) = "Yes")
 			{
 				Gdip_DisposeImage(pBMScreen)
-				break
+				return 1
 			}
 		}
-		else if (Gdip_ImageSearch(pBMScreen, pBMC, , 50, 165, 260, 205, 2, , , 5) = 5) {
+		else if (Gdip_ImageSearch(pBMScreen, pBMC, , 50, 165, 260, 205, 2, , , 5) = 5) { ; check if common
 			rj := 1
 			if (Gdip_ImageSearch(pBMScreen, bitmaps["giftedstar"], , 0, 20, 130, 50, 5) = 1) { ; If gifted is hatched, stop
 				MsgBox "SUCCESS!!!!", "Basic Bee Replacement Program", 0x40020
 				Gdip_DisposeImage(pBMScreen)
-				break
+				return 1
 			}
 		}
 		else if (Gdip_ImageSearch(pBMScreen, bitmaps["giftedstar"], , 0, 20, 130, 50, 5) = 1) { ; Non-Basic Gifted Hatched
 			if (MsgBox("GIFTED!!!!``nKeep this?", "Basic Bee Replacement Program", 0x40024) = "Yes")
 			{
 				Gdip_DisposeImage(pBMScreen)
-				break
+				return 1
 			}
 		}
 		Gdip_DisposeImage(pBMScreen)
+		return 0
+	}
+	YesButton(){
+		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+offsetY+windowHeight//2-52 "|500|150")
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1)
+		{
+			Gdip_DisposeImage(pBMScreen)
+			SendEvent "{Click " windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1) " " windowY+offsetY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1) "}"
+			return 1
+		}
+		Gdip_DisposeImage(pBMScreen)
+		return 0
 	}
 	ExitApp
 
