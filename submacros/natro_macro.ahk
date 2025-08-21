@@ -10450,12 +10450,12 @@ nm_ConfirmAtHive(){
 	return 0
 }
 nm_SetHiveCameraDirection(rotations){
-	static hivedown
+	static hivedown := 0
 	if hivedown
 		sendinput "{" RotDown "}"
 	region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
 	sconf := windowWidth**2//3200
-	loop 4 {
+	loop (maxindex := 8/rotations*2) { ; 2 full rotations
 		sleep 250+KeyDelay
 		pBMScreen := Gdip_BitmapFromScreen(region), s := 0
 		for i, k in bitmaps["hive"] {
@@ -10465,11 +10465,11 @@ nm_SetHiveCameraDirection(rotations){
 				HiveConfirmed := 1
 				sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
 				Send "{" ZoomOut " 5}"
-				break 2
+				return 1
 			}
 		}
 		Gdip_DisposeImage(pBMScreen)
-		sendinput "{" RotRight " 4}" ((A_Index = 2) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
+		sendinput "{" RotRight " " rotations "}" ((maxindex/2 = A_Index) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
 	}
 }
 nm_setShiftLock(state, *){
@@ -15411,7 +15411,6 @@ nm_GoGather(){
 		, WhirligigKey, PFieldBoosted, GlitterKey, GatherFieldBoosted, GatherFieldBoostedStart, LastGlitter, PMondoGuidComplete, LastGuid, PMondoGuid, PFieldGuidExtend, PFieldGuidExtendMins, PFieldBoostExtend, PPopStarExtend, HasPopStar, PopStarActive, FieldGuidDetected, ConvertGatherFlag
 		, LastWhirligig
 		, BoostChaserCheck, LastBlueBoost, LastRedBoost, LastMountainBoost, FieldBooster3, FieldBooster2, FieldBooster1, FieldDefault, LastMicroConverter, HiveConfirmed
-		, BlueFlowerBoosterCheck, BambooBoosterCheck, PineTreeBoosterCheck, StumpBoosterCheck, DandelionBoosterCheck, SunflowerBoosterCheck, CloverBoosterCheck, SpiderBoosterCheck, PineappleBoosterCheck, CactusBoosterCheck, PumpkinBoosterCheck, MushroomBoosterCheck, StrawberryBoosterCheck, RoseBoosterCheck, PepperBoosterCheck, CoconutBoosterCheck
 		, FieldName1, FieldPattern1, FieldPatternSize1, FieldPatternReps1, FieldPatternShift1, FieldPatternInvertFB1, FieldPatternInvertLR1, FieldUntilMins1, FieldUntilPack1, FieldReturnType1, FieldSprinklerLoc1, FieldSprinklerDist1, FieldRotateDirection1, FieldRotateTimes1, FieldDriftCheck1
 		, FieldName2, FieldPattern2, FieldPatternSize2, FieldPatternReps2, FieldPatternShift2, FieldPatternInvertFB2, FieldPatternInvertLR2, FieldUntilMins2, FieldUntilPack2, FieldReturnType2, FieldSprinklerLoc2, FieldSprinklerDist2, FieldRotateDirection2, FieldRotateTimes2, FieldDriftCheck2
 		, FieldName3, FieldPattern3, FieldPatternSize3, FieldPatternReps3, FieldPatternShift3, FieldPatternInvertFB3, FieldPatternInvertLR3, FieldUntilMins3, FieldUntilPack3, FieldReturnType3, FieldSprinklerLoc3, FieldSprinklerDist3, FieldRotateDirection3, FieldRotateTimes3, FieldDriftCheck3
