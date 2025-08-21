@@ -714,7 +714,7 @@ DetectBuffs()
 
 		
 		x := SubStr(list, 1, InStr(list, ",")-1)
-		
+
 		(digits := Map()).Default := ""
 
 		Loop 10
