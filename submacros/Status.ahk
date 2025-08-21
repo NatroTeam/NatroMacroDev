@@ -811,17 +811,35 @@ nm_command(command)
 			params.Push(A_LoopField)
 	params.Length := 10, params.Default := ""
 
+	name := params[1]
+
 	allowed := IniRead("settings\nm_config.ini", "Settings", "AllowedUIDs", "")
-	EnabledRCProtection := IniRead("settings\nm_config.ini", "Settings", "EnablePowerfulCommands") 
-	if (command.authorID = discordUID && !InStr(allowed, command.authorID)) {
-		discord.SendEmbed("Command author same as pinged user: " . command.authorID . ";\n add your ID to whitelist using " . commandPrefix . "whitelist add " . discordUID . " to stop getting this reminder!\nYour command will still execute as normal.", 65311, , , , id)
-	} else if (!InStr(allowed, command.authorID)) {
-		discord.SendEmbed("Your are not an allowed user! RC command has been ignored.\nYour UID: " . command.authorID . ";\nAllowed Users : " . allowed . ";\nIf you want to send RC commands, ask a whitelisted user to add your ID using " . commandPrefix . "whitelist add " . command.authorID, 65311, , , , id)
+	allowedList := []
+	Loop Parse allowed, ","
+	{
+		if (A_LoopField != "")
+			allowedList.Push(Trim(A_LoopField))
+	}
+	isWhitelisted := ObjHasValue(allowedList, command.authorID)
+	whitelistEnabled := (allowedList.Length > 0)
+	EnabledRCProtection := IniRead("settings\nm_config.ini", "Settings", "EnablePowerfulCommands")
+	WhitelistAllCommands := IniRead("settings\nm_config.ini", "Settings", "WhitelistAllCommands", 0)
+	isPingedUser := (command.authorID = discordUID)
+	requiresWhitelist := (WhitelistAllCommands = 1) || (name ~= "i)^(upload|download|restart|whitelist)$")
+	if (whitelistEnabled && !isWhitelisted && !isPingedUser && requiresWhitelist) {
+		if (WhitelistAllCommands = 1 || !(name ~= "i)^(upload|download|restart)$")) {
+			discord.SendEmbed("Your are not an allowed user! RC command has been ignored.\nYour UID: " . command.authorID . ";\nAllowed Users : " . allowed . ";\nIf you want to send RC commands, ask a whitelisted user to add your ID using " . commandPrefix . "whitelist add " . command.authorID, 65311, , , , id)
+		} else {
+			discord.SendEmbed("Powerful commands are restricted to whitelisted users. You are not allowed.\nYour UID: " . command.authorID . ";\nAllowed Users : " . allowed . ";\nAsk a whitelisted user to add your ID using " . commandPrefix . "whitelist add " . command.authorID, 65311, , , , id)
+		}
 		command_buffer.RemoveAt(1)
 		return
 	}
+	if (isPingedUser && !isWhitelisted) {
+		discord.SendEmbed("Command author same as pinged user: " . command.authorID . ";\n add your ID to whitelist using " . commandPrefix . "whitelist add " . discordUID . " to stop getting this reminder!\nYour command will still execute as normal.", 65311, , , , id)
+	}
 
-	switch (name := params[1]), 0
+	switch (name), 0
 	{
 		case "help","":
 		switch params[2], 0
@@ -2414,46 +2432,53 @@ nm_command(command)
 		case "whitelist":
 			{
 				currentUIDs := IniRead("settings\nm_config.ini", "Settings", "AllowedUIDs", "")
+				list := []
+				seen := Map()
+				Loop Parse currentUIDs, ","
+				{
+					t := Trim(A_LoopField)
+					if (t ~= "^\d{17,20}$" && !seen.Has(t))
+						seen[t] := true, list.Push(t)
+				}
 				action := params[2]
 				uid := params[3]
-			
-				; 17-20 digits UID only
-				if !RegExMatch(uid, "^\d{17,20}$")
+				if !(uid ~= "^\d{17,20}$")
 				{
 					discord.SendEmbed("Invalid Discord UID specified. Obtain a valid UID by right clicking a users profile and clicking on 'Copy User ID'.", 16711731, , , , id)
 				}
-			
-				if (action == "add")
+				else if (action == "add")
 				{
-					if (InStr(currentUIDs, uid))
+					if (ObjHasValue(list, uid))
 					{
 						discord.SendEmbed("This UID is already whitelisted!", 16776960, , , , id)
 					}
 					else
 					{
-						if (currentUIDs == "")
-							newUIDs := uid
-						else
-							newUIDs := currentUIDs . "," . uid
-			
-						IniWrite(newUIDs, "settings\nm_config.ini", "Settings", "AllowedUIDs")
+						list.Push(uid)
+						joined := ""
+						for i, v in list
+							joined .= (i > 1 ? "," : "") v
+						IniWrite(joined, "settings\nm_config.ini", "Settings", "AllowedUIDs")
 						discord.SendEmbed("Successfully added UID to whitelist: " uid, 65311, , , , id)
 					}
 				}
 				else if (action == "remove")
 				{
-					if (!InStr(currentUIDs, uid))
+					if (!ObjHasValue(list, uid))
 					{
 						discord.SendEmbed("UID is not in whitelist; nothing was removed.", 16776960, , , , id)
 					}
 					else
 					{
-						updated := StrReplace(currentUIDs, uid)
-						updated := Trim(updated, ",")
-			
-						IniWrite(updated, "settings\nm_config.ini", "Settings", "AllowedUIDs")
-
-						discord.SendEmbed("Removed UID from whitelist: Current list: " updated, 65311, , , , id)
+						out := []
+						for _, x in list
+							if (x != uid)
+								out.Push(x)
+						joined := ""
+						for i, v in out
+							joined .= (i > 1 ? "," : "") v
+						IniWrite(joined, "settings\nm_config.ini", "Settings", "AllowedUIDs")
+						discord.SendEmbed("Removed UID from whitelist: Current list: " joined, 65311, , , , id)
 					}
 				}
 				else

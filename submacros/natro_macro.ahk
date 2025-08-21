@@ -309,6 +309,7 @@ nm_importConfig()
 		, "DisableToolUse", 0
 		, "AnnounceGuidingStar", 0
 		, "EnablePowerfulCommands", 0
+		, "WhitelistAllCommands", 0
 		, "AllowedUIDs", ""
 		, "NewWalk", 1
 		, "HiveSlot", 6
@@ -3954,6 +3955,7 @@ nm_TabSettingsLock(){
 	MainGui["DisableToolUse"].Enabled := 0
 	MainGui["AnnounceGuidingStar"].Enabled := 0
 	MainGui["EnablePowerfulCommands"].Enabled := 0
+	MainGui["WhitelistAllCommands"].Enabled := 0
 	MainGui["NewWalk"].Enabled := 0
 	MainGui["HiveSlot"].Enabled := 0
 	MainGui["HiveBees"].Enabled := 0
@@ -3994,6 +3996,7 @@ nm_TabSettingsUnLock(){
 	MainGui["DisableToolUse"].Enabled := 1
 	MainGui["AnnounceGuidingStar"].Enabled := 1
 	MainGui["EnablePowerfulCommands"].Enabled := 1
+	MainGui["WhitelistAllCommands"].Enabled := 1
 	MainGui["NewWalk"].Enabled := 1
 	MainGui["HiveSlot"].Enabled := 1
 	MainGui["HiveBees"].Enabled := 1
@@ -7280,6 +7283,24 @@ nm_EnablePowerfulCommands(GuiCtrl, *){
 			IniWrite (GuiCtrl.Value := EnablePowerfulCommands := 0), "settings\nm_config.ini", "Settings", "EnablePowerfulCommands"
 	}
 }
+nm_WhitelistAllCommands(GuiCtrl, *){
+    global WhitelistAllCommands
+    IniWrite (WhitelistAllCommands := (GuiCtrl.Value ? 1 : 0)), "settings\nm_config.ini", "Settings", "WhitelistAllCommands"
+}
+WhitelistScopeInfo(*) => MsgBox("
+(
+Enable for All Commands
+
+Off (recommended):
+- Whitelist required only for ?upload, ?download, ?restart, and ?whitelist.
+
+On:
+- Whitelist required for ALL commands sent via Discord.
+
+Examples:
+- ?whitelist add 123456789012345678
+- ?whitelist remove 123456789012345678
+)", "Whitelist Scope", 0x40040)
 nm_saveAllowedUIDs(GuiCtrl, *) {
 	global AllowedUIDs
 	p := EditGetCurrentCol(GuiCtrl)
@@ -9398,10 +9419,12 @@ nm_AdvancedGUI(init:=0){
 	;danger
 	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
 	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
-	GuiCtrl := MainGui.Add("CheckBox", "x10 y150 vEnablePowerfulCommands Disabled Checked" EnablePowerfulCommands, "Enable Powerful Commands").OnEvent("Click", nm_EnablePowerfulCommands)
-	MainGui.Add("Button", "xp+152 yp w12 h14","?").OnEvent("Click", RCCommandInfo)
-	MainGui.Add("Text", "x10 y170", "UIDs:")
-	MainGui.Add("Edit", "xp+28 yp w180 h18 vAllowedUIDs", AllowedUIDs).OnEvent("Change", nm_saveAllowedUIDs)
+	GuiCtrl := MainGui.Add("CheckBox", "x10 y148 vEnablePowerfulCommands Disabled Checked" EnablePowerfulCommands, "Enable Powerful Commands").OnEvent("Click", nm_EnablePowerfulCommands)
+	MainGui.Add("Button", "xp+157 yp w12 h14","?").OnEvent("Click", RCCommandInfo)
+	GuiCtrl := MainGui.Add("CheckBox", "x10 y166 vWhitelistAllCommands Disabled Checked" WhitelistAllCommands, "Enable for All Commands").OnEvent("Click", nm_WhitelistAllCommands)
+	MainGui.Add("Button", "xp+143 yp w12 h14","?").OnEvent("Click", WhitelistScopeInfo)
+	MainGui.Add("Text", "x10 y182", "UIDs (comma-separated):")
+	MainGui.Add("Edit", "xp+128 yp w90 h18 vAllowedUIDs", AllowedUIDs).OnEvent("Change", nm_saveAllowedUIDs)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
