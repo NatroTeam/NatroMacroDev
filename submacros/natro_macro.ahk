@@ -10424,25 +10424,47 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		SetKeyDelay PrevKeyDelay
 
 		; hive check
-		if hivedown
-			sendinput "{" RotDown "}"
-		region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
-		sconf := windowWidth**2//3200
-		loop 4 {
-			sleep 250+KeyDelay
-			pBMScreen := Gdip_BitmapFromScreen(region), s := 0
-			for i, k in bitmaps["hive"] {
-				s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 4, , , sconf))
-				if (s >= sconf) {
-					Gdip_DisposeImage(pBMScreen)
-					HiveConfirmed := 1
-					sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
-					Send "{" ZoomOut " 5}"
-					break 2
+		if !nm_ConfirmAtHive() && nm_DetectSpawn() {
+			Sleep 500
+			GetRobloxClientPos(hwnd)
+			MouseMove windowX+350, windowY+offsetY+100
+			send "{" ZoomOut " 8}"
+			slotMove := Map(
+				1, [{dir:"Right", dist:4}, {dir:["Right", "Fwd"], dist:20}],
+				2, [{dir:["Fwd", "Right"], dist:13}, {dir:"Fwd", dist:6}],
+				3, [{dir:"Fwd", dist:20}, {dir:"Back", dist:4}],
+				4, [{dir:["Left", "Fwd"], dist:13}, {dir:"Fwd", dist:6}],
+				5, [{dir:"Left", dist:4}, {dir:["Left", "Fwd"], dist:20}],
+				6, [{dir:["Left", "Fwd"], dist:12}, {dir:"Left", dist:13}, {dir:["Left", "Fwd"], dist:10}]
+			)
+			movement := nm_spawnMoveTo(slotMove[HiveSlot])
+			nm_createWalk(movement)
+			KeyWait "F14", "D T5 L"
+			KeyWait "F14", "T20 L"
+			nm_endWalk()
+			if nm_ConfirmAtHive()
+				HiveConfirmed := 1
+		} else {
+			if hivedown
+				sendinput "{" RotDown "}"
+			region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
+			sconf := windowWidth**2//3200
+			loop 4 {
+				sleep 250+KeyDelay
+				pBMScreen := Gdip_BitmapFromScreen(region), s := 0
+				for i, k in bitmaps["hive"] {
+					s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 4, , , sconf))
+					if (s >= sconf) {
+						Gdip_DisposeImage(pBMScreen)
+						HiveConfirmed := 1
+						sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
+						Send "{" ZoomOut " 5}"
+						break 2
+					}
 				}
+				Gdip_DisposeImage(pBMScreen)
+				sendinput "{" RotRight " 4}" ((A_Index = 2) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
 			}
-			Gdip_DisposeImage(pBMScreen)
-			sendinput "{" RotRight " 4}" ((A_Index = 2) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
 		}
 	}
 	;convert
@@ -10459,6 +10481,55 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			Sleep (remaining*1000) ;miliseconds
 		}
 	}
+}
+nm_ConfirmAtHive(){
+	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
+	if ((Gdip_ImageSearch(pBMScreen, bitmaps["makehoney"], , , , , , 2, , 2) = 1) || (Gdip_ImageSearch(pBMScreen, bitmaps["collectpollen"], , , , , , 2, , 2) = 1)){
+		Gdip_DisposeImage(pBMScreen)
+		return 1
+	}
+	Gdip_DisposeImage(pBMScreen)
+	return 0
+}
+nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here since it seems to reliably detect hive slots even when the stuff is really bad
+    ActivateRoblox()
+    GetRobloxClientPos()
+    loop 5
+        send("{" ZoomIn "}"), sleep(50)
+    send("{" RotDown " 11}"), sleep(100), send("{" RotUp " 5}")
+	region := windowX "|" windowY "|" windowWidth "|" windowHeight//4
+	sconf := windowWidth**2//3200
+    spawnConfirmed := 0
+	loop 4 {
+		sleep 250
+		pBMScreen := Gdip_BitmapFromScreen(region), s := 0
+		for i, k in bitmaps["spawn"] {
+			s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 5, , , sconf))
+			if (s >= sconf) {
+				Gdip_DisposeImage(pBMScreen)
+				spawnConfirmed := 1 
+				Send "{" RotUp " 2}"
+				loop 5
+                    send("{" ZoomOut "}"), sleep(50)
+				break 2
+			}
+		}
+		Gdip_DisposeImage(pBMScreen)
+		sendinput "{" RotRight " 4}"
+	}
+	return spawnConfirmed
+}
+nm_spawnMoveTo(moves) {
+    script := ""
+    for k in moves {
+        dirs := (Type(k.dir) = "Array") ? k.dir : [k.dir]
+        for dir in dirs
+            script .= 'Send "{' %dir "Key"% ' down}"`n'
+        script .= "Walk(" k.dist ")" "`n"
+        for dir in dirs
+            script .= 'Send "{' %dir "Key"% ' up}"`n'
+    }
+    return script
 }
 nm_setShiftLock(state, *){
 	global bitmaps, SC_LShift, ShiftLockEnabled
