@@ -2884,7 +2884,7 @@ MainGui.Add("Button", "x200 y65 w90 h30 vBoostedFieldSelectButton Disabled", "Se
 MainGui.SetFont("w700")
 
 ;shrine
-MainGui.Add("GroupBox", "x300 y25 w190 h105", "Wind Shrine")
+MainGui.Add("GroupBox", "x300 y25 w191 h105", "Wind Shrine")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 loop 2 {
 	xCoords := 246 + (86 * A_Index)
