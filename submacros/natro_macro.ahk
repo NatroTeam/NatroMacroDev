@@ -400,13 +400,13 @@ nm_importConfig()
 	config["Gather"] := Map("FieldName1", "Sunflower"
 		, "FieldName2", "None"
 		, "FieldName3", "None"
-		, "FieldPattern1", "Squares"
+		, "FieldPattern1", "CornerXSnake"
 		, "FieldPattern2", "Lines"
 		, "FieldPattern3", "Lines"
 		, "FieldPatternSize1", "M"
 		, "FieldPatternSize2", "M"
 		, "FieldPatternSize3", "M"
-		, "FieldPatternReps1", 3
+		, "FieldPatternReps1", 4
 		, "FieldPatternReps2", 3
 		, "FieldPatternReps3", 3
 		, "FieldPatternShift1", 0
@@ -415,22 +415,22 @@ nm_importConfig()
 		, "FieldPatternInvertFB1", 0
 		, "FieldPatternInvertFB2", 0
 		, "FieldPatternInvertFB3", 0
-		, "FieldPatternInvertLR1", 0
+		, "FieldPatternInvertLR1", 1
 		, "FieldPatternInvertLR2", 0
 		, "FieldPatternInvertLR3", 0
-		, "FieldUntilMins1", 20
-		, "FieldUntilMins2", 15
-		, "FieldUntilMins3", 15
+		, "FieldUntilMins1", 10
+		, "FieldUntilMins2", 10
+		, "FieldUntilMins3", 10
 		, "FieldUntilPack1", 95
 		, "FieldUntilPack2", 95
 		, "FieldUntilPack3", 95
 		, "FieldReturnType1", "Walk"
 		, "FieldReturnType2", "Walk"
 		, "FieldReturnType3", "Walk"
-		, "FieldSprinklerLoc1", "Center"
+		, "FieldSprinklerLoc1", "Upper Left"
 		, "FieldSprinklerLoc2", "Center"
 		, "FieldSprinklerLoc3", "Center"
-		, "FieldSprinklerDist1", 10
+		, "FieldSprinklerDist1", 8
 		, "FieldSprinklerDist2", 10
 		, "FieldSprinklerDist3", 10
 		, "FieldRotateDirection1", "None"
@@ -439,7 +439,7 @@ nm_importConfig()
 		, "FieldRotateTimes1", 1
 		, "FieldRotateTimes2", 1
 		, "FieldRotateTimes3", 1
-		, "FieldDriftCheck1", 1
+		, "FieldDriftCheck1", 0
 		, "FieldDriftCheck2", 1
 		, "FieldDriftCheck3", 1
 		, "CurrentFieldNum", 1)
