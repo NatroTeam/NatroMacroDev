@@ -301,12 +301,11 @@ nm_importConfig()
 		, "MoveSpeedNum", 28
 		, "MoveMethod", "Cannon"
 		, "SprinklerType", "Supreme"
-		, "MultiReset", 0
 		, "ConvertBalloon", "Gather"
 		, "ConvertMins", 30
 		, "LastConvertBalloon", 1
-		, "GatherDoubleReset", 1
 		, "DisableToolUse", 0
+		, "ShowStatusTitleBar", 1
 		, "AnnounceGuidingStar", 0
 		, "NewWalk", 1
 		, "HiveSlot", 6
@@ -2553,7 +2552,8 @@ MainGui.Add("GroupBox", "x5 y95 w160 h65", "Hive")
 MainGui.Add("GroupBox", "x5 y165 w160 h70", "Reset")
 MainGui.Add("GroupBox", "x170 y25 w160 h35", "Input")
 MainGui.Add("GroupBox", "x170 y65 w160 h170", "Reconnect")
-MainGui.Add("GroupBox", "x335 y25 w160 h210", "Character")
+MainGui.Add("GroupBox", "x335 y25 w160 h170", "Character")
+MainGui.Add("GroupBox", "x335 y200 w160 h35", "Roblox")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
 ;gui settings
@@ -2640,10 +2640,11 @@ MainGui.Add("Button", "x480 y131 w12 h16 vCBRight Disabled", ">").OnEvent("Click
 MainGui.Add("Text", "x370 y147 w110 +BackgroundTrans", "\____\___")
 (GuiCtrl := MainGui.Add("Edit", "x422 y150 w30 h18 number Limit3 vConvertMins Disabled", ValidateInt(&ConvertMins, 30))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 MainGui.Add("Text", "x456 y152", "Mins")
-MainGui.Add("Text", "x345 y170 w110 +BackgroundTrans", "Multiple Reset:")
-(GuiCtrl := MainGui.Add("Slider", "x415 y168 w78 h16 vMultiReset Thick16 Disabled ToolTipTop Range0-3 Page1 TickInterval1", MultiReset)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x345 y186 vGatherDoubleReset Disabled Checked" GatherDoubleReset, "Gather Double Reset")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x345 y201 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x345 y170 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+
+;roblox settings
+(GuiCtrl := MainGui.Add("CheckBox", "x345 y216 vShowStatusTitleBar Disabled Checked" ShowStatusTitleBar, "Show Status in Title Bar")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_ShowStatusTitleBar)
+MainGui.Add("Button", "x480 y216 w10 h15 vShowStatusTitleBarHelp Disabled", "?").OnEvent("Click", nm_ShowStatusTitleBarHelp)
 SetLoadingProgress(30)
 
 ;COLLECT/Kill TAB
@@ -3950,10 +3951,10 @@ nm_TabSettingsLock(){
 	MainGui["STRight"].Enabled := 0
 	MainGui["CBLeft"].Enabled := 0
 	MainGui["CBRight"].Enabled := 0
-	MainGui["MultiReset"].Enabled := 0
 	MainGui["ConvertMins"].Enabled := 0
-	MainGui["GatherDoubleReset"].Enabled := 0
 	MainGui["DisableToolUse"].Enabled := 0
+	MainGui["ShowStatusTitleBar"].Enabled := 0
+	MainGui["ShowStatusTitleBarHelp"].Enabled := 0
 	MainGui["AnnounceGuidingStar"].Enabled := 0
 	MainGui["NewWalk"].Enabled := 0
 	MainGui["HiveSlot"].Enabled := 0
@@ -3988,11 +3989,11 @@ nm_TabSettingsUnLock(){
 	MainGui["STRight"].Enabled := 1
 	MainGui["CBLeft"].Enabled := 1
 	MainGui["CBRight"].Enabled := 1
-	MainGui["MultiReset"].Enabled := 1
 	if (ConvertBalloon="every")
 		MainGui["ConvertMins"].Enabled := 1
-	MainGui["GatherDoubleReset"].Enabled := 1
 	MainGui["DisableToolUse"].Enabled := 1
+	MainGui["ShowStatusTitleBar"].Enabled := 1
+	MainGui["ShowStatusTitleBarHelp"].Enabled := 1
 	MainGui["AnnounceGuidingStar"].Enabled := 1
 	MainGui["NewWalk"].Enabled := 1
 	MainGui["HiveSlot"].Enabled := 1
@@ -7640,6 +7641,25 @@ nm_ConvertBalloon(GuiCtrl, *){
 	MainGui["ConvertMins"].Enabled := (ConvertBalloon = "Every")
 	IniWrite ConvertBalloon, "settings\nm_config.ini", "Settings", "ConvertBalloon"
 }
+nm_ShowStatusTitleBar(GuiCtrl, *){
+	global ShowStatusTitleBar
+	ShowStatusTitleBar := !ShowStatusTitleBar
+	IniWrite ShowStatusTitleBar, "settings\nm_config.ini", "Settings", "ShowStatusTitleBar"
+	if ShowStatusTitleBar
+		nm_setTitle()
+	else if hwnd := GetRobloxHWND()
+		WinSetTitle("Roblox", hwnd)
+}
+nm_ShowStatusTitleBarHelp(*){ ; show status in title bar information
+	MsgBox "
+	(
+	DESCRIPTION:
+	When this option is enabled, Roblox title bar will change based on macro status.
+
+	IMPORTANT:
+	This feature doesn't work on UWP (Microsoft) Roblox due to how the title bar in UWP apps work!
+	)", "Show Status in Title Bar", 0x40000
+}
 
 ; MISC TAB
 ; ------------------------
@@ -9877,7 +9897,7 @@ nm_MemoryMatchInterrupt() {
 	)
 }
 
-;stats/status
+;stats/status/setTitle
 nm_setStats(){
 	global
 	local rundelta:=0, gatherdelta:=0, convertdelta:=0, TotalStatsString, SessionStatsString
@@ -9966,7 +9986,23 @@ nm_setStatus(newState:=0, newObjective:=0){
 	if WinExist("Status.ahk ahk_class AutoHotkey")
 		try SendMessage 0xC2, 0, StrPtr("[" A_MM "/" A_DD "][" A_Hour ":" A_Min ":" A_Sec "] " stateString)
 	DetectHiddenWindows 0
+	nm_setTitle(stateString)
 }
+nm_setTitle(title?) {
+	if !ShowStatusTitleBar
+		return
+    if (macroState == 2 && title) {
+		if hwnd := GetRobloxHWND()
+			WinSetTitle("Roblox - Natro Macro (" title ")", hwnd)
+        return
+    }
+    if (hwnd := GetRobloxHWND()) {
+        stateTitle := (macroState == 0) ? "Stopped" : (macroState == 1) ? "Paused" : ""
+        if stateTitle != ""
+            WinSetTitle("Roblox - Natro Macro (" stateTitle ")", hwnd)
+    }
+}
+
 nm_updateAction(action){
 	global CurrentAction, PreviousAction
 	if(CurrentAction!=action){
@@ -10271,7 +10307,7 @@ PostSubmacroMessage(submacro, args*){
 	DetectHiddenWindows 0
 }
 nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
-	global resetTime, youDied, VBState, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, MultiReset, bitmaps
+	global resetTime, youDied, VBState, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, bitmaps
 	static hivedown := 0
 	;check for game frozen conditions
 	if (GameFrozenCounter>=3) { ;3 strikes
@@ -10403,24 +10439,21 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		MouseMove windowX+350, windowY+offsetY+100
 		PrevKeyDelay:=A_KeyDelay
 		SetKeyDelay 250+KeyDelay
-		Loop (VBState = 0) ? (1 + MultiReset + (GatherDoubleReset && (CheckAll=2))) : 1
+		resetTime:=nowUnix()
+		PostSubmacroMessage("background", 0x5554, 1, resetTime)
+		;reset
+		ActivateRoblox()
+		GetRobloxClientPos()
+		send "{" SC_Esc "}{" SC_R "}{" SC_Enter "}"
+		n := 0
+		while ((n < 2) && (A_Index <= 80))
 		{
-			resetTime:=nowUnix()
-			PostSubmacroMessage("background", 0x5554, 1, resetTime)
-			;reset
-			ActivateRoblox()
-			GetRobloxClientPos()
-			send "{" SC_Esc "}{" SC_R "}{" SC_Enter "}"
-			n := 0
-			while ((n < 2) && (A_Index <= 80))
-			{
-				Sleep 100
-				pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|50")
-				n += (Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) = (n = 0))
-				Gdip_DisposeImage(pBMScreen)
-			}
-			Sleep 1000
+			Sleep 100
+			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|50")
+			n += (Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) = (n = 0))
+			Gdip_DisposeImage(pBMScreen)
 		}
+		Sleep 1000
 		SetKeyDelay PrevKeyDelay
 
 		; hive check
@@ -21708,6 +21741,7 @@ getout(*){
 	CloseScripts()
 	try Gdip_Shutdown(pToken)
 	DllCall(A_WorkingDir "\nm_image_assets\Styles\USkin.dll\USkinExit")
+	WinSetTitle("Roblox",GetRobloxHWND())
 }
 
 Background(){
@@ -21725,6 +21759,10 @@ Background(){
 		nm_bugDeathCheck()
 	;stats
 	nm_setStats()
+	;title
+	if (macroState != 2) {
+		nm_setTitle()
+	}
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
