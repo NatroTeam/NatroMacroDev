@@ -305,7 +305,7 @@ nm_importConfig()
 		, "ConvertMins", 30
 		, "LastConvertBalloon", 1
 		, "DisableToolUse", 0
-		, "ShowStatusTitleBar", 1
+		, "ShowStatusTitleBar", 0
 		, "AnnounceGuidingStar", 0
 		, "NewWalk", 1
 		, "HiveSlot", 6
