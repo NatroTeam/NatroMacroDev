@@ -2124,15 +2124,11 @@ nm_DetectRobloxType()
 {
 	robloxtype := "Not found"
 	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\roblox\UserChoice", "ProgId")
-	catch
-		return robloxtype
-	if InStr(defaultapp, "AppX")
-		robloxtype := "UWP Version"
-	else
-	{
-		try robloxpath := nm_GetRobloxWebPath()
-		catch
-			return robloxtype
+	if IsSet(defaultapp)
+		if InStr(defaultapp, "AppX")
+			robloxtype := "UWP Version"
+	try robloxpath := nm_GetRobloxWebPath()
+	if IsSet(robloxpath)
 		switch {
 			case InStr(robloxpath, "Bloxstrap"):
 				robloxtype := "Bloxstrap"
@@ -2141,7 +2137,9 @@ nm_DetectRobloxType()
 			case robloxpath:
 				robloxtype := "Custom (Web)"
 		}
-	}
+	else
+		if FileExist(nm_GetRobloxUWPPath())
+			robloxtype := "UWP Version"
 	return robloxtype
 }
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
