@@ -338,7 +338,6 @@ nm_importConfig()
 		, "TimersHotkey", "F5"
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
-		, "IgnoreIncorrectRobloxSettings", 0 
 		, "FDCWarn", 1
 		, "priorityListNumeric", 12345678
 		, "DebugHotkey", "F6")
@@ -2090,160 +2089,7 @@ DllCall(DllCall("GetProcAddress"
 		, "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
 		, "AStr","USkinInit", "Ptr")
 	, "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; DEFAULT ROBLOX TYPE/PATH DETECTION
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-nm_DetectDefaultBrowser()
-{
-	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice", "ProgId")
-	if !IsSet(defaultapp)
-		defaultapp := "Not found"
-	return defaultapp
-}
-nm_GetRobloxUWPPath()
-{
-	try {
-		loop Reg, "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages", "K" {
-			if InStr(A_LoopRegName,"ROBLOXCORPORATION.ROBLOX_"){
-				basePath := "C:\Program Files\WindowsApps\" A_LoopRegName "\"
-				exePath := basePath "Windows10Universal.exe"
-				if FileExist(exePath)
-					return exePath
-			}
-		}
-	}
-	catch Error as E
-		return "Path read error: " E.Message
-	return "Path not found"
-}
-nm_GetRobloxWebPath()
-{
-	return RegRead("HKCR\roblox\shell\open\command")
-}
-nm_DetectRobloxType()
-{
-	robloxtype := "Not found"
-	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\roblox\UserChoice", "ProgId")
-	catch
-		return robloxtype
-	if (defaultapp = "roblox") {
-		try robloxpath := nm_GetRobloxWebPath()
-		catch
-			return robloxtype
-		switch {
-			case InStr(robloxpath, "Bloxstrap"):
-				robloxtype := "Bloxstrap"
-			case InStr(robloxpath, "RobloxPlayerInstaller"):
-				robloxtype := "Web Version"
-			case robloxpath:
-				robloxtype := "Custom (Web)"
-		}
-	}
-	else if InStr(defaultapp, "AppX") {
-		robloxtype := "UWP Version"
-	}
-	return robloxtype
-}
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; DETECT INCORRECT ROBLOX SETTINGS
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-RecommendedRobloxSettings := Map(
-	"Correct", Map(
-		"All", Map(
-			'"GraphicsQualityLevel">3', "Set Graphics Quality to LOWEST",
-			'"PreferredTextSize">1', 'Set Text Size to LOWEST'
-		),
-		"UWP Version", Map(),
-		"Web Version", Map(
-			'"ControlMode">1', 'Turn ON Shift Lock'
-		)
-	),
-	"Incorrect", Map(
-		"All", Map(
-			'"CameraYInverted">true', 'Turn OFF Inverted Camera',
-			'"OnScreenProfilerEnabled">true', 'Turn OFF Microprofiler',
-			'"ComputerCameraMovementMode">2', 'Set Camera Mode to CLASSIC',
-			'"ComputerMovementMode">2', 'Set Movement Mode to KEYBOARD',
-			'"GraphicsQualityLevel">0', "Switch to MANUAL Graphics"
-		),
-		"UWP Version", Map(
-			'"Fullscreen">true', 'Turn OFF Fullscreen',
-			'"ControlMode">1', 'Turn OFF Shift Lock'
-		),
-		"Web Version", Map()
-	)
-)
-JoinArray(arr, sep := "`n") {
-    out := ""
-    for i, val in arr
-        out .= (i > 1 ? sep : "") val
-    return out
-}
-nm_MsgBoxIncorrectRobloxSettings()
-{
-	global IgnoreIncorrectRobloxSettings, ReconnectMethod, PrivServer
-	if IgnoreIncorrectRobloxSettings
-		return
-	static robloxtype := nm_DetectRobloxType()
-	if ReconnectMethod = "Browser" && PrivServer
-		robloxtype := "Web Version"
-	xmlpath := ""
-	try switch robloxtype {
-		case "Not found":
-			return
-		case "Custom (Web)", "Web Version", "Bloxstrap":
-			loop Files, EnvGet("LOCALAPPDATA") "\Roblox\GlobalBasicSettings_*.xml", "F"
-				if !InStr(A_LoopFileName, "Studio")
-					xmlpath := A_LoopFileFullPath
-		case "UWP Version":
-			loop Files, EnvGet("LOCALAPPDATA") "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
-				if !InStr(A_LoopFileName, "Studio")
-					xmlpath := A_LoopFileFullPath
-	}
-	catch
-		return
-	if !FileExist(xmlpath)
-		return
-	static xml := FileRead(xmlpath)
-	recommendations := []
-	for tier, tiermap in RecommendedRobloxSettings {
-		for platform, platformmap in tiermap {
-			if platform = "All" || (platform = "UWP Version" && robloxtype = "UWP Version") || (platform = "Web Version" && (robloxtype = "Bloxstrap" || robloxtype = "Custom (Web)" || robloxtype = "Web Version")){
-				for xmltext, recommendation in platformmap {
-					if tier = "Incorrect" && InStr(xml, xmltext)
-						recommendations.Push(recommendation)
-					else if tier = "Correct" && !InStr(xml, xmltext)
-						recommendations.Push(recommendation)
-				}
-			}
-		}
-	}
-	if recommendations.Length {
-		rectext := JoinArray(recommendations, "`n")
-		local IncSettingsGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Incorrect Roblox Settings Detected")
-		IncSettingsGui.SetFont("s9", "Tahoma")
-		IncSettingsGui.OnEvent("Close", (*) => gui.Destroy())
-		IncSettingsGui.SetFont("Bold s10 cBlue", "Tahoma")
-		IncSettingsGui.Add("Text", "x10 y10 w400 +Center", "Default Roblox application: " robloxtype)
-		IncSettingsGui.SetFont("s9 cDefault", "Tahoma")
-		IncSettingsGui.Add("Text", "x10 y40 w400 +BackgroundTrans", "The detected Roblox application might have incorrect settings, please do these:")
-		IncSettingsGui.SetFont("s9 cRed", "Tahoma")
-		IncSettingsGui.Add("Text", "x10 y70 w400 r" recommendations.Length "+BackgroundTrans", rectext)
-		IncSettingsGui.SetFont("s8 cDefault", "Tahoma")
-		IncSettingsGui.Add("Text", "x10 y" (80 + 14 * recommendations.Length) " w400 +BackgroundTrans", "IMPORTANT: You can safely ignore this message if you have already changed them.")
-		IncSettingsGui.SetFont("s9", "Tahoma")
-		IncSettingsGui.Add("CheckBox", "x10 y" (110 + 14 * recommendations.Length) " w200 vIncorrectSettingsCheckbox", "Do not show again")
-		btn := IncSettingsGui.Add("Button", "x320 y" (110 + 14 * recommendations.Length) " w90 h28 Default", "OK")
-		btn.OnEvent("Click", (*) => (
-			IncSettingsGui["IncorrectSettingsCheckbox"].Value
-				? (MsgBox("You ticked the 'Do not show again' checkbox, which means you won't get any warning messages about incorrect Roblox settings anymore. Are you sure that you want to do this?", "Are you sure?", 0x1034) = "Yes"
-					? (IniWrite(1, "settings\nm_config.ini", "Settings", "IgnoreIncorrectRobloxSettings"), IncSettingsGui.Destroy())
-					: "")
-				: IncSettingsGui.Destroy()
-		))
-		IncSettingsGui.Show("AutoSize Center")
-	}
-}
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; AUTO-UPDATE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2750,32 +2596,27 @@ MainGui.Add("UpDown", "Range0-9999 vKeyDelay Disabled", KeyDelay).OnEvent("Chang
 ;reconnect settings
 MainGui.Add("Button", "x248 y64 w40 h16 vTestReconnectButton Disabled", "Test").OnEvent("Click", nm_testReconnect)
 MainGui.Add("Text", "x178 y82 +BackgroundTrans", "Private Server Link:")
-MainGui.Add("Edit", "x176 yp+13 w148 h16 vPrivServer Disabled", PrivServer).OnEvent("Change", nm_ServerLink)
+MainGui.Add("Edit", "x176 yp+15 w148 h16 vPrivServer Disabled", PrivServer).OnEvent("Change", nm_ServerLink)
 MainGui.Add("Text", "x178 yp+21 +BackgroundTrans", "Join Method:")
 MainGui.Add("Text", "x254 yp w48 vReconnectMethod +Center +BackgroundTrans", ReconnectMethod)
 MainGui.Add("Button", "xp-12 yp-1 w12 h15 vRMLeft Disabled", "<").OnEvent("Click", nm_ReconnectMethod)
 MainGui.Add("Button", "xp+59 yp w12 h15 vRMRight Disabled", ">").OnEvent("Click", nm_ReconnectMethod)
 MainGui.Add("Button", "x315 yp w10 h15 vReconnectMethodHelp Disabled", "?").OnEvent("Click", nm_ReconnectMethodHelp)
-MainGui.Add("Text", "x178 yp+18 +BackgroundTrans", "Daily Reconnect (optional):")
-MainGui.Add("Text", "x178 yp+17 +BackgroundTrans", "Reconnect every")
-MainGui.Add("Edit", "x264 yp-2 w18 h15 Number Limit2 vReconnectInterval Disabled", ValidateInt(&ReconnectInterval, "")).OnEvent("Change", nm_setReconnectInterval)
+MainGui.Add("Text", "x178 yp+21 +BackgroundTrans", "Daily Reconnect (optional):")
+MainGui.Add("Text", "x178 yp+18 +BackgroundTrans", "Reconnect every")
+MainGui.Add("Edit", "x264 yp-1 w18 h16 Number Limit2 vReconnectInterval Disabled", ValidateInt(&ReconnectInterval, "")).OnEvent("Change", nm_setReconnectInterval)
 MainGui.Add("Text", "x287 yp+1 +BackgroundTrans", "hours")
 MainGui.Add("Text", "x196 yp+18 +BackgroundTrans", "starting at")
-MainGui.Add("Edit", "x250 yp w18 h15 Number Limit2 vReconnectHour Disabled", IsInteger(ReconnectHour) ? SubStr("0" ReconnectHour, -2) : "").OnEvent("Change", nm_setReconnectHour)
-MainGui.Add("Edit", "x275 yp w18 h15 Number Limit2 vReconnectMin Disabled", IsInteger(ReconnectMin) ? SubStr("0" ReconnectMin, -2) : "").OnEvent("Change", nm_setReconnectMin)
+MainGui.Add("Edit", "x250 yp-1 w18 h16 Number Limit2 vReconnectHour Disabled", IsInteger(ReconnectHour) ? SubStr("0" ReconnectHour, -2) : "").OnEvent("Change", nm_setReconnectHour)
+MainGui.Add("Edit", "x275 yp w18 h16 Number Limit2 vReconnectMin Disabled", IsInteger(ReconnectMin) ? SubStr("0" ReconnectMin, -2) : "").OnEvent("Change", nm_setReconnectMin)
 MainGui.SetFont("w1000 s11")
-MainGui.Add("Text", "x269 yp-2 +BackgroundTrans", ":")
+MainGui.Add("Text", "x269 yp-3 +BackgroundTrans", ":")
 MainGui.SetFont("s6 w700")
-MainGui.Add("Text", "x295 yp+5 +BackgroundTrans", "UTC")
+MainGui.Add("Text", "x295 yp+6 +BackgroundTrans", "UTC")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
-MainGui.Add("Button", "x315 yp-2 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
-(GuiCtrl := MainGui.Add("CheckBox", "x176 yp+17 w132 h15 vPublicFallback Disabled Checked" PublicFallback, "Fallback to Public Server")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+MainGui.Add("Button", "x315 yp-3 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
+(GuiCtrl := MainGui.Add("CheckBox", "x176 yp+18 w132 h15 vPublicFallback Disabled Checked" PublicFallback, "Fallback to Public Server")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("Button", "x315 yp w10 h15 vPublicFallbackHelp Disabled", "?").OnEvent("Click", nm_PublicFallbackHelp)
-MainGui.Add("Text", "x178 yp+16 w200 h15 vDetectedRobloxOrBrowserText +BackgroundTrans", "Detected Roblox/Browser:")
-MainGui.Add("Button", "x178 yp+15 w45 h15 vRefreshDetectedApplication Disabled", "Refresh").OnEvent("Click", nm_UpdateDetectedApplication)
-MainGui.Add("Text", "x226 yp w70 vDetectedApplicationText +BackgroundTrans", "Loading... ")
-MainGui.Add("Button", "x315 yp w10 h15 vDetectedApplicationHelp Disabled", "?").OnEvent("Click", nm_DetectedApplicationHelp)
-MainGui.Add("Button", "xp-14 yp w10 h15 vOpenDefaultApps", "^").OnEvent("Click", nm_OpenDefaultApps)
 
 ;character settings
 MainGui.Add("Text", "x345 y40 w110 +BackgroundTrans", "Movement Speed:")
@@ -3392,12 +3233,6 @@ if (A_Args.Has(1) && (A_Args[1] = 1)){
 	ForceStart := 1
 	SetTimer start, -1000
 }
-
-;initialize nm_UpdateDetectedApplication()
-nm_UpdateDetectedApplication()
-
-;check for incorrect roblox settings
-nm_MsgBoxIncorrectRobloxSettings()
 
 return
 
@@ -4135,8 +3970,6 @@ nm_TabSettingsLock(){
 	MainGui["ReconnectMin"].Enabled := 0
 	MainGui["ReconnectTimeHelp"].Enabled := 0
 	MainGui["PublicFallbackHelp"].Enabled := 0
-	MainGui["RefreshDetectedApplication"].Enabled := 0
-	MainGui["DetectedApplicationHelp"].Enabled := 0
 	MainGui["NewWalkHelp"].Enabled := 0
 }
 nm_TabSettingsUnLock(){
@@ -4176,8 +4009,6 @@ nm_TabSettingsUnLock(){
 	MainGui["ReconnectMin"].Enabled := 1
 	MainGui["ReconnectTimeHelp"].Enabled := 1
 	MainGui["PublicFallbackHelp"].Enabled := 1
-	MainGui["RefreshDetectedApplication"].Enabled := 1
-	MainGui["DetectedApplicationHelp"].Enabled := 1
 	MainGui["NewWalkHelp"].Enabled := 1
 }
 nm_TabMiscLock(){
@@ -7632,7 +7463,6 @@ nm_ReconnectMethod(GuiCtrl, *){
 	i := (ReconnectMethod = "Deeplink") ? 1 : 2
 
 	MainGui["ReconnectMethod"].Text := ReconnectMethod := val[(GuiCtrl.Name = "RMRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
-	nm_UpdateDetectedApplication()
 	IniWrite ReconnectMethod, "settings\nm_config.ini", "Settings", "ReconnectMethod"
 }
 nm_setReconnectInterval(GuiCtrl, *){
@@ -7749,39 +7579,6 @@ nm_PublicFallbackHelp(*){ ; public fallback information
 	When this option is enabled, the macro will revert to attempting to join a Public Server if your Server Link failed three times.
 	Otherwise, it will keep trying the Server Link you entered above until it succeeds.
 	)", "Public Server Fallback", 0x40000
-}
-nm_UpdateDetectedApplication(*){	; detected roblox/browser thingy
-	if ReconnectMethod = "Deeplink" {
-		MainGui["DetectedRobloxOrBrowserText"].Text := "Detected Roblox:"
-		MainGui["DetectedApplicationText"].Text := nm_DetectRobloxType()
-	}
-	else {
-		MainGui["DetectedRobloxOrBrowserText"].Text := "Detected Browser:"
-		MainGui["DetectedApplicationText"].Text := nm_DetectDefaultBrowser()
-	}
-	if MainGui["DetectedApplicationText"].Text = "Not found"
-		MainGui["DetectedApplicationText"].SetFont("c0xAA0000", "Tahoma")
-	else
-		MainGui["DetectedApplicationText"].SetFont("c0x0000FF", "Tahoma")
-}
-nm_DetectedApplicationHelp(*){ ; detected application information
-	MsgBox "
-	(
-	DESCRIPTION:
-	When 'Deeplink' is enabled, the macro will try looking for a Roblox application.
-	If 'Browser' is enabled, it looks for a browser instead.
-	
-	Steps on changing the application used by the macro:
-	1. Open Default Apps or click the ^ button
-	2. Change the default application for Roblox (for 'Deeplink') or HTTP/HTTPS (for 'Browser')
-	3. Press the Refresh button to see if it was detected properly
-
-	IMPORTANT:
-	It will try to use 'Deeplink' if the macro tried to join a private server with 'Browser' join method.
-	)", "Detected Application", 0x40000
-}
-nm_OpenDefaultApps(*){ ; open default apps settings
-	Run("ms-settings:defaultapps")
 }
 nm_moveSpeed(GuiCtrl, *){
 	global MoveSpeedNum
@@ -9963,7 +9760,7 @@ nm_priorityListGui(*) {
 }
 nm_copyDebugLog(param:="", *) {
 	static os_version := "", processorName := "", RAMAmount := 0
-	, robloxtype:="", robloxpath:=""
+	, robloxtype:="", robloxpath:="", uwppath:=""
 
 	fromRC := (param is number && param = 1)
 
@@ -10057,12 +9854,21 @@ nm_copyDebugLog(param:="", *) {
 	)
 	}
 	RobloxInfo(){
-		sobloxtype := nm_DetectRobloxType()
-		robloxpath := ""
-		if robloxtype = "UWP Version"
-			robloxpath := nm_DetectRobloxUWPPath()
-		else
-			robloxpath := nm_DetectRobloxWebPath()
+		if (!robloxtype) {
+			try robloxpath := RegRead("HKCR\roblox\shell\open\command")
+			try uwppath := RegRead("HKCR\roblox")
+
+			if (InStr(robloxpath, "Bloxstrap"))
+				robloxtype := "Bloxstrap"
+			else if (InStr(robloxpath, "RobloxPlayerInstaller"))
+				robloxtype := "Web Version"
+			else if robloxpath
+				robloxtype := "Custom (Web)"
+			else if (uwppath = "URL:Roblox")
+				robloxtype := "UWP"
+			else 
+				robloxtype := "Not found"
+		}
 		return 
 		(
 		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, A_UserName, '<user>'), '%1'), '"')) : '') '``
@@ -10190,13 +9996,13 @@ nm_MemoryMatchInterrupt() {
 		|| ((beesmasActive = 1) && WinterMemoryMatchCheck && (now-LastWinterMemoryMatch)>14400))
 	)
 }
+
 ;stats/status
 nm_setStats(){
 	global
 	local rundelta:=0, gatherdelta:=0, convertdelta:=0, TotalStatsString, SessionStatsString
 
 	if (MacroState=2) {
-
 		rundelta:=(nowUnix()-MacroStartTime)
 		if(GatherStartTime > 0)
 			gatherdelta:=(nowUnix()-GatherStartTime)
@@ -22293,8 +22099,6 @@ start(*){
 	if (discordCheck && (((discordMode = 0) && RegExMatch(webhook, "i)^https:\/\/(canary\.|ptb\.)?(discord|discordapp)\.com\/api\/webhooks\/([\d]+)\/([a-z0-9_-]+)$"))
 		|| ((discordMode = 1) && (ReportChannelCheck = 1) && (ReportChannelID || MainChannelID))))
 		run '"' exe_path64 '" /script "' A_WorkingDir '\submacros\StatMonitor.ahk" "' VersionID '"'
-	;update detected application
-	nm_UpdateDetectedApplication()
 	;start main loop
 	nm_setStatus("Begin", "Main Loop")
 	nm_Start()
