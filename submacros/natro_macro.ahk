@@ -2184,7 +2184,6 @@ nm_MsgBoxIncorrectRobloxSettings()
 	global IgnoreIncorrectRobloxSettings, ReconnectMethod, PrivServer
 	if IgnoreIncorrectRobloxSettings
 		return
-	MsgBox(IgnoreIncorrectRobloxSettings)
 	static robloxtype := nm_DetectRobloxType()
 	if ReconnectMethod = "Browser" && PrivServer
 		robloxtype := "Web Version"
