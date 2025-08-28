@@ -2084,11 +2084,21 @@ A_TrayMenu.Default := "Start Macro"
 ; GUI SKINNING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;https://www.autohotkey.com/boards/viewtopic.php?f=6&t=5841&hilit=gui+skin
-DllCall(DllCall("GetProcAddress"
-		, "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
-		, "AStr","USkinInit", "Ptr")
-	, "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
-
+if GuiTheme != "System"
+	DllCall(DllCall("GetProcAddress"
+			, "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
+			, "AStr","USkinInit", "Ptr")
+		, "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
+MaintainGuiSize(input)
+{
+	global GuiTheme
+	if GuiTheme = "System" {
+		w := RegExReplace(input, ".*?w(\d+).*", "$1")
+		h := RegExReplace(input, ".*?h(\d+).*", "$1")
+		return "w" (w + 10) " h" (h + 10)
+	}
+	return input
+}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; AUTO-UPDATE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2158,7 +2168,7 @@ nm_AutoUpdateGUI(*)
 
 	UpdateGui.SetFont("Bold")
 	(GuiCtrl := UpdateGui.Add("Button", "xp+96 yp wp hp", "Update")).OnEvent("Click", nm_UpdateButton)
-	UpdateGui.Show("w290 h168")
+	UpdateGui.Show(MaintainGuiSize("w290 h168"))
 	GuiCtrl.Focus()
 	WinWaitClose "ahk_id " UpdateGui.Hwnd, , 125
 	GuiClose()
@@ -2258,10 +2268,11 @@ nm_MajorUpdateHelp(*)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CREATE GUI
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 OnExit(GetOut)
 MainGui := Gui((AlwaysOnTop ? "+AlwaysOnTop " : "") "+Border +OwnDialogs", "Natro Macro (Loading 0%)")
 WinSetTransparent 255-floor(GuiTransparency*2.55), MainGui
-MainGui.Show("x" GuiX " y" GuiY " w490 h275")
+MainGui.Show("x" GuiX " y" GuiY MaintainGuiSize("w490 h275"))
 SetLoadingProgress(percent) => MainGui.Title := "Natro Macro (Loading " Round(percent) "%)"
 MainGui.OnEvent("Close", (*) => ExitApp())
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -2559,7 +2570,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 ;gui settings
 MainGui.Add("CheckBox", "x10 y73 Disabled vAlwaysOnTop Checked" AlwaysOnTop, "Always On Top").OnEvent("Click", nm_AlwaysOnTop)
 MainGui.Add("Text", "x10 y40 w70 +BackgroundTrans", "GUI Theme:")
-StylesList := []
+StylesList := ["System"]
 Loop Files A_WorkingDir "\nm_image_assets\Styles\*.msstyles"
 	StylesList.Push(StrReplace(A_LoopFileName, ".msstyles"))
 (GuiCtrl := MainGui.Add("DropDownList", "x75 y34 w72 h100 vGuiTheme Disabled", StylesList)).Text := GuiTheme, GuiCtrl.OnEvent("Change", nm_guiThemeSelect)
@@ -4921,7 +4932,7 @@ nm_MemoryMatchOptions(*){
 		MMGui.Add("CheckBox", "xs+" 8+(A_Index-1)//13*120 " ys+" 57+Mod(A_Index-1,13)*16 " w13 h13 v" item " Check3 Checked" ((%item%MatchIgnore = 0) ? 0 : (%item%MatchIgnore = data.games) ? 1 : -1)).OnEvent("Click", MatchIgnoreCheck)
 		MMGui.Add("Button", "x+2 yp-1 w" TextExtent(data.name, TextCtrl)+8 " h15 v" item "Button", data.name).OnEvent("Click", MatchIgnoreButton)
 	}
-	MMGui.Show("w360 h330")
+	MMGui.Show(MaintainGuiSize("w360 h330"))
 
 	MatchIgnoreCheck(GuiCtrl, *) {
 		item := GuiCtrl.Name, %item%MatchIgnore := (GuiCtrl.Value := (%item%MatchIgnore = 0)) ? MemoryMatch[item].games : 0
@@ -4948,7 +4959,7 @@ nm_MemoryMatchOptions(*){
 			bit := MemoryMatchGames[game].bit, MatchIgnoreGui.Add("CheckBox", "x+1 y36 v" game " Disabled" (MemoryMatch[item].games & bit = 0) " Checked" (%item%MatchIgnore & bit > 0), game).OnEvent("Click", MatchIgnoreGameCheck)
 		MatchIgnoreGui.Add("Text", "x6 y4 w275 Center", "Choose the Memory Match games you want to ignore " MemoryMatch[item].name " for:")
 		WinGetPos(&x, &y, , , GuiCtrl)
-		MatchIgnoreGui.Show("x" x-112 " y" y-82 " w275 h44")
+		MatchIgnoreGui.Show("x" x-112 " y" y-82 " " MaintainGuiSize("w275 h44"))
 
 		MatchIgnoreGameCheck(GuiCtrl, *) {
 			bit := MemoryMatchGames[GuiCtrl.Name].bit, %item%MatchIgnore := (GuiCtrl.Value = 0) ? (%item%MatchIgnore & ~bit) : (%item%MatchIgnore | bit)
@@ -5588,7 +5599,7 @@ nm_BoostedFieldSelectButton(*){
 	(GuiCtrl := BoostedFieldSelectGui.Add("CheckBox", "xp yp+14 vStrawberryBoosterCheck Checked" StrawberryBoosterCheck, "Strawberry")).Section := "Boost", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	(GuiCtrl := BoostedFieldSelectGui.Add("CheckBox", "xp yp+14 vRoseBoosterCheck Checked" RoseBoosterCheck, "Rose")).Section := "Boost", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	(GuiCtrl := BoostedFieldSelectGui.Add("CheckBox", "xp yp+14 vPepperBoosterCheck Checked" PepperBoosterCheck, "Pepper")).Section := "Boost", GuiCtrl.OnEvent("Click", nm_saveConfig)
-	BoostedFieldSelectGui.Show("w335 h175")
+	BoostedFieldSelectGui.Show(MaintainGuiSize("w335 h175"))
 }
 nm_coconutBoosterCheck(*){
 	global CoconutBoosterCheck, CoconutDisCheck, BoostChaserCheck
@@ -5668,7 +5679,7 @@ nm_autoFieldBoostGui(*){
 	AFBGui.Add("Text", "x185 y136 +BackgroundTrans", "Deactivate Field Boosting After:")
 	(GuiCtrl := AFBGui.Add("Edit", "x255 y152 w45 h20 limit6 Number vAFBHoursLimit Disabled" (!AFBHoursLimitEnable), AFBHoursLimit)).Section := "Boost", GuiCtrl.OnEvent("Change", nm_saveConfig)
 	;AFBGui.Add("Text", "x5 y123 +BackgroundTrans", "________________________________________________________")
-	AFBGui.Show("w360 h170")
+	AFBGui.Show(MaintainGuiSize("w360 h170"))
 }
 nm_AFBHelpButton(*){
 	MsgBox "
@@ -7311,7 +7322,7 @@ nm_ResetFieldDefaultGUI(*){
 	hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["allfields"])
 	FieldDefaultGui.Add("Picture", "x" x " y" y " w100 h20", "HBITMAP:*" hBM).OnEvent("Click", nm_ResetAllFieldDefaults)
 	DllCall("DeleteObject", "ptr", hBM)
-	FieldDefaultGui.Show("w330 h132")
+	FieldDefaultGui.Show(MaintainGuiSize("w330 h132"))
 }
 nm_ResetFieldDefault(GuiCtrl, *){
 	global FieldDefault, StandardFieldDefault
@@ -8136,7 +8147,7 @@ nm_AutoClickerButton(*)
 	AutoClickerGui.Add("Edit", "x104 y59 w57 h18 Number Limit4", ClickDuration).OnEvent("Change", (*) => nm_saveConfig(GuiCtrlDuration))
 	(GuiCtrlDuration := AutoClickerGui.Add("UpDown", "vClickDuration Range0-9999", ClickDuration)).Section := "Settings", GuiCtrlDuration.OnEvent("Change", nm_saveConfig)
 	AutoClickerGui.Add("Button", "x45 y88 w80 h20", "Start (" AutoClickerHotkey ")").OnEvent("Click", nm_StartAutoClicker)
-	AutoClickerGui.Show("w160 h104")
+	AutoClickerGui.Show(MaintainGuiSize("w160 h104"))
 	nm_StartAutoClicker(*){
 		GuiClose()
 		MainGui.Minimize()
@@ -8179,7 +8190,7 @@ nm_HotkeyGUI(*){
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vTimersHotkeyEdit", TimersHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Button", "x30 yp+24 w140 h20", "Restore Defaults").OnEvent("Click", nm_ResetHotkeys)
 	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 y162 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
-	HotkeyGui.Show("w190 h175")
+	HotkeyGui.Show(MaintainGuiSize("w190 h175"))
 }
 nm_ResetHotkeys(*){
 	global
@@ -8260,7 +8271,7 @@ nm_DebugLogGUI(*){
 	DebugLogGui.Add("CheckBox", "x10 y6 vDebugLogEnabled Checked" DebugLogEnabled, "Enable Debug Logging").OnEvent("Click", nm_DebugLogCheck)
 	DebugLogGui.Add("Button", "xp+140 y5 h16", "Go To File").OnEvent("Click", (*) => Run('explorer.exe /e, /n, /select,"' A_WorkingDir '\settings\debug_log.txt"'))
 	DebugLogGui.Add("Button", "xp yp+20 hp wp", "Copy Logs").OnEvent("Click", copyLogFile)
-	DebugLogGui.Show("w210 h36")
+	DebugLogGui.Show(MaintainGuiSize("w210 h36"))
 }
 nm_DebugLogCheck(*){
 	global
@@ -8334,7 +8345,7 @@ nm_AutoStartManager(*){
 	ASMGui.Add("Text", "vDelayText x+0 yp w50 +Center", "0s")
 	ASMGui.Add("UpDown", "vDelayDuration x+0 yp-1 w10 h16 -16 Range0-3599", 0).OnEvent("Change", ChangeDelay)
 
-	ASMGui.Show("w" w-10 " h" h-10)
+	ASMGui.Show(MaintainGuiSize("w" w-10 " h" h-10))
 }
 ChangeDelay(*)
 {
@@ -8408,7 +8419,7 @@ nm_NightAnnouncementGUI(*){
 	NightGui.Add("Edit", "x170 y21 w115 h18 vNightAnnouncementPingID Disabled" (NightAnnouncementCheck = 0), NightAnnouncementPingID).OnEvent("Change", nm_saveNightAnnouncementPingID)
 	NightGui.Add("Text", "x15 y45", "Webhook:")
 	NightGui.Add("Edit", "x67 y43 w218 h18 vNightAnnouncementWebhook Disabled" (NightAnnouncementCheck = 0), NightAnnouncementWebhook).OnEvent("Change", nm_saveNightAnnouncementWebhook)
-	NightGui.Show("w290 h62")
+	NightGui.Show(MaintainGuiSize("w290 h62"))
 }
 nm_NightAnnouncementCheck(*){
 	global NightAnnouncementCheck, NightGui
