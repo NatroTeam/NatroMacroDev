@@ -42,11 +42,11 @@ ReloadScript(ahkpath) {
 
 ; GUI skinning: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=5841&hilit=gui+skin
 GuiTheme := IniRead("settings\nm_config.ini", "Settings", "GuiTheme", "MacLion3")
-DllCall(DllCall("GetProcAddress"
-		, "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
-		, "AStr","USkinInit", "Ptr")
-	, "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
-
+if GuiTheme != "System"
+    DllCall(DllCall("GetProcAddress"
+            , "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
+            , "AStr","USkinInit", "Ptr")
+        , "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
 ; GUI position
 TimerX := IniRead("settings\nm_config.ini", "Planters", "TimerX", 0)
 TimerY := IniRead("settings\nm_config.ini", "Planters", "TimerY", 0)
@@ -179,7 +179,7 @@ TimersGui.Add("text", "x388 y73 w112 +center +BackgroundTrans vdayOrNight", "Day
 TimersGui.Add("text", "x391 y2 w110 h60 vstatus +center +BackgroundTrans", "Status:")
 TimersGui.Add("text", "x392 y13 w104 h56 vpstatus +left +BackgroundTrans", "unknown")
 
-TimersGui.Show("x" TimerX " y" TimerY "w490 h208 NoActivate")
+TimersGui.Show("x" TimerX " y" TimerY . (GuiTheme = "System" ? "w500 h218" : "w490 h208") "NoActivate")
 
 global PlanterField1, PlanterField2, PlanterField3
     , PlanterNectar1, PlanterNectar2, PlanterNectar3
