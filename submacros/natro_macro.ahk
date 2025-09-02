@@ -10416,10 +10416,10 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			{
 				Sleep 100
 				pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|50")
-				n += (Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) = (n = 0))
+				n += ((Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) || nm_HealthBar()) = (n = 0))
 				Gdip_DisposeImage(pBMScreen)
 			}
-			Sleep 1000
+			Sleep 500
 		}
 		SetKeyDelay PrevKeyDelay
 
@@ -10459,6 +10459,23 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			Sleep (remaining*1000) ;miliseconds
 		}
 	}
+}
+nm_HealthBar() {
+	local detection := 0
+
+	static isDead(c) =>   ((((c) & 0x00FF0000 >= 0x004D0000) && ((c) & 0x00FF0000 <= 0x00830000)) ; 4D4D4D-blackBG|838383-whiteBG
+						&& (((c) & 0x0000FF00 >= 0x00004D00) && ((c) & 0x0000FF00 <= 0x00008300))
+						&& (((c) & 0x000000FF >= 0x0000004D) && ((c) & 0x000000FF <= 0x00000083)))
+	GetRobloxClientPos(hwnd:=GetRobloxHWND())
+	offsetY := GetYOffset(hwnd)
+	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth-100 "|" windowY+offsetY "|50|24")
+
+	p:=Gdip_GetPixel(pBMScreen, 25, 12)
+	if isDead(p)
+		detection:=1
+
+	Gdip_DisposeImage(pBMScreen)
+	return detection
 }
 nm_setShiftLock(state, *){
 	global bitmaps, SC_LShift, ShiftLockEnabled
