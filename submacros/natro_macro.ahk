@@ -339,7 +339,8 @@ nm_importConfig()
 		, "IgnoreUpdateVersion", ""
 		, "FDCWarn", 1
 		, "priorityListNumeric", 12345678
-		, "EnableBeesmasTime", 0)
+		, "EnableBeesmasTime", 0
+		, "HideErrors", 1)
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -3953,6 +3954,7 @@ nm_TabSettingsLock(){
 	MainGui["GatherDoubleReset"].Enabled := 0
 	MainGui["DisableToolUse"].Enabled := 0
 	MainGui["AnnounceGuidingStar"].Enabled := 0
+	MainGui["HideErrors"].Enabled := 0
 	MainGui["NewWalk"].Enabled := 0
 	MainGui["HiveSlot"].Enabled := 0
 	MainGui["HiveBees"].Enabled := 0
@@ -3992,6 +3994,7 @@ nm_TabSettingsUnLock(){
 	MainGui["GatherDoubleReset"].Enabled := 1
 	MainGui["DisableToolUse"].Enabled := 1
 	MainGui["AnnounceGuidingStar"].Enabled := 1
+	MainGui["HideErrors"].Enabled := 1
 	MainGui["NewWalk"].Enabled := 1
 	MainGui["HiveSlot"].Enabled := 1
 	MainGui["HiveBees"].Enabled := 1
@@ -7273,6 +7276,33 @@ nm_AnnounceGuidWarn(GuiCtrl, *){
 			IniWrite (GuiCtrl.Value := AnnounceGuidingStar := 0), "settings\nm_config.ini", "Settings", "AnnounceGuidingStar"
 	}
 }
+nm_HideErrorsWarn(GuiCtrl, *){
+	global HideErrors
+	if GuiCtrl.Value = 1 {
+		IniWrite(1, "settings\nm_config.ini", "Settings", "HideErrors")
+		Msgbox("The macro will now restart to apply this change.", "Restarting to apply changes", 0x40040)
+	} else {
+		if (MsgBox("
+		(
+		WARNING:
+		Disabling this feature will make all errors appear, possibly causing the macro to hang and other unwanted behavior.
+		You should only disable this if you know what you are doing or if you are instructed to by someone who does.
+
+		DESCRIPTION:
+		When disabled, any error will be displayed instead of being automatically hidden and skipped.
+
+		The macro will restart to apply the changes.
+
+		Pressing "Cancel" will leave this feature enabled.
+		)", "Hide Errors", 0x40031)="Ok")
+			IniWrite(0, "settings\nm_config.ini", "Settings", "HideErrors")
+		else {
+			GuiCtrl.Value := 1
+			return
+		}
+	}
+	stop()
+}
 nm_ResetConfig(*){
 	if (MsgBox("
 	(
@@ -9384,7 +9414,8 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("Edit", "x55 y86 w180 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
 	;danger
 	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
-	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
+	MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
+	MainGui.Add("CheckBox", "xp yp+15 vHideErrors Disabled Checked" HideErrors, "Hide Errors").OnEvent("Click", nm_HideErrorsWarn)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
