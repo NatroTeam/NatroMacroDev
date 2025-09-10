@@ -17700,7 +17700,7 @@ nm_ViciousBee(){
 			duration := DurationFromSeconds(nowUnix() - now, "mm:ss")
 			nm_setStatus("Completed", "Vicious Bee - " reason "`nTime: " duration "`nFields Checked:" (++fieldsChecked))
 			if reason = 'killed'
-				nm_IncrementStat("ViciousKills"), VBLastKilled:=nowUnix()
+				nm_IncrementStat("ViciousKills"), IniWrite((VBLastKilled:=nowUnix()), "settings\nm_config.ini", "Collect", "VBLastKilled")
 		}
 	}
 	/** 
