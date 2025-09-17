@@ -107,6 +107,7 @@ OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
+OnMessage(0x5600, nm_BackgroundNight)
 
 ; set version identifier
 VersionID := "1.0.1"
@@ -163,6 +164,7 @@ SC_Enter:="sc01c" ; Enter
 SC_LShift:="sc02a" ; LShift
 SC_Space:="sc039" ; Space
 SC_1:="sc002" ; 1
+SC_Slash  := "sc035" ; /
 
 ; import patterns and syntax check
 nm_importPatterns()
@@ -1989,6 +1991,7 @@ QuestBlueBoost := 0
 QuestRedBoost := 0
 HiveConfirmed := 0
 ShiftLockEnabled := 0
+vicStart := 0
 
 ForceStart := 0
 RemoteStart := 0
@@ -10431,7 +10434,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			{
 				Sleep 100
 				pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|50")
-				n += (Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) = (n = 0))
+				n += ((Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) || nm_HealthBar()) = (n = 0))
 				Gdip_DisposeImage(pBMScreen)
 			}
 			Sleep 1000
@@ -10439,25 +10442,48 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		SetKeyDelay PrevKeyDelay
 
 		; hive check
-		if hivedown
-			sendinput "{" RotDown "}"
-		region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
-		sconf := windowWidth**2//3200
-		loop 4 {
-			sleep 250+KeyDelay
-			pBMScreen := Gdip_BitmapFromScreen(region), s := 0
-			for i, k in bitmaps["hive"] {
-				s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 4, , , sconf))
-				if (s >= sconf) {
-					Gdip_DisposeImage(pBMScreen)
-					HiveConfirmed := 1
-					sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
-					Send "{" ZoomOut " 5}"
-					break 2
+		if !atHive() && nm_DetectSpawn() {
+			Sleep 500
+			GetRobloxClientPos(hwnd)
+			MouseMove windowX+350, windowY+offsetY+100
+			send "{" ZoomOut " 8}"
+			slotMove := Map(
+				1, [{dir:"Right", dist:4}, {dir:["Right", "Fwd"], dist:20}],
+				2, [{dir:["Fwd", "Right"], dist:13}, {dir:"Fwd", dist:6}],
+				3, [{dir:"Fwd", dist:20}, {dir:"Back", dist:4}],
+				4, [{dir:["Left", "Fwd"], dist:13}, {dir:"Fwd", dist:6}],
+				5, [{dir:"Left", dist:4}, {dir:["Left", "Fwd"], dist:20}],
+				6, [{dir:["Left", "Fwd"], dist:12}, {dir:"Left", dist:13}, {dir:["Left", "Fwd"], dist:10}]
+			)
+			movement := nm_spawnMoveTo(slotMove[HiveSlot])
+			nm_createWalk(movement)
+			KeyWait "F14", "D T5 L"
+			KeyWait "F14", "T20 L"
+			nm_endWalk()
+			sleep 500
+			if atHive()
+				HiveConfirmed := 1
+		} else {
+			if hivedown
+				sendinput "{" RotDown "}"
+			region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
+			sconf := windowWidth**2//3200
+			loop 4 {
+				sleep 250+KeyDelay
+				pBMScreen := Gdip_BitmapFromScreen(region), s := 0
+				for i, k in bitmaps["hive"] {
+					s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 4, , , sconf))
+					if (s >= sconf) {
+						Gdip_DisposeImage(pBMScreen)
+						HiveConfirmed := 1
+						sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
+						Send "{" ZoomOut " 5}"
+						break 2
+					}
 				}
+				Gdip_DisposeImage(pBMScreen)
+				sendinput "{" RotRight " 4}" ((A_Index = 2) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
 			}
-			Gdip_DisposeImage(pBMScreen)
-			sendinput "{" RotRight " 4}" ((A_Index = 2) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
 		}
 	}
 	;convert
@@ -10474,6 +10500,86 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			Sleep (remaining*1000) ;miliseconds
 		}
 	}
+}
+nm_HealthBar() {
+	local detection := 0
+
+	static isDead(c) =>   ((((c) & 0x00FF0000 >= 0x004D0000) && ((c) & 0x00FF0000 <= 0x00830000)) ; 4D4D4D-blackBG|838383-whiteBG
+						&& (((c) & 0x0000FF00 >= 0x00004D00) && ((c) & 0x0000FF00 <= 0x00008300))
+						&& (((c) & 0x000000FF >= 0x0000004D) && ((c) & 0x000000FF <= 0x00000083)))
+	GetRobloxClientPos(hwnd:=GetRobloxHWND())
+	offsetY := GetYOffset(hwnd)
+	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth-100 "|" windowY+offsetY "|50|24")
+
+	p:=Gdip_GetPixel(pBMScreen, 25, 12)
+	if isDead(p)
+		detection:=1
+
+	Gdip_DisposeImage(pBMScreen)
+	return detection
+}
+nm_ConfirmAtHive(){
+	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + offsetY + 40 "|350|60")
+	if ((Gdip_ImageSearch(pBMScreen, bitmaps["makehoney"], , , , , , 2, , 2) = 1) || (Gdip_ImageSearch(pBMScreen, bitmaps["collectpollen"], , , , , , 2, , 2) = 1)){
+		Gdip_DisposeImage(pBMScreen)
+		return 1
+	}
+	Gdip_DisposeImage(pBMScreen)
+	return 0
+}
+atHive() {
+	static fail:=0
+    ActivateRoblox()
+    GetRobloxClientPos()
+    pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + GetYOffset() + 40 "|350|60")
+    out := Gdip_ImageSearch(pBMScreen, bitmaps["colhey"],,,,,,5)
+	Gdip_DisposeImage(pBMScreen)
+	fail:=out?0:fail+1
+	if fail > 3 {
+		fail:=0
+		return 1
+	}
+    return out
+}
+nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here since it seems to reliably detect hive slots even when the stuff is really bad
+    ActivateRoblox()
+    GetRobloxClientPos()
+    loop 5
+        send("{" ZoomIn "}"), sleep(50)
+    send("{" RotDown " 11}"), sleep(100), send("{" RotUp " 5}")
+	region := windowX "|" windowY "|" windowWidth "|" windowHeight//4
+	sconf := windowWidth**2//3200
+    spawnConfirmed := 0
+	loop 4 {
+		sleep 250
+		pBMScreen := Gdip_BitmapFromScreen(region), s := 0
+		for i, k in bitmaps["spawn"] {
+			s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 5, , , sconf))
+			if (s >= sconf) {
+				Gdip_DisposeImage(pBMScreen)
+				spawnConfirmed := 1 
+				Send "{" RotUp " 2}"
+				loop 5
+                    send("{" ZoomOut "}"), sleep(50)
+				break 2
+			}
+		}
+		Gdip_DisposeImage(pBMScreen)
+		sendinput "{" RotRight " 4}"
+	}
+	return spawnConfirmed
+}
+nm_spawnMoveTo(moves) {
+    script := ""
+    for k in moves {
+        dirs := (Type(k.dir) = "Array") ? k.dir : [k.dir]
+        for dir in dirs
+            script .= 'Send "{' %dir "Key"% ' down}"`n'
+        script .= "Walk(" k.dist ")" "`n"
+        for dir in dirs
+            script .= 'Send "{' %dir "Key"% ' up}"`n'
+    }
+    return script
 }
 nm_setShiftLock(state, *){
 	global bitmaps, SC_LShift, ShiftLockEnabled
@@ -16413,6 +16519,10 @@ nm_convert(){
 			if (disconnectcheck()) {
 				return
 			}
+			if (FieldPattern1 = "smartatk2") {
+				nm_setStatus("Interrupted", "Skipping Convert")
+				return
+			}
 			if (PFieldBoosted && (nowUnix()-GatherFieldBoostedStart)>780 && (nowUnix()-GatherFieldBoostedStart)<900 && (nowUnix()-LastGlitter)>900 && GlitterKey!="none") {
 				nm_setStatus("Interupted", "Field Boosted")
 				return
@@ -17505,14 +17615,18 @@ nm_searchForE(){
 }
 nm_boostBypassCheck() => 0 ; always returns 0 for now: no field boost bypass implemented
 nm_Night(){
+	global CheckNight
+	if CheckNight != 1
+		return
 	nm_NightMemoryMatch()
 	nm_ViciousBee()
 	CheckNight := 0
 }
 nm_confirmNight(){
+	global CheckNight
 	nm_setStatus("Confirming", "Night")
 	nm_Reset(0, 2000, 0)
-	sendinput "{" RotDown " 1}"
+	sendinput "{" RotDown "}"
 	loop 10 {
 		SendInput "{" ZoomOut "}"
 		Sleep 100
@@ -17542,259 +17656,312 @@ nm_NightMemoryMatch(){
 	nm_MemoryMatch("Night")
 }
 nm_NightInterrupt() => (CheckNight=1) ; set by background via SetGlobalInt
+nm_BackgroundNight(*) {
+	global CheckNight
+	checkNight := 1
+}
 nm_ViciousBee(){
 	nm_locateVB()
-	nm_locateVB(){ 
-		now := nowUnix()
-		; don't run if disabled or only daily bonus
-		if (StingerCheck=0)
-		|| (StingerDailyBonusCheck=1 && (now-VBLastKilled)<79200) {
-			return
-		}
+	; If no vicious bee found
+	vicEnd('All fields checked')
+}
+nm_locateVB(){ 
+	global vicStart := nowUnix()
+	; don't run if disabled or only daily bonus
+	if (StingerCheck=0) || (StingerDailyBonusCheck=1 && (vicStart-VBLastKilled)<79200) {
+		return
+	}
 
-		for , data in VicData { ; if no fields enabled, return
-			if data.enabled
-				break
-			if A_Index = VicData.Count
-				return
-		}
-
-		if(nm_confirmNight()){
-			nm_setStatus("Starting", "Vicious Bee Cycle")
-		} else {
-			nm_setStatus("Aborting", "Vicious Bee - Not Night")
-			return
-		}
-
-		nm_updateAction("Stingers")
-
-
-		fieldsChecked := 0
-		VicData := Map(
-			"Pepper", Map(
-				"reps", 2,
-				"lrdist", 4000,
-				"fbdist", 900,
-				"initRight", 1500,
-				"initFwd", 1500,
-				"enabled", StingerPepperCheck
-			),
-			"MountainTop", Map(
-				"reps", 1,
-				"lrdist", 3500,
-				"fbdist", 1500,
-				"initRight", 2000,
-				"initFwd", 1600,
-				"enabled", StingerMountainTopCheck
-			),
-			"Rose", Map(
-				"reps", 2,
-				"lrdist", 3000,
-				"fbdist", 1500,
-				"initRight", 1800,
-				"initFwd", 1875,
-				"enabled", StingerRoseCheck
-			),
-			"Cactus", Map(
-				"reps", 1,
-				"lrdist", 4500,
-				"fbdist", 1500,
-				"initRight", 2000,
-				"initFwd", 750,
-				"enabled", StingerCactusCheck
-			),
-			"Spider", Map(
-				"reps", 2,
-				"lrdist", 3750,
-				"fbdist", 1500,
-				"initRight", 1000,
-				"initFwd", 1000,
-				"enabled", StingerSpiderCheck
-			),
-			"Clover", Map(
-				"reps", 2,
-				"lrdist", 4000,
-				"fbdist", 1500,
-				"initRight", 1500,
-				"initFwd", 1500,
-				"enabled", StingerCloverCheck
-			)
+	VicData := Map(
+		"Pepper", Map(
+			"reps", 2,
+			"lrdist", 4000,
+			"fbdist", 900,
+			"initRight", 1500,
+			"initFwd", 1500,
+			"enabled", StingerPepperCheck
+		),
+		"MountainTop", Map(
+			"reps", 1,
+			"lrdist", 3500,
+			"fbdist", 1500,
+			"initRight", 2000,
+			"initFwd", 1600,
+			"enabled", StingerMountainTopCheck
+		),
+		"Rose", Map(
+			"reps", 2,
+			"lrdist", 3000,
+			"fbdist", 1500,
+			"initRight", 1800,
+			"initFwd", 1875,
+			"enabled", StingerRoseCheck
+		),
+		"Cactus", Map(
+			"reps", 1,
+			"lrdist", 5000,
+			"fbdist", 1000,
+			"initRight", 2500,
+			"initFwd", 1000,
+			"enabled", StingerCactusCheck
+		),
+		"Spider", Map(
+			"reps", 2,
+			"lrdist", 4750,
+			"fbdist", 1200,
+			"initRight", 2000,
+			"initFwd", 1400,
+			"enabled", StingerSpiderCheck
+		),
+		"Clover", Map(
+			"reps", 2,
+			"lrdist", 4000,
+			"fbdist", 1500,
+			"initRight", 1500,
+			"initFwd", 1500,
+			"enabled", StingerCloverCheck
 		)
+	)
 
-		for field, data in VicData
+	for , data in VicData { ; if no fields enabled, return
+		if data["enabled"]
+			break
+		if A_Index = VicData.Count
+			return
+	}
+
+	if(nm_confirmNight()){
+		nm_setStatus("Starting", "Vicious Bee Cycle")
+	} else {
+		nm_setStatus("Aborting", "Vicious Bee - Not Night")
+		return
+	}
+
+	nm_updateAction("Stingers")
+
+
+	fieldsChecked := 0
+
+	for field, data in VicData
+	{
+		if !data["enabled"] {
+			continue
+		}
+
+		fieldloop:
+		Loop 5 ; attempt each field a maximum of 5 times
 		{
-			if !data.enabled {
-				continue
+			nm_Reset(1, 2000, 0)
+			
+			nm_setStatus("Traveling", "Vicious Bee (" field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
+			nm_gotoField((field = "MountainTop") ? "Mountain Top" : field)
+
+			if(!DisableToolUse)
+				Click "Down"
+
+			nm_setStatus("Searching", "Vicious Bee (" field ")")
+
+			leftOrRightDist := data["lrdist"]
+			forwardOrBackDist := data["fbdist"]
+
+			;align
+			movement :=
+			(
+				nm_Walk(data["initRight"]*9/2000, RightKey) "
+				" nm_Walk(data["initFwd"]*9/2000, FwdKey)
+			)
+
+			if (vic := SearchforVB(movement, field)).result = 'success'
+				vicEnd()
+			else if vic.result = 'inactivehoney' {
+				continue fieldloop
 			}
 
-			fieldloop:
-			Loop 5 ; attempt each field a maximum of 5 times
-			{
-				nm_Reset(1, 2000, 0)
-				
-				nm_setStatus("Traveling", "Vicious Bee (" field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
-				nm_gotoField((field = "MountainTop") ? "Mountain Top" : field)
+			;search patterns
+			movement1 :=
+			(
+			nm_Walk(leftOrRightDist*9/2000, LeftKey) "`r`n"
+			nm_Walk(forwardOrBackDist*9/2000, BackKey)
+			((field = "MountainTop" || field = "Cactus") ? "`r`n" nm_Walk(leftOrRightDist*9/2000, RightKey) : "")
+			)
 
-				if(!DisableToolUse)
-					Click "Down"
+			movement2 :=
+			(
+			(field = "MountainTop" || field = "Cactus") ? nm_Walk(forwardOrBackDist*9/2000, BackKey) "`r`n" nm_Walk(leftOrRightDist*9/2000, LeftKey)
+			: nm_Walk(leftOrRightDist*9/2000, RightKey) "`r`n" nm_Walk(forwardOrBackDist*9/2000, BackKey)
+			)
 
-				nm_setStatus("Searching", "Vicious Bee (" field ")")
-
-				leftOrRightDist := data["lrdist"]
-				forwardOrBackDist := data["fbdist"]
-
-
-				;align
-				movement :=
-				(
-					nm_Walk(data["initRight"]*9/2000, RightKey) "
-					" nm_Walk(data["initFwd"]*9/2000, (field = "Spider") ? BackKey : FwdKey)
-				)
-
-				if (vic := SearchforVB(movement)).result = 'success'
-					vicEnd()
-				else if vic.result = 'inactivehoney'
-					continue fieldloop
-
-				;search patterns
-				movement1 :=
-				(
-					nm_Walk(leftOrRightDist*9/2000, LeftKey) "
-					" nm_Walk(forwardOrBackDist*9/2000, BackKey)
-					. (field = "MountainTop") ? "`r`n" nm_Walk(leftOrRightDist*9/2000, RightKey) : ""
-				)
-
-				movement2 := 
-				(
-					(field = "Spider") ? nm_Walk(leftOrRightDist*9/2000, LeftKey) "`r`n" nm_Walk(forwardOrBackDist*9/2000, BackKey)
-					: (field = "MountainTop") ? nm_Walk(forwardOrBackDist*9/2000, BackKey) "`r`n" nm_Walk(leftOrRightDist*9/2000, LeftKey)
-					: nm_Walk(leftOrRightDist*9/2000, RightKey) "`r`n" nm_Walk(forwardOrBackDist*9/2000, BackKey)
-				)
-
-				Loop data["reps"] {
-					; search pattern
-					loop 2 {
-						if (vic := SearchforVB(movement%A_Index%)).result = 'success' {
-							vicEnd()
-							return
-						} else if vic.result = 'otherplayer' {
-							vicEnd('Killed by another player')
-							return
-						} else if vic.result = 'inactivehoney' {
-							continue fieldloop
-						}
+			Loop data["reps"] {
+				loop 2 {
+					if (vic := SearchforVB(movement%A_Index%, field)).result = 'success' {
+						vicEnd()
+						return
+					} else if vic.result = 'otherplayer' {
+						vicEnd('Killed by another player')
+						return
+					} else if vic.result = 'inactivehoney' {
+						continue fieldloop
 					}
 				}
+				if A_Index >= data["reps"]
+					break
 			}
-			fieldsChecked++
+			break fieldloop
 		}
-
-		; If no vicious bee found
-		vicEnd('All fields checked')
-
-		/**
-		 * End cycle and send status message
-		 */
-		vicEnd(reason:='Killed'){
-			Click "Up"
-			duration := DurationFromSeconds(nowUnix() - now, "mm:ss")
-			nm_setStatus("Completed", "Vicious Bee - " reason "`nTime: " duration "`nFields Checked:" (++fieldsChecked))
-			if reason = 'killed'
-				nm_IncrementStat("ViciousKills"), IniWrite((VBLastKilled:=nowUnix()), "settings\nm_config.ini", "Collect", "VBLastKilled")
-		}
+		fieldsChecked++
 	}
-	/** 
-	 * Create a movement with vicious bee detection. Used in both find and attack VB
-	 * @returns {{result: String} or false}
-	 */
-	WalkwithVBCheck(movement){
-		nm_createWalk(movement)
-		KeyWait "F14", "D T5 L"
-		while (GetKeyState("F14") && (A_Index*25)*20 < 20000) ;20sec timeout
-		{
-			vic := nm_ViciousCheck()
-			if vic.result {
-				nm_endWalk()
-				return vic
-			}
-			if !nm_activeHoney(){
+}
+
+/**
+ * End cycle and send status message
+ */
+vicEnd(reason:='Killed'){
+	Click "Up"
+	duration := DurationFromSeconds(nowUnix() - vicStart, "mm:ss")
+	nm_setStatus("Completed", "Vicious Bee - " reason "`nTime: " duration "`nFields Checked:" (++fieldsChecked))
+	if reason = 'killed'
+		nm_IncrementStat("ViciousKills"), VBLastKilled:=nowUnix()
+}
+
+/** 
+ * Create a movement with vicious bee detection. Used in both find and attack VB
+ * @returns {{result: String} or false}
+ */
+WalkwithVBCheck(movement, ignoreHoney?, ignoreStatus?){
+	local inactiveHoney := 0
+	start := nowUnix()
+	nm_createWalk(movement)
+	KeyWait "F14", "D T5 L"
+	while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
+	{
+		vic := nm_ViciousCheck()
+		if vic.result {
+			if IsSet(ignoreStatus)
+				KeyWait "F14", "T120 L"
+			nm_endWalk()
+			return vic
+		}
+		if !nm_activeHoney(){
+			if (!IsSet(ignoreHoney) && inactiveHoney++ <= 10) {
 				nm_endWalk()
 				return {result: 'inactivehoney'}
 			}
-			Sleep 40
 		}
-		nm_endWalk()
-		nm_SetStatus("Warning", "Timeout on a VB path")
 	}
-	/**
-	 * Search for vicious bee using WalkwithVBCheck()
-	 *  @returns {{result: String or false}}
-	 */
-	SearchforVB(movement){
-		vic := WalkwithVBCheck(movement)
-		if vic.result = 'found' {
-			return nm_killVB(field)
-		} else if vic.result = 'dead' {
-			nm_setStatus("Detected", "Vicious Bee - Killed by another player")
-			return {result: 'otherplayer'}
-		} else if vic.result = 'inactivehoney' {
+	KeyWait "F14", "T120 L"
+	nm_endWalk()
+	return {result: 0}
+}
+/**
+ * Search for vicious bee using WalkwithVBCheck()
+ *  @returns {{result: String or false}}
+ */
+SearchforVB(movement, field){
+	static inactiveHoney := 0
+	vic := WalkwithVBCheck(movement)
+	if vic.result = 'found' {
+		return nm_killVB(field)
+	} else if vic.result = 'dead' {
+		nm_setStatus("Detected", "Vicious Bee - Killed by another player")
+		return {result: 'otherplayer'}
+	} else if vic.result = 'inactivehoney' {
+		if (inactiveHoney++ < 5) {
+			inactiveHoney := 0
 			nm_setStatus("Warning", "Vicious Bee - Inactive Honey - Retrying")
 			return vic
 		}
-	}
-	/**
-	 * Kill vicious bee using battle pattern after it is detected from SearchforVB()
-	 * @returns {{result: String or false}}
-	 */
-	nm_killVB(field) {
-		global state:="Attacking"
-		nm_setStatus("Attacking", "Vicious Bee (" field ")")
-
-		battlepattern :=
-		(
-			nm_Walk(4, FwdKey) "
-			" nm_Walk(4, LeftKey) "
-			" nm_Walk(4, RightKey) "
-			" nm_Walk(4, BackKey)
-		)
-
-		while A_Index*2*60 < 5 { ; 5 minute timeout
-			vic := WalkwithVBCheck(battlepattern)
-			if vic.result = 'dead' {
-				nm_setStatus("Killed", "Vicious Bee (" field ")")
-				return {result: 'success'}
-			}
-			Sleep 500
-		}
-		nm_setStatus("Aborting", "Vicious Bee - Timeout")
+	} else if vic.result = 0 {
 		return {result: 0}
 	}
-	/**
-	 * Vicious bee detection using bottom right notification
-	 * @returns {{result: String or false}}
-	 */
-	nm_ViciousCheck() {
-		Yoffset := GetYOffset()
-		GetRobloxClientPos()
-		; right now we're searching just half the screen which could be bad on some really small resolutions. but with 800 window height it seems to do fine
-		notifWidth := 355 ;length of notifcation
-		paddingRight := 16 ; spacing between notification and end of screen
-		paddingBottom := 26 ; spacing between notification and bottom of the screen
-		pBMScreen := Gdip_BitmapFromScreen(windowX+WindowWidth-notifWidth "|" windowY+Yoffset+WindowHeight//2+paddingBottom 
-		. "|" notifWidth-paddingRight "|" WindowHeight//2-Yoffset-(paddingBottom*2))
+}
+/**
+ * Kill vicious bee using battle pattern after it is detected from SearchforVB()
+ * @returns {{result: String or false}}
+ */
+nm_killVB(field) {
+	global state:="Attacking"
+	start := nowUnix()
+	nm_setStatus("Attacking", "Vicious Bee (" field ")")
 
-		if Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["dead"], , , , , , 40) = 1 {
-			Gdip_DisposeImage(pBMScreen)
-			return {result: 'dead'}
-		}
+	battlepattern :=
+	(
+		nm_Walk(4, FwdKey) "
+		Sleep 1000
+		" nm_Walk(4, RightKey) "
+		Sleep 1000
+		" nm_Walk(4, BackKey) "
+		Sleep 1000
+		" nm_Walk(4, LeftKey)
+	)
 
-		if Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["found"], , , , , , 40) = 1 {
-			Gdip_DisposeImage(pBMScreen)
-			return {result: 'found'}
+	while nowUnix()-start <= 300 { ; 5 minute timeout
+		vic := WalkwithVBCheck(battlepattern, 1, 1)
+		if vic.result = 'dead' {
+			nm_setStatus("Killed", "Vicious Bee (" field ")")
+			return {result: 'success'}
 		}
-		
+		sleep 1000
+	}
+	nm_setStatus("Aborting", "Vicious Bee - Timeout")
+	return {result: 0}
+}
+/**
+ * Vicious bee detection using bottom right notification
+ * @returns {{result: String or false}}
+ */
+nm_ViciousCheck() {
+	static LastRan := 0
+	GetRobloxClientPos(hwnd := GetRobloxHWND())
+	offsetY:=GetYOffset()
+	if (nowUnix()-LastRan>=40) { ; chat translucent after 3 seconds, text dissapears after 40 seconds
+		if !GetKeyState("F14")
+			nm_OpenChat()
+		else
+			MouseMove(windowX + windowWidth - 22, windowY + offsetY + 60), MouseMove(windowX+350, windowY+offsetY+100)
+		sleep 50
+		LastRan := nowUnix()
+	}
+	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth - 8 - (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" windowY+offsetY+40 "|" (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" (windowHeight>=1156 ? 334 : windowHeight/3.464))
+	if (Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["dead1"], , , , , , 5) || Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["dead2"], , , , , , 5)) {
+		Gdip_DisposeImage(pBMScreen)
+		return {result: 'dead'}
+	} else if (Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["found1"], , , , , , 5) || Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["found2"], , , , , , 5)) {
+		Gdip_DisposeImage(pBMScreen)
+		return {result: 'found'}
+	} else {
+		Gdip_DisposeImage(pBMScreen)
 		return {result: 0}
 	}
+}
+nm_ViciousStatus() {
+	static LastRan := 0
+	GetRobloxClientPos(hwnd := GetRobloxHWND())
+	offsetY:=GetYOffset()
+	if (nowUnix()-LastRan>=40) { ; chat translucent after 3 seconds, text dissapears after 40 seconds
+		if !GetKeyState("F14")
+			nm_OpenChat()
+		else
+			MouseMove(windowX + windowWidth - 22, windowY + offsetY + 60), MouseMove(windowX+350, windowY+offsetY+100)
+		sleep 50
+		LastRan := nowUnix()
+	}
+	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth - 8 - (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" windowY+offsetY+40 "|" (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" (windowHeight>=1156 ? 334 : windowHeight/3.464))
+	if (Gdip_ImageSearch(pBMScreen, bitmaps["viciousCelebrate"], , , , , , 5)) {
+		Gdip_DisposeImage(pBMScreen)
+		return 2 ; defeated
+	} else if (Gdip_ImageSearch(pBMScreen, bitmaps["viciousWarning"], , , , , , 5)) {
+		Gdip_DisposeImage(pBMScreen)
+		return 1 ; found
+	} else {
+		Gdip_DisposeImage(pBMScreen)
+		return 0 ; nothing
+	}
+}
+nm_OpenChat(msg?) {
+    PrevKeyDelay := A_KeyDelay
+    SetKeyDelay 50
+	Send "{" SC_Slash "}" (IsSet(msg) ? msg : "") "`n"
+    SetKeyDelay PrevKeyDelay
 }
 nm_IncrementStat(stat, amount:=1){ ; //todo: add to Quests/Bugrun when they are rewritten
 	global TotalBossKills, SessionBossKills
@@ -22074,9 +22241,8 @@ nm_sendHeartbeat(*){
 }
 nm_backgroundEvent(wParam, lParam, *){
 	Critical
-	global youDied, BackpackPercent, BackpackPercentFiltered, FieldGuidDetected, HasPopStar, PopStarActive
-	static arr:=["youDied", 0, 0, "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive"]
-
+	global youDied, BackpackPercent, BackpackPercentFiltered, FieldGuidDetected, HasPopStar, PopStarActive, CheckNight
+	static arr:=["youDied", 0, "CheckNight", "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive"]
 	var := arr[wParam], %var% := lParam
 	return 0
 }
@@ -22232,8 +22398,4 @@ nm_UpdateGUIVar(var)
 	}
 }
 
-F9::
-{
-	nm_ViciousCheck()
-}
-
+F10:: msgbox nm_killVB("cactus")
