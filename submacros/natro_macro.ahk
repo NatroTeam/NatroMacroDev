@@ -16519,10 +16519,6 @@ nm_convert(){
 			if (disconnectcheck()) {
 				return
 			}
-			if (FieldPattern1 = "smartatk2") {
-				nm_setStatus("Interrupted", "Skipping Convert")
-				return
-			}
 			if (PFieldBoosted && (nowUnix()-GatherFieldBoostedStart)>780 && (nowUnix()-GatherFieldBoostedStart)<900 && (nowUnix()-LastGlitter)>900 && GlitterKey!="none") {
 				nm_setStatus("Interupted", "Field Boosted")
 				return
