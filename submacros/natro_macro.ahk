@@ -107,7 +107,6 @@ OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
-OnMessage(0x5600, nm_BackgroundNight)
 
 ; set version identifier
 VersionID := "1.0.1"
@@ -303,11 +302,9 @@ nm_importConfig()
 		, "MoveSpeedNum", 28
 		, "MoveMethod", "Cannon"
 		, "SprinklerType", "Supreme"
-		, "MultiReset", 0
 		, "ConvertBalloon", "Gather"
 		, "ConvertMins", 30
 		, "LastConvertBalloon", 1
-		, "GatherDoubleReset", 1
 		, "DisableToolUse", 0
 		, "AnnounceGuidingStar", 0
 		, "NewWalk", 1
@@ -2642,10 +2639,7 @@ MainGui.Add("Button", "x480 y131 w12 h16 vCBRight Disabled", ">").OnEvent("Click
 MainGui.Add("Text", "x370 y147 w110 +BackgroundTrans", "\____\___")
 (GuiCtrl := MainGui.Add("Edit", "x422 y150 w30 h18 number Limit3 vConvertMins Disabled", ValidateInt(&ConvertMins, 30))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 MainGui.Add("Text", "x456 y152", "Mins")
-MainGui.Add("Text", "x345 y170 w110 +BackgroundTrans", "Multiple Reset:")
-(GuiCtrl := MainGui.Add("Slider", "x415 y168 w78 h16 vMultiReset Thick16 Disabled ToolTipTop Range0-3 Page1 TickInterval1", MultiReset)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x345 y186 vGatherDoubleReset Disabled Checked" GatherDoubleReset, "Gather Double Reset")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x345 y201 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x345 y171 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 SetLoadingProgress(30)
 
 ;COLLECT/Kill TAB
@@ -3952,9 +3946,7 @@ nm_TabSettingsLock(){
 	MainGui["STRight"].Enabled := 0
 	MainGui["CBLeft"].Enabled := 0
 	MainGui["CBRight"].Enabled := 0
-	MainGui["MultiReset"].Enabled := 0
 	MainGui["ConvertMins"].Enabled := 0
-	MainGui["GatherDoubleReset"].Enabled := 0
 	MainGui["DisableToolUse"].Enabled := 0
 	MainGui["AnnounceGuidingStar"].Enabled := 0
 	MainGui["HideErrors"].Enabled := 0
@@ -3991,10 +3983,8 @@ nm_TabSettingsUnLock(){
 	MainGui["STRight"].Enabled := 1
 	MainGui["CBLeft"].Enabled := 1
 	MainGui["CBRight"].Enabled := 1
-	MainGui["MultiReset"].Enabled := 1
 	if (ConvertBalloon="every")
 		MainGui["ConvertMins"].Enabled := 1
-	MainGui["GatherDoubleReset"].Enabled := 1
 	MainGui["DisableToolUse"].Enabled := 1
 	MainGui["AnnounceGuidingStar"].Enabled := 1
 	MainGui["HideErrors"].Enabled := 1
@@ -10288,7 +10278,7 @@ PostSubmacroMessage(submacro, args*){
 	DetectHiddenWindows 0
 }
 nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
-	global resetTime, youDied, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, MultiReset, bitmaps
+	global resetTime, youDied, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, bitmaps
 	static hivedown := 0
 	;check for game frozen conditions
 	if (GameFrozenCounter>=3) { ;3 strikes
@@ -17652,10 +17642,6 @@ nm_NightMemoryMatch(){
 	nm_MemoryMatch("Night")
 }
 nm_NightInterrupt() => (CheckNight=1) ; set by background via SetGlobalInt
-nm_BackgroundNight(*) {
-	global CheckNight
-	checkNight := 1
-}
 nm_ViciousBee(){
 	nm_locateVB()
 	; If no vicious bee found
@@ -17812,11 +17798,16 @@ nm_locateVB(){
  * End cycle and send status message
  */
 vicEnd(reason:='Killed'){
+	global VBLastKilled
 	Click "Up"
 	duration := DurationFromSeconds(nowUnix() - vicStart, "mm:ss")
+
 	nm_setStatus("Completed", "Vicious Bee - " reason "`nTime: " duration "`nFields Checked:" (++fieldsChecked))
-	if reason = 'killed'
-		nm_IncrementStat("ViciousKills"), VBLastKilled:=nowUnix()
+	if reason = 'killed' {
+		nm_IncrementStat("ViciousKills")
+
+		IniWrite((VBLastKilled:=nowUnix()), "settings\nm_config.ini", "Collect", "VBLastKilled")
+	}
 }
 
 /** 
@@ -17908,7 +17899,7 @@ nm_killVB(field) {
 nm_ViciousCheck() {
 	static LastRan := 0
 	GetRobloxClientPos(hwnd := GetRobloxHWND())
-	offsetY:=GetYOffset()
+	offsetY := GetYOffset()
 	if (nowUnix()-LastRan>=40) { ; chat translucent after 3 seconds, text dissapears after 40 seconds
 		if !GetKeyState("F14")
 			nm_OpenChat()
@@ -17953,10 +17944,10 @@ nm_ViciousStatus() {
 		return 0 ; nothing
 	}
 }
-nm_OpenChat(msg?) {
+nm_OpenChat(msg:="") {
     PrevKeyDelay := A_KeyDelay
     SetKeyDelay 50
-	Send "{" SC_Slash "}" (IsSet(msg) ? msg : "") "`n"
+	Send "{" SC_Slash "}" msg "`n"
     SetKeyDelay PrevKeyDelay
 }
 nm_IncrementStat(stat, amount:=1){ ; //todo: add to Quests/Bugrun when they are rewritten
@@ -22238,7 +22229,7 @@ nm_sendHeartbeat(*){
 nm_backgroundEvent(wParam, lParam, *){
 	Critical
 	global youDied, BackpackPercent, BackpackPercentFiltered, FieldGuidDetected, HasPopStar, PopStarActive, CheckNight
-	static arr:=["youDied", 0, "CheckNight", "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive"]
+	static arr:=["youDied", 0, 0, "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive"]
 	var := arr[wParam], %var% := lParam
 	return 0
 }
