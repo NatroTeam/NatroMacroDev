@@ -69,7 +69,7 @@ loop {
 	nm_deathCheck()
 	nm_guidCheck()
 	nm_popStarCheck()
-	nm_dayOrNight()
+	nm_CheckNight()
 	nm_backpackPercentFilter()
 	nm_guidingStarDetect()
 	nm_dailyReconnect()
@@ -176,77 +176,63 @@ nm_popStarCheck(){
 	}
 }
 
-nm_dayOrNight(){
-	static confirm:=0
-	local result:=0
-	if (StingerCheck=0 && NightMemoryMatchCheck=0)
+nm_CheckNight() { ; 0 = day, 1 = night, 2 = dusk (thank postmessage)
+	static nightConfidence := 0, NightLastDetected := 0
+	local imgDetected := 0, night := 0
+
+	if !StingerCheck && !NightMemoryMatchCheck
 		return
-	;return if pollen text is not visible (darkened background)
-	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2 "|" windowY "|60|100")
-	if (Gdip_ImageSearch(pBMScreen, bitmaps["toppollen"], , , , , , 8) != 1) {
-		Gdip_DisposeImage(pBMScreen)
-		return
-	}
-	Gdip_DisposeImage(pBMScreen)
 
 	try {
-		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + 2*windowHeight//5 "|" windowWidth "|" 3*windowHeight//5)
-		for k, v in bitmaps["day"] {
-			if (Gdip_ImageSearch(pBMScreen, v, , , , , , 6) = 1) {
-				result := 1
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + 2*windowHeight//5 "|" windowWidth "|" 3*windowHeight//5)
+	for _, v in bitmaps["day"] {
+		if (Gdip_ImageSearch(pBMScreen, v,,,,,,6)) {
+			imgDetected := 1
+			Gdip_DisposeImage(pBMScreen)
+			break
+		}
+	}
+	Gdip_DisposeImage(pBMScreen)
+	} catch	
+		return
+	
+	if !imgDetected {
+		try {
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + windowHeight//2 "|" windowWidth "|" windowHeight//2)
+		for _, v in bitmaps["night"] {
+			if (Gdip_ImageSearch(pBMScreen, v,,,,,,4)) {
+				imgDetected := 1
 				Gdip_DisposeImage(pBMScreen)
 				break
 			}
 		}
 		Gdip_DisposeImage(pBMScreen)
-	} catch
-		return
-	if result {
-		dayOrNight:=0
-	} else {
-		try {
-			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + windowHeight//2 "|" windowWidth "|" windowHeight//2)
-			for k, v in bitmaps["night"] {
-				if (Gdip_ImageSearch(pBMScreen, v, , , , , , 4) = 1)
-				{
-					result := 1
-					Gdip_DisposeImage(pBMScreen)
-					break
-				}
-			}
-			Gdip_DisposeImage(pBMScreen)
 		} catch
 			return
-		if result && confirm<6  {
-			confirm++
-		} else if confirm>1 {
-			confirm-=2
-		}
+		
+		if imgDetected && nightConfidence < 6
+			nightConfidence++
+		else if  nightConfidence > 1
+			nightConfidence -= 2
 	}
-	if(confirm=6) {
-		dayOrNight:=2 ; night: 6 consecutive detections
-		if((nowUnix()-NightLastDetected)>300 || (nowUnix()-NightLastDetected)<0) {
-			NightLastDetected:=nowUnix()
+
+	if (nightConfidence >= 6 || nowUnix()-NightLastDetected < 300) {
+		night := 1, nightConfidence := 0
+		if (nowUnix()-NightLastDetected > 300 || nowUnix()-NightLastDetected < 0) {
+			NightLastDetected := nowUnix()
 			if WinExist("natro_macro ahk_class AutoHotkey") {
-				PostMessage 0x5552, 368, 1 ;night ready
+				PostMessage 0x5552, 368, 1
 				Send_WM_COPYDATA("Detected: Night", "natro_macro ahk_class AutoHotkey")
 			}
 		}
-	} else if confirm>1 {
-		dayOrNight:=1 ; dusk: transition
+	} else if (nightConfidence > 1) {
+		night := 2 ; dusk
 	} else {
-		dayOrNight:=0 ; day: no/1 stacks
+		night := 0
 	}
-	tooltip 
-	(
-	"NIGHT DEBUG
-	---------------
-	DayOrNight: " dayOrNight "
-	Confirm: " confirm "
-	---------------"
-	)
-	if(WinExist("PlanterTimers.ahk ahk_class AutoHotkey"))
-		PostMessage 0x5552, 367, dayOrNight
+	
+	if (WinExist("PlanterTimers.ahk ahk_class AutoHotkey"))
+		PostMessage 0x5552, 367, night
 }
 
 nm_backpackPercent(){
