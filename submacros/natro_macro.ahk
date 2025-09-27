@@ -17654,56 +17654,55 @@ nm_locateVB(){
 		return
 	}
 
-	VicData := Map(
-		"Pepper", Map(
-			"reps", 2,
-			"lrdist", 4000,
-			"fbdist", 900,
-			"initRight", 1500,
-			"initFwd", 1500,
-			"enabled", StingerPepperCheck
-		),
-		"MountainTop", Map(
-			"reps", 1,
-			"lrdist", 3500,
-			"fbdist", 1500,
-			"initRight", 2000,
-			"initFwd", 1600,
-			"enabled", StingerMountainTopCheck
-		),
-		"Rose", Map(
-			"reps", 2,
-			"lrdist", 3000,
-			"fbdist", 1500,
-			"initRight", 1800,
-			"initFwd", 1875,
-			"enabled", StingerRoseCheck
-		),
-		"Cactus", Map(
-			"reps", 1,
-			"lrdist", 5000,
-			"fbdist", 1000,
-			"initRight", 2500,
-			"initFwd", 1000,
-			"enabled", StingerCactusCheck
-		),
-		"Spider", Map(
-			"reps", 2,
-			"lrdist", 4750,
-			"fbdist", 1200,
-			"initRight", 2000,
-			"initFwd", 1400,
-			"enabled", StingerSpiderCheck
-		),
-		"Clover", Map(
-			"reps", 2,
-			"lrdist", 4000,
-			"fbdist", 1500,
-			"initRight", 1500,
-			"initFwd", 1500,
-			"enabled", StingerCloverCheck
-		)
-	)
+	VicData := [
+		{ field: "Pepper", enabled: StingerPepperCheck
+		, bees: 35
+		, reps: 1
+		, lrdist: 20
+		, fbdist: 7
+		, initRight: 10
+		, initFwd: 7 },
+
+		{ field: "MountainTop", enabled: StingerMountainTopCheck
+		, bees: 25
+		, reps: 2
+		, lrdist: 17
+		, fbdist: 5.5
+		, initRight: 8.5
+		, initFwd: 10.5 },
+
+		{ field: "Rose", enabled: StingerRoseCheck
+		, bees: 15
+		, reps: 2
+		, lrdist: 13
+		, fbdist: 6
+		, initRight: 6.5
+		, initFwd: 12 },
+
+		{ field: "Cactus", enabled: StingerCactusCheck
+		, bees: 15
+		, reps: 1
+		, lrdist: 26
+		, fbdist: 5.5
+		, initRight: 13
+		, initFwd: 3.7 },
+
+		{ field: "Spider", enabled: StingerSpiderCheck
+		, bees: 5
+		, reps: 1
+		, lrdist: 21
+		, fbdist: 5.7
+		, initRight: 10.5
+		, initFwd: 9.5 },
+
+		{ field: "Clover", enabled: StingerCloverCheck
+		, bees: 0
+		, reps: 2
+		, lrdist: 22
+		, fbdist: 5.7
+		, initRight: 11
+		, initFwd: 10 }
+	]
 
 	for , data in VicData { ; if no fields enabled, return
 		if data["enabled"]
@@ -17718,82 +17717,61 @@ nm_locateVB(){
 		nm_setStatus("Aborting", "Vicious Bee - Not Night")
 		return
 	}
-
 	nm_updateAction("Stingers")
 
-
 	fieldsChecked := 0
-
-	for field, data in VicData
+	for data in VicData
 	{
-		if !data["enabled"] {
+		if !data.enabled || data.bees > HiveBees
 			continue
-		}
 
 		fieldloop:
-		Loop 5 ; attempt each field a maximum of 5 times
+		Loop 3 ; attempt each field a maximum of 3 times
 		{
 			nm_Reset(1, 2000, 0)
-			
-			nm_setStatus("Traveling", "Vicious Bee (" field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
-			nm_gotoField((field = "MountainTop") ? "Mountain Top" : field)
+			nm_setStatus("Traveling", "Vicious Bee (" data.field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
+			nm_gotoField((data.field = "MountainTop") ? "Mountain Top" : data.field)
+			Click "Up"
+			nm_setStatus("Searching", "Vicious Bee (" data.field ")")
+			LRDist := data.lrdist, FBDist := data.fbdist
 
-			if(!DisableToolUse)
+			if !DisableToolUse
 				Click "Down"
-
-			nm_setStatus("Searching", "Vicious Bee (" field ")")
-
-			leftOrRightDist := data["lrdist"]
-			forwardOrBackDist := data["fbdist"]
-
-			;align
-			movement :=
-			(
-				nm_Walk(data["initRight"]*9/2000, RightKey) "
-				" nm_Walk(data["initFwd"]*9/2000, FwdKey)
-			)
-
-			if (vic := SearchforVB(movement, field)).result = 'success'
+			alignment := nm_Walk(data.initRight, RightKey) "`n" nm_Walk(data.initFwd, FwdKey)
+			if (vic := SearchforVB(alignment, data.field)).result = "success"
 				vicEnd()
-			else if vic.result = 'inactivehoney' {
+			else if vic.result = "inactiveHoney"
 				continue fieldloop
+
+			patterns := [
+				nm_Walk(LRDist, LeftKey) "`n" nm_Walk(FBDist, BackKey) "`n" nm_Walk(LRDist, RightKey) "`n" nm_Walk(FBDist, BackKey),
+				nm_Walk(LRDist, LeftKey)
+			]
+			Loop data.reps {
+				if (vic := SearchforVB(patterns[1], data.field)).result = "success" {
+					vicEnd(), Click("Up")
+					return
+				} else if vic.result = "otherplayer" {
+					vicEnd("Killed by another player"), Click("Up")
+					return
+				} else if vic.result = "inactivehoney"
+					continue fieldloop
 			}
-
-			;search patterns
-			movement1 :=
-			(
-			nm_Walk(leftOrRightDist*9/2000, LeftKey) "`r`n"
-			nm_Walk(forwardOrBackDist*9/2000, BackKey)
-			((field = "MountainTop" || field = "Cactus") ? "`r`n" nm_Walk(leftOrRightDist*9/2000, RightKey) : "")
-			)
-
-			movement2 :=
-			(
-			(field = "MountainTop" || field = "Cactus") ? nm_Walk(forwardOrBackDist*9/2000, BackKey) "`r`n" nm_Walk(leftOrRightDist*9/2000, LeftKey)
-			: nm_Walk(leftOrRightDist*9/2000, RightKey) "`r`n" nm_Walk(forwardOrBackDist*9/2000, BackKey)
-			)
-
-			Loop data["reps"] {
-				loop 2 {
-					if (vic := SearchforVB(movement%A_Index%, field)).result = 'success' {
-						vicEnd()
-						return
-					} else if vic.result = 'otherplayer' {
-						vicEnd('Killed by another player')
-						return
-					} else if vic.result = 'inactivehoney' {
-						continue fieldloop
-					}
-				}
-				if A_Index >= data["reps"]
-					break
-			}
-			break fieldloop
+			
+			if (vic := SearchforVB(patterns[2], data.field)).result = "success" {
+				vicEnd(), Click("Up")
+				return
+			} else if vic.result = "otherplayer" {
+				vicEnd("Killed by another player"), Click("Up")
+				return
+			} else if vic.result = "inactivehoney"
+				continue fieldloop
+			Click "Up"
+			break fieldLoop
 		}
 		fieldsChecked++
 	}
 }
-
 /**
  * End cycle and send status message
  */
@@ -17809,7 +17787,6 @@ vicEnd(reason:='Killed'){
 		IniWrite((VBLastKilled:=nowUnix()), "settings\nm_config.ini", "Collect", "VBLastKilled")
 	}
 }
-
 /** 
  * Create a movement with vicious bee detection. Used in both find and attack VB
  * @returns {{result: String} or false}
@@ -17829,7 +17806,7 @@ WalkwithVBCheck(movement, ignoreHoney?, ignoreStatus?){
 			return vic
 		}
 		if !nm_activeHoney(){
-			if (!IsSet(ignoreHoney) && inactiveHoney++ <= 10) {
+			if (!IsSet(ignoreHoney) && inactiveHoney++ >= 10) {
 				nm_endWalk()
 				return {result: 'inactivehoney'}
 			}
@@ -22384,5 +22361,3 @@ nm_UpdateGUIVar(var)
 		}
 	}
 }
-
-F10:: msgbox nm_killVB("cactus")
