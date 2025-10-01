@@ -1464,6 +1464,16 @@ CommandoChickHealth := Map(3, 150
 	, 18, 5000000
 	, 19, 7500000)
 
+; Hive slot walk distances
+slotMove := Map(
+	1, [{dir:"Right", dist:4}, {dir:["Right", "Fwd"], dist:20}],
+	2, [{dir:["Fwd", "Right"], dist:13}, {dir:"Fwd", dist:6}],
+	3, [{dir:"Fwd", dist:20}, {dir:"Back", dist:4}],
+	4, [{dir:["Left", "Fwd"], dist:13}, {dir:"Fwd", dist:6}],
+	5, [{dir:"Left", dist:4}, {dir:["Left", "Fwd"], dist:20}],
+	6, [{dir:["Left", "Fwd"], dist:12}, {dir:"Left", dist:13}, {dir:["Left", "Fwd"], dist:10}]
+)
+
 #Include "data\memorymatch.ahk"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10437,14 +10447,6 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			GetRobloxClientPos(hwnd)
 			MouseMove windowX+350, windowY+offsetY+100
 			send "{" ZoomOut " 8}"
-			slotMove := Map(
-				1, [{dir:"Right", dist:4}, {dir:["Right", "Fwd"], dist:20}],
-				2, [{dir:["Fwd", "Right"], dist:13}, {dir:"Fwd", dist:6}],
-				3, [{dir:"Fwd", dist:20}, {dir:"Back", dist:4}],
-				4, [{dir:["Left", "Fwd"], dist:13}, {dir:"Fwd", dist:6}],
-				5, [{dir:"Left", dist:4}, {dir:["Left", "Fwd"], dist:20}],
-				6, [{dir:["Left", "Fwd"], dist:12}, {dir:"Left", dist:13}, {dir:["Left", "Fwd"], dist:10}]
-			)
 			movement := nm_spawnMoveTo(slotMove[HiveSlot])
 			nm_createWalk(movement)
 			KeyWait "F14", "D T5 L"
@@ -10493,18 +10495,14 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 }
 nm_HealthBar() {
 	local detection := 0
-
 	static isDead(c) =>   ((((c) & 0x00FF0000 >= 0x004D0000) && ((c) & 0x00FF0000 <= 0x00830000)) ; 4D4D4D-blackBG|838383-whiteBG
 						&& (((c) & 0x0000FF00 >= 0x00004D00) && ((c) & 0x0000FF00 <= 0x00008300))
 						&& (((c) & 0x000000FF >= 0x0000004D) && ((c) & 0x000000FF <= 0x00000083)))
 	GetRobloxClientPos(hwnd:=GetRobloxHWND())
 	offsetY := GetYOffset(hwnd)
 	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth-100 "|" windowY+offsetY "|50|24")
-
-	p:=Gdip_GetPixel(pBMScreen, 25, 12)
-	if isDead(p)
+	if isDead(Gdip_GetPixel(pBMScreen, 25, 12))
 		detection:=1
-
 	Gdip_DisposeImage(pBMScreen)
 	return detection
 }
@@ -10537,12 +10535,11 @@ nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here s
     loop 5
         send("{" ZoomIn "}"), sleep(50)
     send("{" RotDown " 11}"), sleep(100), send("{" RotUp " 5}")
-	region := windowX "|" windowY "|" windowWidth "|" windowHeight//4
 	sconf := windowWidth**2//3200
     spawnConfirmed := 0
 	loop 4 {
 		sleep 250
-		pBMScreen := Gdip_BitmapFromScreen(region), s := 0
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//4), s := 0
 		for i, k in bitmaps["spawn"] {
 			s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 5, , , sconf))
 			if (s >= sconf) {
@@ -10558,6 +10555,35 @@ nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here s
 		sendinput "{" RotRight " 4}"
 	}
 	return spawnConfirmed
+}
+nm_detectHiveSlots() {
+	static isUnclaimed(c) => ; only for day/night (detects red tint)
+		(((c>>16)&0xFF) > (((c>>8)&0xFF) + 7))
+		&& (((c>>16)&0xFF) > ((c & 0xFF) + 7))
+	hwnd := GetRobloxHWND()
+	GetRobloxClientPos(hwnd)
+	ActivateRoblox()
+	offsetsX := [0.9013, 0.7007, 0.4954, 0.3046, 0.1021, 0.0561], offsetsY := [0, 0, 0, 0, 0, 0.6985], detected := 0
+	w := windowHeight*0.4*2, h := windowHeight*0.1
+	loop 5
+		send "{" RotUp "}{" ZoomIn "}"
+	loop 4 {
+		sleep(100), unclaimed := []
+		pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth//2) - (windowHeight*0.4) "|" windowY + (windowHeight//2) - (windowHeight*0.25) "|" w "|" h)
+		Gdip_SaveBitmapToFile(pBMScreen, A_ScriptDir "\file.png")
+		loop 6 {
+			val := isUnclaimed(Gdip_GetPixel(pBMScreen, w*offsetsX[A_Index], h*offsetsY[A_Index]))
+			unclaimed.Push({HiveSlot:A_Index,Claimed:val ? "Empty" : "Claimed"}), detected += val
+		}
+		Gdip_DisposeImage(pBMScreen)
+		if detected > 0
+			break
+		send "{" RotRight " 4}"
+	}
+	send "{" RotDown " 4}"
+	loop 5
+		send "{" ZoomOut "}"
+	return unclaimed
 }
 nm_spawnMoveTo(moves) {
     script := ""
@@ -17356,7 +17382,7 @@ ShellRun(prms*)
 }
 nm_claimHiveSlot(){
 	global KeyDelay, FwdKey, RightKey, LeftKey, BackKey, ZoomOut, HiveSlot, HiveConfirmed, SC_E, SC_Esc, SC_R, SC_Enter, bitmaps
-
+	
 	GetBitmap() {
 		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
 		while ((A_Index <= 20) && (Gdip_ImageSearch(pBMScreen, bitmaps["FriendJoin"], , , , , , 6) = 1)) {
@@ -17370,6 +17396,7 @@ nm_claimHiveSlot(){
 		return pBMScreen
 	}
 
+	newSystem := 1
 	Loop 5
 	{
 		ActivateRoblox()
@@ -17400,6 +17427,55 @@ nm_claimHiveSlot(){
 			Sleep 1000
 		}
 
+		; detect unclaimed hive slots.
+		if newSystem {
+			preferred := 0
+			slots := nm_detectHiveSlots()
+			for i, slot in slots {
+				if (HiveSlot = slot.HiveSlot && slot.Claimed = "Empty") {
+					preferred := HiveSlot
+					break
+				}
+			}
+
+			if (!preferred) {
+				for i, slot in slots {
+					if (slot.Claimed = "Empty") {
+						preferred := slot.HiveSlot
+						break
+					}
+				}
+			}
+
+			if (preferred) {
+				movement := nm_spawnMoveTo(slotMove[preferred])
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T20 L"
+				nm_endWalk()
+				sleep 500
+				pBMScreen := GetBitmap()
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["claimhive"], , , , , , 2, , 6) = 1) {
+					Gdip_DisposeImage(pBMScreen)
+					Send "{" SC_E " down}"
+					sleep 100
+					Send "{" SC_E " up}"
+					HiveConfirmed := 1
+					HiveSlot := preferred
+					MainGui["HiveSlot"].Text := HiveSlot
+					IniWrite HiveSlot, "settings\nm_config.ini", "Settings", "HiveSlot"
+					nm_setStatus("Claimed", "Hive Slot " . HiveSlot)
+					PostSubmacroMessage("background", 0x5554, 2, HiveSlot)
+					MouseMove windowX+350, windowY+offsetY+100
+					return 1
+				}
+				Gdip_DisposeImage(pBMScreen)
+			}
+			newSystem := 0
+		}
+
+		; USE OLD SYSTEM IF NEW SYSTEM DIDN'T WORK
+		nm_setStatus("Fallback", "No unclaimed slots found -> using old system")
 		;go to slot 1
 		Sleep 500
 		GetRobloxClientPos(hwnd)
@@ -17689,7 +17765,7 @@ nm_locateVB(){
 
 		{ field: "Spider", enabled: StingerSpiderCheck
 		, bees: 5
-		, reps: 1
+		, reps: 2
 		, lrdist: 21
 		, fbdist: 5.7
 		, initRight: 10.5
@@ -17793,6 +17869,7 @@ vicEnd(reason:='Killed'){
  */
 WalkwithVBCheck(movement, ignoreHoney?, ignoreStatus?){
 	local inactiveHoney := 0
+	nm_OpenChat() ; just to ensure that chat is open :sob:
 	start := nowUnix()
 	nm_createWalk(movement)
 	KeyWait "F14", "D T5 L"
@@ -17886,40 +17963,20 @@ nm_ViciousCheck() {
 		LastRan := nowUnix()
 	}
 	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth - 8 - (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" windowY+offsetY+40 "|" (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" (windowHeight>=1156 ? 334 : windowHeight/3.464))
-	if (Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["dead1"], , , , , , 5) || Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["dead2"], , , , , , 5)) {
-		Gdip_DisposeImage(pBMScreen)
-		return {result: 'dead'}
-	} else if (Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["found1"], , , , , , 5) || Gdip_ImageSearch(pBMScreen, bitmaps["viciousbee"]["found2"], , , , , , 5)) {
-		Gdip_DisposeImage(pBMScreen)
-		return {result: 'found'}
-	} else {
-		Gdip_DisposeImage(pBMScreen)
-		return {result: 0}
-	}
-}
-nm_ViciousStatus() {
-	static LastRan := 0
-	GetRobloxClientPos(hwnd := GetRobloxHWND())
-	offsetY:=GetYOffset()
-	if (nowUnix()-LastRan>=40) { ; chat translucent after 3 seconds, text dissapears after 40 seconds
-		if !GetKeyState("F14")
-			nm_OpenChat()
-		else
-			MouseMove(windowX + windowWidth - 22, windowY + offsetY + 60), MouseMove(windowX+350, windowY+offsetY+100)
-		sleep 50
-		LastRan := nowUnix()
-	}
-	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth - 8 - (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" windowY+offsetY+40 "|" (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" (windowHeight>=1156 ? 334 : windowHeight/3.464))
-	if (Gdip_ImageSearch(pBMScreen, bitmaps["viciousCelebrate"], , , , , , 5)) {
-		Gdip_DisposeImage(pBMScreen)
-		return 2 ; defeated
-	} else if (Gdip_ImageSearch(pBMScreen, bitmaps["viciousWarning"], , , , , , 5)) {
-		Gdip_DisposeImage(pBMScreen)
-		return 1 ; found
-	} else {
-		Gdip_DisposeImage(pBMScreen)
-		return 0 ; nothing
-	}
+    for , x in bitmaps["viciousbee"]["dead"] {
+        if Gdip_ImageSearch(pBMScreen, x,,,,,, 5) {
+            Gdip_DisposeImage(pBMScreen)
+            return { result: "dead" }
+        }
+    }
+    for , x in bitmaps["viciousbee"]["found"] {
+        if Gdip_ImageSearch(pBMScreen, x,,,,,, 5) {
+            Gdip_DisposeImage(pBMScreen)
+            return { result: "found" }
+        }
+    }
+    Gdip_DisposeImage(pBMScreen)
+    return { result: 0 }
 }
 nm_OpenChat(msg:="") {
     PrevKeyDelay := A_KeyDelay
