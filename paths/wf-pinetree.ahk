@@ -46,14 +46,14 @@ else {
 	nm_Walk(7, BackKey)
 
 	; cannon
-	send "{" RotRight " 4}"
-	Sleep(50)
+	SetKeyDelay 150+A_KeyDelay
 	send "{" SC_LShift "}"
-	Sleep(50)
-	send("{" SC_E " down}")
-	Sleep(50)
-	send("{" SC_E " up}")
-	Sleep(100)
+	loop 4
+		send("{" RotRight "}"), Sleep(50)
+	SetKeyDelay A_KeyDelay
+	sleep(100)
+	send("{" SC_E " down}"), HyperSleep(10)
+	send("{" SC_E " up}"), HyperSleep(10)
 
 	; glider
 	loop 2
@@ -64,7 +64,7 @@ else {
 
 	send "{" SC_LShift "}"
 	; hive
-	nm_Walk(3.5, BackKey)
+	nm_Walk(3.3, BackKey)
 	nm_Walk(35, RightKey)
 	nm_Walk(5, FwdKey)
 	nm_Walk(4, BackKey)
@@ -77,3 +77,4 @@ else {
 ; [2024-01-15/rpertusio] Aligns with default SpawnLocation, saves walking if player chose Hive 3 - deleted on new path
 
 ; fast cannon path by Lorddrak
+; ty dully for keydelay idea
