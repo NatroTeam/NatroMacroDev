@@ -2213,7 +2213,7 @@ nm_command(command)
 
 			Loop 3
 			{
-				if ((vars["BlenderIndex" A_Index] > 0) && (vars["BlenderItem" A_Index] != "None") && blender.Has(vars["BlenderItem" A_Index]))
+				if ((vars["BlenderIndex" A_Index] = "Infinite" || vars["BlenderIndex" A_Index] > 0) && vars["BlenderItem" A_Index] != "None" && blender.Has(vars["BlenderItem" A_Index]))
 				{
 					duration := DurationFromSeconds(btimer := (vars["BlenderTime" A_Index] - nowUnix()), (btimer > 0) ? (((btimer >= 3600) ? "h'h' m" : "") ((btimer >= 60) ? "m'm' s" : "") "s's'") : "'Ready'")
 
