@@ -7381,28 +7381,44 @@ nm_testReconnect(*){
  */
 nm_ServerLink(GuiCtrl, *){
 	global PrivServer, FallbackServer1, FallbackServer2, FallbackServer3
-	ValidShareCode := 0
+	ValidShareCode := link := 0
 	p := EditGetCurrentCol(GuiCtrl)
 	k := GuiCtrl.Name
 	str := Trim(GuiCtrl.Value)
-	RegExMatch(str, "i)((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/([a-z]{2}\/)?games\/1537690962\/?([^\/]*)\?privateServerLinkCode=.{32}(\&[^\/]*)*", &NewPrivLink)
-	RegExMatch(str, "i)((http(s)?):\/\/)?((www|web)\.)?roblox\.com\/share\?code=.{32}&type=Server", &NewShareCode)
-	if IsObject(NewShareCode) {
+	RegExMatch(str, "i)roblox\.com\/([a-z]{2}\/)?games\/1537690962\/?([^\/]*)\?privateServerLinkCode=(?<code>[a-z0-9]{32})", &NewPrivLink) ; not too sure if LinkCode can have letters but better safe than sorry 
+	RegExMatch(str, "i)roblox\.com\/share\?code=(?<code>[a-f0-9]{32})&type=Server", &NewShareCode)
+
+	
+	if NewShareCode { ; fetch link
+		link := "https://www.roblox.com/share?code=" NewShareCode.code "&type=Server"
 		wr := ComObject("WinHttp.WinHttpRequest.5.1")
-		wr.Open("GET", str, 1)
+		wr.Open("GET", link, 1)
 		wr.Send()
-		wr.WaitForResponse()
-		ValidShareCode := InStr(wr.ResponseText, 'content="1537690962"') ; All share code links contain a meta tag: <meta name="roblox:start_place_id" content="1537690962">. this is the BSS gameID
+
+		if !(wr.WaitForResponse(3000)) || wr.Status != 200 || !InStr(wr.ResponseText, "roblox:start_place_id") ; roblox:start_place_id is not present if the link is invalid
+			return failed("Failed to fetch link", "The link could not be fetched. Make sure you are using a valid Share Code link and that you copied the entire link.`r`n`r`nIt's also possible that roblox is down.")
+		
+		if !InStr(wr.ResponseText, 'content="1537690962"') ; All share code links contain a meta tag: <meta name="roblox:start_place_id" content="1537690962">. this is the BSS gameID
+			return failed("Invalid Share Code", "Your link is not for Bee Swarm Simulator by Onett.")
+
+		success(link)
+	} else if NewPrivLink {
+		link := "https://www.roblox.com/games/1537690962/?privateServerLinkCode=" NewPrivLink.code
+		success(link)
+	} else if StrLen(str) = 0 { ; removing link
+		success("")
+	} else {
+		failed("Invalid Private Server Link", "Make sure your link is:`r`n- copied correctly and completely`r`n- for Bee Swarm Simulator by Onett")
 	}
-	if ((StrLen(str) > 0) && !(IsObject(NewPrivLink) || ValidShareCode))
-	{
+
+	failed(title, reason) {
+		SendMessage(0xB1, p-2, p-2, GuiCtrl)
 		GuiCtrl.Value := %k%
-		SendMessage 0xB1, p-2, p-2, GuiCtrl
-		nm_ShowErrorBalloonTip(GuiCtrl, "Invalid Private Server Link", "Make sure your link is:`r`n- copied correctly and completely`r`n- for Bee Swarm Simulator by Onett")
+		nm_ShowErrorBalloonTip(GuiCtrl, title, reason)
 	}
-	else
-	{
-		GuiCtrl.Value := %k% := IsObject(NewPrivLink) ? NewPrivLink[0] : (IsObject(NewShareCode) ? NewShareCode[0] : "")
+	success(newlink) {
+		GuiCtrl.Value := %k% := newlink
+
 		IniWrite %k%, "settings\nm_config.ini", "Settings", k
 
 		if (k = "PrivServer") ;night announcement
@@ -17060,10 +17076,14 @@ DisconnectCheck(testCheck := 0)
 			, params := (pPARAMS > 0) ? StrGet(pPARAMS) : ""
 
 			;seems like ShellRun is less consistent
-			if ((StrLen(exe) > 0) && (StrLen(params) > 0))
-				ShellRun(exe, StrReplace(params, "%1", url)) , tooltip(reconnect_debug . "`nShellRun")
-			else
-				Run('"' url '"'), tooltip(reconnect_debug . "`nRun")
+			if ((StrLen(exe) > 0) && (StrLen(params) > 0)) {
+				ShellRun(exe, StrReplace(params, "%1", url))
+				tooltip(reconnect_debug . "`nShellRun")
+			}
+			else {
+				Run('"' url '"')
+				tooltip(reconnect_debug . "`nRun")
+			}
 		}
 
 		CloseBrowserTabs(){
