@@ -16395,19 +16395,19 @@ nm_convert(){
 			Sleep 1000
 			nm_AutoFieldBoost(currentField)
 			if(AFBuseGlitter || AFBuseBooster) {
-				nm_setStatus("Interupted", "AFB")
+				nm_setStatus("Interrupted", "AFB")
 				return
 			}
 			if (disconnectcheck()) {
 				return
 			}
 			if (PFieldBoosted && (nowUnix()-GatherFieldBoostedStart)>780 && (nowUnix()-GatherFieldBoostedStart)<900 && (nowUnix()-LastGlitter)>900 && GlitterKey!="none") {
-				nm_setStatus("Interupted", "Field Boosted")
+				nm_setStatus("Interrupted", "Field Boosted")
 				return
 			}
 			inactiveHoney := (nm_activeHoney() = 0) ? inactiveHoney + 1 : 0
 			if (BackpackConvertTime>60 && inactiveHoney>30) {
-				nm_setStatus("Interupted", "Inactive Honey")
+				nm_setStatus("Interrupted", "Inactive Honey")
 				GameFrozenCounter++
 				return
 			}
@@ -16456,7 +16456,7 @@ nm_convert(){
 			while((BalloonConvertTime := nowUnix()-BalloonStartTime)<600) { ;10 mins
 				nm_AutoFieldBoost(currentField)
 				if(AFBuseGlitter || AFBuseBooster) {
-					nm_setStatus("Interupted", "AFB")
+					nm_setStatus("Interrupted", "AFB")
 					return
 				}
 				inactiveHoney := (nm_activeHoney() = 0) ? inactiveHoney + 1 : 0
@@ -16466,7 +16466,7 @@ nm_convert(){
 					IniWrite LastEnzymes, "settings\nm_config.ini", "Boost", "LastEnzymes"
 				}
 				if (BalloonConvertTime>60 && inactiveHoney>30) {
-					nm_setStatus("Interupted", "Inactive Honey")
+					nm_setStatus("Interrupted", "Inactive Honey")
 					GameFrozenCounter++
 					return
 				}
@@ -16474,7 +16474,7 @@ nm_convert(){
 					return
 				}
 				if ((PFieldBoosted = 1) && (nowUnix()-GatherFieldBoostedStart)>780 && (nowUnix()-GatherFieldBoostedStart)<900 && (nowUnix()-LastGlitter)>900 && GlitterKey!="none") {
-					nm_setStatus("Interupted", "Field Boosted")
+					nm_setStatus("Interrupted", "Field Boosted")
 					return
 				}
 				GetRobloxClientPos(hwnd)
