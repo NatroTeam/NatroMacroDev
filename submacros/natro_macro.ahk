@@ -4149,6 +4149,37 @@ nm_ShowErrorBalloonTip(Ctrl, Title, Text){
 	DllCall("SendMessage", "UPtr", Ctrl.Hwnd, "UInt", 0x1503, "Ptr", 0, "Ptr", EBT.Ptr, "Ptr")
 }
 
+;cursor changing
+SetCursor(name:=0){
+    static cursor_types := Map(
+		"IDC_APPSTARTING", 32650,
+		"IDC_ARROW", 32512,
+		"IDC_CROSS", 32515,
+		"IDC_HAND", 32649,
+		"IDC_HELP", 32651,
+		"IDC_IBEAM", 32513,
+		"IDC_NO", 32648,
+		"IDC_SIZEALL", 32646,
+		"IDC_SIZENESW", 32643,
+		"IDC_SIZENWSE", 32642,
+		"IDC_SIZEWE", 32644,
+		"IDC_SIZENS", 32645,
+		"IDC_UPARROW", 32516,
+		"IDC_WAIT", 32514
+	)
+
+	if !name {
+		DllCall("SetCursor", "Ptr", 0)
+        return
+    }
+
+    if !cursor_types.Has(name)
+        throw Error("Invalid cursor type. see https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors")
+    
+	HCURSOR := DllCall("LoadCursor", "Ptr", 0, "uint", cursor_types[name])
+	DllCall("SetCursor", "Ptr", HCURSOR)
+}
+
 ;text control positioning functions
 CenterText(Text1, Text2, Font, w:=260)
 {
@@ -7409,6 +7440,7 @@ nm_ServerLink(GuiCtrl, *){
 
 	
 	if NewShareCode { ; fetch link
+		SetCursor("IDC_APPSTARTING")
 		link := "https://www.roblox.com/share?code=" NewShareCode.code "&type=Server"
 		wr := ComObject("WinHttp.WinHttpRequest.5.1")
 		wr.Open("GET", link, 1)
@@ -7420,6 +7452,7 @@ nm_ServerLink(GuiCtrl, *){
 		if !InStr(wr.ResponseText, 'content="1537690962"') ; All share code links contain a meta tag: <meta name="roblox:start_place_id" content="1537690962">. this is the BSS gameID
 			return failed("Invalid Share Code", "Your link is not for Bee Swarm Simulator by Onett.")
 
+		SetCursor()
 		success(link)
 	} else if NewPrivLink {
 		link := "https://www.roblox.com/games/1537690962/?privateServerLinkCode=" NewPrivLink.code
