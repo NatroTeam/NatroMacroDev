@@ -4317,34 +4317,34 @@ nm_ShowErrorBalloonTip(Ctrl, Title, Text){
 }
 
 ;cursor changing
-ReplaceSystemCursors(IDC := "")
-{
-	static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
-	static SysCursors := Map("IDC_APPSTARTING", 32650
-		, "IDC_ARROW", 32512
-		, "IDC_CROSS", 32515
-		, "IDC_HAND", 32649
-		, "IDC_HELP", 32651
-		, "IDC_IBEAM", 32513
-		, "IDC_NO", 32648
-		, "IDC_SIZEALL", 32646
-		, "IDC_SIZENESW", 32643
-		, "IDC_SIZENWSE", 32642
-		, "IDC_SIZEWE", 32644
-		, "IDC_SIZENS", 32645
-		, "IDC_UPARROW", 32516
-		, "IDC_WAIT", 32514)
-	if !IDC
-		DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
-	else
-	{
-		hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
-		for k, v in SysCursors
-		{
-			hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
-			DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
-		}
-	}
+SetCursor(name:=0){
+    static cursor_types := Map(
+		"IDC_APPSTARTING", 32650,
+		"IDC_ARROW", 32512,
+		"IDC_CROSS", 32515,
+		"IDC_HAND", 32649,
+		"IDC_HELP", 32651,
+		"IDC_IBEAM", 32513,
+		"IDC_NO", 32648,
+		"IDC_SIZEALL", 32646,
+		"IDC_SIZENESW", 32643,
+		"IDC_SIZENWSE", 32642,
+		"IDC_SIZEWE", 32644,
+		"IDC_SIZENS", 32645,
+		"IDC_UPARROW", 32516,
+		"IDC_WAIT", 32514
+	)
+
+	if !name {
+		DllCall("SetCursor", "Ptr", 0)
+        return
+    }
+
+    if !cursor_types.Has(name)
+        throw Error("Invalid cursor type. see https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors")
+    
+	HCURSOR := DllCall("LoadCursor", "Ptr", 0, "uint", cursor_types[name])
+	DllCall("SetCursor", "Ptr", HCURSOR)
 }
 
 ;text control positioning functions
@@ -9966,41 +9966,36 @@ nm_copyDebugLog(param:="", *) {
 
 	fromRC := (param is number && param = 1)
 
-	ReplaceSystemCursors("IDC_WAIT") ; wait cursor: getting sys components takes a bit (!): not animated
+	SetCursor("IDC_APPSTARTING")
 
 	debugReport :=
 	(
 	'``````md
 	<NM Debug>
-	PC Info
-	-----------------------------------------------'
+	#PC Info'
 	PcInfo()
 	'
 
-	Macro Info
-	-----------------------------------------------'
+	#Macro Info'
 	MacroInfo()
 	'
 
-	Roblox Info
-	-----------------------------------------------'
+	#Roblox Info'
 	RobloxInfo()
 	'
 
-	Detected Problems
-	-----------------------------------------------'
+	#Detected Problems'
 	DetectedProblems()
 	'
 
-	Recent issues
-	-----------------------------------------------'
+	#Recent issues'
 	RecentIssues()
 	'``````'
 	)
 	A_Clipboard := debugReport
-	ReplaceSystemCursors() ;reset back
+	SetCursor("") ;reset back
 	if !fromRC
-		MsgBox("Copied Debug report to your clipboard.", "Copy Debug Logs", 0x40040)
+		MsgBox("Copied Debug report to your clipboard.", "Copy Debug Logs", "T10 Iconi")
 
 	return 1
 
@@ -10064,7 +10059,7 @@ nm_copyDebugLog(param:="", *) {
 			robloxpath := nm_DetectRobloxWebPath()
 		return 
 		(
-		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, A_UserName, '<user>'), '%1'), '"')) : '') '``
+		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, A_UserName, '<user>'), '%1'), '"')) : '') '
 		* Default app: ' robloxtype
 		)
 	}
@@ -22069,7 +22064,7 @@ start(*){
 				MsgBox
 				(
 				"Automatic Field Boost is ACTIVATED.
-				------------------------------------------------------------------------------------
+				-------------------------------------
 				If you continue the following quantity of items can be used:
 				Dice: " futureDice "
 				Glitter: " futureGlitter "
