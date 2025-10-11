@@ -107,6 +107,7 @@ OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
+OnMessage(0x0020, nm_WM_SETCURSOR)
 
 ; set version identifier
 VersionID := "1.0.1"
@@ -1990,6 +1991,8 @@ QuestBlueBoost := 0
 QuestRedBoost := 0
 HiveConfirmed := 0
 ShiftLockEnabled := 0
+CUSTOM_CURSOR := 1
+nm_WM_SETCURSOR(*) => CUSTOM_CURSOR
 
 ForceStart := 0
 RemoteStart := 0
@@ -3210,6 +3213,7 @@ SetLoadingProgress(99)
 
 if (BuffDetectReset = 1)
 	nm_AdvancedGUI()
+SetCursor(0)
 SetLoadingProgress(100)
 
 ;unlock tabs
@@ -4151,6 +4155,7 @@ nm_ShowErrorBalloonTip(Ctrl, Title, Text){
 
 ;cursor changing
 SetCursor(name:=0){
+    global CUSTOM_CURSOR
     static cursor_types := Map(
 		"IDC_APPSTARTING", 32650,
 		"IDC_ARROW", 32512,
@@ -4169,9 +4174,11 @@ SetCursor(name:=0){
 	)
 
 	if !name {
+        CUSTOM_CURSOR := 0
 		DllCall("SetCursor", "Ptr", 0)
         return
     }
+    CUSTOM_CURSOR := 1
 
     if !cursor_types.Has(name)
         throw Error("Invalid cursor type. see https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors")
