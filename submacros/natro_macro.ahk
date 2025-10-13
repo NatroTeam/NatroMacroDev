@@ -2123,29 +2123,38 @@ nm_GetRobloxWebPath()
 }
 nm_DetectRobloxType()
 {
-	robloxtype := "Not found"
+	robloxpath := defaultapp := ""
+	robloxtype := RobloxTypes.NotFound
 	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\roblox\UserChoice", "ProgId")
-	if IsSet(defaultapp)
-		if InStr(defaultapp, "AppX")
-			robloxtype := "UWP Version"
+
+	if defaultapp && InStr(defaultapp, "AppX")
+		robloxtype := RobloxTypes.UWP
+
 	try robloxpath := nm_GetRobloxWebPath()
-	if IsSet(robloxpath)
+	if robloxpath {
 		switch {
-			case InStr(robloxpath, "Bloxstrap"):
-				robloxtype := "Bloxstrap"
-			case InStr(robloxpath, "RobloxPlayerInstaller"):
-				robloxtype := "Web Version"
+			case robloxpath ~= "i)[a-z]+strap":
+				robloxtype := RobloxTypes.Bootstrapper
+			case InStr(robloxpath, "RobloxPlayerBeta"):
+				robloxtype := RobloxTypes.Web
 			case robloxpath:
-				robloxtype := "Custom (Web)"
+				robloxtype := RobloxTypes.Custom
 		}
-	else
-		if FileExist(nm_GetRobloxUWPPath())
-			robloxtype := "UWP Version"
+	}
+	else if FileExist(nm_GetRobloxUWPPath())
+		robloxtype := RobloxTypes.UWP
 	return robloxtype
 }
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DETECT INCORRECT ROBLOX SETTINGS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+RobloxTypes := {
+	UWP: "UWP Version",
+	Bootstrapper: "Bootstrapper (Web)",
+	Web: "Roblox (Web)",
+	Custom: "Custom/Unknown (Web)",
+	NotFound: "Not found"
+}
 RecommendedRobloxSettings := Map(
 	"Correct", Map(
 		"All", Map(
@@ -2184,18 +2193,14 @@ nm_MsgBoxIncorrectRobloxSettings()
 	if IgnoreIncorrectRobloxSettings
 		return
 	static robloxtype := nm_DetectRobloxType()
-	if ReconnectMethod = "Browser" && PrivServer
-		robloxtype := "Web Version"
 	xmlpath := ""
 	try switch robloxtype {
-		case "Not found":
-			return
-		case "Custom (Web)", "Web Version", "Bloxstrap":
-			loop Files, EnvGet("LOCALAPPDATA") "\Roblox\GlobalBasicSettings_*.xml", "F"
+		case RobloxTypes.Custom, RobloxTypes.Web, RobloxTypes.Bootstrapper:
+			loop files, EnvGet("LOCALAPPDATA") "\Roblox\GlobalBasicSettings_*.xml", "F"
 				if !InStr(A_LoopFileName, "Studio")
 					xmlpath := A_LoopFileFullPath
-		case "UWP Version":
-			loop Files, EnvGet("LOCALAPPDATA") "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
+		case RobloxTypes.UWP:
+			loop files, EnvGet("LOCALAPPDATA") "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
 				if !InStr(A_LoopFileName, "Studio")
 					xmlpath := A_LoopFileFullPath
 	}
@@ -2207,7 +2212,7 @@ nm_MsgBoxIncorrectRobloxSettings()
 	recommendations := []
 	for tier, tiermap in RecommendedRobloxSettings {
 		for platform, platformmap in tiermap {
-			if platform = "All" || (platform = "UWP Version" && robloxtype = "UWP Version") || (platform = "Web Version" && (robloxtype = "Bloxstrap" || robloxtype = "Custom (Web)" || robloxtype = "Web Version")){
+			if platform = "All" || (platform = "UWP Version" && robloxtype = RobloxTypes.UWP) || (platform = "Web Version" && (robloxtype = RobloxTypes.Web || robloxtype = RobloxTypes.Custom || robloxtype = RobloxTypes.Bootstrapper)){
 				for xmltext, recommendation in platformmap {
 					if tier = "Incorrect" && InStr(xml, xmltext)
 						recommendations.Push(recommendation)
@@ -7767,21 +7772,23 @@ nm_DetectedApplicationHelp(*){ ; detected application information
 	MsgBox "
 	(
 	DESCRIPTION:
-	When 'Deeplink' is enabled, the macro will try looking for a Roblox application.
-	If 'Browser' is enabled, it looks for a browser instead.
-	
-	Steps on changing the application used by the macro:
-	1. Open Default Apps or click the ^ button
-	2. Change the default application for Roblox (for 'Deeplink') or HTTP/HTTPS (for 'Browser')
-	3. Press the Refresh button to see if it was detected properly
+	When 'Deeplink' is enabled, the macro will run the default application associated with the 'roblox' link type.
+	If you have multiple Roblox versions installed (including bootstrappers such as Bloxstrap), these are added to the 'roblox' link type.
+
+	To select the app that Natro uses, you will need to change the default app in your settings:
+
+	1. Open 'Default Apps' in settings, or click the "^" button to the left of this one;
+	2. Change the default app for the ROBLOX link type to the app you want the macro to use;
+	3. Press the refresh button & the Test Reconnect button to see if it is using the app you want to use
 
 	IMPORTANT:
-	It will try to use 'Deeplink' if the macro tried to join a private server with 'Browser' join method.
+	When using the version from Microsoft Store (UWP app) you need to:
+	- Disable Fullscreen
+	- Disable Shift-Lock
+	Otherwise your macro may not work!
 	)", "Detected Application", 0x40000
 }
-nm_OpenDefaultApps(*){ ; open default apps settings
-	Run("ms-settings:defaultapps")
-}
+nm_OpenDefaultApps(*) => Run("ms-settings:defaultapps")
 nm_moveSpeed(GuiCtrl, *){
 	global MoveSpeedNum
 	p := EditGetCurrentCol(GuiCtrl)
@@ -10053,13 +10060,13 @@ nm_copyDebugLog(param:="", *) {
 	RobloxInfo(){
 		robloxtype := nm_DetectRobloxType()
 		robloxpath := ""
-		if robloxtype = "UWP Version"
-			robloxpath := nm_DetectRobloxUWPPath()
+		if robloxtype = RobloxTypes.UWP
+			robloxpath := nm_GetRobloxUWPPath()
 		else
-			robloxpath := nm_DetectRobloxWebPath()
+			robloxpath := nm_GetRobloxWebPath()
 		return 
 		(
-		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, A_UserName, '<user>'), '%1'), '"')) : '') '
+		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(RegExReplace(StrReplace(robloxpath, A_UserName, '<user>'), 'i)\\Versions\\version-[a-z0-9]+\\', '\<version>\'), '%1'), '"')) '``': '') '
 		* Default app: ' robloxtype
 		)
 	}
@@ -10067,9 +10074,9 @@ nm_copyDebugLog(param:="", *) {
 		problems := 0
 		return (
 			checkProblem((A_ScreenDPI != 96), 'Display Scale not 100%')
-			checkProblem((robloxtype = "Not found" || robloxtype = "Custom"),'Roblox not found or using a custom install')
-			checkProblem((robloxtype = "Bloxstrap"), 'Using Bloxstrap (check config)')
-			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 800), 'Low Screen Resolution')
+			checkProblem((robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.Custom), 'Roblox not found or using a custom install')
+			checkProblem((robloxtype = RobloxTypes.Bootstrapper), 'Using Custom Bootstrapper (e.g. Bloxstrap), check config')
+			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 1300), 'Low Screen Resolution')
 			checkProblem((offsetfail ?? 0), 'Recent Yoffset Fail')
 			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro version')
 
@@ -10086,15 +10093,15 @@ nm_copyDebugLog(param:="", *) {
 
 		loop parse latestLogs, '`r`n' {
 			if InStr(A_LoopField, 'Error') || InStr(A_LoopField, 'Warning') || InStr(A_LoopField, 'Failed'){
-				issues .= (++totalissues) '. ' A_LoopField
-				if totalissues > 10
+				issues .= A_LoopField '`n'
+				if totalissues > 10	
 					break
 			}
 		}
 		if !issues
 			return '`n<None>'
 
-		return '`n' issues '`n`n> Total: ' totalissues
+		return '`n' issues '`n> Total: ' totalissues
 	}
 }
 
