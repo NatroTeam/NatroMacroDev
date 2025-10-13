@@ -15871,13 +15871,9 @@ nm_GoGather(){
 					continue
 				;Manual planter gather interrupt
 				if ((fieldOverrideReason="Manual Planter") && (PlanterMode = 1) && (MPlanterGatherA)) {
-					;update current field planter progress every 2 minutes during planter gather
-					If ((nowUnix()-MPlanterGatherDetectionTime)>120) {
-						nm_PlanterTimeUpdate(FieldName, 0)
-						MPlanterGatherDetectionTime := nowUnix()
-					}
 					;interrupt if
 					if (((nowUnix() >= PlanterHarvestTime1) && (eligible.Has(1))) || ((nowUnix() >= PlanterHarvestTime2) && (eligible.Has(2))) || ((nowUnix() >= PlanterHarvestTime3) && (eligible.Has(3)))) {
+						; neat idea, planter harvest after gather - Dully176
 						interruptReason := "Planter Harvest"
 						break
 					}
@@ -15904,6 +15900,11 @@ nm_GoGather(){
 			if (!bypass && InStr(patterns[FieldPattern], ";@NoInterrupt"))
 				KeyWait "F14", "T180 L"
 			break
+		}
+		;update current field planter progress after 2 minutes during planter gather
+		if ((fieldOverrideReason="Manual Planter") && (PlanterMode = 1) && (MPlanterGatherA)) && ((nowUnix()-MPlanterGatherDetectionTime)>120) {
+			nm_PlanterTimeUpdate(FieldName, 0)
+			MPlanterGatherDetectionTime := nowUnix()
 		}
 		(FDCEnabled) && nm_fieldDriftCompensation()
 	}
