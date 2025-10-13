@@ -2094,13 +2094,6 @@ DllCall(DllCall("GetProcAddress"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DEFAULT ROBLOX TYPE/PATH DETECTION
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-nm_DetectDefaultBrowser()
-{
-	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice", "ProgId")
-	if !IsSet(defaultapp)
-		defaultapp := "Not found"
-	return defaultapp
-}
 nm_GetRobloxUWPPath()
 {
 	try {
@@ -2775,7 +2768,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Button", "x315 yp-2 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
 (GuiCtrl := MainGui.Add("CheckBox", "x176 yp+17 w132 h15 vPublicFallback Disabled Checked" PublicFallback, "Fallback to Public Server")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("Button", "x315 yp w10 h15 vPublicFallbackHelp Disabled", "?").OnEvent("Click", nm_PublicFallbackHelp)
-MainGui.Add("Text", "x178 yp+16 w200 h15 vDetectedRobloxOrBrowserText +BackgroundTrans", "Detected Roblox/Browser:")
+MainGui.Add("Text", "x178 yp+16 w200 h15 +BackgroundTrans", "Detected Roblox:")
 MainGui.Add("Button", "x178 yp+15 w45 h15 vRefreshDetectedApplication Disabled", "Refresh").OnEvent("Click", nm_UpdateDetectedApplication)
 MainGui.Add("Text", "x226 yp w70 vDetectedApplicationText +BackgroundTrans", "Loading... ")
 MainGui.Add("Button", "x315 yp w10 h15 vDetectedApplicationHelp Disabled", "?").OnEvent("Click", nm_DetectedApplicationHelp)
@@ -7754,15 +7747,9 @@ nm_PublicFallbackHelp(*){ ; public fallback information
 	Otherwise, it will keep trying the Server Link you entered above until it succeeds.
 	)", "Public Server Fallback", 0x40000
 }
-nm_UpdateDetectedApplication(*){	; detected roblox/browser thingy
-	if ReconnectMethod = "Deeplink" {
-		MainGui["DetectedRobloxOrBrowserText"].Text := "Detected Roblox:"
-		MainGui["DetectedApplicationText"].Text := nm_DetectRobloxType()
-	}
-	else {
-		MainGui["DetectedRobloxOrBrowserText"].Text := "Detected Browser:"
-		MainGui["DetectedApplicationText"].Text := nm_DetectDefaultBrowser()
-	}
+nm_UpdateDetectedApplication(*){	; detected roblox link type
+	MainGui["DetectedApplicationText"].Text := nm_DetectRobloxType()
+
 	if MainGui["DetectedApplicationText"].Text = "Not found"
 		MainGui["DetectedApplicationText"].SetFont("c0xAA0000", "Tahoma")
 	else
