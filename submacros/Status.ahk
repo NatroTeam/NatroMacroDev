@@ -20,7 +20,6 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Gdip_All.ahk"
 #Include "Gdip_ImageSearch.ahk"
 #Include "JSON.ahk"
-#Include "Discord.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "Roblox.ahk"
 
@@ -648,6 +647,137 @@ bitmaps := Map()
 bitmaps["moon"] := Gdip_BitmapFromBase64("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")
 #Include "%A_ScriptDir%\..\nm_image_assets\offset\bitmaps.ahk"
 
+robloxRanges := Map(
+    "128.116.0",   "Hong Kong",
+    "128.116.1",   "California, USA",
+    "128.116.2",   "Poland",
+    "128.116.3",   "Poland",
+    "128.116.4",   "France",
+    "128.116.5",   "Germany",
+    "128.116.6",   "Japan",
+    "128.116.7",   "India",
+    "128.116.8",   "Germany",
+    "128.116.9",   "India",
+    "128.116.10",  "Virginia, USA",
+    "128.116.11",  "Virginia, USA",
+    "128.116.12",  "California, USA",
+    "128.116.13",  "Netherlands",
+    "128.116.14",  "Hong Kong",
+    "128.116.15",  "New Jersey, USA",
+    "128.116.16",  "New Jersey, USA",
+    "128.116.17",  "New Jersey, USA",
+    "128.116.18",  "Florida, USA",
+    "128.116.19",  "France",
+    "128.116.20",  "France",
+    "128.116.21",  "Netherlands",
+    "128.116.22",  "Georgia, USA",
+    "128.116.23",  "New Jersey, USA",
+    "128.116.24",  "Georgia, USA",
+    "128.116.25",  "Georgia, USA",
+    "128.116.26",  "France",
+    "128.116.27",  "Illinois, USA",
+    "128.116.28",  "Illinois, USA",
+    "128.116.29",  "Illinois, USA",
+    "128.116.30",  "Hong Kong",
+    "128.116.31",  "Poland",
+    "128.116.32",  "New Jersey, USA",
+    "128.116.33",  "Texas, USA",
+    "128.116.34",  "Illinois, USA",
+    "128.116.35",  "United Kingdom",
+    "128.116.36",  "United Kingdom",
+    "128.116.37",  "Florida, USA",
+    "128.116.38",  "Florida, USA",
+    "128.116.39",  "Germany",
+    "128.116.40",  "Germany",
+    "128.116.41",  "Germany",
+    "128.116.42",  "Germany",
+    "128.116.43",  "Germany",
+    "128.116.44",  "Germany",
+    "128.116.45",  "Florida, USA",
+    "128.116.46",  "Illinois, USA",
+    "128.116.47",  "Illinois, USA",
+    "128.116.48",  "Illinois, USA",
+    "128.116.49",  "California, USA",
+    "128.116.50",  "Singapore",
+    "128.116.51",  "Australia",
+    "128.116.52",  "Virginia, USA",
+    "128.116.53",  "Virginia, USA",
+    "128.116.54",  "Oregon, USA",
+    "128.116.55",  "Oregon, USA",
+    "128.116.56",  "Virginia, USA",
+    "128.116.57",  "California, USA",
+    "128.116.58",  "Japan",
+    "128.116.59",  "Japan",
+    "128.116.60",  "Japan",
+    "128.116.61",  "California, USA",
+    "128.116.62",  "Washington, USA",
+    "128.116.63",  "California, USA",
+    "128.116.64",  "California, USA",
+    "128.116.65",  "New Jersey, USA",
+    "128.116.66",  "New Jersey, USA",
+    "128.116.67",  "California, USA",
+    "128.116.68",  "California, USA",
+    "128.116.69",  "California, USA",
+    "128.116.70",  "Virginia, USA",
+    "128.116.71",  "Virginia, USA",
+    "128.116.72",  "United Kingdom",
+    "128.116.73",  "United Kingdom",
+    "128.116.74",  "Virginia, USA",
+    "128.116.75",  "Virginia, USA",
+    "128.116.76",  "Virginia, USA",
+    "128.116.77",  "Virginia, USA",
+    "128.116.78",  "Virginia, USA",
+    "128.116.79",  "Singapore",
+    "128.116.80",  "Virginia, USA",
+    "128.116.81",  "California, USA",
+    "128.116.82",  "Japan",
+    "128.116.83",  "Japan",
+    "128.116.84",  "Illinois, USA",
+    "128.116.85",  "Florida, USA",
+    "128.116.86",  "Brazil",
+    "128.116.87",  "Virginia, USA",
+    "128.116.88",  "Illinois, USA",
+    "128.116.89",  "United Kingdom",
+    "128.116.90",  "California, USA",
+    "128.116.91",  "California, USA",
+    "128.116.92",  "California, USA",
+    "128.116.93",  "California, USA",
+    "128.116.94",  "California, USA",
+    "128.116.95",  "Texas, USA",
+    "128.116.96",  "Virginia, USA",
+    "128.116.97",  "Singapore",
+    "128.116.98",  "California, USA",
+    "128.116.99",  "Georgia, USA",
+    "128.116.100", "California, USA",
+    "128.116.101", "Illinois, USA",
+    "128.116.102", "Virginia, USA",
+    "128.116.103", "California, USA",
+    "128.116.104", "India",
+    "128.116.105", "California, USA",
+    "128.116.106", "California, USA",
+    "128.116.107", "California, USA",
+    "128.116.108", "California, USA",
+    "128.116.109", "California, USA",
+    "128.116.110", "California, USA",
+    "128.116.111", "California, USA",
+    "128.116.112", "Illinois, USA",
+    "128.116.113", "Illinois, USA",
+    "128.116.114", "Virginia, USA",
+    "128.116.115", "Washington, USA",
+    "128.116.116", "California, USA",
+    "128.116.117", "California, USA",
+    "128.116.118", "Hong Kong",
+    "128.116.119", "United Kingdom",
+    "128.116.120", "Japan",
+    "128.116.121", "Netherlands",
+    "128.116.122", "France",
+    "128.116.123", "Germany",
+    "128.116.124", "Poland",
+    "128.116.125", "California, USA",
+    "128.116.126", "New Jersey, USA",
+    "128.116.127", "Florida, USA"
+)
+
 Loop
 {
 	(status_buffer.Length > 0) && nm_status(status_buffer[1])
@@ -680,7 +810,7 @@ nm_status(status)
 			color := ((state = "Disconnected") || (state = "You Died") || (state = "Failed") || (state = "Error") || (state = "Aborting") || (state = "Missing") || (state = "Canceling") || InStr(objective, "Phantom") || InStr(objective, "No Balloon Convert")) ? 15085139 ; red - error
 			: (InStr(objective, "Tunnel Bear") || InStr(objective, "King Beetle") || InStr(objective, "Vicious Bee") || InStr(objective, "Snail") || InStr(objective, "Crab") || InStr(objective, "Mondo") || InStr(objective, "Commando")) ? 7036559 ; purple - boss / attacking
 			: (InStr(objective, "Planter") || (state = "Placing") || (state = "Collecting") || (state = "Holding")) ? 48355 ; blue - planters
-			: ((state = "Interrupted") || (state = "Reporting") || (state = "Warning")) ? 14408468 ; yellow - alert
+			: ((state = "Interupted") || (state = "Reporting") || (state = "Warning")) ? 14408468 ; yellow - alert
 			: ((state = "Gathering")) ? 9755247 ; light green - gathering
 			: ((state = "Converting")) ? 8871681 ; yellow-brown - converting
 			: ((state = "Boosted") || (state = "Looting") || (state = "Keeping") || (state = "Claimed") || (state = "Completed") || (state = "Collected") || (state = "Obtained") || InStr(stateString,"confirmed") || InStr(stateString,"found")) ? 48128 ; green - success
@@ -2214,7 +2344,7 @@ nm_command(command)
 
 			Loop 3
 			{
-				if ((vars["BlenderIndex" A_Index] = "Infinite" || vars["BlenderIndex" A_Index] > 0) && vars["BlenderItem" A_Index] != "None" && blender.Has(vars["BlenderItem" A_Index]))
+				if ((vars["BlenderIndex" A_Index] > 0) && (vars["BlenderItem" A_Index] != "None") && blender.Has(vars["BlenderItem" A_Index]))
 				{
 					duration := DurationFromSeconds(btimer := (vars["BlenderTime" A_Index] - nowUnix()), (btimer > 0) ? (((btimer >= 3600) ? "h'h' m" : "") ((btimer >= 60) ? "m'm' s" : "") "s's'") : "'Ready'")
 
@@ -2383,24 +2513,83 @@ nm_command(command)
 		}
 		
 		case "FindItem":
-		static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "Snowflake", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "MagicBean", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
-		UI := SubStr(command.content, StrLen(commandPrefix)+10) ; user input
-		if !(UI) {
-			command_buffer.RemoveAt(1)
-			return discord.SendEmbed("Missing item name!\n``````?finditem [itemname]``````", 16711731, , , , id)
-		}
-		closestItem:=findClosestItem(items,UI)
-		if closestItem.dist > 6 || not closestItem.item
-			discord.SendEmbed("Item ``" UI "`` is not valid", 5066239, , , , id)
-		else
-			DetectHiddenWindows 1
-			if WinExist("natro_macro ahk_class AutoHotkey")
-				SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)	
-			DetectHiddenWindows 0
+			static items := ["Cog", "Ticket", "SprinklerBuilder", "BeequipCase", "Gumdrops", "Coconut", "Stinger", "Snowflake", "MicroConverter", "Honeysuckle", "Whirligig", "FieldDice", "SmoothDice", "LoadedDice", "JellyBeans", "RedExtract", "BlueExtract", "Glitter", "Glue", "Oil", "Enzymes", "TropicalDrink", "PurplePotion", "SuperSmoothie", "MarshmallowBee", "Sprout", "MagicBean", "FestiveBean", "CloudVial", "NightBell", "BoxOFrogs", "AntPass", "BrokenDrive", "7ProngedCog", "RoboPass", "Translator", "SpiritPetal", "Present", "Treat", "StarTreat", "AtomicTreat", "SunflowerSeed", "Strawberry", "Pineapple", "Blueberry", "Bitterberry", "Neonberry", "MoonCharm", "GingerbreadBear", "AgedGingerbreadBear", "WhiteDrive", "RedDrive", "BlueDrive", "GlitchedDrive", "ComfortingVial", "InvigoratingVial", "MotivatingVial", "RefreshingVial", "SatisfyingVial", "PinkBalloon", "RedBalloon", "WhiteBalloon", "BlackBalloon", "SoftWax", "HardWax", "CausticWax", "SwirledWax", "Turpentine", "PaperPlanter", "TicketPlanter", "FestivePlanter", "PlasticPlanter", "CandyPlanter", "RedClayPlanter", "BlueClayPlanter", "TackyPlanter", "PesticidePlanter", "HeatTreatedPlanter", "HydroponicPlanter", "PetalPlanter", "ThePlanterOfPlenty", "BasicEgg", "SilverEgg", "GoldEgg", "DiamondEgg", "MythicEgg", "StarEgg", "GiftedSilverEgg", "GiftedGoldEgg", "GiftedDiamondEgg", "GiftedMythicEgg", "RoyalJelly", "StarJelly", "BumbleBeeEgg", "BumbleBeeJelly", "RageBeeJelly", "ShockedBeeJelly"]
+			UI := SubStr(command.content, StrLen(commandPrefix)+10) ; user input
+			if !(UI) {
+				command_buffer.RemoveAt(1)
+				return discord.SendEmbed("Missing item name!\n``````?finditem [itemname]``````", 16711731, , , , id)
+			}
+			closestItem:=findClosestItem(items,UI)
+			if closestItem.dist > 6 || not closestItem.item
+				discord.SendEmbed("Item ``" UI "`` is not valid", 5066239, , , , id)
+			else
+				DetectHiddenWindows 1
+				if WinExist("natro_macro ahk_class AutoHotkey")
+					SendMessage(0x5559, ObjHasValue(items,closestItem.item),,,,,,,2000)	
+				DetectHiddenWindows 0
 
+		case "region":
+			webHwnd := WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")
+			uwpHwnd := WinExist("Roblox ahk_exe ApplicationFrameHost.exe")
+			useWeb := GetRobloxHWND() = webHwnd && webHwnd
+
+			logFile := logLocation := serverIp := unset 
+			serverRegion := "Unknown"
+			logFileTime := 0
+		
+			appOpened := webHwnd || uwpHwnd
+
+			if appOpened {
+				try {
+					localAppdata := EnvGet("LOCALAPPDATA")
+
+					if useWeb
+						logLocation := localAppdata "\Roblox\logs\*_Player_*_last.log"
+					else {
+						logLocation := localAppdata "\RobloxPCGDK\logs\*_Player_*_last.log"
+						loop Reg, "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages", "K"
+							if InStr(A_LoopRegName, "ROBLOXCORPORATION.ROBLOX_") && DirExist(localAppdata "\Packages\ROBLOXCORPORATION.ROBLOX_" StrSplit(A_LoopRegName, "__")[2] "\LocalState\logs")
+								logLocation := localAppdata "\Packages\ROBLOXCORPORATION.ROBLOX_" StrSplit(A_LoopRegName, "__")[2] "\LocalState\logs\*_Player_*_last.log"
+					}
+					
+					Loop Files, logLocation, "F" {
+						if (A_LoopFileTimeModified > logFileTime) {
+							logFileTime := A_LoopFileTimeModified
+							logFile := A_LoopFileFullPath
+						}
+					}
+
+					Loop Read logFile {
+						if RegExMatch(A_LoopReadLine, "serverId:\s+([\d.]+)\|(\d+)", &m)
+							serverIp := m[1]
+						else if InStr(A_LoopReadLine, "Disconnect")
+							serverIp := unset
+					}
+
+					prefix := RegExReplace(serverIp, "^(\d+\.\d+\.\d+)\.\d+$", "$1")
+
+					if robloxRanges.Has(prefix)
+						serverRegion := robloxRanges[prefix]
+				}
+			}
+
+			robloxApp := useWeb ? "Web Version" : "UWP Version"
+			
+			msgColor := 16711731
+			msgText := "Unable to fetch server region due to an unknown error!"
+			switch {
+				case IsSet(serverIp):
+					msgColor := 5066239
+					msgText := "Roblox application: **" robloxApp "\n**Server region: **" serverIp " (" serverRegion ")**"
+				case appOpened:
+					msgText := "Roblox is opened but not inside a server, therefore the server region cannot be fetched!"
+				case !appOpened:
+					msgText := "Unable to detect an opened Roblox application!"
+			}
+
+			discord.SendEmbed(msgText, msgColor, , , , id)
 
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
-
 
 		default:
 		discord.SendEmbed("``" commandPrefix name "`` is not a valid command!\nUse ``" commandPrefix "help`` for a list of commonly used commands.", 16711731, , , , id)
@@ -2439,6 +2628,295 @@ nm_command(command)
 			if (v = value)
 			return k
 		return 0
+	}
+}
+
+class discord
+{
+	static baseURL := "https://discord.com/api/v10/"
+
+	static SendEmbed(message, color:=3223350, content:="", pBitmap:=0, channel:="", replyID:=0)
+	{
+		payload_json :=
+		(
+		'
+		{
+			"content": "' content '",
+			"embeds": [{
+				"description": "' message '",
+				"color": "' color '"
+				' (pBitmap ? (',"image": {"url": "attachment://ss.png"}') : '') '
+			}]
+			' (replyID ? (',"allowed_mentions": {"parse": []}, "message_reference": {"message_id": "' replyID '", "fail_if_not_exists": false}') : '') '
+		}
+		'
+		)
+
+		if pBitmap
+			this.CreateFormData(&postdata, &contentType, [Map("name","payload_json","content-type","application/json","content",payload_json), Map("name","files[0]","filename","ss.png","content-type","image/png","pBitmap",pBitmap)])
+		else
+			postdata := payload_json, contentType := "application/json"
+
+		return this.SendMessageAPI(postdata, contentType, channel)
+	}
+
+	static SendFile(filepath, replyID:=0)
+	{
+		static MimeTypes := Map("PNG", "image/png"
+			, "JPEG", "image/jpeg"
+			, "JPG", "image/jpeg"
+			, "BMP", "image/bmp"
+			, "GIF", "image/gif"
+			, "WEBP", "image/webp"
+			, "TXT", "text/plain"
+			, "INI", "text/plain")
+
+		if (attr := FileExist(filepath))
+		{
+			SplitPath filepath := RTrim(filepath, "\/"), &file:=""
+			if (file && InStr(attr, "D"))
+			{
+				; attempt to zip folder to temp
+				try
+				{
+					RunWait 'powershell.exe -WindowStyle Hidden -Command Compress-Archive -Path "' filepath '\*" -DestinationPath "$env:TEMP\' file '.zip" -CompressionLevel Fastest -Force', , "Hide"
+					if !FileExist(filepath := A_Temp "\" file ".zip")
+						throw
+				}
+				catch
+				{
+					this.SendEmbed('The folder ``' StrReplace(StrReplace(filepath, "\", "\\"), '"', '\"') '`` could not be zipped!`nThis function is only supported on Windows 10 or higher.', 16711731, , , , replyID)
+					return -3
+				}
+			}
+			size := FileGetSize(filepath)
+			if (size > 26214076)
+			{
+				this.SendEmbed('``' StrReplace(StrReplace(filepath, "\", "\\"), '"', '\"') '`` is above the Discord file size limit of 25MiB!', 16711731, , , , replyID)
+				return -1
+			}
+		}
+		else
+		{
+			this.SendEmbed('``' StrReplace(StrReplace(filepath, "\", "\\"), '"', '\"') '`` does not exist or could not be read!', 16711731, , , , replyID)
+			return -2
+		}
+
+		SplitPath filepath, &file, , &ext
+		ext := StrUpper(ext)
+		params := []
+		(replyID > 0) && params.Push(Map("name","payload_json","content-type","application/json","content",'{"allowed_mentions": {"parse": []}, "message_reference": {"message_id": "' replyID '", "fail_if_not_exists": false}}'))
+		params.Push(Map("name","files[0]","filename",file,"content-type",MimeTypes.Has(ext) ? MimeTypes[ext] : "application/octet-stream","file",filepath))
+		this.CreateFormData(&postdata, &contentType, params)
+		this.SendMessageAPI(postdata, contentType)
+
+		; delete any temp file created
+		if (SubStr(filepath, 1, StrLen(A_Temp)) = A_Temp)
+			try FileDelete filepath
+	}
+
+	static SendImage(pBitmap, imgname:="image.png", replyID:=0)
+	{
+		params := []
+		(replyID > 0) && params.Push(Map("name","payload_json","content-type","application/json","content",'{"allowed_mentions": {"parse": []}, "message_reference": {"message_id": "' replyID '", "fail_if_not_exists": false}}'))
+		params.Push(Map("name","files[0]","filename",imgname,"content-type","image/png","pBitmap",pBitmap))
+		this.CreateFormData(&postdata, &contentType, params)
+		this.SendMessageAPI(postdata, contentType)
+	}
+
+	static SendMessageAPI(postdata, contentType:="application/json", channel:="", url:="")
+	{
+		global webhook, bottoken, discordMode, MainChannelCheck, MainChannelID
+
+		if (!channel && (discordMode = 1))
+		{
+			if (MainChannelCheck = 1)
+				channel := MainChannelID
+			else
+				return -2
+		}
+
+		if !url
+			url := (discordMode = 0) ? (webhook "?wait=true") : (this.BaseURL "/channels/" channel "/messages")
+
+		try
+		{
+			wr := ComObject("WinHttp.WinHttpRequest.5.1")
+			wr.Option[9] := 2720
+			wr.Open("POST", url, 1)
+			if (discordMode = 1)
+			{
+				wr.SetRequestHeader("User-Agent", "DiscordBot (AHK, " A_AhkVersion ")")
+				wr.SetRequestHeader("Authorization", "Bot " bottoken)
+			}
+			wr.SetRequestHeader("Content-Type", contentType)
+			wr.SetTimeouts(0, 60000, 120000, 30000)
+			wr.Send(postdata)
+			wr.WaitForResponse()
+			return wr.ResponseText
+		}
+	}
+
+	static GetCommands(channel)
+	{
+		global discordMode, commandPrefix
+
+		if (discordMode = 0)
+			return -1
+
+		Loop (n := (messages := this.GetRecentMessages(channel)).Length)
+		{
+			i := n - A_Index + 1
+			(SubStr(content := Trim(messages[i]["content"]), 1, StrLen(commandPrefix)) = commandPrefix) && command_buffer.Push({content:content, id:messages[i]["id"], url:messages[i]["attachments"].Has(1) ? messages[i]["attachments"][1]["url"] : ""})
+		}
+	}
+
+	static GetRecentMessages(channel)
+	{
+		global discordMode
+		static lastmsg := Map()
+
+		if (discordMode = 0)
+			return -1
+
+		try
+			(messages := JSON.parse(text := this.GetMessageAPI(lastmsg.Has(channel) ? ("?after=" lastmsg[channel]) : "?limit=1", channel))).Length
+		catch
+			return []
+
+		if (messages.Has(1))
+			lastmsg[channel] := messages[1]["id"]
+
+		return messages
+	}
+
+	static GetMessageAPI(params:="", channel:="")
+	{
+		global bottoken, discordMode, MainChannelCheck, MainChannelID
+
+		if (discordMode = 0)
+			return -1
+
+		if !channel
+		{
+			if (MainChannelCheck = 1)
+				channel := MainChannelID
+			else
+				return -2
+		}
+
+		try
+		{
+			wr := ComObject("WinHttp.WinHttpRequest.5.1")
+			wr.Option[9] := 2720
+			wr.Open("GET", this.BaseURL "/channels/" channel "/messages" params, 1)
+			wr.SetRequestHeader("User-Agent", "DiscordBot (AHK, " A_AhkVersion ")")
+			wr.SetRequestHeader("Authorization", "Bot " bottoken)
+			wr.SetRequestHeader("Content-Type", "application/json")
+			wr.Send()
+			wr.WaitForResponse()
+			return wr.ResponseText
+		}
+	}
+
+	static EditMessageAPI(id, postdata, contentType:="application/json", channel:="")
+	{
+		if (!channel && (discordMode = 1))
+		{
+			if (MainChannelCheck = 1)
+				channel := MainChannelID
+			else
+				return -2
+		}
+
+		url := (discordMode = 0) ? (webhook "/messages/" id) : (this.BaseURL "/channels/" channel "/messages/" id)
+
+		try
+		{
+			wr := ComObject("WinHttp.WinHttpRequest.5.1")
+			wr.Option[9] := 2720
+			wr.Open("PATCH", url, 1)
+			if (discordMode = 1)
+			{
+				wr.SetRequestHeader("User-Agent", "DiscordBot (AHK, " A_AhkVersion ")")
+				wr.SetRequestHeader("Authorization", "Bot " bottoken)
+			}
+			wr.SetRequestHeader("Content-Type", contentType)
+			wr.SetTimeouts(0, 60000, 120000, 30000)
+			wr.Send(postdata)
+			wr.WaitForResponse()
+			return wr.ResponseText
+		}
+	}
+
+	static CreateFormData(&retData, &contentType, fields)
+	{
+		static chars := "0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z"
+
+		chars := Sort(chars, "D| Random")
+		boundary := SubStr(StrReplace(chars, "|"), 1, 12)
+		hData := DllCall("GlobalAlloc", "UInt", 0x2, "UPtr", 0, "Ptr")
+		DllCall("ole32\CreateStreamOnHGlobal", "Ptr", hData, "Int", 0, "PtrP", &pStream:=0, "UInt")
+
+		for field in fields
+		{
+			str :=
+			(
+			'
+
+			------------------------------' boundary '
+			Content-Disposition: form-data; name="' field["name"] '"' (field.Has("filename") ? ('; filename="' field["filename"] '"') : "") '
+			Content-Type: ' field["content-type"] '
+
+			' (field.Has("content") ? (field["content"] "`r`n") : "")
+			)
+
+			utf8 := Buffer(length := StrPut(str, "UTF-8") - 1), StrPut(str, utf8, length, "UTF-8")
+			DllCall("shlwapi\IStream_Write", "Ptr", pStream, "Ptr", utf8.Ptr, "UInt", length, "UInt")
+
+			if field.Has("pBitmap")
+			{
+				try
+				{
+					pFileStream := Gdip_SaveBitmapToStream(field["pBitmap"])
+					DllCall("shlwapi\IStream_Size", "Ptr", pFileStream, "UInt64P", &size:=0, "UInt")
+					DllCall("shlwapi\IStream_Reset", "Ptr", pFileStream, "UInt")
+					DllCall("shlwapi\IStream_Copy", "Ptr", pFileStream, "Ptr", pStream, "UInt", size, "UInt")
+					ObjRelease(pFileStream)
+				}
+			}
+
+			if field.Has("file")
+			{
+				DllCall("shlwapi\SHCreateStreamOnFileEx", "WStr", field["file"], "Int", 0, "UInt", 0x80, "Int", 0, "Ptr", 0, "PtrP", &pFileStream:=0)
+				DllCall("shlwapi\IStream_Size", "Ptr", pFileStream, "UInt64P", &size:=0, "UInt")
+				DllCall("shlwapi\IStream_Copy", "Ptr", pFileStream, "Ptr", pStream, "UInt", size, "UInt")
+				ObjRelease(pFileStream)
+			}
+		}
+
+		str :=
+		(
+		'
+
+		------------------------------' boundary '--
+		'
+		)
+
+		utf8 := Buffer(length := StrPut(str, "UTF-8") - 1), StrPut(str, utf8, length, "UTF-8")
+		DllCall("shlwapi\IStream_Write", "Ptr", pStream, "Ptr", utf8.Ptr, "UInt", length, "UInt")
+		ObjRelease(pStream)
+
+		pData := DllCall("GlobalLock", "Ptr", hData, "Ptr")
+		size := DllCall("GlobalSize", "Ptr", pData, "UPtr")
+
+		retData := ComObjArray(0x11, size)
+		pvData := NumGet(ComObjValue(retData), 8 + A_PtrSize, "Ptr")
+		DllCall("RtlMoveMemory", "Ptr", pvData, "Ptr", pData, "Ptr", size)
+
+		DllCall("GlobalUnlock", "Ptr", hData)
+		DllCall("GlobalFree", "Ptr", hData, "Ptr")
+		contentType := "multipart/form-data; boundary=----------------------------" boundary
 	}
 }
 
