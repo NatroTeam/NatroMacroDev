@@ -2529,27 +2529,29 @@ nm_command(command)
 				DetectHiddenWindows 0
 
 		case "region":
-			webHwnd := WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")
-			uwpHwnd := WinExist("Roblox ahk_exe ApplicationFrameHost.exe")
-			useWeb := GetRobloxHWND() = webHwnd && webHwnd
+			static webHwnd := WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")
+			static uwpHwnd := WinExist("Roblox ahk_exe ApplicationFrameHost.exe")
+			static useWeb := GetRobloxHWND() = webHwnd && webHwnd
 
 			logFile := logLocation := serverIp := unset 
 			serverRegion := "Unknown"
 			logFileTime := 0
 		
-			appOpened := webHwnd || uwpHwnd
+			static appOpened := webHwnd || uwpHwnd
 
 			if appOpened {
 				try {
-					localAppdata := EnvGet("LOCALAPPDATA")
+					static localAppdata := EnvGet("LOCALAPPDATA")
 
 					if useWeb
 						logLocation := localAppdata "\Roblox\logs\*_Player_*_last.log"
 					else {
 						logLocation := localAppdata "\RobloxPCGDK\logs\*_Player_*_last.log"
-						loop Reg, "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages", "K"
-							if InStr(A_LoopRegName, "ROBLOXCORPORATION.ROBLOX_") && DirExist(localAppdata "\Packages\ROBLOXCORPORATION.ROBLOX_" StrSplit(A_LoopRegName, "__")[2] "\LocalState\logs")
-								logLocation := localAppdata "\Packages\ROBLOXCORPORATION.ROBLOX_" StrSplit(A_LoopRegName, "__")[2] "\LocalState\logs\*_Player_*_last.log"
+						loop Reg, "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages", "K" {
+							static packageId := StrSplit(A_LoopRegName, "__")[2]
+							if InStr(A_LoopRegName, "ROBLOXCORPORATION.ROBLOX_") && DirExist(localAppdata "\Packages\ROBLOXCORPORATION.ROBLOX_" packageId "\LocalState\logs")
+								logLocation := localAppdata "\Packages\ROBLOXCORPORATION.ROBLOX_" packageId "\LocalState\logs\*_Player_*_last.log"
+						}
 					}
 					
 					Loop Files, logLocation, "F" {
@@ -2566,14 +2568,14 @@ nm_command(command)
 							serverIp := unset
 					}
 
-					prefix := RegExReplace(serverIp, "^(\d+\.\d+\.\d+)\.\d+$", "$1")
+					static prefix := RegExReplace(serverIp, "^(\d+\.\d+\.\d+)\.\d+$", "$1")
 
 					if robloxRanges.Has(prefix)
 						serverRegion := robloxRanges[prefix]
 				}
 			}
 
-			robloxApp := useWeb ? "Web Version" : "UWP Version"
+			static robloxApp := useWeb ? "Web Version" : "UWP Version"
 			
 			msgColor := 16711731
 			msgText := "Unable to fetch server region due to an unknown error!"
