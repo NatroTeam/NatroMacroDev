@@ -2117,26 +2117,24 @@ nm_GetRobloxWebPath()
 nm_DetectRobloxType()
 {
 	robloxpath := defaultapp := ""
-	robloxtype := RobloxTypes.NotFound
 	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\roblox\UserChoice", "ProgId")
 
 	if defaultapp && InStr(defaultapp, "AppX")
-		robloxtype := RobloxTypes.UWP
+		return RobloxTypes.UWP
 
 	try robloxpath := nm_GetRobloxWebPath()
 	if robloxpath {
 		switch {
 			case robloxpath ~= "i)[a-z]+strap":
-				robloxtype := RobloxTypes.Bootstrapper
+				return RobloxTypes.Bootstrapper
 			case InStr(robloxpath, "RobloxPlayerBeta"):
-				robloxtype := RobloxTypes.Web
+				return RobloxTypes.Web
 			case robloxpath:
-				robloxtype := RobloxTypes.Custom
+				return RobloxTypes.Custom
 		}
 	}
-	else if FileExist(nm_GetRobloxUWPPath())
-		robloxtype := RobloxTypes.UWP
-	return robloxtype
+
+	return RobloxTypes.NotFound
 }
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DETECT INCORRECT ROBLOX SETTINGS
@@ -2182,7 +2180,7 @@ JoinArray(arr, sep := "`n") {
 }
 nm_MsgBoxIncorrectRobloxSettings()
 {
-	global IgnoreIncorrectRobloxSettings, ReconnectMethod, PrivServer
+	global ReconnectMethod, PrivServer
 	if IgnoreIncorrectRobloxSettings
 		return
 	static robloxtype := nm_DetectRobloxType()
@@ -2194,7 +2192,9 @@ nm_MsgBoxIncorrectRobloxSettings()
 					xmlpath := A_LoopFileFullPath
 		case RobloxTypes.UWP:
 			loop files, EnvGet("LOCALAPPDATA") "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
-				if !InStr(A_LoopFileName, "Studio")
+				xmlpath := A_LoopFileFullPath
+			if !xmlpath
+				loop files, EnvGet("LOCALAPPDATA") "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
 					xmlpath := A_LoopFileFullPath
 	}
 	catch
