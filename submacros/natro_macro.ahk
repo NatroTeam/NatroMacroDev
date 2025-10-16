@@ -2187,14 +2187,14 @@ nm_MsgBoxIncorrectRobloxSettings()
 	xmlpath := ""
 	try switch robloxtype {
 		case RobloxTypes.Custom, RobloxTypes.Web, RobloxTypes.Bootstrapper:
-			loop files, EnvGet("LOCALAPPDATA") "\Roblox\GlobalBasicSettings_*.xml", "F"
+			Loop Files, EnvGet("LOCALAPPDATA") "\Roblox\GlobalBasicSettings_*.xml", "F"
 				if !InStr(A_LoopFileName, "Studio")
 					xmlpath := A_LoopFileFullPath
 		case RobloxTypes.UWP:
-			loop files, EnvGet("LOCALAPPDATA") "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
+			Loop Files, EnvGet("LOCALAPPDATA") "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
 				xmlpath := A_LoopFileFullPath
 			if !xmlpath
-				loop files, EnvGet("LOCALAPPDATA") "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
+				Loop Files, EnvGet("LOCALAPPDATA") "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
 					xmlpath := A_LoopFileFullPath
 	}
 	catch
