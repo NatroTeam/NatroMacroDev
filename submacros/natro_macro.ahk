@@ -10100,10 +10100,10 @@ robloxFPSGui(*) {
 	fpsUnlockerGui.Show("w150 h60")
 	fpsUnlockerGui.AddText("vWebFPSCountLabel w100 x5 Disabled", "Web Roblox FPS")
 	fpsUnlockerGui.AddText("vWebFPSCountEdit yp xp+100 w50 Right Disabled")
-	fpsUnlockerGui.AddUpDown("vWebFPSCount Range15-500 Disabled", 15)
+	fpsUnlockerGui.AddUpDown("vWebFPSCount Range15-500 Disabled", 60)
 	fpsUnlockerGui.AddText("vUWPFPSCountLabel w100 x5 Disabled", "UWP Roblox FPS")
 	fpsUnlockerGui.AddText("vUWPFPSCountEdit yp xp+100 w50 Right Disabled")
-	fpsUnlockerGui.AddUpDown("vUWPFPSCount Range15-500 Disabled", 15)
+	fpsUnlockerGui.AddUpDown("vUWPFPSCount Range15-500 Disabled", 60)
 	fpsUnlockerGui.AddButton("vApply x45 yp+20 w70 Disabled","Apply").OnEvent("Click",(*) => WriteFPSCounts())
 	uwpxml := webxml := ""
 	uwpfps := webfps := unset
