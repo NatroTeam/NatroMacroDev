@@ -2530,14 +2530,12 @@ nm_command(command)
 
 		case "region":
 			static webHwnd := WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")
-			static uwpHwnd := WinExist("Roblox ahk_exe ApplicationFrameHost.exe")
-			static useWeb := GetRobloxHWND() = webHwnd && webHwnd
+			static appOpened := GetRobloxHWND()
+			static useWeb := appOpened = webHwnd && webHwnd
 
 			logFile := logLocation := serverIp := unset 
 			serverRegion := "Unknown"
 			logFileTime := 0
-		
-			static appOpened := webHwnd || uwpHwnd
 
 			if appOpened {
 				try {
