@@ -2069,7 +2069,8 @@ A_TrayMenu.Add()
 A_TrayMenu.Add("Open Logs", (*) => ListLines())
 A_TrayMenu.Add("Copy Logs", nm_copyDebugLog)
 A_TrayMenu.Add()
-
+A_TrayMenu.Add("Edit Roblox FPS", robloxFPSGui)
+A_TrayMenu.Add()
 A_TrayMenu.Add("Edit This Script", (*) => Edit())
 A_TrayMenu.Add("Suspend Hotkeys", (*) => (A_TrayMenu.ToggleCheck("Suspend Hotkeys"), Suspend()))
 A_TrayMenu.Add()
@@ -2178,27 +2179,27 @@ JoinArray(arr, sep := "`n") {
         out .= (i > 1 ? sep : "") val
     return out
 }
-nm_MsgBoxIncorrectRobloxSettings()
+nm_LocateRobloxSettingsXML(robloxtype)
 {
-	global ReconnectMethod, PrivServer
-	if IgnoreIncorrectRobloxSettings
-		return
-	static robloxtype := nm_DetectRobloxType()
-	xmlpath := ""
 	try switch robloxtype {
 		case RobloxTypes.Custom, RobloxTypes.Web, RobloxTypes.Bootstrapper:
 			Loop Files, EnvGet("LOCALAPPDATA") "\Roblox\GlobalBasicSettings_*.xml", "F"
 				if !InStr(A_LoopFileName, "Studio")
-					xmlpath := A_LoopFileFullPath
+					return A_LoopFileFullPath
 		case RobloxTypes.UWP:
 			Loop Files, EnvGet("LOCALAPPDATA") "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
-				xmlpath := A_LoopFileFullPath
-			if !xmlpath
-				Loop Files, EnvGet("LOCALAPPDATA") "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
-					xmlpath := A_LoopFileFullPath
+				return A_LoopFileFullPath
+			Loop Files, EnvGet("LOCALAPPDATA") "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
+				return A_LoopFileFullPath
 	}
-	catch
+	return ""
+}
+nm_MsgBoxIncorrectRobloxSettings()
+{
+	if IgnoreIncorrectRobloxSettings
 		return
+	static robloxtype := nm_DetectRobloxType()
+	xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
 	if !FileExist(xmlpath)
 		return
 	static xml := FileRead(xmlpath)
@@ -9587,14 +9588,14 @@ nm_showAdvancedSettings(*){
 nm_AdvancedGUI(init:=0){
 	global
 	local hBM, GuiCtrl
-	
 	TabCtrl.UseTab("Advanced")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	MainGui.SetFont("w700")
 	MainGui.Add("GroupBox", "x5 y24 w240 h90", "Fallback Private Servers")
-	MainGui.Add("GroupBox", "x5 yp+90 w240 h115", "Danger Zone")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
+	MainGui.Add("GroupBox", "x5 y114 w240 h55", "Priorities")
+	MainGui.Add("GroupBox", "xpp yp+hp wp hp", "Roblox FPS")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
 	MainGui.Add("Text", "x15 y44", "3 Fails:")
@@ -9603,9 +9604,6 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("Edit", "x55 y64 w180 h18 vFallbackServer2", FallbackServer2).OnEvent("Change", nm_ServerLink)
 	MainGui.Add("Text", "x15 y88", "9 Fails:")
 	MainGui.Add("Edit", "x55 y86 w180 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
-	;danger
-	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
-	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
@@ -9625,7 +9623,8 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("CheckBox", "x362 y174 vTestReset Checked", "Reset")
 	MainGui.Add("CheckBox", "x413 y174 vTestMsgBox", "MsgBox")
 	MainGui.Add("Button", "x325 y197 w100 h24", "Start Test").OnEvent("Click", nm_testButton)
-	MainGui.Add("Button", "x15 y200 w220 h25 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "x15 y132 w220 h26 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "xp yp+62 wp hp", "Edit FPS").OnEvent("Click", robloxFPSGui)
 	if (init = 1)
 	{
 		TabCtrl.Choose("Advanced")
@@ -10089,6 +10088,84 @@ nm_copyDebugLog(param:="", *) {
 			return '`n<None>'
 
 		return '`n' issues '`n> Total: ' totalissues
+	}
+}
+
+robloxFPSGui(*) {
+	global fpsUnlockerGui
+	if isSet(fpsUnlockerGui) && fpsUnlockerGui is Gui
+		fpsUnlockerGui.destroy()
+	fpsUnlockerGui := Gui("+E0x8000008 -MinimizeBox", "FPS Unlocker")
+	fpsUnlockerGui.SetFont("s8 cDefault Norm", "Tahoma")
+	fpsUnlockerGui.Show("w150 h60")
+	fpsUnlockerGui.AddText("vWebFPSCountLabel w100 x5 Disabled", "Web Roblox FPS")
+	fpsUnlockerGui.AddText("vWebFPSCountEdit yp xp+100 w50 Right Disabled")
+	fpsUnlockerGui.AddUpDown("vWebFPSCount Range15-500 Disabled", 15)
+	fpsUnlockerGui.AddText("vUWPFPSCountLabel w100 x5 Disabled", "UWP Roblox FPS")
+	fpsUnlockerGui.AddText("vUWPFPSCountEdit yp xp+100 w50 Right Disabled")
+	fpsUnlockerGui.AddUpDown("vUWPFPSCount Range15-500 Disabled", 15)
+	fpsUnlockerGui.AddButton("vApply x45 yp+20 w70 Disabled","Apply").OnEvent("Click",(*) => WriteFPSCounts())
+	uwpxml := webxml := unset
+	uwpfps := webfps := unset
+	for robloxtype in [RobloxTypes.Web, RobloxTypes.UWP] {
+		xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
+		if !FileExist(xmlpath)
+			continue
+		if RegExMatch(FileRead(xmlpath), "<int name=`"FramerateCap`">(-?\d+)</int>", &match) {
+			fps := match[1] = "-1" ? 60 : Integer(match[1])
+			if robloxtype = RobloxTypes.Web {
+				fpsUnlockerGui["WebFPSCount"].Value := fps
+				fpsUnlockerGui["WebFPSCountLabel"].Enabled := 1
+				fpsUnlockerGui["WebFPSCountEdit"].Enabled := 1
+				fpsUnlockerGui["WebFPSCount"].Enabled := 1
+				fpsUnlockerGui["Apply"].Enabled := 1
+				webxml := xmlpath
+				webfps := fps
+			}
+			else {
+				fpsUnlockerGui["UWPFPSCount"].Value := fps
+				fpsUnlockerGui["UWPFPSCountLabel"].Enabled := 1
+				fpsUnlockerGui["UWPFPSCountEdit"].Enabled := 1
+				fpsUnlockerGui["UWPFPSCount"].Enabled := 1
+				fpsUnlockerGui["Apply"].Enabled := 1
+				uwpxml := xmlpath
+				uwpfps := fps
+			}
+		}
+	}
+	WriteFPSCounts() {
+		if fpsUnlockerGui["WebFPSCount"].Value < 25 || fpsUnlockerGui["UWPFPSCount"].Value < 25
+			if MsgBox(
+				(
+				'An FPS count of less than 25 is not recommended
+				Are you sure you want to proceed?'
+				),,0x40134
+			) != "Yes"
+				return
+		for robloxtype, xmlpath in Map("Web", webxml, "UWP", uwpxml) {
+			if !IsSet(xmlpath)
+				continue
+			newfps := (robloxtype = "Web") ? fpsUnlockerGui["WebFPSCount"].Value : fpsUnlockerGui["UWPFPSCount"].Value
+			newfps := (newfps = 60) ? "-1" : String(newfps)
+			if robloxtype = "Web" && newfps != webfps || robloxtype = "UWP" && newfps != uwpfps {
+				skipFpsWrite := false
+				while GetRobloxHWND() = WinExist("Roblox ahk_exe RobloxPlayerBeta.exe") && robloxtype = "Web" || GetRobloxHWND() = WinExist("Roblox ahk_exe ApplicationFrameHost.exe") && robloxtype = "UWP" {
+					if MsgBox(
+					(
+						'Please close ' robloxtype ' Roblox before applying FPS changes.'
+						),,0x40135
+					) != "Retry" {
+						skipFpsWrite := true
+						break
+					}
+				}
+				if skipFpsWrite
+					continue
+				xmlcontents := RegExReplace(FileRead(xmlpath), "<int name=`"FramerateCap`">-?\d+</int>", "<int name=`"FramerateCap`">" newfps "</int>")
+				FileDelete(xmlpath)
+				FileAppend(xmlcontents, xmlpath)
+			}
+		}
 	}
 }
 
