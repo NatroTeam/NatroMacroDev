@@ -10154,7 +10154,7 @@ robloxFPSGui(*) {
 			skipWrite := false
 			while (
 				(robloxType = "Web" && GetRobloxHWND() = WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) ||
-				(robloxType = "UWP" && GetRobloxHWND() = WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
+				(robloxType = "UWP" && GetRobloxHWND())
 			) {
 				if MsgBox("Please close " robloxType " Roblox before applying FPS changes.",, 0x40135) != "Retry" {
 					skipWrite := true
