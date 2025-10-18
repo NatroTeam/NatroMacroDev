@@ -10142,29 +10142,30 @@ robloxFPSGui(*) {
 				),,0x40134
 			) != "Yes"
 				return
-		for robloxtype, xmlpath in Map("Web", webxml, "UWP", uwpxml) {
-			if !IsSet(xmlpath)
+		for robloxType, xmlPath in Map("Web", webxml, "UWP", uwpxml) {
+			if !IsSet(xmlPath)
 				continue
-			newfps := (robloxtype = "Web") ? fpsUnlockerGui["WebFPSCount"].Value : fpsUnlockerGui["UWPFPSCount"].Value
-			newfps := (newfps = 60) ? "-1" : String(newfps)
-			if !(robloxtype = "Web" && newfps != webfps || robloxtype = "UWP" && newfps != uwpfps)
+			guiKey := robloxType "FPSCount"
+			newFps := fpsUnlockerGui[guiKey].Value
+			newFps := (newFps = 60) ? "-1" : String(newFps)
+			expectedFps := (robloxType = "Web") ? webfps : uwpfps
+			if (newFps = expectedFps)
 				continue
-			skipFpsWrite := false
-			while GetRobloxHWND() = WinExist("Roblox ahk_exe RobloxPlayerBeta.exe") && robloxtype = "Web" || GetRobloxHWND() = WinExist("Roblox ahk_exe ApplicationFrameHost.exe") && robloxtype = "UWP" {
-				if MsgBox(
-				(
-					'Please close ' robloxtype ' Roblox before applying FPS changes.'
-					),,0x40135
-				) != "Retry" {
-					skipFpsWrite := true
+			skipWrite := false
+			while (
+				(robloxType = "Web" && GetRobloxHWND() = WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) ||
+				(robloxType = "UWP" && GetRobloxHWND() = WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
+			) {
+				if MsgBox("Please close " robloxType " Roblox before applying FPS changes.",, 0x40135) != "Retry" {
+					skipWrite := true
 					break
 				}
 			}
-			if skipFpsWrite
+			if skipWrite
 				continue
-			xmlcontents := RegExReplace(FileRead(xmlpath), "<int name=`"FramerateCap`">-?\d+</int>", "<int name=`"FramerateCap`">" newfps "</int>")
-			FileDelete(xmlpath)
-			FileAppend(xmlcontents, xmlpath)
+			xmlContent := RegExReplace(FileRead(xmlPath), "<int name=`"FramerateCap`">-?\d+</int>", "<int name=`"FramerateCap`">" newFps "</int>")
+			FileDelete(xmlPath)
+			FileAppend(xmlContent, xmlPath)
 		}
 	}
 }
