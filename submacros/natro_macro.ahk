@@ -10134,38 +10134,38 @@ robloxFPSGui(*) {
 		}
 	}
 	WriteFPSCounts() {
-		if fpsUnlockerGui["WebFPSCount"].Value < 25 || fpsUnlockerGui["UWPFPSCount"].Value < 25
-			if MsgBox(
-				(
-				'An FPS count of less than 25 is not recommended
-				Are you sure you want to proceed?'
-				),,0x40134
-			) != "Yes"
+		if fpsUnlockerGui["WebFPSCount"].Value < 25 && fpsUnlockerGui["WebFPSCount"].Value != webfps
+			|| fpsUnlockerGui["UWPFPSCount"].Value < 25 && fpsUnlockerGui["UWPFPSCount"].Value != uwpfps
+			if MsgBox('An FPS count of less than 25 is not recommended`nAre you sure you want to proceed?',,0x40134) != "Yes"
 				return
-		for robloxType, xmlPath in Map("Web", webxml, "UWP", uwpxml) {
-			if !IsSet(xmlPath)
+		for robloxtype, xmlpath in Map("Web", webxml, "UWP", uwpxml) {
+			if !IsSet(xmlpath)
 				continue
-			guiKey := robloxType "FPSCount"
-			newFps := fpsUnlockerGui[guiKey].Value
-			newFps := (newFps = 60) ? "-1" : String(newFps)
-			expectedFps := (robloxType = "Web") ? webfps : uwpfps
-			if (newFps = expectedFps)
+			guikey := robloxtype "FPSCount"
+			newfps := fpsUnlockerGui[guikey].Value
+			newfps := (newfps = 60) ? "-1" : String(newfps)
+			if newfps = String((robloxtype = "Web") ? webfps : uwpfps)
 				continue
-			skipWrite := false
+			skipwrite := false
 			while (
-				(robloxType = "Web" && WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) ||
-				(robloxType = "UWP" && WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
+				(robloxtype = "Web" && WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) ||
+				(robloxtype = "UWP" && WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
 			) {
-				if MsgBox("Please close " robloxType " Roblox before applying FPS changes.",, 0x40135) != "Retry" {
-					skipWrite := true
+				if MsgBox("Please close " robloxtype " Roblox before applying FPS changes.",, 0x40135) != "Retry" {
+					skipwrite := true
 					break
 				}
 			}
-			if skipWrite
+			if skipwrite
 				continue
-			xmlContent := RegExReplace(FileRead(xmlPath), "<int name=`"FramerateCap`">-?\d+</int>", "<int name=`"FramerateCap`">" newFps "</int>")
-			FileDelete(xmlPath)
-			FileAppend(xmlContent, xmlPath)
+			xmlcontent := RegExReplace(FileRead(xmlpath), "<int name=`"FramerateCap`">-?\d+</int>", "<int name=`"FramerateCap`">" newfps "</int>")
+			FileDelete(xmlpath)
+			FileAppend(xmlcontent, xmlpath)
+			MsgBox(robloxtype " Roblox FPS limit has been set to " ((newfps = "-1") ? "60" : newfps) "",,0x40040)
+			if robloxtype = "Web"
+				webfps := newfps
+			else
+				uwpfps := newfps
 		}
 	}
 }
