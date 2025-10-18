@@ -10105,7 +10105,7 @@ robloxFPSGui(*) {
 	fpsUnlockerGui.AddText("vUWPFPSCountEdit yp xp+100 w50 Right Disabled")
 	fpsUnlockerGui.AddUpDown("vUWPFPSCount Range15-500 Disabled", 15)
 	fpsUnlockerGui.AddButton("vApply x45 yp+20 w70 Disabled","Apply").OnEvent("Click",(*) => WriteFPSCounts())
-	uwpxml := webxml := unset
+	uwpxml := webxml := ""
 	uwpfps := webfps := unset
 	for robloxtype in [RobloxTypes.Web, RobloxTypes.UWP] {
 		xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
@@ -10139,7 +10139,7 @@ robloxFPSGui(*) {
 			if MsgBox('An FPS count of less than 25 is not recommended`nAre you sure you want to proceed?',,0x40134) != "Yes"
 				return
 		for robloxtype, xmlpath in Map("Web", webxml, "UWP", uwpxml) {
-			if !IsSet(xmlpath)
+			if !xmlpath
 				continue
 			guikey := robloxtype "FPSCount"
 			newfps := fpsUnlockerGui[guikey].Value
