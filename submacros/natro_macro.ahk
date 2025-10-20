@@ -9887,7 +9887,7 @@ nm_copyDebugLog(param:="", *) {
 		'
 		* AHK Version: ' A_AhkVersion (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? ' (built-in)' : ' (installed)') '
 		* Natro Version: ' VersionID ' (' ((VerCompare(VersionID, LatestVer) = 0) ? 'latest' : 'outdated') ')
-		* Installation Path: ``' StrReplace(A_WorkingDir, A_UserName, '<user>') '``'
+		* Installation Path: ``' StrReplace(A_WorkingDir, A_UserName, '%USERPROFILE%') '``'
 	)
 	}
 	RobloxInfo(){
@@ -9908,7 +9908,7 @@ nm_copyDebugLog(param:="", *) {
 		}
 		return 
 		(
-		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, A_UserName, '<user>'), '%1'), '"')) : '') '``
+		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, A_UserName, '%USERPROFILE%'), '%1'), '"')) : '') '``
 		* Default app: ' robloxtype
 		)
 	}
