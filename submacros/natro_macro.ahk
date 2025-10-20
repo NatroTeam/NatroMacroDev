@@ -2905,7 +2905,7 @@ MainGui.Add("Button", "x200 y65 w90 h30 vBoostedFieldSelectButton Disabled", "Se
 MainGui.SetFont("w700")
 
 ;shrine
-MainGui.Add("GroupBox", "x300 y25 w190 h105", "Wind Shrine")
+MainGui.Add("GroupBox", "x300 y25 w192 h105", "Wind Shrine")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 loop 2 {
 	xCoords := 246 + (86 * A_Index)
@@ -2955,7 +2955,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
 ;stickers
 MainGui.SetFont("w700")
-MainGui.Add("GroupBox", "x300 y130 w191 h105", "Stickers")
+MainGui.Add("GroupBox", "x300 y130 w192 h105", "Stickers")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("CheckBox", "x305 yp+16 vStickerStackCheck Disabled Checked" StickerStackCheck, "Sticker Stack").OnEvent("Click", nm_StickerStackCheck)
 MainGui.Add("Text", "xp+6 yp+13 +BackgroundTrans", "\__")
@@ -7875,7 +7875,8 @@ nm_BasicEggHatcher(*)
 	bitmaps["giftedstar"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAgMAAAC5YVYYAAAACVBMVEX9rDT+rDT/rDOj6H2ZAAAAFElEQVR42mNYtYoBgVYyrFoBYQMAf4AKnlh184sAAAAASUVORK5CYII=")
 	bitmaps["yes"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAB0AAAAPAQMAAAAiQ1bcAAAABlBMVEUAAAD3//lCqWtQAAAAAXRSTlMAQObYZgAAAFZJREFUeAEBSwC0/wDDAAfAAEIACGAAfgAQMAA8ABAQABgAIAgAGAAgCAAYACAYABgAP/gAGAAgAAAYAAAAABgAIAAAGAAwAAAYADAAABgAGDAAGAAP4FGfB+0KKAbEAAAAAElFTkSuQmCC")
 	#Include "%A_ScriptDir%\nm_image_assets\offset\bitmaps.ahk"
-
+	pBMC := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMC), Gdip_GraphicsClear(G,0xffae792f), Gdip_DeleteGraphics(G) ; Common
+	pBMM := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMM), Gdip_GraphicsClear(G,0xffbda4ff), Gdip_DeleteGraphics(G) ; Mythic
 	if (MsgBox("WELCOME TO THE BASIC BEE REPLACEMENT PROGRAM!!!!!``nMade by anniespony#8135``n``nMake sure BEE SLOT TO CHANGE is always visible``nDO NOT MOVE THE SCREEN OR RESIZE WINDOW FROM NOW ON.``nMAKE SURE AUTO-JELLY IS DISABLED!!", "Basic Bee Replacement Program", 0x40001) = "Cancel")
 		ExitApp
 
@@ -7908,12 +7909,15 @@ nm_BasicEggHatcher(*)
 	Hotkey "F11", ExitFunc, "On"
 	Sleep 250
 
-	pBMC := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMC), Gdip_GraphicsClear(G,0xffae792f), Gdip_DeleteGraphics(G) ; Common
-	pBMM := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMM), Gdip_GraphicsClear(G,0xffbda4ff), Gdip_DeleteGraphics(G) ; Mythic
-
 	rj := 0
 	Loop
 	{
+		if YesButton() {
+			sleep 750
+			if detect()
+				break
+			continue
+		}
 		if ((pos := (A_Index = 1) ? nm_InventorySearch("basicegg", "up", , , , 70) : (rj = 1) ? nm_InventorySearch("royaljelly", "down", , , 0, 7) : nm_InventorySearch("basicegg", "up", , , 0, 7)) = 0)
 		{
 			MsgBox "You ran out of " ((rj = 1) ? "Royal Jellies!" : "Basic Eggs!"), "Basic Bee Replacement Program", 0x40010
@@ -7929,14 +7933,8 @@ nm_BasicEggHatcher(*)
 		Loop 10
 		{
 			Sleep 100
-			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+offsetY+windowHeight//2-52 "|500|150")
-			if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1)
-			{
-				Gdip_DisposeImage(pBMScreen)
-				SendEvent "{Click " windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1) " " windowY+offsetY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1) "}"
+			if YesButton()
 				break
-			}
-			Gdip_DisposeImage(pBMScreen)
 			if (A_Index = 10)
 			{
 				rj := 1
@@ -7944,31 +7942,47 @@ nm_BasicEggHatcher(*)
 			}
 		}
 		Sleep 750
-
-		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-155 "|" windowY+offsetY+((4*windowHeight)//10 - 135) "|310|205"), rj := 0
+		if detect()
+			break
+	}
+	detect() {
+		global rj := 0
+		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-155 "|" windowY+offsetY+((4*windowHeight)//10 - 135) "|310|205")
 		if (Gdip_ImageSearch(pBMScreen, pBMM, , 50, 165, 260, 205, 2, , , 5) = 5) { ; Mythic Hatched
 			if (MsgBox("MYTHIC!!!!``nKeep this?", "Basic Bee Replacement Program", 0x40024) = "Yes")
 			{
 				Gdip_DisposeImage(pBMScreen)
-				break
+				return 1
 			}
 		}
-		else if (Gdip_ImageSearch(pBMScreen, pBMC, , 50, 165, 260, 205, 2, , , 5) = 5) {
+		else if (Gdip_ImageSearch(pBMScreen, pBMC, , 50, 165, 260, 205, 2, , , 5) = 5) { ; check if common
 			rj := 1
 			if (Gdip_ImageSearch(pBMScreen, bitmaps["giftedstar"], , 0, 20, 130, 50, 5) = 1) { ; If gifted is hatched, stop
 				MsgBox "SUCCESS!!!!", "Basic Bee Replacement Program", 0x40020
 				Gdip_DisposeImage(pBMScreen)
-				break
+				return 1
 			}
 		}
 		else if (Gdip_ImageSearch(pBMScreen, bitmaps["giftedstar"], , 0, 20, 130, 50, 5) = 1) { ; Non-Basic Gifted Hatched
 			if (MsgBox("GIFTED!!!!``nKeep this?", "Basic Bee Replacement Program", 0x40024) = "Yes")
 			{
 				Gdip_DisposeImage(pBMScreen)
-				break
+				return 1
 			}
 		}
 		Gdip_DisposeImage(pBMScreen)
+		return 0
+	}
+	YesButton(){
+		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+offsetY+windowHeight//2-52 "|500|150")
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1)
+		{
+			Gdip_DisposeImage(pBMScreen)
+			SendEvent "{Click " windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1) " " windowY+offsetY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1) "}"
+			return 1
+		}
+		Gdip_DisposeImage(pBMScreen)
+		return 0
 	}
 	ExitApp
 
@@ -9234,7 +9248,8 @@ nm_ContributorsImage(page:=1, contributors:=""){
 			, ["raychal71",0xffb7c9e2,"259441167068954624"]
 			, ["axetar",0xffec8fd0,"487989990937198602"]
 			, ["mis.c",0xffa174fe,"996025853286817815"]
-			, ["ninju",0xffe6a157,"727937385274540046"]]
+			, ["ninju",0xffe6a157,"727937385274540046"]
+			, ["Dully176",0xff138718,"522940239904243712"]]
 
 		testers := [["thatcasualkiwi",0xffff00ff,"334634052361650177"]
 			, ["ziz_jake",0xffa45ee9,"227604929806729217"]
@@ -10521,7 +10536,7 @@ nm_HealthBar() {
 	return detection
 }
 nm_ConfirmAtHive(){
-	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + offsetY + 40 "|350|60")
+	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
 	if ((Gdip_ImageSearch(pBMScreen, bitmaps["makehoney"], , , , , , 2, , 2) = 1) || (Gdip_ImageSearch(pBMScreen, bitmaps["collectpollen"], , , , , , 2, , 2) = 1)){
 		Gdip_DisposeImage(pBMScreen)
 		return 1
@@ -10610,6 +10625,29 @@ nm_spawnMoveTo(moves) {
             script .= 'Send "{' %dir "Key"% ' up}"`n'
     }
     return script
+nm_SetHiveCameraDirection(rotations){
+	global HiveConfirmed
+	static hivedown := 0
+	if hivedown
+		sendinput "{" RotDown "}"
+	region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
+	sconf := windowWidth**2//3200
+	loop (maxindex := 8/rotations*2) { ; 2 full rotations
+		sleep 250+KeyDelay
+		pBMScreen := Gdip_BitmapFromScreen(region), s := 0
+		for i, k in bitmaps["hive"] {
+			s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 4, , , sconf))
+			if (s >= sconf) {
+				Gdip_DisposeImage(pBMScreen)
+				HiveConfirmed := 1
+				sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
+				Send "{" ZoomOut " 5}"
+				return 1
+			}
+		}
+		Gdip_DisposeImage(pBMScreen)
+		sendinput "{" RotRight " " rotations "}" ((maxindex/2 = A_Index) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
+	}
 }
 nm_setShiftLock(state, *){
 	global bitmaps, SC_LShift, ShiftLockEnabled
@@ -10879,26 +10917,21 @@ nm_findHiveSlot(){
 	GetRobloxClientPos(hwnd)
 	MouseMove windowX+350, windowY+offsetY+100
 
-	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
-	if ((Gdip_ImageSearch(pBMScreen, bitmaps["makehoney"], , , , , , 2, , 2) = 1) || (Gdip_ImageSearch(pBMScreen, bitmaps["collectpollen"], , , , , , 2, , 2) = 1))
-		HiveConfirmed := 1, Gdip_DisposeImage(pBMScreen)
+	
+	if nm_ConfirmAtHive()
+		HiveConfirmed := 1
 	else
 	{
-		Gdip_DisposeImage(pBMScreen)
-
 		; find hive slot
 		DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
 		n := s, f := s+150000000
 		SendInput "{" LeftKey " down}"
 		while (n < f)
 		{
-			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
-			if ((Gdip_ImageSearch(pBMScreen, bitmaps["makehoney"], , , , , , 2, , 2) = 1) || (Gdip_ImageSearch(pBMScreen, bitmaps["collectpollen"], , , , , , 2, , 2) = 1))
-			{
-				HiveConfirmed := 1, Gdip_DisposeImage(pBMScreen)
+			if nm_ConfirmAtHive() {
+				HiveConfirmed := 1
 				break
 			}
-			Gdip_DisposeImage(pBMScreen)
 			DllCall("GetSystemTimeAsFileTime","int64p",&n)
 		}
 		SendInput "{" LeftKey " up}"
@@ -10914,10 +10947,7 @@ nm_findHiveSlot(){
 				break
 			}
 			Sleep 500
-			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
-			if ((Gdip_ImageSearch(pBMScreen, bitmaps["makehoney"], , , , , , 2, , 2) = 1) || (Gdip_ImageSearch(pBMScreen, bitmaps["collectpollen"], , , , , , 2, , 2) = 1))
-			{
-				Gdip_DisposeImage(pBMScreen)
+			if nm_ConfirmAtHive() {
 				nm_convert()
 				break
 			}
@@ -11631,6 +11661,59 @@ nm_RoyalJellyDis(){
 		}
 		LastRoyalJellyDis:=nowUnix()
 		IniWrite LastRoyalJellyDis, "settings\nm_config.ini", "Collect", "LastRoyalJellyDis"
+	}
+}
+nm_Wreath(){
+	global LastWreath, WreathCheck
+	if (WreathCheck && (nowUnix()-LastWreath)>1800) { ;0.5 hours
+		nm_setStatus("Traveling", "Honey Wreath")
+		nm_gotoCollect("wreath")
+
+		searchRet := nm_imgSearch("e_button.png",30,"high")
+		if (searchRet[1] = 0) {
+			SendInput "{" SC_E " down}"
+			Sleep 100
+			SendInput "{" SC_E " up}"
+
+			LastWreath:=nowUnix()
+			IniWrite LastWreath, "settings\nm_config.ini", "Collect", "LastWreath"
+
+			Sleep 4000
+
+			;loot
+			movement :=
+			(
+			nm_Walk(1, BackKey) "
+			" nm_Walk(4.5, BackKey, LeftKey) "
+			" nm_Walk(1, LeftKey) "
+			Loop 3 {
+				" nm_Walk(6, FwdKey) "
+				" nm_Walk(1.25, RightKey) "
+				" nm_Walk(6, BackKey) "
+				" nm_Walk(1.25, RightKey) "
+			}
+			" nm_Walk(6, FwdKey)
+			)
+			nm_createWalk(movement)
+			KeyWait "F14", "D T5 L"
+			KeyWait "F14", "T60 L"
+			nm_endWalk()
+
+			nm_setStatus("Collected", "Honey Wreath")
+		}
+
+		;walk back
+		movement :=
+		(
+		nm_Walk(4, BackKey) "
+		" nm_Walk(12, FwdKey, RightKey) "
+		" nm_Walk(24, LeftKey) "
+		" nm_Walk(6, BackKey, LeftKey)
+		)
+		nm_createWalk(movement)
+		KeyWait "F14", "D T5 L"
+		KeyWait "F14", "T60 L"
+		nm_endWalk()
 	}
 }
 nm_Stockings(fromClock:=0){
@@ -15501,8 +15584,7 @@ nm_GoGather(){
 		, MicroConverterKey
 		, WhirligigKey, PFieldBoosted, GlitterKey, GatherFieldBoosted, GatherFieldBoostedStart, LastGlitter, PMondoGuidComplete, LastGuid, PMondoGuid, PFieldGuidExtend, PFieldGuidExtendMins, PFieldBoostExtend, PPopStarExtend, HasPopStar, PopStarActive, FieldGuidDetected, ConvertGatherFlag
 		, LastWhirligig
-		, BoostChaserCheck, LastBlueBoost, LastRedBoost, LastMountainBoost, FieldBooster3, FieldBooster2, FieldBooster1, FieldDefault, LastMicroConverter, HiveConfirmed, LastWreath, WreathCheck
-		, BlueFlowerBoosterCheck, BambooBoosterCheck, PineTreeBoosterCheck, StumpBoosterCheck, DandelionBoosterCheck, SunflowerBoosterCheck, CloverBoosterCheck, SpiderBoosterCheck, PineappleBoosterCheck, CactusBoosterCheck, PumpkinBoosterCheck, MushroomBoosterCheck, StrawberryBoosterCheck, RoseBoosterCheck, PepperBoosterCheck, CoconutBoosterCheck
+		, BoostChaserCheck, LastBlueBoost, LastRedBoost, LastMountainBoost, FieldBooster3, FieldBooster2, FieldBooster1, FieldDefault, LastMicroConverter, HiveConfirmed
 		, FieldName1, FieldPattern1, FieldPatternSize1, FieldPatternReps1, FieldPatternShift1, FieldPatternInvertFB1, FieldPatternInvertLR1, FieldUntilMins1, FieldUntilPack1, FieldReturnType1, FieldSprinklerLoc1, FieldSprinklerDist1, FieldRotateDirection1, FieldRotateTimes1, FieldDriftCheck1
 		, FieldName2, FieldPattern2, FieldPatternSize2, FieldPatternReps2, FieldPatternShift2, FieldPatternInvertFB2, FieldPatternInvertLR2, FieldUntilMins2, FieldUntilPack2, FieldReturnType2, FieldSprinklerLoc2, FieldSprinklerDist2, FieldRotateDirection2, FieldRotateTimes2, FieldDriftCheck2
 		, FieldName3, FieldPattern3, FieldPatternSize3, FieldPatternReps3, FieldPatternShift3, FieldPatternInvertFB3, FieldPatternInvertLR3, FieldUntilMins3, FieldUntilPack3, FieldReturnType3, FieldSprinklerLoc3, FieldSprinklerDist3, FieldRotateDirection3, FieldRotateTimes3, FieldDriftCheck3
@@ -16020,230 +16102,41 @@ nm_GoGather(){
 		nm_OpenMenu()
 		;check any planter progress
 		nm_PlanterTimeUpdate(FieldName)
-		;whirligig //todo: needs a major rework!
-		if(FieldReturnType="walk") { ;walk back
-			if((WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && !PFieldBoosted) || (WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && PFieldBoosted && GatherFieldBoosted)){
-				if(FieldName="sunflower"){
-					Send "{" RotLeft " 2}"
-				}
-				else if(FieldName="dandelion"){
-					Send "{" RotRight " 2}"
-				}
-				else if(FieldName="mushroom"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="blue flower"){
-					Send "{" RotRight " 2}"
-				}
-				else if(FieldName="spider"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="strawberry"){
-					Send "{" RotLeft " 2}"
-				}
-				else if(FieldName="bamboo"){
-					Send "{" RotRight " 2}"
-				}
-				else if(FieldName="pineapple"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="stump"){
-					Send "{" RotRight " 2}"
-				}
-				else if(FieldName="pumpkin"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="pine tree"){
-					Send "{" RotLeft " 4}"
-				}
-				else if(FieldName="rose"){
-					Send "{" RotLeft " 2}"
-				}
-				else if(FieldName="pepper"){
-					Send "{" RotLeft " 2}"
-				}
-				Send "{" WhirligigKey "}"
-				sleep (2500+KeyDelay)
-				;Confirm hive
-				send "{PgUp 4}"
-				loop 8 {
-					Send "{" ZoomOut "}"
-				}
-				loop 4
-				{
-					If ((nm_imgSearch("hive4.png",20,"actionbar")[1] = 0) || (nm_imgSearch("hive_honeystorm.png",20,"actionbar")[1] = 0) || (nm_imgSearch("hive_snowstorm.png",20,"actionbar")[1] = 0))
-					{
-						send "{" RotRight " 4}{" RotDown " 4}"
-						HiveConfirmed:=1
-						LastWhirligig:=nowUnix()
-						IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
-						Sleep 1000
-						break
-					}
-					SendInput "{" RotRight " 4}"
-					sleep (250+KeyDelay)
-					If (A_Index=4)
-					{
-						nm_setStatus("Warning", "No Whirligigs")
-						WhirligigKey:="None"
-					}
-				}
-			} else { ;walk to hive
-				nm_walkFrom(FieldName)
-				DisconnectCheck()
-				;Honey Wreath
-				if (WreathCheck && ((interruptReason = "") || InStr(interruptReason, "Backpack exceeds")) && (nowUnix()-LastWreath)>1800) { ;0.5 hours
-					nm_setStatus("Traveling", "Honey Wreath")
-					nm_gotoCollect("wreath")
-
-					searchRet := nm_imgSearch("e_button.png",30,"high")
-					if (searchRet[1] = 0) {
-						SendInput "{" SC_E " down}"
-						Sleep 100
-						SendInput "{" SC_E " up}"
-
-						LastWreath:=nowUnix()
-						IniWrite LastWreath, "settings\nm_config.ini", "Collect", "LastWreath"
-
-						Sleep 4000
-
-						;loot
-						movement :=
-						(
-						nm_Walk(1, BackKey) "
-						" nm_Walk(4.5, BackKey, LeftKey) "
-						" nm_Walk(1, LeftKey) "
-						Loop 3 {
-							" nm_Walk(6, FwdKey) "
-							" nm_Walk(1.25, RightKey) "
-							" nm_Walk(6, BackKey) "
-							" nm_Walk(1.25, RightKey) "
-						}
-						" nm_Walk(6, FwdKey)
-						)
-						nm_createWalk(movement)
-						KeyWait "F14", "D T5 L"
-						KeyWait "F14", "T60 L"
-						nm_endWalk()
-
-						nm_setStatus("Collected", "Honey Wreath")
-					}
-
-					;walk back
-					movement :=
-					(
-					nm_Walk(4, BackKey) "
-					" nm_Walk(12, FwdKey, RightKey) "
-					" nm_Walk(24, LeftKey) "
-					" nm_Walk(6, BackKey, LeftKey)
-					)
-					nm_createWalk(movement)
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T60 L"
-					nm_endWalk()
-				}
-				nm_findHiveSlot()
-			}
-		} else { ;reset back
-			if ((WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && !PFieldBoosted) || (WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180 && PFieldBoosted && GatherFieldBoosted)) {
-				if(FieldName="sunflower"){
-					loop 2 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="dandelion"){
-					loop 2 {
-						Send "{" RotRight "}"
-					}
-				}
-				else if(FieldName="mushroom"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="blue flower"){
-					loop 2 {
-						Send "{" RotRight "}"
-					}
-				}
-				else if(FieldName="spider"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="strawberry"){
-					loop 2 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="bamboo"){
-					loop 2 {
-						Send "{" RotRight "}"
-					}
-				}
-				else if(FieldName="pineapple"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="stump"){
-					loop 2 {
-						Send "{" RotRight "}"
-					}
-				}
-				else if(FieldName="pumpkin"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="pine tree"){
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="rose"){
-					loop 2 {
-						Send "{" RotLeft "}"
-					}
-				}
-				else if(FieldName="pepper"){
-					loop 2 {
-						Send "{" RotLeft "}"
-					}
-				}
-				Send "{" WhirligigKey "}"
-				sleep (2500+KeyDelay)
-				;Confirm hive
-				send "{PgUp 4}"
-				loop 8 {
-					Send "{" ZoomOut "}"
-				}
-				loop 4
-				{
-					If ((nm_imgSearch("hive4.png",20,"actionbar")[1] = 0) || (nm_imgSearch("hive_honeystorm.png",20,"actionbar")[1] = 0) || (nm_imgSearch("hive_snowstorm.png",20,"actionbar")[1] = 0))
-					{
-						send "{" RotRight " 4}{" RotDown " 4}"
-						HiveConfirmed:=1
-						LastWhirligig:=nowUnix()
-						IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
-						Sleep 1000
-						break
-					}
-					SendInput "{" RotRight " 4}"
-					sleep (250+KeyDelay)
-					If (A_Index=4)
-					{
-						nm_setStatus("Missing", "Whirligig")
-						WhirligigKey:="None"
-					}
-				}
-			}
-		}
+		;whirligig
+		if (WhirligigKey!="None" && (nowUnix()-LastWhirligig)>180
+		&& (!PFieldBoosted || (PFieldBoosted && GatherFieldBoosted))){
+			WhirligigReturn()
+		} else if(FieldReturnType="walk") { ;walk back
+			nm_walkFrom(FieldName)
+			DisconnectCheck()
+			;Honey Wreath
+			if BeesmasActive && ((interruptReason = "") || InStr(interruptReason, "Backpack exceeds"))
+				nm_Wreath()
+			nm_findHiveSlot()
+		} ;reset back otherwise
 	}
 	nm_currentFieldDown()
 	utc_min := FormatTime(A_NowUTC, "m")
 	if(CurrentField="mountain top" && (utc_min>=0 && utc_min<15)) ;mondo dangerzone! skip over this field if possible
 		nm_currentFieldDown()
+
+	WhirligigReturn(){
+		pBMScreen := Gdip_BitmapFromScreen(WindowX+WindowWidth*0.5-260 "|" WindowY+WindowHeight-101 "|" 75*7 "|" 66) ;hotbar
+		if (Gdip_ImageSearch(pBMScreen,bitmaps["whirligigslot"], , , , , , 10, ,3) = 1) {
+			Gdip_DisposeImage(pBMScreen)
+			Send "{" WhirligigKey "}{ " RotUp " 10}{ " RotDown " 4}{" ZoomIn " 10}"
+			sleep(2000) ; make sure the player is on the ground
+			if !nm_SetHiveCameraDirection(1)
+				nm_setStatus("Warning", "Unable to confirm hive!")
+			
+			LastWhirligig:=nowUnix()
+			IniWrite LastWhirligig, "settings\nm_config.ini", "Boost", "LastWhirligig"
+			nm_convert() ;convert all pollen, then reset if needed.
+		} else {
+			nm_setStatus("Warning", "No Whirligigs")
+			Gdip_DisposeImage(pBMScreen)
+		}
+	}
 }
 nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 	if !patterns.Has(pattern) {
@@ -16543,19 +16436,19 @@ nm_convert(){
 			Sleep 1000
 			nm_AutoFieldBoost(currentField)
 			if(AFBuseGlitter || AFBuseBooster) {
-				nm_setStatus("Interupted", "AFB")
+				nm_setStatus("Interrupted", "AFB")
 				return
 			}
 			if (disconnectcheck()) {
 				return
 			}
 			if (PFieldBoosted && (nowUnix()-GatherFieldBoostedStart)>780 && (nowUnix()-GatherFieldBoostedStart)<900 && (nowUnix()-LastGlitter)>900 && GlitterKey!="none") {
-				nm_setStatus("Interupted", "Field Boosted")
+				nm_setStatus("Interrupted", "Field Boosted")
 				return
 			}
 			inactiveHoney := (nm_activeHoney() = 0) ? inactiveHoney + 1 : 0
 			if (BackpackConvertTime>60 && inactiveHoney>30) {
-				nm_setStatus("Interupted", "Inactive Honey")
+				nm_setStatus("Interrupted", "Inactive Honey")
 				GameFrozenCounter++
 				return
 			}
@@ -16604,7 +16497,7 @@ nm_convert(){
 			while((BalloonConvertTime := nowUnix()-BalloonStartTime)<600) { ;10 mins
 				nm_AutoFieldBoost(currentField)
 				if(AFBuseGlitter || AFBuseBooster) {
-					nm_setStatus("Interupted", "AFB")
+					nm_setStatus("Interrupted", "AFB")
 					return
 				}
 				inactiveHoney := (nm_activeHoney() = 0) ? inactiveHoney + 1 : 0
@@ -16614,7 +16507,7 @@ nm_convert(){
 					IniWrite LastEnzymes, "settings\nm_config.ini", "Boost", "LastEnzymes"
 				}
 				if (BalloonConvertTime>60 && inactiveHoney>30) {
-					nm_setStatus("Interupted", "Inactive Honey")
+					nm_setStatus("Interrupted", "Inactive Honey")
 					GameFrozenCounter++
 					return
 				}
@@ -16622,7 +16515,7 @@ nm_convert(){
 					return
 				}
 				if ((PFieldBoosted = 1) && (nowUnix()-GatherFieldBoostedStart)>780 && (nowUnix()-GatherFieldBoostedStart)<900 && (nowUnix()-LastGlitter)>900 && GlitterKey!="none") {
-					nm_setStatus("Interupted", "Field Boosted")
+					nm_setStatus("Interrupted", "Field Boosted")
 					return
 				}
 				GetRobloxClientPos(hwnd)
