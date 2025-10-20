@@ -2799,12 +2799,27 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("CheckBox", "x217 y43 vStingerCheck Disabled Hidden Checked" StingerCheck, "Kill Vicious Bee").OnEvent("Click", nm_saveStingers)
 (GuiCtrl := MainGui.Add("CheckBox", "x315 y43 vStingerDailyBonusCheck Disabled Hidden Checked" StingerDailyBonusCheck, "Only Daily Bonus")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("Text", "x168 y69 +BackgroundTrans Hidden vTextFields", "Fields:")
-(GuiCtrl := MainGui.Add("CheckBox", "x220 y62 vStingerCloverCheck Disabled Hidden Checked" StingerCloverCheck, "Clover")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x220 y80 vStingerSpiderCheck Disabled Hidden Checked" StingerSpiderCheck, "Spider")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x305 y62 vStingerCactusCheck Disabled Hidden Checked" StingerCactusCheck, "Cactus")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x305 y80 vStingerRoseCheck Disabled Hidden Checked" StingerRoseCheck, "Rose")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x390 y62 vStingerMountainTopCheck Disabled Hidden Checked" StingerMountainTopCheck, "Mountain Top")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-(GuiCtrl := MainGui.Add("CheckBox", "x390 y80 vStingerPepperCheck Disabled Hidden Checked" StingerPepperCheck, "Pepper")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x220 y62 vStingerCloverCheck Disabled Hidden Checked" StingerCloverCheck, "Clover")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Clover", ctrl, info))
+(GuiCtrl := MainGui.Add("CheckBox", "x220 y80 vStingerSpiderCheck Disabled Hidden Checked" StingerSpiderCheck, "Spider")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Spider", ctrl, info))
+(GuiCtrl := MainGui.Add("CheckBox", "x305 y62 vStingerCactusCheck Disabled Hidden Checked" StingerCactusCheck, "Cactus")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Cactus", ctrl, info))
+(GuiCtrl := MainGui.Add("CheckBox", "x305 y80 vStingerRoseCheck Disabled Hidden Checked" StingerRoseCheck, "Rose")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Rose", ctrl, info))
+(GuiCtrl := MainGui.Add("CheckBox", "x390 y62 vStingerMountainTopCheck Disabled Hidden Checked" StingerMountainTopCheck, "Mountain Top")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Mountain Top", ctrl, info))
+(GuiCtrl := MainGui.Add("CheckBox", "x390 y80 vStingerPepperCheck Disabled Hidden Checked" StingerPepperCheck, "Pepper")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Pepper", ctrl, info))
+lowBees(fieldName, ctrl, info) {
+	static beeAmount := Map("Clover", 0, "Spider", 5, "Cactus", 15, "Rose", 15, "Mountain Top", 25, "Pepper", 35)
+	if (HiveBees >= beeAmount[fieldName] || !ctrl.Value) {
+		nm_saveConfig(ctrl, info)
+		return
+	}
+
+    result := MsgBox("Are you sure you want to enable " fieldName "?`nYou currently have " HiveBees " bees, but this field requires at least " beeAmount[fieldName] " bees.`n`nPress 'Yes' to enable anyway, or 'No' to keep it disabled.", "Low Bee Warning", 0x40044)
+    if (result != "Yes") {
+        ctrl.Value := 0  ; Revert change if user cancels
+        return
+    }
+
+    nm_saveConfig(ctrl, info)
+}
 
 ;bosses
 MainGui.SetFont("w700")
@@ -7288,11 +7303,13 @@ nm_HideErrorsWarn(GuiCtrl, *){
 		if (MsgBox("
 		(
 		WARNING:
-		Disabling this feature will make all errors appear, possibly causing the macro to hang and other unwanted behavior.
-		You should only disable this if you know what you are doing or if you are instructed to by someone who does.
+		Disabling this feature will make all errors appear.
+		This may cause the macro to freeze or behave unpredictably.
+
+		You should only disable this if you understand what you're doing or if you're instructed to by someone who does.
 
 		DESCRIPTION:
-		When disabled, any error will be displayed instead of being automatically hidden and skipped.
+		When this feature is disabled, any error will be shown instead of being automatically hidden and skipped.
 
 		The macro will restart to apply the changes.
 
@@ -10421,24 +10438,21 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 		MouseMove windowX+350, windowY+offsetY+100
 		PrevKeyDelay:=A_KeyDelay
 		SetKeyDelay 250+KeyDelay
-		Loop 1
-		{
-			resetTime:=nowUnix()
-			PostSubmacroMessage("background", 0x5554, 1, resetTime)
-			;reset
-			ActivateRoblox()
-			GetRobloxClientPos()
-			send "{" SC_Esc "}{" SC_R "}{" SC_Enter "}"
-			n := 0
-			while ((n < 2) && (A_Index <= 80))
-			{
-				Sleep 100
-				pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|50")
-				n += ((Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) || nm_HealthBar()) = (n = 0))
-				Gdip_DisposeImage(pBMScreen)
-			}
-			Sleep 1000
+
+		resetTime:=nowUnix()
+		PostSubmacroMessage("background", 0x5554, 1, resetTime)
+		;reset
+		ActivateRoblox()
+		GetRobloxClientPos()
+		send "{" SC_Esc "}{" SC_R "}{" SC_Enter "}"
+		n := 0
+		while ((n < 2) && (A_Index <= 80)) {
+			Sleep 100
+			pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|50")
+			n += ((Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) || nm_HealthBar()) = (n = 0))
+			Gdip_DisposeImage(pBMScreen)
 		}
+		Sleep 1000
 		SetKeyDelay PrevKeyDelay
 
 		; hive check
@@ -10522,7 +10536,7 @@ atHive() {
     pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + GetYOffset() + 40 "|350|60")
     out := Gdip_ImageSearch(pBMScreen, bitmaps["colhey"],,,,,,5)
 	Gdip_DisposeImage(pBMScreen)
-	fail:=out?0:fail+1
+	fail := out ? 0 : fail + 1
 	if fail > 3 {
 		fail:=0
 		return 1
@@ -17382,7 +17396,6 @@ ShellRun(prms*)
 }
 nm_claimHiveSlot(){
 	global KeyDelay, FwdKey, RightKey, LeftKey, BackKey, ZoomOut, HiveSlot, HiveConfirmed, SC_E, SC_Esc, SC_R, SC_Enter, bitmaps
-	
 	GetBitmap() {
 		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
 		while ((A_Index <= 20) && (Gdip_ImageSearch(pBMScreen, bitmaps["FriendJoin"], , , , , , 6) = 1)) {
@@ -17475,7 +17488,7 @@ nm_claimHiveSlot(){
 		}
 
 		; USE OLD SYSTEM IF NEW SYSTEM DIDN'T WORK
-		nm_setStatus("Fallback", "No unclaimed slots found -> using old system")
+		nm_setStatus("Warning", "Unable to detect hive slot from spawn, attempting with old system.")
 		;go to slot 1
 		Sleep 500
 		GetRobloxClientPos(hwnd)

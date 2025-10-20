@@ -184,13 +184,13 @@ nm_CheckNight() { ; 0 = day, 1 = night, 2 = dusk (thank postmessage)
 		return
 
 	try {
-	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + 2*windowHeight//5 "|" windowWidth "|" 3*windowHeight//5)
-	for _, v in bitmaps["day"] {
-		if (Gdip_ImageSearch(pBMScreen, v,,,,,,6)) {
-			imgDetected := 1
-			Gdip_DisposeImage(pBMScreen)
-			break
-		}
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + 2*windowHeight//5 "|" windowWidth "|" 3*windowHeight//5)
+		for _, v in bitmaps["day"] {
+			if (Gdip_ImageSearch(pBMScreen, v,,,,,,6)) {
+				imgDetected := 1
+				Gdip_DisposeImage(pBMScreen)
+				break
+			}
 	}
 	Gdip_DisposeImage(pBMScreen)
 	} catch	
