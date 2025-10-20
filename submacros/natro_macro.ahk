@@ -338,6 +338,7 @@ nm_importConfig()
 		, "TimersHotkey", "F5"
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
+		, "IgnoreIncorrectRobloxSettings", 0 
 		, "FDCWarn", 1
 		, "priorityListNumeric", 12345678
 		, "EnableBeesmasTime", 0
@@ -2068,7 +2069,8 @@ A_TrayMenu.Add()
 A_TrayMenu.Add("Open Logs", (*) => ListLines())
 A_TrayMenu.Add("Copy Logs", nm_copyDebugLog)
 A_TrayMenu.Add()
-
+A_TrayMenu.Add("Edit Roblox FPS", robloxFPSGui)
+A_TrayMenu.Add()
 A_TrayMenu.Add("Edit This Script", (*) => Edit())
 A_TrayMenu.Add("Suspend Hotkeys", (*) => (A_TrayMenu.ToggleCheck("Suspend Hotkeys"), Suspend()))
 A_TrayMenu.Add()
@@ -2090,7 +2092,156 @@ DllCall(DllCall("GetProcAddress"
 		, "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
 		, "AStr","USkinInit", "Ptr")
 	, "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DEFAULT ROBLOX TYPE/PATH DETECTION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+nm_GetRobloxUWPPath()
+{
+	try {
+		loop Reg, "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages", "K" {
+			if InStr(A_LoopRegName,"ROBLOXCORPORATION.ROBLOX_"){
+				basePath := "C:\Program Files\WindowsApps\" A_LoopRegName "\"
+				exePath := basePath "Windows10Universal.exe"
+				if FileExist(exePath)
+					return exePath
+			}
+		}
+	}
+	catch Error as E
+		return "Path read error: " E.Message
+	return "Path not found"
+}
+nm_GetRobloxWebPath()
+{
+	return RegRead("HKCR\roblox\shell\open\command")
+}
+nm_DetectRobloxType()
+{
+	robloxpath := defaultapp := ""
+	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\roblox\UserChoice", "ProgId")
 
+	if defaultapp && InStr(defaultapp, "AppX")
+		return RobloxTypes.UWP
+
+	try robloxpath := nm_GetRobloxWebPath()
+	if robloxpath {
+		switch {
+			case robloxpath ~= "i)[a-z]+strap":
+				return RobloxTypes.Bootstrapper
+			case InStr(robloxpath, "RobloxPlayerBeta"):
+				return RobloxTypes.Web
+			case robloxpath:
+				return RobloxTypes.Custom
+		}
+	}
+
+	return RobloxTypes.NotFound
+}
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DETECT INCORRECT ROBLOX SETTINGS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+RobloxTypes := {
+	UWP: "UWP Version",
+	Bootstrapper: "Bootstrapper (Web)",
+	Web: "Roblox (Web)",
+	Custom: "Custom/Unknown (Web)",
+	NotFound: "Not found"
+}
+RecommendedRobloxSettings := Map(
+	"Correct", Map(
+		"All", Map(
+			'"GraphicsQualityLevel">3', "Set Graphics Quality to LOWEST",
+			'"PreferredTextSize">1', 'Set Text Size to LOWEST'
+		),
+		"UWP Version", Map(),
+		"Web Version", Map(
+			'"ControlMode">1', 'Turn ON Shift Lock'
+		)
+	),
+	"Incorrect", Map(
+		"All", Map(
+			'"CameraYInverted">true', 'Turn OFF Inverted Camera',
+			'"OnScreenProfilerEnabled">true', 'Turn OFF Microprofiler',
+			'"ComputerCameraMovementMode">2', 'Set Camera Mode to CLASSIC',
+			'"ComputerMovementMode">2', 'Set Movement Mode to KEYBOARD',
+			'"GraphicsQualityLevel">0', "Switch to MANUAL Graphics"
+		),
+		"UWP Version", Map(
+			'"Fullscreen">true', 'Turn OFF Fullscreen',
+			'"ControlMode">1', 'Turn OFF Shift Lock'
+		),
+		"Web Version", Map()
+	)
+)
+JoinArray(arr, sep := "`n") {
+    out := ""
+    for i, val in arr
+        out .= (i > 1 ? sep : "") val
+    return out
+}
+nm_LocateRobloxSettingsXML(robloxtype)
+{
+	try switch robloxtype {
+		case RobloxTypes.Custom, RobloxTypes.Web, RobloxTypes.Bootstrapper:
+			Loop Files, EnvGet("LOCALAPPDATA") "\Roblox\GlobalBasicSettings_*.xml", "F"
+				if !InStr(A_LoopFileName, "Studio")
+					return A_LoopFileFullPath
+		case RobloxTypes.UWP:
+			Loop Files, EnvGet("LOCALAPPDATA") "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
+				return A_LoopFileFullPath
+			Loop Files, EnvGet("LOCALAPPDATA") "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
+				return A_LoopFileFullPath
+	}
+	return ""
+}
+nm_MsgBoxIncorrectRobloxSettings()
+{
+	if IgnoreIncorrectRobloxSettings
+		return
+	static robloxtype := nm_DetectRobloxType()
+	xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
+	if !FileExist(xmlpath)
+		return
+	static xml := FileRead(xmlpath)
+	recommendations := []
+	for tier, tiermap in RecommendedRobloxSettings {
+		for platform, platformmap in tiermap {
+			if platform = "All" || (platform = "UWP Version" && robloxtype = RobloxTypes.UWP) || (platform = "Web Version" && (robloxtype = RobloxTypes.Web || robloxtype = RobloxTypes.Custom || robloxtype = RobloxTypes.Bootstrapper)){
+				for xmltext, recommendation in platformmap {
+					if tier = "Incorrect" && InStr(xml, xmltext)
+						recommendations.Push(recommendation)
+					else if tier = "Correct" && !InStr(xml, xmltext)
+						recommendations.Push(recommendation)
+				}
+			}
+		}
+	}
+	if recommendations.Length {
+		rectext := JoinArray(recommendations, "`n")
+		local IncSettingsGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Incorrect Roblox Settings Detected")
+		IncSettingsGui.SetFont("s9", "Tahoma")
+		IncSettingsGui.OnEvent("Close", (*) => gui.Destroy())
+		IncSettingsGui.SetFont("Bold s10 cBlue", "Tahoma")
+		IncSettingsGui.Add("Text", "x10 y10 w400 +Center", "Default Roblox application: " robloxtype)
+		IncSettingsGui.SetFont("s9 cDefault", "Tahoma")
+		IncSettingsGui.Add("Text", "x10 y40 w400 +BackgroundTrans", "The detected Roblox application might have incorrect settings, please do these:")
+		IncSettingsGui.SetFont("s9 cRed", "Tahoma")
+		IncSettingsGui.Add("Text", "x10 y70 w400 r" recommendations.Length "+BackgroundTrans", rectext)
+		IncSettingsGui.SetFont("s8 cDefault", "Tahoma")
+		IncSettingsGui.Add("Text", "x10 y" (80 + 14 * recommendations.Length) " w400 +BackgroundTrans", "IMPORTANT: You can safely ignore this message if you have already changed them.")
+		IncSettingsGui.SetFont("s9", "Tahoma")
+		IncSettingsGui.Add("CheckBox", "x10 y" (110 + 14 * recommendations.Length) " w200 vIncorrectSettingsCheckbox", "Do not show again")
+		btn := IncSettingsGui.Add("Button", "x320 y" (110 + 14 * recommendations.Length) " w90 h28 Default", "OK")
+		btn.OnEvent("Click", (*) => (
+			IncSettingsGui["IncorrectSettingsCheckbox"].Value
+				? (MsgBox("You ticked the 'Do not show again' checkbox, which means you won't get any warning messages about incorrect Roblox settings anymore. Are you sure that you want to do this?", "Are you sure?", 0x1034) = "Yes"
+					? (IniWrite(1, "settings\nm_config.ini", "Settings", "IgnoreIncorrectRobloxSettings"), IncSettingsGui.Destroy())
+					: "")
+				: IncSettingsGui.Destroy()
+		))
+		IncSettingsGui.Show("AutoSize Center")
+	}
+}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; AUTO-UPDATE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2597,27 +2748,32 @@ MainGui.Add("UpDown", "Range0-9999 vKeyDelay Disabled", KeyDelay).OnEvent("Chang
 ;reconnect settings
 MainGui.Add("Button", "x248 y64 w40 h16 vTestReconnectButton Disabled", "Test").OnEvent("Click", nm_testReconnect)
 MainGui.Add("Text", "x178 y82 +BackgroundTrans", "Private Server Link:")
-MainGui.Add("Edit", "x176 yp+15 w148 h16 vPrivServer Disabled", PrivServer).OnEvent("Change", nm_ServerLink)
+MainGui.Add("Edit", "x176 yp+13 w148 h16 vPrivServer Disabled", PrivServer).OnEvent("Change", nm_ServerLink)
 MainGui.Add("Text", "x178 yp+21 +BackgroundTrans", "Join Method:")
 MainGui.Add("Text", "x254 yp w48 vReconnectMethod +Center +BackgroundTrans", ReconnectMethod)
 MainGui.Add("Button", "xp-12 yp-1 w12 h15 vRMLeft Disabled", "<").OnEvent("Click", nm_ReconnectMethod)
 MainGui.Add("Button", "xp+59 yp w12 h15 vRMRight Disabled", ">").OnEvent("Click", nm_ReconnectMethod)
 MainGui.Add("Button", "x315 yp w10 h15 vReconnectMethodHelp Disabled", "?").OnEvent("Click", nm_ReconnectMethodHelp)
-MainGui.Add("Text", "x178 yp+21 +BackgroundTrans", "Daily Reconnect (optional):")
-MainGui.Add("Text", "x178 yp+18 +BackgroundTrans", "Reconnect every")
-MainGui.Add("Edit", "x264 yp-1 w18 h16 Number Limit2 vReconnectInterval Disabled", ValidateInt(&ReconnectInterval, "")).OnEvent("Change", nm_setReconnectInterval)
+MainGui.Add("Text", "x178 yp+18 +BackgroundTrans", "Daily Reconnect (optional):")
+MainGui.Add("Text", "x178 yp+17 +BackgroundTrans", "Reconnect every")
+MainGui.Add("Edit", "x264 yp-2 w18 h15 Number Limit2 vReconnectInterval Disabled", ValidateInt(&ReconnectInterval, "")).OnEvent("Change", nm_setReconnectInterval)
 MainGui.Add("Text", "x287 yp+1 +BackgroundTrans", "hours")
 MainGui.Add("Text", "x196 yp+18 +BackgroundTrans", "starting at")
-MainGui.Add("Edit", "x250 yp-1 w18 h16 Number Limit2 vReconnectHour Disabled", IsInteger(ReconnectHour) ? SubStr("0" ReconnectHour, -2) : "").OnEvent("Change", nm_setReconnectHour)
-MainGui.Add("Edit", "x275 yp w18 h16 Number Limit2 vReconnectMin Disabled", IsInteger(ReconnectMin) ? SubStr("0" ReconnectMin, -2) : "").OnEvent("Change", nm_setReconnectMin)
+MainGui.Add("Edit", "x250 yp w18 h15 Number Limit2 vReconnectHour Disabled", IsInteger(ReconnectHour) ? SubStr("0" ReconnectHour, -2) : "").OnEvent("Change", nm_setReconnectHour)
+MainGui.Add("Edit", "x275 yp w18 h15 Number Limit2 vReconnectMin Disabled", IsInteger(ReconnectMin) ? SubStr("0" ReconnectMin, -2) : "").OnEvent("Change", nm_setReconnectMin)
 MainGui.SetFont("w1000 s11")
-MainGui.Add("Text", "x269 yp-3 +BackgroundTrans", ":")
+MainGui.Add("Text", "x269 yp-2 +BackgroundTrans", ":")
 MainGui.SetFont("s6 w700")
-MainGui.Add("Text", "x295 yp+6 +BackgroundTrans", "UTC")
+MainGui.Add("Text", "x295 yp+5 +BackgroundTrans", "UTC")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
-MainGui.Add("Button", "x315 yp-3 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
-(GuiCtrl := MainGui.Add("CheckBox", "x176 yp+18 w132 h15 vPublicFallback Disabled Checked" PublicFallback, "Fallback to Public Server")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+MainGui.Add("Button", "x315 yp-2 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
+(GuiCtrl := MainGui.Add("CheckBox", "x176 yp+17 w132 h15 vPublicFallback Disabled Checked" PublicFallback, "Fallback to Public Server")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("Button", "x315 yp w10 h15 vPublicFallbackHelp Disabled", "?").OnEvent("Click", nm_PublicFallbackHelp)
+MainGui.Add("Text", "x178 yp+16 w200 h15 +BackgroundTrans", "Detected Roblox:")
+MainGui.Add("Button", "x178 yp+15 w45 h15 vRefreshDetectedApplication Disabled", "Refresh").OnEvent("Click", nm_UpdateDetectedApplication)
+MainGui.Add("Text", "x226 yp w70 vDetectedApplicationText +BackgroundTrans", "Loading... ")
+MainGui.Add("Button", "x315 yp w10 h15 vDetectedApplicationHelp Disabled", "?").OnEvent("Click", nm_DetectedApplicationHelp)
+MainGui.Add("Button", "xp-14 yp w10 h15 vOpenDefaultApps", "^").OnEvent("Click", nm_OpenDefaultApps)
 
 ;character settings
 MainGui.Add("Text", "x345 y40 w110 +BackgroundTrans", "Movement Speed:")
@@ -2720,10 +2876,7 @@ MainGui.Add("Picture", "+BackgroundTrans x247 yp-3 w20 h20 vBeesmasImage")
 (GuiCtrl := MainGui.Add("CheckBox", "xp+130 ys+6 vSamovarCheck Disabled", "Samovar")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vLidArtCheck Disabled", "Lid Art")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vGummyBeaconCheck Disabled", "Gummy Beacon")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-if (EnableBeesmasTime > nowUnix())
-	nm_EnableBeesmas(1)
-else
-	try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
+try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
 ;Blender
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x305 y42 w190 h105 vBlenderGroupBox", "Blender")
@@ -3237,6 +3390,12 @@ if (A_Args.Has(1) && (A_Args[1] = 1)){
 	ForceStart := 1
 	SetTimer start, -1000
 }
+
+;initialize nm_UpdateDetectedApplication()
+nm_UpdateDetectedApplication()
+
+;check for incorrect roblox settings
+nm_MsgBoxIncorrectRobloxSettings()
 
 return
 
@@ -3974,6 +4133,8 @@ nm_TabSettingsLock(){
 	MainGui["ReconnectMin"].Enabled := 0
 	MainGui["ReconnectTimeHelp"].Enabled := 0
 	MainGui["PublicFallbackHelp"].Enabled := 0
+	MainGui["RefreshDetectedApplication"].Enabled := 0
+	MainGui["DetectedApplicationHelp"].Enabled := 0
 	MainGui["NewWalkHelp"].Enabled := 0
 }
 nm_TabSettingsUnLock(){
@@ -4013,6 +4174,8 @@ nm_TabSettingsUnLock(){
 	MainGui["ReconnectMin"].Enabled := 1
 	MainGui["ReconnectTimeHelp"].Enabled := 1
 	MainGui["PublicFallbackHelp"].Enabled := 1
+	MainGui["RefreshDetectedApplication"].Enabled := 1
+	MainGui["DetectedApplicationHelp"].Enabled := 1
 	MainGui["NewWalkHelp"].Enabled := 1
 }
 nm_TabMiscLock(){
@@ -4153,34 +4316,34 @@ nm_ShowErrorBalloonTip(Ctrl, Title, Text){
 }
 
 ;cursor changing
-ReplaceSystemCursors(IDC := "")
-{
-	static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
-	static SysCursors := Map("IDC_APPSTARTING", 32650
-		, "IDC_ARROW", 32512
-		, "IDC_CROSS", 32515
-		, "IDC_HAND", 32649
-		, "IDC_HELP", 32651
-		, "IDC_IBEAM", 32513
-		, "IDC_NO", 32648
-		, "IDC_SIZEALL", 32646
-		, "IDC_SIZENESW", 32643
-		, "IDC_SIZENWSE", 32642
-		, "IDC_SIZEWE", 32644
-		, "IDC_SIZENS", 32645
-		, "IDC_UPARROW", 32516
-		, "IDC_WAIT", 32514)
-	if !IDC
-		DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
-	else
-	{
-		hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
-		for k, v in SysCursors
-		{
-			hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
-			DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
-		}
-	}
+SetCursor(name:=0){
+    static cursor_types := Map(
+		"IDC_APPSTARTING", 32650,
+		"IDC_ARROW", 32512,
+		"IDC_CROSS", 32515,
+		"IDC_HAND", 32649,
+		"IDC_HELP", 32651,
+		"IDC_IBEAM", 32513,
+		"IDC_NO", 32648,
+		"IDC_SIZEALL", 32646,
+		"IDC_SIZENESW", 32643,
+		"IDC_SIZENWSE", 32642,
+		"IDC_SIZEWE", 32644,
+		"IDC_SIZENS", 32645,
+		"IDC_UPARROW", 32516,
+		"IDC_WAIT", 32514
+	)
+
+	if !name {
+		DllCall("SetCursor", "Ptr", 0)
+        return
+    }
+
+    if !cursor_types.Has(name)
+        throw Error("Invalid cursor type. see https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors")
+    
+	HCURSOR := DllCall("LoadCursor", "Ptr", 0, "uint", cursor_types[name])
+	DllCall("SetCursor", "Ptr", HCURSOR)
 }
 
 ;text control positioning functions
@@ -4861,56 +5024,38 @@ ba_AddBlenderItem(*){
 }
 nm_BeesmasHandler(req)
 {
+	global
+	local hBM, k, v
+
 	if (req.readyState != 4)
 		return
 
 	if (req.status = 200)
-		nm_EnableBeesmas(Trim(req.responseText, " `t`r`n"))
+	{
+		switch Trim(req.responseText, " `t`r`n")
+		{
+			case 1:
+			beesmasActive := 1
+
+			MainGui["BeesmasGroupBox"].Text := "Beesmas (Active)"
+
+			hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["beesmas"])
+			MainGui["BeesmasImage"].Value := "HBITMAP:*" hBM
+			DllCall("DeleteObject", "ptr", hBM)
+
+			for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
+				MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
+
+			sprinklerImages.Push("saturatorWS")
+			MainGui["BeesmasFailImage"].Value := ""
+
+			case 0:
+			MainGui["BeesmasFailImage"].Value := ""
+		}
+	}
 }
 BeesmasActiveFail(*){
-	if MsgBox('
-		(
-		Could not fetch Beesmas data from GitHub!
-		To enable Beesmas features automatically, make sure you have a working internet connection and then reload the macro!
-		
-		If you would like to enable Beesmas manually, select "Yes". This will open a menu where you can specifiy the amount of days you would like to manually enable beesmas for.
-		)', "Error", 0x1134 " Owner" MainGui.Hwnd) != "Yes"
-			return
-	loop {
-		input := InputBox("How many days would you like to enable beesmas for?`r`n1 = 1 day`r`n7 = 1 week`r`n14 = 2 weeks`r`n...`r`nMake sure to round the days up.", "Manual Beesmas Enable", "T30")
-		if (input.Result != "OK")
-			return
-		if (input.Value > 0 && input.Value < 90){
-			IniWrite nowUnix()+Round(input.Value)*86400, "settings\nm_config.ini", "Settings", "EnableBeesmasTime" ; divied by seconds in a day (result is now unix in days)
-			nm_EnableBeesmas(1)
-			return Msgbox("Success! Beesmas is manually enabled for " Round(input.Value) " days.", "Manual Beesmas Enable", "Iconi")
-		}
-		if (input.Value > 90) {
-			if MsgBox("You set the value to be higher than 90, which could be unnecessary. Make sure to set the value according to the beesmas timer on the right of the screen.",  "Manual Beesmas Enable", "IconX 0x5") == "Cancel"
-				return
-		}
-		else if MsgBox("That input doesn't seem right, make sure you're entering a number between 1 and 90.",  "Manual Beesmas Enable", "IconX 0x5") == "Cancel"
-			return
-	}
-}
-nm_EnableBeesmas(toggle){
-	global beesmasActive
-	if toggle {
-		beesmasActive := 1
-
-		MainGui["BeesmasGroupBox"].Text := "Beesmas (Active)"
-
-		hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["beesmas"])
-		MainGui["BeesmasImage"].Value := "HBITMAP:*" hBM
-		DllCall("DeleteObject", "ptr", hBM)
-
-		for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
-			MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
-
-		sprinklerImages.Push("saturatorWS")
-		MainGui["BeesmasFailImage"].Value := ""
-	}
-	else MainGui["BeesmasFailImage"].Value := ""
+	MsgBox "Could not fetch Beesmas data from GitHub!`r`nTo use Beesmas features, make sure you have a working internet connection and then reload the macro!", "Error", 0x1030 " Owner" MainGui.Hwnd
 }
 nm_NightMemoryMatchCheck(*){
 	global NightMemoryMatchCheck
@@ -7485,6 +7630,7 @@ nm_ReconnectMethod(GuiCtrl, *){
 	i := (ReconnectMethod = "Deeplink") ? 1 : 2
 
 	MainGui["ReconnectMethod"].Text := ReconnectMethod := val[(GuiCtrl.Name = "RMRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	nm_UpdateDetectedApplication()
 	IniWrite ReconnectMethod, "settings\nm_config.ini", "Settings", "ReconnectMethod"
 }
 nm_setReconnectInterval(GuiCtrl, *){
@@ -7602,6 +7748,35 @@ nm_PublicFallbackHelp(*){ ; public fallback information
 	Otherwise, it will keep trying the Server Link you entered above until it succeeds.
 	)", "Public Server Fallback", 0x40000
 }
+nm_UpdateDetectedApplication(*){	; detected roblox link type
+	MainGui["DetectedApplicationText"].Text := nm_DetectRobloxType()
+
+	if MainGui["DetectedApplicationText"].Text = "Not found"
+		MainGui["DetectedApplicationText"].SetFont("c0xAA0000", "Tahoma")
+	else
+		MainGui["DetectedApplicationText"].SetFont("c0x0000FF", "Tahoma")
+}
+nm_DetectedApplicationHelp(*){ ; detected application information
+	MsgBox "
+	(
+	DESCRIPTION:
+	When 'Deeplink' is enabled, the macro will run the default application associated with the 'roblox' link type.
+	If you have multiple Roblox versions installed (including bootstrappers such as Bloxstrap), these are added to the 'roblox' link type.
+
+	To select the app that Natro uses, you will need to change the default app in your settings:
+
+	1. Open 'Default Apps' in settings, or click the "^" button to the left of this one;
+	2. Change the default app for the ROBLOX link type to the app you want the macro to use;
+	3. Press the refresh button & the Test Reconnect button to see if it is using the app you want to use
+
+	IMPORTANT:
+	When using the version from Microsoft Store (UWP app) you need to:
+	- Disable Fullscreen
+	- Disable Shift-Lock
+	Otherwise your macro may not work!
+	)", "Detected Application", 0x40000
+}
+nm_OpenDefaultApps(*) => Run("ms-settings:defaultapps")
 nm_moveSpeed(GuiCtrl, *){
 	global MoveSpeedNum
 	p := EditGetCurrentCol(GuiCtrl)
@@ -7861,8 +8036,7 @@ nm_BasicEggHatcher(*)
 	bitmaps["giftedstar"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAgMAAAC5YVYYAAAACVBMVEX9rDT+rDT/rDOj6H2ZAAAAFElEQVR42mNYtYoBgVYyrFoBYQMAf4AKnlh184sAAAAASUVORK5CYII=")
 	bitmaps["yes"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAB0AAAAPAQMAAAAiQ1bcAAAABlBMVEUAAAD3//lCqWtQAAAAAXRSTlMAQObYZgAAAFZJREFUeAEBSwC0/wDDAAfAAEIACGAAfgAQMAA8ABAQABgAIAgAGAAgCAAYACAYABgAP/gAGAAgAAAYAAAAABgAIAAAGAAwAAAYADAAABgAGDAAGAAP4FGfB+0KKAbEAAAAAElFTkSuQmCC")
 	#Include "%A_ScriptDir%\nm_image_assets\offset\bitmaps.ahk"
-	pBMC := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMC), Gdip_GraphicsClear(G,0xffae792f), Gdip_DeleteGraphics(G) ; Common
-	pBMM := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMM), Gdip_GraphicsClear(G,0xffbda4ff), Gdip_DeleteGraphics(G) ; Mythic
+
 	if (MsgBox("WELCOME TO THE BASIC BEE REPLACEMENT PROGRAM!!!!!``nMade by anniespony#8135``n``nMake sure BEE SLOT TO CHANGE is always visible``nDO NOT MOVE THE SCREEN OR RESIZE WINDOW FROM NOW ON.``nMAKE SURE AUTO-JELLY IS DISABLED!!", "Basic Bee Replacement Program", 0x40001) = "Cancel")
 		ExitApp
 
@@ -7895,15 +8069,12 @@ nm_BasicEggHatcher(*)
 	Hotkey "F11", ExitFunc, "On"
 	Sleep 250
 
+	pBMC := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMC), Gdip_GraphicsClear(G,0xffae792f), Gdip_DeleteGraphics(G) ; Common
+	pBMM := Gdip_CreateBitmap(2,2), G := Gdip_GraphicsFromImage(pBMM), Gdip_GraphicsClear(G,0xffbda4ff), Gdip_DeleteGraphics(G) ; Mythic
+
 	rj := 0
 	Loop
 	{
-		if YesButton() {
-			sleep 750
-			if detect()
-				break
-			continue
-		}
 		if ((pos := (A_Index = 1) ? nm_InventorySearch("basicegg", "up", , , , 70) : (rj = 1) ? nm_InventorySearch("royaljelly", "down", , , 0, 7) : nm_InventorySearch("basicegg", "up", , , 0, 7)) = 0)
 		{
 			MsgBox "You ran out of " ((rj = 1) ? "Royal Jellies!" : "Basic Eggs!"), "Basic Bee Replacement Program", 0x40010
@@ -7919,8 +8090,14 @@ nm_BasicEggHatcher(*)
 		Loop 10
 		{
 			Sleep 100
-			if YesButton()
+			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+offsetY+windowHeight//2-52 "|500|150")
+			if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1)
+			{
+				Gdip_DisposeImage(pBMScreen)
+				SendEvent "{Click " windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1) " " windowY+offsetY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1) "}"
 				break
+			}
+			Gdip_DisposeImage(pBMScreen)
 			if (A_Index = 10)
 			{
 				rj := 1
@@ -7928,47 +8105,31 @@ nm_BasicEggHatcher(*)
 			}
 		}
 		Sleep 750
-		if detect()
-			break
-	}
-	detect() {
-		global rj := 0
-		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-155 "|" windowY+offsetY+((4*windowHeight)//10 - 135) "|310|205")
+
+		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-155 "|" windowY+offsetY+((4*windowHeight)//10 - 135) "|310|205"), rj := 0
 		if (Gdip_ImageSearch(pBMScreen, pBMM, , 50, 165, 260, 205, 2, , , 5) = 5) { ; Mythic Hatched
 			if (MsgBox("MYTHIC!!!!``nKeep this?", "Basic Bee Replacement Program", 0x40024) = "Yes")
 			{
 				Gdip_DisposeImage(pBMScreen)
-				return 1
+				break
 			}
 		}
-		else if (Gdip_ImageSearch(pBMScreen, pBMC, , 50, 165, 260, 205, 2, , , 5) = 5) { ; check if common
+		else if (Gdip_ImageSearch(pBMScreen, pBMC, , 50, 165, 260, 205, 2, , , 5) = 5) {
 			rj := 1
 			if (Gdip_ImageSearch(pBMScreen, bitmaps["giftedstar"], , 0, 20, 130, 50, 5) = 1) { ; If gifted is hatched, stop
 				MsgBox "SUCCESS!!!!", "Basic Bee Replacement Program", 0x40020
 				Gdip_DisposeImage(pBMScreen)
-				return 1
+				break
 			}
 		}
 		else if (Gdip_ImageSearch(pBMScreen, bitmaps["giftedstar"], , 0, 20, 130, 50, 5) = 1) { ; Non-Basic Gifted Hatched
 			if (MsgBox("GIFTED!!!!``nKeep this?", "Basic Bee Replacement Program", 0x40024) = "Yes")
 			{
 				Gdip_DisposeImage(pBMScreen)
-				return 1
+				break
 			}
 		}
 		Gdip_DisposeImage(pBMScreen)
-		return 0
-	}
-	YesButton(){
-		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+offsetY+windowHeight//2-52 "|500|150")
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1)
-		{
-			Gdip_DisposeImage(pBMScreen)
-			SendEvent "{Click " windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1) " " windowY+offsetY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1) "}"
-			return 1
-		}
-		Gdip_DisposeImage(pBMScreen)
-		return 0
 	}
 	ExitApp
 
@@ -9245,8 +9406,7 @@ nm_ContributorsImage(page:=1, contributors:=""){
 			, ["raychal71",0xffb7c9e2,"259441167068954624"]
 			, ["axetar",0xffec8fd0,"487989990937198602"]
 			, ["mis.c",0xffa174fe,"996025853286817815"]
-			, ["ninju",0xffe6a157,"727937385274540046"]
-			, ["Dully176",0xff138718,"522940239904243712"]]
+			, ["ninju",0xffe6a157,"727937385274540046"]]
 
 		testers := [["thatcasualkiwi",0xffff00ff,"334634052361650177"]
 			, ["ziz_jake",0xffa45ee9,"227604929806729217"]
@@ -9428,14 +9588,14 @@ nm_showAdvancedSettings(*){
 nm_AdvancedGUI(init:=0){
 	global
 	local hBM, GuiCtrl
-	
 	TabCtrl.UseTab("Advanced")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	MainGui.SetFont("w700")
 	MainGui.Add("GroupBox", "x5 y24 w240 h90", "Fallback Private Servers")
-	MainGui.Add("GroupBox", "x5 yp+90 w240 h115", "Danger Zone")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
+	MainGui.Add("GroupBox", "x5 y114 w240 h55", "Priorities")
+	MainGui.Add("GroupBox", "xpp yp+hp wp hp", "Roblox FPS")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
 	MainGui.Add("Text", "x15 y44", "3 Fails:")
@@ -9444,9 +9604,6 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("Edit", "x55 y64 w180 h18 vFallbackServer2", FallbackServer2).OnEvent("Change", nm_ServerLink)
 	MainGui.Add("Text", "x15 y88", "9 Fails:")
 	MainGui.Add("Edit", "x55 y86 w180 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
-	;danger
-	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
-	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
@@ -9466,7 +9623,8 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("CheckBox", "x362 y174 vTestReset Checked", "Reset")
 	MainGui.Add("CheckBox", "x413 y174 vTestMsgBox", "MsgBox")
 	MainGui.Add("Button", "x325 y197 w100 h24", "Start Test").OnEvent("Click", nm_testButton)
-	MainGui.Add("Button", "x15 y200 w220 h25 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "x15 y132 w220 h26 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "xp yp+62 wp hp", "Edit FPS").OnEvent("Click", robloxFPSGui)
 	if (init = 1)
 	{
 		TabCtrl.Choose("Advanced")
@@ -9797,45 +9955,40 @@ nm_priorityListGui(*) {
 }
 nm_copyDebugLog(param:="", *) {
 	static os_version := "", processorName := "", RAMAmount := 0
-	, robloxtype:="", robloxpath:="", uwppath:=""
+	, robloxtype:="", robloxpath:=""
 
 	fromRC := (param is number && param = 1)
 
-	ReplaceSystemCursors("IDC_WAIT") ; wait cursor: getting sys components takes a bit (!): not animated
+	SetCursor("IDC_APPSTARTING")
 
 	debugReport :=
 	(
 	'``````md
 	<NM Debug>
-	PC Info
-	-----------------------------------------------'
+	#PC Info'
 	PcInfo()
 	'
 
-	Macro Info
-	-----------------------------------------------'
+	#Macro Info'
 	MacroInfo()
 	'
 
-	Roblox Info
-	-----------------------------------------------'
+	#Roblox Info'
 	RobloxInfo()
 	'
 
-	Detected Problems
-	-----------------------------------------------'
+	#Detected Problems'
 	DetectedProblems()
 	'
 
-	Recent issues
-	-----------------------------------------------'
+	#Recent issues'
 	RecentIssues()
 	'``````'
 	)
 	A_Clipboard := debugReport
-	ReplaceSystemCursors() ;reset back
+	SetCursor("") ;reset back
 	if !fromRC
-		MsgBox("Copied Debug report to your clipboard.", "Copy Debug Logs", 0x40040)
+		MsgBox("Copied Debug report to your clipboard.", "Copy Debug Logs", "T10 Iconi")
 
 	return 1
 
@@ -9891,21 +10044,12 @@ nm_copyDebugLog(param:="", *) {
 	)
 	}
 	RobloxInfo(){
-		if (!robloxtype) {
-			try robloxpath := RegRead("HKCR\roblox\shell\open\command")
-			try uwppath := RegRead("HKCR\roblox")
-
-			if (InStr(robloxpath, "Bloxstrap"))
-				robloxtype := "Bloxstrap"
-			else if (InStr(robloxpath, "RobloxPlayerInstaller"))
-				robloxtype := "Web Version"
-			else if robloxpath
-				robloxtype := "Custom (Web)"
-			else if (uwppath = "URL:Roblox")
-				robloxtype := "UWP"
-			else 
-				robloxtype := "Not found"
-		}
+		robloxtype := nm_DetectRobloxType()
+		robloxpath := ""
+		if robloxtype = RobloxTypes.UWP
+			robloxpath := nm_GetRobloxUWPPath()
+		else
+			robloxpath := nm_GetRobloxWebPath()
 		return 
 		(
 		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, EnvGet("USERPROFILE"), '%USERPROFILE%'), '%1', ''), '"', '')) '``' : '')
@@ -9917,9 +10061,9 @@ nm_copyDebugLog(param:="", *) {
 		problems := 0
 		return (
 			checkProblem((A_ScreenDPI != 96), 'Display Scale not 100%')
-			checkProblem((robloxtype = "Not found" || robloxtype = "Custom"),'Roblox not found or using a custom install')
-			checkProblem((robloxtype = "Bloxstrap"), 'Using Bloxstrap (check config)')
-			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 800), 'Low Screen Resolution')
+			checkProblem((robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.Custom), 'Roblox not found or using a custom install')
+			checkProblem((robloxtype = RobloxTypes.Bootstrapper), 'Using Custom Bootstrapper (e.g. Bloxstrap), check config')
+			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 1300), 'Low Screen Resolution')
 			checkProblem((offsetfail ?? 0), 'Recent Yoffset Fail')
 			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro version')
 
@@ -9936,15 +10080,94 @@ nm_copyDebugLog(param:="", *) {
 
 		loop parse latestLogs, '`r`n' {
 			if InStr(A_LoopField, 'Error') || InStr(A_LoopField, 'Warning') || InStr(A_LoopField, 'Failed'){
-				issues .= (++totalissues) '. ' A_LoopField
-				if totalissues > 10
+				issues .= A_LoopField '`n'
+				if totalissues > 10	
 					break
 			}
 		}
 		if !issues
 			return '`n<None>'
 
-		return '`n' issues '`n`n> Total: ' totalissues
+		return '`n' issues '`n> Total: ' totalissues
+	}
+}
+
+robloxFPSGui(*) {
+	global fpsUnlockerGui
+	if isSet(fpsUnlockerGui) && fpsUnlockerGui is Gui
+		fpsUnlockerGui.destroy()
+	fpsUnlockerGui := Gui("+E0x8000008 -MinimizeBox", "FPS Unlocker")
+	fpsUnlockerGui.SetFont("s8 cDefault Norm", "Tahoma")
+	fpsUnlockerGui.Show("w150 h60")
+	fpsUnlockerGui.AddText("vWebFPSCountLabel w100 x5 Disabled", "Web Roblox FPS")
+	fpsUnlockerGui.AddText("vWebFPSCountEdit yp xp+100 w50 Right Disabled")
+	fpsUnlockerGui.AddUpDown("vWebFPSCount Range15-500 Disabled", 60)
+	fpsUnlockerGui.AddText("vUWPFPSCountLabel w100 x5 Disabled", "UWP Roblox FPS")
+	fpsUnlockerGui.AddText("vUWPFPSCountEdit yp xp+100 w50 Right Disabled")
+	fpsUnlockerGui.AddUpDown("vUWPFPSCount Range15-500 Disabled", 60)
+	fpsUnlockerGui.AddButton("vApply x45 yp+20 w70 Disabled","Apply").OnEvent("Click",(*) => WriteFPSCounts())
+	uwpxml := webxml := ""
+	uwpfps := webfps := unset
+	for robloxtype in [RobloxTypes.Web, RobloxTypes.UWP] {
+		xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
+		if !FileExist(xmlpath)
+			continue
+		if RegExMatch(FileRead(xmlpath), "<int name=`"FramerateCap`">(-?\d+)</int>", &match) {
+			fps := match[1] = "-1" ? 60 : Integer(match[1])
+			if robloxtype = RobloxTypes.Web {
+				fpsUnlockerGui["WebFPSCount"].Value := fps
+				fpsUnlockerGui["WebFPSCountLabel"].Enabled := 1
+				fpsUnlockerGui["WebFPSCountEdit"].Enabled := 1
+				fpsUnlockerGui["WebFPSCount"].Enabled := 1
+				fpsUnlockerGui["Apply"].Enabled := 1
+				webxml := xmlpath
+				webfps := fps
+			}
+			else {
+				fpsUnlockerGui["UWPFPSCount"].Value := fps
+				fpsUnlockerGui["UWPFPSCountLabel"].Enabled := 1
+				fpsUnlockerGui["UWPFPSCountEdit"].Enabled := 1
+				fpsUnlockerGui["UWPFPSCount"].Enabled := 1
+				fpsUnlockerGui["Apply"].Enabled := 1
+				uwpxml := xmlpath
+				uwpfps := fps
+			}
+		}
+	}
+	WriteFPSCounts() {
+		if fpsUnlockerGui["WebFPSCount"].Value < 25 && fpsUnlockerGui["WebFPSCount"].Value != webfps
+			|| fpsUnlockerGui["UWPFPSCount"].Value < 25 && fpsUnlockerGui["UWPFPSCount"].Value != uwpfps
+			if MsgBox('An FPS count of less than 25 is not recommended`nAre you sure you want to proceed?',,0x40134) != "Yes"
+				return
+		for robloxtype, xmlpath in Map("Web", webxml, "UWP", uwpxml) {
+			if !xmlpath
+				continue
+			guikey := robloxtype "FPSCount"
+			newfps := fpsUnlockerGui[guikey].Value
+			newfps := (newfps = 60) ? "-1" : String(newfps)
+			if newfps = String((robloxtype = "Web") ? webfps : uwpfps)
+				continue
+			skipwrite := false
+			while (
+				(robloxtype = "Web" && WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) ||
+				(robloxtype = "UWP" && WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
+			) {
+				if MsgBox("Please close " robloxtype " Roblox before applying FPS changes.",, 0x40135) != "Retry" {
+					skipwrite := true
+					break
+				}
+			}
+			if skipwrite
+				continue
+			xmlcontent := RegExReplace(FileRead(xmlpath), "<int name=`"FramerateCap`">-?\d+</int>", "<int name=`"FramerateCap`">" newfps "</int>")
+			FileDelete(xmlpath)
+			FileAppend(xmlcontent, xmlpath)
+			MsgBox(robloxtype " Roblox FPS limit has been set to " ((newfps = "-1") ? "60" : newfps) "",,0x40040)
+			if robloxtype = "Web"
+				webfps := newfps
+			else
+				uwpfps := newfps
+		}
 	}
 }
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10033,13 +10256,13 @@ nm_MemoryMatchInterrupt() {
 		|| ((beesmasActive = 1) && WinterMemoryMatchCheck && (now-LastWinterMemoryMatch)>14400))
 	)
 }
-
 ;stats/status
 nm_setStats(){
 	global
 	local rundelta:=0, gatherdelta:=0, convertdelta:=0, TotalStatsString, SessionStatsString
 
 	if (MacroState=2) {
+
 		rundelta:=(nowUnix()-MacroStartTime)
 		if(GatherStartTime > 0)
 			gatherdelta:=(nowUnix()-GatherStartTime)
@@ -21913,7 +22136,7 @@ start(*){
 				MsgBox
 				(
 				"Automatic Field Boost is ACTIVATED.
-				------------------------------------------------------------------------------------
+				-------------------------------------
 				If you continue the following quantity of items can be used:
 				Dice: " futureDice "
 				Glitter: " futureGlitter "
@@ -22136,6 +22359,8 @@ start(*){
 	if (discordCheck && (((discordMode = 0) && RegExMatch(webhook, "i)^https:\/\/(canary\.|ptb\.)?(discord|discordapp)\.com\/api\/webhooks\/([\d]+)\/([a-z0-9_-]+)$"))
 		|| ((discordMode = 1) && (ReportChannelCheck = 1) && (ReportChannelID || MainChannelID))))
 		run '"' exe_path64 '" /script "' A_WorkingDir '\submacros\StatMonitor.ahk" "' VersionID '"'
+	;update detected application
+	nm_UpdateDetectedApplication()
 	;start main loop
 	nm_setStatus("Begin", "Main Loop")
 	nm_Start()
