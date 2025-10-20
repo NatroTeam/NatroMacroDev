@@ -9887,7 +9887,7 @@ nm_copyDebugLog(param:="", *) {
 		'
 		* AHK Version: ' A_AhkVersion (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? ' (built-in)' : ' (installed)') '
 		* Natro Version: ' VersionID ' (' ((VerCompare(VersionID, LatestVer) = 0) ? 'latest' : 'outdated') ')
-		* Installation Path: ``' StrReplace(A_WorkingDir, A_UserName, '%USERPROFILE%') '``'
+		* Installation Path: ``' StrReplace(A_WorkingDir, EnvGet("USERPROFILE"), '%USERPROFILE%') '``'
 	)
 	}
 	RobloxInfo(){
@@ -9908,7 +9908,8 @@ nm_copyDebugLog(param:="", *) {
 		}
 		return 
 		(
-		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, A_UserName, '%USERPROFILE%'), '%1'), '"')) : '') '``
+		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, EnvGet("USERPROFILE"), '%USERPROFILE%'), '%1', ''), '"', '')) '``' : '')
+		'
 		* Default app: ' robloxtype
 		)
 	}
@@ -9946,7 +9947,6 @@ nm_copyDebugLog(param:="", *) {
 		return '`n' issues '`n`n> Total: ' totalissues
 	}
 }
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; MAIN LOOP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
