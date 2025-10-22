@@ -382,6 +382,7 @@ nm_importConfig()
 		, "HoneySSCheck", 0
 		, "criticalCheck", 0
 		, "discordUID", ""
+    , "discordUIDCommands", ""
 		, "CriticalErrorPingCheck", 1
 		, "DisconnectPingCheck", 1
 		, "GameFrozenPingCheck", 1
@@ -2024,7 +2025,7 @@ Run
 '"' WebhookEasterEgg '" "' ssCheck '" "' ssDebugging '" "' CriticalSSCheck '" "' AmuletSSCheck '" "' MachineSSCheck '" "' BalloonSSCheck '" "' ViciousSSCheck '" '
 '"' DeathSSCheck '" "' PlanterSSCheck '" "' HoneySSCheck '" "' criticalCheck '" "' discordUID '" "' CriticalErrorPingCheck '" "' DisconnectPingCheck '" "' GameFrozenPingCheck '" '
 '"' PhantomPingCheck '" "' UnexpectedDeathPingCheck '" "' EmergencyBalloonPingCheck '" "' commandPrefix '" "' NightAnnouncementCheck '" "' NightAnnouncementName '" '
-'"' NightAnnouncementPingID '" "' NightAnnouncementWebhook '" "' PrivServer '" "' DebugLogEnabled '" "' MonsterRespawnTime '" "' HoneyUpdateSSCheck '"'
+'"' NightAnnouncementPingID '" "' NightAnnouncementWebhook '" "' PrivServer '" "' DebugLogEnabled '" "' MonsterRespawnTime '" "' HoneyUpdateSSCheck '" "' discordUIDCommands '"'
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6829,6 +6830,7 @@ nm_WebhookGUI(*){
 
 	criticalCheck := ' criticalCheck '
 	discordUID := "' discordUID '"
+  discordUIDCommands := "' discordUIDCommands  '"
 	CriticalErrorPingCheck := ' CriticalErrorPingCheck '
 	DisconnectPingCheck := ' DisconnectPingCheck '
 	GameFrozenPingCheck := ' GameFrozenPingCheck '
@@ -6863,9 +6865,10 @@ nm_WebhookGUI(*){
 		, "bottoken", 2
 		, "MainChannelID", 3
 		, "ReportChannelID", 4
-		, "discordUID", 5)
+		, "discordUID", 5
+    , "discordUIDCommands", 80)
 
-	w := 500, h := 500
+	w := 500, h := 577
 	DiscordGui := Gui("-Caption +E0x80000 +E0x8000000 +LastFound +AlwaysOnTop +ToolWindow +OwnDialogs -DPIScale")
 	hMain := DiscordGui.Hwnd
 	DiscordGui.OnEvent("Close", (*) => ExitApp()), DiscordGui.OnEvent("Escape", (*) => ExitApp())
@@ -6882,6 +6885,7 @@ nm_WebhookGUI(*){
 	DiscordGui.Add("Text", "Hidden vPasteMainID")
 	DiscordGui.Add("Text", "Hidden vPasteReportID")
 	DiscordGui.Add("Text", "Hidden vPasteUserID")
+  DiscordGui.Add("Text", "Hidden vPasteUserID2")
 
 	; setup
 	hbm := CreateDIBSection(w, h)
@@ -6902,7 +6906,7 @@ nm_WebhookGUI(*){
 		static ping_list := ["criticalerror","disconnect","gamefrozen","phantom","unexpecteddeath","emergencyballoon"]
 
 		Gdip_GraphicsClear(G)
-		w := 500, h := 420 + discordMode * 80
+		w := 500, h := 420 + discordMode * 157
 
 		; edge shadow
 		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_CreateLineBrushFromRect(0, 0, w, h, 0x00000000, 0x78000000), 14, 6, w-16, h-16, 12), Gdip_DeleteBrush(pBrush)
@@ -6977,23 +6981,34 @@ nm_WebhookGUI(*){
 			DiscordGui["ReportChannelCheck"].Visible := 0
 			DiscordGui["PasteMainID"].Visible := 0
 			DiscordGui["PasteReportID"].Visible := 0
+      DiscordGui["PasteUserID2"].Visible := 0
 		}
 
 		; screenshots
-		Gdip_DrawImage(G, bitmaps["text_screenshots"], 22, h-282)
+		Gdip_DrawImage(G, bitmaps["text_screenshots"], 22, h-282-discordMode*77)
 		x := 30 + Gdip_GetImageWidth(bitmaps["text_screenshots"])
-		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(ssCheck ? 0xff4bb543 : 0xffff3333), x, h-286, 40, 24, 12), Gdip_DeleteBrush(pBrush)
-		Gdip_FillEllipse(G, pBrush := Gdip_BrushCreateSolid(0xffffffff), x + (ssCheck ? 19 : 3), h-283, 18, 18), Gdip_DeleteBrush(pBrush)
-		DiscordGui["SSCheck"].Move(x, h-286, 40, 24), DiscordGui["SSCheck"].Visible := discordCheck
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(ssCheck ? 0xff4bb543 : 0xffff3333), x, h-286-discordMode*77, 40, 24, 12), Gdip_DeleteBrush(pBrush)
+		Gdip_FillEllipse(G, pBrush := Gdip_BrushCreateSolid(0xffffffff), x + (ssCheck ? 19 : 3), h-283-discordMode*77, 18, 18), Gdip_DeleteBrush(pBrush)
+		DiscordGui["SSCheck"].Move(x, h-286-discordMode*77, 40, 24), DiscordGui["SSCheck"].Visible := discordCheck
 		for k,v in ss_list
 		{
 			if (%v%SSCheck = 1)
-				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), 24, h-283 + k * 26, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], 25, h-282 + k * 26)
+				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), 24, h-283-discordMode*77 + k * 26, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], 25, h-282-discordMode*77 + k * 26)
 			else
-				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), 25, h-282 + k * 26, 18, 18, 4), Gdip_DeletePen(pPen)
-			DiscordGui[v "SSCheck"].Move(25, h-282 + k * 26, 18, 18), DiscordGui[v "SSCheck"].Visible := (discordCheck && ssCheck)
-			Gdip_DrawImage(G, bitmaps["text_" v], 52, h-278 + k * 26)
+				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), 25, h-282-discordMode*77 + k * 26, 18, 18, 4), Gdip_DeletePen(pPen)
+			DiscordGui[v "SSCheck"].Move(25, h-282-discordMode*77 + k * 26, 18, 18), DiscordGui[v "SSCheck"].Visible := (discordCheck && ssCheck)
+			Gdip_DrawImage(G, bitmaps["text_" v], 52, h-278-discordMode*77 + k * 26)
 		}
+    if (discordMode == 1) {
+      ; User ID (Commands)
+      Gdip_DrawImage(G, bitmaps["text_userid2"], w//2+16, h-360)
+      Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff323942), w//2+14, h-333, w//2-36, 40, 15), Gdip_DeleteBrush(pBrush)
+      pBrush := Gdip_BrushCreateSolid(0xff222932)
+      Gdip_FillRoundedRectanglePath(G, pBrush, w//2+14, h-333, w//2-76, 40, 15), Gdip_FillRectangle(G, pBrush, w-94, h-333, 32, 40)
+		  Gdip_DrawOrientedString(G, discordUIDCommands, "Calibri", 16, 1, w//2+14, h-323, w//2-74, 40, 0, pBrush := Gdip_BrushCreateSolid(0xffffffff), 0, 1), Gdip_DeleteBrush(pBrush)
+      Gdip_DrawImage(G, bitmaps["paste"], w-58, h-333, 32, 40)
+      DiscordGui["PasteUserID2"].Move(w-55, h-333, 26, 40), DiscordGui["PasteUserID2"].Visible := true
+    }
 
 		; pings
 		Gdip_DrawImage(G, bitmaps["text_userid"], w//2+16, h-283)
@@ -7024,7 +7039,7 @@ nm_WebhookGUI(*){
 		else
 		{
 			if (ssCheck = 0)
-				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), 16, h-260, w//2-24, 235), Gdip_DeleteBrush(pBrush)
+				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), 16, h-260-discordMode*77, w//2-24, 235), Gdip_DeleteBrush(pBrush)
 			if (criticalCheck = 0)
 				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), w//2+8, h-260, w//2-24, 235), Gdip_DeleteBrush(pBrush)
 		}
@@ -7126,6 +7141,14 @@ nm_WebhookGUI(*){
 			UpdateLayeredWindow(hMain, hdc)
 			SetTimer nm_WebhookGUI, -1000, 1
 			(s != 0) && UpdateStr("discordUID")
+      
+      case "PasteUserID2":
+      ControlGetPos , &ctrl_y, , &ctrl_h, hCtrl
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff222932), w//2+15, ctrl_y+1, w//2-78, ctrl_h-2, 15), Gdip_FillRectangle(G, pBrush, w-94, ctrl_y+1, 28, ctrl_h-2), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawOrientedString(G, ((s := RegExMatch(A_Clipboard, "i)^&?\d{17,20}$", &str)) && (str := str[0])) ? (discordUIDCommands := str) : "Invalid User ID!", "Calibri", 16, 1, w//2+14, ctrl_y+10, w//2-74, ctrl_h, 0, pBrush := Gdip_BrushCreateSolid((s = 0) ? 0xffff3030 : 0xffffa500), 0, 1), Gdip_DeleteBrush(pBrush)
+			UpdateLayeredWindow(hMain, hdc)
+			SetTimer nm_WebhookGUI, -1000, 1
+			(s != 0) && UpdateStr("discordUIDCommands")
 		}
 	}
 

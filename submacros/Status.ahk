@@ -83,6 +83,7 @@ DebugLogEnabled := A_Args[34]
 MonsterRespawnTime := A_Args[35]
 
 HoneyUpdateSSCheck := A_Args[36]
+discordUIDCommands := A_Args[37]
 
 pToken := Gdip_Startup()
 OnExit(ExitFunc)
@@ -806,7 +807,11 @@ nm_command(command)
 	static ssmode := "All"
 	, defaultPriorityList := ["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 
-	id := command.id, params := []
+	id := command.id, params := [], user_id := command.user_id
+  if user_id != discordUIDCommands && discordUIDCommands != "" {
+    discord.SendEmbed("Only <@" discordUIDCommands "> can use commands", 16711731,,,,id)
+    return command_buffer.RemoveAt(1)
+  }
 	Loop Parse SubStr(command.content, StrLen(commandPrefix)+1), A_Space
 		if (A_LoopField != "")
 			params.Push(A_LoopField)

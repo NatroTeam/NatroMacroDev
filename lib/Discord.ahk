@@ -140,7 +140,7 @@ class discord
 		Loop (n := (messages := this.GetRecentMessages(channel)).Length)
 		{
 			i := n - A_Index + 1
-			(SubStr(content := Trim(messages[i]["content"]), 1, StrLen(commandPrefix)) = commandPrefix) && command_buffer.Push({content:content, id:messages[i]["id"], url:messages[i]["attachments"].Has(1) ? messages[i]["attachments"][1]["url"] : ""})
+			(SubStr(content := Trim(messages[i]["content"]), 1, StrLen(commandPrefix)) = commandPrefix) && command_buffer.Push({content:content, id:messages[i]["id"], url:messages[i]["attachments"].Has(1) ? messages[i]["attachments"][1]["url"] : "", user_id: messages[i]["author"]["id"]})
 		}
 	}
 
