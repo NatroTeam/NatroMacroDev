@@ -649,6 +649,9 @@ bitmaps := Map()
 bitmaps["moon"] := Gdip_BitmapFromBase64("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")
 #Include "%A_ScriptDir%\..\nm_image_assets\offset\bitmaps.ahk"
 
+discordUIDCommands_is_role := strlen(discordUIDCommands) && SubStr(discordUIDCommands, 1, 1) == "&"
+allowed_list_cache := []
+
 Loop
 {
 	(status_buffer.Length > 0) && nm_status(status_buffer[1])
@@ -801,6 +804,7 @@ CreateHoneyBitmap(honey := 1, backpack := 1)
 	return pBM
 }
 
+
 nm_command(command)
 {
 	global commandPrefix, MacroState, planters, timers, settings, blender, shrine, priorityListNumeric
@@ -808,10 +812,26 @@ nm_command(command)
 	, defaultPriorityList := ["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 
 	id := command.id, params := [], user_id := command.user_id
-  if user_id != discordUIDCommands && discordUIDCommands != "" {
-    discord.SendEmbed("Only <@" discordUIDCommands "> can use commands", 16711731,,,,id)
-    return command_buffer.RemoveAt(1)
+  if (discordUIDCommands != "") {
+    if (!discordUIDCommands_is_role) {
+      if (discordUIDCommands != user_id) {
+        discord.SendEmbed("Only <@" discordUIDCommands "> can use commands", 16711731,,,,id)
+        return command_buffer.RemoveAt(1)
+      }
+    }
+    else {
+      if !ObjHasValue(allowed_list_cache, user_id) {
+        roles := getUserRoles(user_id)
+        if (!ObjHasValue(roles, SubStr(discordUIDCommands, 2))) {
+          discord.SendEmbed("Only <@" discordUIDCommands "> can use commands", 16711731,,,,id)
+          return command_buffer.RemoveAt(1)
+        }
+        allowed_list_cache.Push(user_id)
+      }
+    }
   }
+
+
 	Loop Parse SubStr(command.content, StrLen(commandPrefix)+1), A_Space
 		if (A_LoopField != "")
 			params.Push(A_LoopField)
@@ -2447,6 +2467,14 @@ nm_command(command)
 	}
 }
 
+getUserRoles(user_id) {
+  if (res := discord.GetChannel(MainChannelID)) == -1
+    Return -1
+  channel := JSON.parse(res, false, false)
+  member := JSON.parse(discord.GetMember(channel.guild_id, user_id), false, false)
+  return member.roles
+}
+
 nm_TrimLog(size)
 {
 	global logsize
@@ -2520,6 +2548,11 @@ nm_setGlobalStr(wParam, lParam, *)
 
 	var := arr[wParam], section := sections[lParam]
 	%var% := IniRead(A_ScriptDir "\..\settings\nm_config.ini", section, var)
+
+  if wParam == 80 { ; discordUIDCommands
+    allowed_list_cache := []
+    discordUIDCommands_is_role := StrLen(discordUIDCommands) && SubStr(discordUIDCommands, 1, 1) == "&"
+  }
 	return 0
 }
 

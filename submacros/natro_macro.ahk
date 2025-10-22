@@ -7164,7 +7164,7 @@ nm_WebhookGUI(*){
 		name := DiscordGui[hCtrl].Name
 		switch name, 0
 		{
-			case "ChangeMode", "Close", "DiscordCheck", "SSCheck", "CriticalCheck", "CopyDiscord", "PasteDiscord", "PasteMainID", "PasteReportID", "PasteUserID":
+			case "ChangeMode", "Close", "DiscordCheck", "SSCheck", "CriticalCheck", "CopyDiscord", "PasteDiscord", "PasteMainID", "PasteReportID", "PasteUserID", "PasteUserID2":
 			hover_ctrl := hCtrl
 			ReplaceSystemCursors("IDC_HAND")
 			while (hCtrl = hover_ctrl)

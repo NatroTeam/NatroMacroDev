@@ -144,6 +144,39 @@ class discord
 		}
 	}
 
+  static GetChannel(channelid)
+  {
+    global discordMode
+    if (discordMode == 0)
+      return -1
+
+    wr := ComObject("WinHttp.WinHttpRequest.5.1")
+    wr.Option[9] := 2720
+    wr.Open("GET", Discord.baseURL . "channels/" channelid)
+    wr.SetRequestHeader("User-Agent", "DiscordBot (AHK, " A_AhkVersion ")")
+    wr.SetRequestHeader("Authorization", "Bot " . bottoken)
+    wr.Send()
+    wr.WaitForResponse()
+    return wr.ResponseText
+  }
+
+  static GetMember(guild_id, user_id)
+  {
+    global discordMode
+    if (discordMode == 0)
+      return -1
+
+    wr := ComObject("WinHttp.WinHttpRequest.5.1")
+    wr.Option[9] := 2720
+    wr.Open("GET", Discord.baseURL . "guilds/" . guild_id . "/members/" . user_id)
+    wr.SetRequestHeader("User-Agent", "DiscordBot (AHK, " A_AhkVersion ")")
+    wr.SetRequestHeader("Authorization", "Bot " . bottoken)
+    wr.Send()
+    wr.WaitForResponse()
+    return wr.ResponseText
+  }
+
+
 	static GetRecentMessages(channel)
 	{
 		global discordMode
