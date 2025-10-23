@@ -9981,7 +9981,7 @@ nm_copyDebugLog(param:="", *) {
 	DetectedProblems()
 	'
 
-	#Recent issues'
+	#Recent Issues'
 	RecentIssues()
 	'``````'
 	)
@@ -10057,19 +10057,33 @@ nm_copyDebugLog(param:="", *) {
 		* Default app: ' robloxtype
 		)
 	}
-	DetectedProblems(){
+	DetectedProblems() {
+		try static remoteDesktopMinimize := RegRead("HKLM\Software\Microsoft\Terminal Server Client", "RemoteDesktop_SuppressWhenMinimized")
+		static problemFunctions := [
+			"Display scale is not set to 100%", 
+			(() => A_ScreenDPI != 96),
+			"Custom bootstrapper (e.g. Bloxstrap) is being used, check config", 
+			(() => robloxtype = RobloxTypes.Bootstrapper),
+			"Roblox not found or using a custom install", 
+			(() => robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.Custom),
+			"Low screen resolution", 
+			(() => A_ScreenHeight <= 600) || (A_ScreenWidth <= 1300),
+			"Recent y-offset fail", 
+			(() => offsetFail > 1),
+			"Outdated Natro Macro version", 
+			(() => VerCompare(VersionID, LatestVer) < 0)
+			"Minimizing remote desktop connection will cause Natro Macro to break", 
+			(() => !InStr(EnvGet("SESSIONNAME"), "RDP") || remoteDesktopMinimize != 2),
+		]
 		problems := 0
-		return (
-			checkProblem((A_ScreenDPI != 96), 'Display Scale not 100%')
-			checkProblem((robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.Custom), 'Roblox not found or using a custom install')
-			checkProblem((robloxtype = RobloxTypes.Bootstrapper), 'Using Custom Bootstrapper (e.g. Bloxstrap), check config')
-			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 1300), 'Low Screen Resolution')
-			checkProblem((offsetfail ?? 0), 'Recent Yoffset Fail')
-			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro version')
-
-			(problems = 0 ? '`n<None>' : '`n`n> Total: ' problems)
-		)
-		checkProblem(condition, text) => ((condition) ? ('`r`n' (++problems) '. ' text) : '')
+		output := ""
+		for description, condition in problemFunctions {
+			if condition() {
+				problems++
+				output .= "`n" problems ". " description
+			}
+		}
+		return output (problems ? "`n`n> Total: " problems : "`n<None>")
 	}
 	RecentIssues(){
 		if (DebugLogEnabled = 0)
