@@ -2143,7 +2143,7 @@ nm_DetectRobloxType()
 RobloxTypes := {
 	UWP: "UWP Version",
 	Bootstrapper: "Bootstrapper (Web)",
-	Web: "Roblox (Web)",
+	Web: "Web Version",
 	Custom: "Custom/Unknown (Web)",
 	NotFound: "Not found"
 }
@@ -2209,9 +2209,9 @@ nm_MsgBoxIncorrectRobloxSettings()
 			if platform = "All" || (platform = "UWP Version" && robloxtype = RobloxTypes.UWP) || (platform = "Web Version" && (robloxtype = RobloxTypes.Web || robloxtype = RobloxTypes.Custom || robloxtype = RobloxTypes.Bootstrapper)){
 				for xmltext, recommendation in platformmap {
 					if tier = "Incorrect" && InStr(xml, xmltext)
-						recommendations.Push(recommendation)
+						recommendations.Push("- " recommendation)
 					else if tier = "Correct" && !InStr(xml, xmltext)
-						recommendations.Push(recommendation)
+						recommendations.Push("- " recommendation)
 				}
 			}
 		}
@@ -2221,16 +2221,17 @@ nm_MsgBoxIncorrectRobloxSettings()
 		local IncSettingsGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Incorrect Roblox Settings Detected")
 		IncSettingsGui.SetFont("s9", "Tahoma")
 		IncSettingsGui.OnEvent("Close", (*) => gui.Destroy())
-		IncSettingsGui.SetFont("Bold s10 cBlue", "Tahoma")
+		IncSettingsGui.SetFont("Bold s10 c" (robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.UWP ? "Red" : "0a7e00"), "Tahoma")
 		IncSettingsGui.Add("Text", "x10 y10 w400 +Center", "Default Roblox application: " robloxtype)
 		IncSettingsGui.SetFont("s9 cDefault", "Tahoma")
-		IncSettingsGui.Add("Text", "x10 y40 w400 +BackgroundTrans", "The detected Roblox application might have incorrect settings, please do these:")
+		IncSettingsGui.Add("Text", "x10 y40 w400 +BackgroundTrans", "The detected Roblox installation might have incorrect settings, please do these:")
 		IncSettingsGui.SetFont("s9 cRed", "Tahoma")
 		IncSettingsGui.Add("Text", "x10 y70 w400 r" recommendations.Length "+BackgroundTrans", rectext)
 		IncSettingsGui.SetFont("s8 cDefault", "Tahoma")
 		IncSettingsGui.Add("Text", "x10 y" (80 + 14 * recommendations.Length) " w400 +BackgroundTrans", "You can safely ignore this message if you have already changed them.")
 		IncSettingsGui.SetFont("s9", "Tahoma")
 		IncSettingsGui.Add("CheckBox", "x10 y" (110 + 14 * recommendations.Length) " w200 vIncorrectSettingsCheckbox", "Do not show again")
+		IncSettingsGui.SetFont("s9 cDefault Norm", "Tahoma")
 		btn := IncSettingsGui.Add("Button", "x320 y" (110 + 14 * recommendations.Length) " w90 h28 Default", "OK")
 		btn.OnEvent("Click", (*) => (
 			IncSettingsGui["IncorrectSettingsCheckbox"].Value
