@@ -122,6 +122,15 @@ if (A_ScreenDPI != 96)
 	Right click on your Desktop -> Click 'Display Settings' -> Under 'Scale & Layout', set Scale to 100% -> Close and Restart Roblox before starting the macro.
 	)", "WARNING!!", 0x1030 " T60"
 
+if (DllCall("GetSystemMetrics", "Int", 95) != 0)
+	MsgBox "
+	(
+	It seems like you have Touchscreen enabled. This means the macro will NOT work correctly!
+
+	To change this:
+	Press Win+S and type in 'Device Manager' -> Right-click 'HID-compliant touch screen' -> Under 'Human Interface Devices', select 'Disable Device'.
+	)", "WARNING!!", 0x1030 " T60"
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CREATE SETTINGS FOLDERS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2120,7 +2129,7 @@ nm_DetectRobloxType()
 	robloxpath := defaultapp := ""
 	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\roblox\UserChoice", "ProgId")
 
-	if defaultapp && InStr(defaultapp, "AppX")
+	if defaultapp && InStr(defaultapp, "AppX") && InStr(nm_GetRobloxUWPPath(), "ROBLOXCORPORATION.ROBLOX")
 		return RobloxTypes.UWP
 
 	try robloxpath := nm_GetRobloxWebPath()
@@ -2143,7 +2152,7 @@ nm_DetectRobloxType()
 RobloxTypes := {
 	UWP: "UWP Version",
 	Bootstrapper: "Bootstrapper (Web)",
-	Web: "Roblox (Web)",
+	Web: "Web Version",
 	Custom: "Custom/Unknown (Web)",
 	NotFound: "Not found"
 }
@@ -2209,9 +2218,9 @@ nm_MsgBoxIncorrectRobloxSettings()
 			if platform = "All" || (platform = "UWP Version" && robloxtype = RobloxTypes.UWP) || (platform = "Web Version" && (robloxtype = RobloxTypes.Web || robloxtype = RobloxTypes.Custom || robloxtype = RobloxTypes.Bootstrapper)){
 				for xmltext, recommendation in platformmap {
 					if tier = "Incorrect" && InStr(xml, xmltext)
-						recommendations.Push(recommendation)
+						recommendations.Push("- " recommendation)
 					else if tier = "Correct" && !InStr(xml, xmltext)
-						recommendations.Push(recommendation)
+						recommendations.Push("- " recommendation)
 				}
 			}
 		}
@@ -2221,16 +2230,17 @@ nm_MsgBoxIncorrectRobloxSettings()
 		local IncSettingsGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Incorrect Roblox Settings Detected")
 		IncSettingsGui.SetFont("s9", "Tahoma")
 		IncSettingsGui.OnEvent("Close", (*) => gui.Destroy())
-		IncSettingsGui.SetFont("Bold s10 cBlue", "Tahoma")
-		IncSettingsGui.Add("Text", "x10 y10 w400 +Center", "Default Roblox application: " robloxtype)
+		IncSettingsGui.SetFont("Bold s10 c" (robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.UWP ? "Red" : "0a7e00"), "Tahoma")
+		IncSettingsGui.Add("Text", "x10 y10 w400 +Center", "Default Roblox Installation: " robloxtype)
 		IncSettingsGui.SetFont("s9 cDefault", "Tahoma")
-		IncSettingsGui.Add("Text", "x10 y40 w400 +BackgroundTrans", "The detected Roblox application might have incorrect settings, please do these:")
+		IncSettingsGui.Add("Text", "x10 y40 w400 +BackgroundTrans", "The detected Roblox installation might have incorrect settings, please do these:")
 		IncSettingsGui.SetFont("s9 cRed", "Tahoma")
 		IncSettingsGui.Add("Text", "x10 y70 w400 r" recommendations.Length "+BackgroundTrans", rectext)
 		IncSettingsGui.SetFont("s8 cDefault", "Tahoma")
-		IncSettingsGui.Add("Text", "x10 y" (80 + 14 * recommendations.Length) " w400 +BackgroundTrans", "IMPORTANT: You can safely ignore this message if you have already changed them.")
+		IncSettingsGui.Add("Text", "x10 y" (80 + 14 * recommendations.Length) " w400 +BackgroundTrans", "You can safely ignore this message if you have already changed them.")
 		IncSettingsGui.SetFont("s9", "Tahoma")
 		IncSettingsGui.Add("CheckBox", "x10 y" (110 + 14 * recommendations.Length) " w200 vIncorrectSettingsCheckbox", "Do not show again")
+		IncSettingsGui.SetFont("s9 cDefault Norm", "Tahoma")
 		btn := IncSettingsGui.Add("Button", "x320 y" (110 + 14 * recommendations.Length) " w90 h28 Default", "OK")
 		btn.OnEvent("Click", (*) => (
 			IncSettingsGui["IncorrectSettingsCheckbox"].Value
@@ -10058,14 +10068,17 @@ nm_copyDebugLog(param:="", *) {
 		)
 	}
 	DetectedProblems(){
+		try static remoteDesktopMinimize := RegRead("HKLM\Software\Microsoft\Terminal Server Client", "RemoteDesktop_SuppressWhenMinimized")
 		problems := 0
 		return (
-			checkProblem((A_ScreenDPI != 96), 'Display Scale not 100%')
+			checkProblem((A_ScreenDPI != 96), 'Display scale is not set to 100%')
 			checkProblem((robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.Custom), 'Roblox not found or using a custom install')
-			checkProblem((robloxtype = RobloxTypes.Bootstrapper), 'Using Custom Bootstrapper (e.g. Bloxstrap), check config')
-			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 1300), 'Low Screen Resolution')
-			checkProblem((offsetfail ?? 0), 'Recent Yoffset Fail')
-			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro version')
+			checkProblem((robloxtype = RobloxTypes.Bootstrapper), 'Using custom bootstrapper (e.g. Bloxstrap), check config')
+			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 1300), 'Low screen resolution')
+			checkProblem((offsetfail ?? 0), 'Recent y-offset fail')
+			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro Macro version')
+			checkProblem(!InStr(EnvGet("SESSIONNAME"), "RDP") || remoteDesktopMinimize = 2, 'Minimizing remote desktop connection will cause Natro Macro to break')
+			checkProblem((DllCall("GetSystemMetrics", "Int", 95) != 0), 'Touchscreen is enabled, must be disabled')
 
 			(problems = 0 ? '`n<None>' : '`n`n> Total: ' problems)
 		)
