@@ -2120,7 +2120,7 @@ nm_DetectRobloxType()
 	robloxpath := defaultapp := ""
 	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\roblox\UserChoice", "ProgId")
 
-	if defaultapp && InStr(defaultapp, "AppX")
+	if defaultapp && InStr(defaultapp, "AppX") && InStr(defaultapp, "ROBLOXCORPORATION.ROBLOX")
 		return RobloxTypes.UWP
 
 	try robloxpath := nm_GetRobloxWebPath()
