@@ -10068,7 +10068,8 @@ nm_copyDebugLog(param:="", *) {
 			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 1300), 'Low screen resolution')
 			checkProblem((offsetfail ?? 0), 'Recent y-offset fail')
 			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro Macro version')
-			checkProblem(!InStr(EnvGet("SESSIONNAME"), "RDP") || remoteDesktopMinimize = 2, 'Minimizing remote desktop connection will cause Natro Macro to break')
+			checkProblem(!InStr(EnvGet("SESSIONNAME"), "RDP") || remoteDesktopMinimize != 2, 'Minimizing remote desktop connection will cause Natro Macro to break')
+			checkProblem((DllCall("GetSystemMetrics", "Int", 95) != 0), 'Touchscreen is enabled')
 
 			(problems = 0 ? '`n<None>' : '`n`n> Total: ' problems)
 		)
