@@ -127,7 +127,7 @@ if (DllCall("GetSystemMetrics", "Int", 95) != 0)
 	It seems like you have Touchscreen enabled. This means the macro will NOT work correctly!
 
 	To fix this:
-	Press Win+S and type in 'Device Manager' -> Right-click 'HID-compliant touch screen' -> Under 'Human Interface Devices', select 'Disable Device'.
+	Press Win+S and type in 'Device Manager' -> Right-click 'HID-compliant touch screen' -> Under 'Human Interface Devices', select 'Disable Device' -> Restart your PC.
 	)", "WARNING!!", 0x1030 " T60"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
