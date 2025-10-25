@@ -121,6 +121,15 @@ if (A_ScreenDPI != 96)
 	Right click on your Desktop -> Click 'Display Settings' -> Under 'Scale & Layout', set Scale to 100% -> Close and Restart Roblox before starting the macro.
 	)", "WARNING!!", 0x1030 " T60"
 
+if (DllCall("GetSystemMetrics", "Int", 95) != 0)
+	MsgBox "
+	(
+	It seems like you have Touchscreen enabled. This means the macro will NOT work correctly!
+
+	To change this:
+	Press Win+S and type in 'Device Manager' -> Right-click 'HID-compliant touch screen' -> Under 'Human Interface Devices', select 'Disable Device'.
+	)", "WARNING!!", 0x1030 " T60"
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CREATE SETTINGS FOLDERS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
