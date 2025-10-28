@@ -2198,11 +2198,11 @@ nm_MsgBoxIncorrectRobloxSettings()
 {
 	if IgnoreIncorrectRobloxSettings
 		return
-	static robloxtype := nm_DetectRobloxType()
+	local robloxtype := nm_DetectRobloxType()
 	xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
-	if !FileExist(xmlpath)
+	if !xmlpath
 		return
-	static xml := FileRead(xmlpath)
+	local xml := FileRead(xmlpath)
 	recommendations := []
 	for tier, tiermap in RecommendedRobloxSettings {
 		for platform, platformmap in tiermap {
@@ -2226,7 +2226,7 @@ nm_MsgBoxIncorrectRobloxSettings()
 		IncSettingsGui.SetFont("s9 cDefault", "Tahoma")
 		IncSettingsGui.Add("Text", "x10 y40 w400 +BackgroundTrans", "The detected Roblox installation might have incorrect settings, please do these:")
 		IncSettingsGui.SetFont("s9 cRed", "Tahoma")
-		IncSettingsGui.Add("Text", "x10 y70 w400 r" recommendations.Length "+BackgroundTrans", rectext)
+		IncSettingsGui.Add("Text", "x10 y70 w400 r" recommendations.Length " +BackgroundTrans", rectext)
 		IncSettingsGui.SetFont("s8 cDefault", "Tahoma")
 		IncSettingsGui.Add("Text", "x10 y" (80 + 14 * recommendations.Length) " w400 +BackgroundTrans", "You can safely ignore this message if you have already changed them.")
 		IncSettingsGui.SetFont("s9", "Tahoma")
@@ -4320,34 +4320,34 @@ nm_ShowErrorBalloonTip(Ctrl, Title, Text){
 }
 
 ;cursor changing
-ReplaceSystemCursors(IDC := "")
-{
-	static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
-	static SysCursors := Map("IDC_APPSTARTING", 32650
-		, "IDC_ARROW", 32512
-		, "IDC_CROSS", 32515
-		, "IDC_HAND", 32649
-		, "IDC_HELP", 32651
-		, "IDC_IBEAM", 32513
-		, "IDC_NO", 32648
-		, "IDC_SIZEALL", 32646
-		, "IDC_SIZENESW", 32643
-		, "IDC_SIZENWSE", 32642
-		, "IDC_SIZEWE", 32644
-		, "IDC_SIZENS", 32645
-		, "IDC_UPARROW", 32516
-		, "IDC_WAIT", 32514)
-	if !IDC
-		DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
-	else
-	{
-		hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
-		for k, v in SysCursors
-		{
-			hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
-			DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
-		}
-	}
+SetCursor(name:=0){
+    static cursor_types := Map(
+		"IDC_APPSTARTING", 32650,
+		"IDC_ARROW", 32512,
+		"IDC_CROSS", 32515,
+		"IDC_HAND", 32649,
+		"IDC_HELP", 32651,
+		"IDC_IBEAM", 32513,
+		"IDC_NO", 32648,
+		"IDC_SIZEALL", 32646,
+		"IDC_SIZENESW", 32643,
+		"IDC_SIZENWSE", 32642,
+		"IDC_SIZEWE", 32644,
+		"IDC_SIZENS", 32645,
+		"IDC_UPARROW", 32516,
+		"IDC_WAIT", 32514
+	)
+
+	if !name {
+		DllCall("SetCursor", "Ptr", 0)
+        return
+    }
+
+    if !cursor_types.Has(name)
+        throw Error("Invalid cursor type. see https://learn.microsoft.com/en-us/windows/win32/menurc/about-cursors")
+    
+	HCURSOR := DllCall("LoadCursor", "Ptr", 0, "uint", cursor_types[name])
+	DllCall("SetCursor", "Ptr", HCURSOR)
 }
 
 ;text control positioning functions
@@ -7797,6 +7797,22 @@ nm_DetectedApplicationHelp(*){ ; detected application information
 	Otherwise your macro may not work!
 	)", "Detected Application", 0x40000
 }
+nm_FPSUnlockerHelp(*) {
+    MsgBox "
+    (
+    "UWP" or "Web" Roblox refers to the difference between the Microsoft Store version (UWP) and the Roblox Player downloaded from the official website. 
+    We recommend using the web version, as the macro currently does not support shift lock within the UWP version.
+
+To reset your Roblox framerate cap without the macro, follow these steps:
+
+1. Open Roblox and join any game/server
+2. Open settings (ESC)
+3. Change Maximum Frame Rate to a different value
+
+    The macro is able to do this by interacting with the launcher's XML file (GlobalSettings_*.xml).
+    That file does not contain any personal data, and the macro never sends or shares your information externally.
+    )", "FPS Unlocker", 0x40000
+}
 nm_OpenDefaultApps(*) => Run("ms-settings:defaultapps")
 nm_moveSpeed(GuiCtrl, *){
 	global MoveSpeedNum
@@ -9632,7 +9648,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
 	MainGui.Add("GroupBox", "x5 y114 w240 h55", "Priorities")
-	MainGui.Add("GroupBox", "xpp yp+hp wp hp", "Roblox FPS")
+	MainGui.Add("GroupBox", "xpp yp+55 wp hp", "Roblox FPS")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
 	MainGui.Add("Text", "x15 y44", "3 Fails:")
@@ -9641,6 +9657,9 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("Edit", "x55 y64 w180 h18 vFallbackServer2", FallbackServer2).OnEvent("Change", nm_ServerLink)
 	MainGui.Add("Text", "x15 y88", "9 Fails:")
 	MainGui.Add("Edit", "x55 y86 w180 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
+	;danger
+	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
+	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
@@ -10018,7 +10037,7 @@ nm_copyDebugLog(param:="", *) {
 	DetectedProblems()
 	'
 
-	#Recent issues'
+	#Recent Issues'
 	RecentIssues()
 	'``````'
 	)
@@ -10141,16 +10160,17 @@ robloxFPSGui(*) {
 	fpsUnlockerGui.Show("w150 h60")
 	fpsUnlockerGui.AddText("vWebFPSCountLabel w100 x5 Disabled", "Web Roblox FPS")
 	fpsUnlockerGui.AddText("vWebFPSCountEdit yp xp+100 w50 Right Disabled")
-	fpsUnlockerGui.AddUpDown("vWebFPSCount Range15-500 Disabled", 60)
+	fpsUnlockerGui.AddUpDown("vWebFPSCount Range15-1000 Disabled", 60)
 	fpsUnlockerGui.AddText("vUWPFPSCountLabel w100 x5 Disabled", "UWP Roblox FPS")
 	fpsUnlockerGui.AddText("vUWPFPSCountEdit yp xp+100 w50 Right Disabled")
-	fpsUnlockerGui.AddUpDown("vUWPFPSCount Range15-500 Disabled", 60)
-	fpsUnlockerGui.AddButton("vApply x45 yp+20 w70 Disabled","Apply").OnEvent("Click",(*) => WriteFPSCounts())
+	fpsUnlockerGui.AddUpDown("vUWPFPSCount Range15-1000 Disabled", 60)
+	fpsUnlockerGui.AddButton("vApply x45 yp+20 w70 Disabled","Apply").OnEvent("Click", (*) => WriteFPSCounts())
+	fpsUnlockerGui.Add("Button", "xp+98 yp w12", "?").OnEvent("Click", nm_FPSUnlockerHelp)
 	uwpxml := webxml := ""
-	uwpfps := webfps := unset
+	uwpfps := webfps := 60, 60
 	for robloxtype in [RobloxTypes.Web, RobloxTypes.UWP] {
 		xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
-		if !FileExist(xmlpath)
+		if !xmlpath
 			continue
 		if RegExMatch(FileRead(xmlpath), "<int name=`"FramerateCap`">(-?\d+)</int>", &match) {
 			fps := match[1] = "-1" ? 60 : Integer(match[1])
@@ -10177,33 +10197,40 @@ robloxFPSGui(*) {
 	WriteFPSCounts() {
 		if fpsUnlockerGui["WebFPSCount"].Value < 25 && fpsUnlockerGui["WebFPSCount"].Value != webfps
 			|| fpsUnlockerGui["UWPFPSCount"].Value < 25 && fpsUnlockerGui["UWPFPSCount"].Value != uwpfps
-			if MsgBox('An FPS count of less than 25 is not recommended`nAre you sure you want to proceed?',,0x40134) != "Yes"
+			if MsgBox('An FPS count of less than 25 is not recommended`nAre you sure you want to proceed?', , 0x40134) != "Yes"
 				return
-		for robloxtype, xmlpath in Map("Web", webxml, "UWP", uwpxml) {
+		for robloxtype, xmlpath in Map(RobloxTypes.Web, webxml, RobloxTypes.UWP, uwpxml) {
 			if !xmlpath
 				continue
-			guikey := robloxtype "FPSCount"
-			newfps := fpsUnlockerGui[guikey].Value
+			local guikey := robloxtype == RobloxTypes.Web ? "WebFPSCount" : "UWPFPSCount"
+			local newfps := fpsUnlockerGui[guikey].Value
 			newfps := (newfps = 60) ? "-1" : String(newfps)
-			if newfps = String((robloxtype = "Web") ? webfps : uwpfps)
+			if newfps = String((robloxtype = RobloxTypes.Web) ? webfps : uwpfps)
 				continue
 			skipwrite := false
 			while (
-				(robloxtype = "Web" && WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) ||
-				(robloxtype = "UWP" && WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
+				(robloxtype = RobloxTypes.Web && WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) ||
+				(robloxtype = RobloxTypes.Web && WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
 			) {
-				if MsgBox("Please close " robloxtype " Roblox before applying FPS changes.",, 0x40135) != "Retry" {
+				if MsgBox("Please close " robloxtype " Roblox before applying FPS changes.", , 0x40135) != "Retry" {
 					skipwrite := true
 					break
 				}
 			}
 			if skipwrite
 				continue
-			xmlcontent := RegExReplace(FileRead(xmlpath), "<int name=`"FramerateCap`">-?\d+</int>", "<int name=`"FramerateCap`">" newfps "</int>")
-			FileDelete(xmlpath)
-			FileAppend(xmlcontent, xmlpath)
-			MsgBox(robloxtype " Roblox FPS limit has been set to " ((newfps = "-1") ? "60" : newfps) "",,0x40040)
-			if robloxtype = "Web"
+			try {
+				xmlcontent := RegExReplace(FileRead(xmlpath), "<int name=`"FramerateCap`">-?\d+</int>",
+				"<int name=`"FramerateCap`">" newfps "</int>")
+				FileDelete(xmlpath)
+				FileAppend(xmlcontent, xmlpath)
+			}
+			catch Error as e {
+				MsgBox("Failed to write FPS settings to " robloxtype " Roblox settings file.`nSupposed path: " StrReplace(xmlpath,
+					EnvGet("USERPROFILE"), '%USERPROFILE%') '``', , 0x40030)
+			}
+			MsgBox(robloxtype " Roblox FPS limit has been set to " ((newfps = "-1") ? "60" : newfps) "", , 0x40040)
+			if robloxtype = RobloxTypes.Web
 				webfps := newfps
 			else
 				uwpfps := newfps
