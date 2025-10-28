@@ -9694,7 +9694,6 @@ nm_AdvancedGUI(init:=0){
 		)", "Advanced Settings", 0x40040 " T20"
 	}
 }
-
 DangerInfo(*) => MsgBox("
 	(
 	These settings could case the macro to not function correctly, or for your roblox account to be at risk.
