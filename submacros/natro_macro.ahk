@@ -9644,11 +9644,12 @@ nm_AdvancedGUI(init:=0){
 	TabCtrl.UseTab("Advanced")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	MainGui.SetFont("w700")
-	MainGui.Add("GroupBox", "x5 y24 w240 h90", "Fallback Private Servers")
-	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
+	MainGui.Add("GroupBox", "x5  y24  w240 h90", "Fallback Private Servers")
+	MainGui.Add("GroupBox", "x5  y114 w240 h36", "Danger Zone")
+	MainGui.Add("GroupBox", "x5  y150 w240 h40", "Priorities")
+	MainGui.Add("GroupBox", "x5  y190 w240 h40", "Roblox FPS")
+	MainGui.Add("GroupBox", "x255 y24 w240 h38",  "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
-	MainGui.Add("GroupBox", "x5 y114 w240 h55", "Priorities")
-	MainGui.Add("GroupBox", "xpp yp+55 wp hp", "Roblox FPS")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
 	MainGui.Add("Text", "x15 y44", "3 Fails:")
@@ -9659,7 +9660,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("Edit", "x55 y86 w180 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
 	;danger
 	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
-	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
+	GuiCtrl := MainGui.Add("CheckBox", "x10 y129 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
@@ -9679,8 +9680,8 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("CheckBox", "x362 y174 vTestReset Checked", "Reset")
 	MainGui.Add("CheckBox", "x413 y174 vTestMsgBox", "MsgBox")
 	MainGui.Add("Button", "x325 y197 w100 h24", "Start Test").OnEvent("Click", nm_testButton)
-	MainGui.Add("Button", "x15 y132 w220 h26 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
-	MainGui.Add("Button", "xp yp+62 wp hp", "Edit FPS").OnEvent("Click", robloxFPSGui)
+	MainGui.Add("Button", "x15 y164 w220 h22 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "x15 y204 w220 h22", "Edit FPS").OnEvent("Click", robloxFPSGui)
 	if (init = 1)
 	{
 		TabCtrl.Choose("Advanced")
@@ -9693,6 +9694,7 @@ nm_AdvancedGUI(init:=0){
 		)", "Advanced Settings", 0x40040 " T20"
 	}
 }
+
 DangerInfo(*) => MsgBox("
 	(
 	These settings could case the macro to not function correctly, or for your roblox account to be at risk.
