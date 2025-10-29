@@ -2107,14 +2107,17 @@ nm_GetRobloxUWPPath()
 			}
 		}
 	}
-	catch Error as E
-		return "Path read error: " E.Message
-	return "Path not found"
 }
-nm_GetRobloxWebPath()
-{
-	return RegRead("HKCR\roblox\shell\open\command")
+nm_GetRobloxWebPath() => RegRead("HKCR\roblox\shell\open\command")
+
+RobloxTypes := {
+	UWP: "UWP Version",
+	Bootstrapper: "Bootstrapper (Web)",
+	Web: "Web Version",
+	Custom: "Custom/Unknown (Web)",
+	NotFound: "Not found"
 }
+
 nm_DetectRobloxType()
 {
 	robloxpath := defaultapp := ""
@@ -2140,13 +2143,6 @@ nm_DetectRobloxType()
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DETECT INCORRECT ROBLOX SETTINGS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-RobloxTypes := {
-	UWP: "UWP Version",
-	Bootstrapper: "Bootstrapper (Web)",
-	Web: "Web Version",
-	Custom: "Custom/Unknown (Web)",
-	NotFound: "Not found"
-}
 RecommendedRobloxSettings := Map(
 	"Correct", Map(
 		"All", Map(
@@ -2192,17 +2188,18 @@ nm_LocateRobloxSettingsXML(robloxtype)
 			Loop Files, EnvGet("LOCALAPPDATA") "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
 				return A_LoopFileFullPath
 	}
-	return ""
 }
+;//todo: add checkProblem() conditions from debug log
 nm_MsgBoxIncorrectRobloxSettings()
 {
+	; this isnt working rn
 	if IgnoreIncorrectRobloxSettings
 		return
 	local robloxtype := nm_DetectRobloxType()
 	xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
 	if !xmlpath
 		return
-	local xml := FileRead(xmlpath)
+	xml := FileRead(xmlpath)
 	recommendations := []
 	for tier, tiermap in RecommendedRobloxSettings {
 		for platform, platformmap in tiermap {
@@ -2218,7 +2215,7 @@ nm_MsgBoxIncorrectRobloxSettings()
 	}
 	if recommendations.Length {
 		rectext := JoinArray(recommendations, "`n")
-		local IncSettingsGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Incorrect Roblox Settings Detected")
+		IncSettingsGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Incorrect Roblox Settings Detected")
 		IncSettingsGui.SetFont("s9", "Tahoma")
 		IncSettingsGui.OnEvent("Close", (*) => gui.Destroy())
 		IncSettingsGui.SetFont("Bold s10 c" (robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.UWP ? "Red" : "0a7e00"), "Tahoma")
@@ -2232,8 +2229,8 @@ nm_MsgBoxIncorrectRobloxSettings()
 		IncSettingsGui.SetFont("s9", "Tahoma")
 		IncSettingsGui.Add("CheckBox", "x10 y" (110 + 14 * recommendations.Length) " w200 vIncorrectSettingsCheckbox", "Do not show again")
 		IncSettingsGui.SetFont("s9 cDefault Norm", "Tahoma")
-		btn := IncSettingsGui.Add("Button", "x320 y" (110 + 14 * recommendations.Length) " w90 h28 Default", "OK")
-		btn.OnEvent("Click", (*) => (
+		IncSettingsGui.Add("Button", "x320 y" (110 + 14 * recommendations.Length) " w90 h28 Default", "OK").OnEvent("Click"
+		, (*) => (
 			IncSettingsGui["IncorrectSettingsCheckbox"].Value
 				? (MsgBox("You ticked the 'Do not show again' checkbox, which means you won't get any warning messages about incorrect Roblox settings anymore. Are you sure that you want to do this?", "Are you sure?", 0x1034) = "Yes"
 					? (IniWrite(1, "settings\nm_config.ini", "Settings", "IgnoreIncorrectRobloxSettings"), IncSettingsGui.Destroy())
@@ -2772,9 +2769,10 @@ MainGui.Add("Button", "x315 yp-2 w10 h15 vReconnectTimeHelp Disabled", "?").OnEv
 MainGui.Add("Button", "x315 yp w10 h15 vPublicFallbackHelp Disabled", "?").OnEvent("Click", nm_PublicFallbackHelp)
 MainGui.Add("Text", "x178 yp+16 w200 h15 +BackgroundTrans", "Detected Roblox:")
 MainGui.Add("Button", "x178 yp+15 w45 h15 vRefreshDetectedApplication Disabled", "Refresh").OnEvent("Click", nm_UpdateDetectedApplication)
-MainGui.Add("Text", "x226 yp w70 vDetectedApplicationText +BackgroundTrans", "Loading... ")
+MainGui.Add("Text", "x226 yp w70 vDetectedApplicationText +BackgroundTrans", nm_DetectRobloxType())
 MainGui.Add("Button", "x315 yp w10 h15 vDetectedApplicationHelp Disabled", "?").OnEvent("Click", nm_DetectedApplicationHelp)
 MainGui.Add("Button", "xp-14 yp w10 h15 vOpenDefaultApps", "^").OnEvent("Click", nm_OpenDefaultApps)
+nm_UpdateDetectedApplication()
 
 ;character settings
 MainGui.Add("Text", "x345 y40 w110 +BackgroundTrans", "Movement Speed:")
@@ -3394,9 +3392,6 @@ if (A_Args.Has(1) && (A_Args[1] = 1)){
 	ForceStart := 1
 	SetTimer start, -1000
 }
-
-;initialize nm_UpdateDetectedApplication()
-nm_UpdateDetectedApplication()
 
 ;check for incorrect roblox settings
 nm_MsgBoxIncorrectRobloxSettings()
@@ -5064,6 +5059,7 @@ nm_EnableBeesmas(toggle){
 	global beesmasActive
 	if toggle {
 		beesmasActive := 1
+
 		MainGui["BeesmasGroupBox"].Text := "Beesmas (Active)"
 
 		hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["beesmas"])
@@ -5071,7 +5067,7 @@ nm_EnableBeesmas(toggle){
 		DllCall("DeleteObject", "ptr", hBM)
 
 		for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
-		MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
+			MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
 
 		sprinklerImages.Push("saturatorWS")
 		MainGui["BeesmasFailImage"].Value := ""
@@ -7651,7 +7647,6 @@ nm_ReconnectMethod(GuiCtrl, *){
 	i := (ReconnectMethod = "Deeplink") ? 1 : 2
 
 	MainGui["ReconnectMethod"].Text := ReconnectMethod := val[(GuiCtrl.Name = "RMRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
-	nm_UpdateDetectedApplication()
 	IniWrite ReconnectMethod, "settings\nm_config.ini", "Settings", "ReconnectMethod"
 }
 nm_setReconnectInterval(GuiCtrl, *){
@@ -7772,10 +7767,10 @@ nm_PublicFallbackHelp(*){ ; public fallback information
 nm_UpdateDetectedApplication(*){	; detected roblox link type
 	MainGui["DetectedApplicationText"].Text := nm_DetectRobloxType()
 
-	if MainGui["DetectedApplicationText"].Text = "Not found"
-		MainGui["DetectedApplicationText"].SetFont("c0xAA0000", "Tahoma")
+	if MainGui["DetectedApplicationText"].Text = RobloxTypes.NotFound
+		MainGui["DetectedApplicationText"].SetFont("c0xAA0000")
 	else
-		MainGui["DetectedApplicationText"].SetFont("c0x0000FF", "Tahoma")
+		MainGui["DetectedApplicationText"].SetFont("c0x0000FF")
 }
 nm_DetectedApplicationHelp(*){ ; detected application information
 	MsgBox "
@@ -22294,8 +22289,6 @@ start(*){
 	if (discordCheck && (((discordMode = 0) && RegExMatch(webhook, "i)^https:\/\/(canary\.|ptb\.)?(discord|discordapp)\.com\/api\/webhooks\/([\d]+)\/([a-z0-9_-]+)$"))
 		|| ((discordMode = 1) && (ReportChannelCheck = 1) && (ReportChannelID || MainChannelID))))
 		run '"' exe_path64 '" /script "' A_WorkingDir '\submacros\StatMonitor.ahk" "' VersionID '"'
-	;update detected application
-	nm_UpdateDetectedApplication()
 	;start main loop
 	nm_setStatus("Begin", "Main Loop")
 	nm_Start()

@@ -2425,7 +2425,7 @@ nm_command(command)
 				try result := SendMessage(0x5560, 1)
 
 				if !result
-					discord.SendEmbed("Timed out", 5066239, , , , id), msgbox('timeout')
+					discord.SendEmbed("Timed out", 5066239, , , , id)
 				else {
 					str := A_Clipboard
 					str := StrReplace(str, '%RAM%', '* RAM: ' RAMAmount 'GB')
