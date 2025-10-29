@@ -7654,7 +7654,8 @@ nm_ShowStatusTitleBarHelp(*){ ; show status in title bar information
 	MsgBox "
 	(
 	DESCRIPTION:
-	When this option is enabled, Roblox title bar will change based on macro status.
+	When this option is enabled, Roblox title bar will show the macro status in real-time.
+	The macro is able to do this by using AutoHotkey's WinSetTitle function to change the title of the Roblox window.
 
 	IMPORTANT:
 	This feature doesn't work on UWP (Microsoft) Roblox due to how the title bar in UWP apps work!
@@ -9986,20 +9987,14 @@ nm_setStatus(newState:=0, newObjective:=0){
 	if WinExist("Status.ahk ahk_class AutoHotkey")
 		try SendMessage 0xC2, 0, StrPtr("[" A_MM "/" A_DD "][" A_Hour ":" A_Min ":" A_Sec "] " stateString)
 	DetectHiddenWindows 0
-	nm_setTitle(stateString)
+	if ShowStatusTitleBar
+		nm_setTitle(stateString)
 }
 nm_setTitle(title?) {
-	if !ShowStatusTitleBar
-		return
-    if (macroState == 2 && title) {
+    if macroState == 2 && title {
 		if hwnd := GetRobloxHWND()
 			WinSetTitle("Roblox - Natro Macro (" title ")", hwnd)
         return
-    }
-    if (hwnd := GetRobloxHWND()) {
-        stateTitle := (macroState == 0) ? "Stopped" : (macroState == 1) ? "Paused" : ""
-        if stateTitle != ""
-            WinSetTitle("Roblox - Natro Macro (" stateTitle ")", hwnd)
     }
 }
 
@@ -21741,7 +21736,7 @@ getout(*){
 	CloseScripts()
 	try Gdip_Shutdown(pToken)
 	DllCall(A_WorkingDir "\nm_image_assets\Styles\USkin.dll\USkinExit")
-	WinSetTitle("Roblox",GetRobloxHWND())
+	WinSetTitle("Roblox", GetRobloxHWND())
 }
 
 Background(){
@@ -21760,9 +21755,6 @@ Background(){
 	;stats
 	nm_setStats()
 	;title
-	if (macroState != 2) {
-		nm_setTitle()
-	}
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
