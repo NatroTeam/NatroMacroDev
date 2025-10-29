@@ -9991,11 +9991,8 @@ nm_setStatus(newState:=0, newObjective:=0){
 		nm_setTitle(stateString)
 }
 nm_setTitle(title?) {
-    if macroState == 2 && title {
-		if hwnd := GetRobloxHWND()
-			WinSetTitle("Roblox - Natro Macro (" title ")", hwnd)
-        return
-    }
+	if MacroState == 2 && hwnd := GetRobloxHWND()
+		WinSetTitle("Roblox - Natro Macro (" title ")", hwnd)
 }
 
 nm_updateAction(action){
