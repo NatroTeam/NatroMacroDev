@@ -10625,6 +10625,7 @@ nm_spawnMoveTo(moves) {
             script .= 'Send "{' %dir "Key"% ' up}"`n'
     }
     return script
+}
 nm_SetHiveCameraDirection(rotations){
 	global HiveConfirmed
 	static hivedown := 0
