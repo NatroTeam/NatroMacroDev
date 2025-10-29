@@ -2271,7 +2271,7 @@ MainGui.Add("Text", "x177 y241 w30 +BackgroundTrans", "Status:")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Button", "x82 y240 w10 h15 vcurrentFieldUp Disabled", "<").OnEvent("Click", nm_currentFieldUp)
 MainGui.Add("Button", "x165 y240 w10 h15 vcurrentFieldDown Disabled", ">").OnEvent("Click", nm_currentFieldDown)
-MainGui.Add("Text", "x92 y240 w73 +center +BackgroundTrans +border vCurrentField", CurrentField:=FieldName%CurrentFieldNum%)
+MainGui.Add("Text", "x92 y240 w73 h15 +center +BackgroundTrans +border vCurrentField", CurrentField:=FieldName%CurrentFieldNum%)
 MainGui.Add("Text", "x220 y240 w275 +BackgroundTrans +border vstate", "Startup: UI")
 
 ; version label and links
