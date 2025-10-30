@@ -2193,7 +2193,8 @@ nm_LocateRobloxSettingsXML(robloxtype)
 ;//todo: add checkProblem() conditions from debug log
 nm_MsgBoxIncorrectRobloxSettings()
 {
-	if IsSet(IgnoreIncorrectRobloxSettings) || IgnoreIncorrectRobloxSettings
+	global IgnoreIncorrectRobloxSettings
+	if IgnoreIncorrectRobloxSettings
 		return
 	robloxtype := nm_DetectRobloxType()
 	xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
@@ -2233,7 +2234,7 @@ nm_MsgBoxIncorrectRobloxSettings()
 		, (*) => (
 			IncSettingsGui["IncorrectSettingsCheckbox"].Value
 				? (MsgBox("You ticked the 'Do not show again' checkbox, which means you won't get any warning messages about incorrect Roblox settings anymore. Are you sure that you want to do this?", "Are you sure?", 0x1034) = "Yes"
-					? (IniWrite(1, "settings\nm_config.ini", "Settings", "IgnoreIncorrectRobloxSettings"), IncSettingsGui.Destroy())
+					? (IniWrite((IgnoreIncorrectRobloxSettings := 1), "settings\nm_config.ini", "Settings", "IgnoreIncorrectRobloxSettings"), IncSettingsGui.Destroy())
 					: "")
 				: IncSettingsGui.Destroy()
 		))
