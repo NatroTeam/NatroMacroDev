@@ -2099,9 +2099,11 @@ nm_GetRobloxUWPPath()
 {
 	try {
 		loop Reg, "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages", "K" {
-			if InStr(A_LoopRegName,"ROBLOXCORPORATION.ROBLOX_"){
-				basePath := "C:\Program Files\WindowsApps\" A_LoopRegName "\"
-				exePath := basePath "Windows10Universal.exe"
+			if InStr(StrLower(A_LoopRegName),"robloxcorporation") {
+				exePath := "C:\Program Files\WindowsApps\" A_LoopRegName "\Windows10Universal.exe"
+				if FileExist(exePath)
+					return exePath
+				exePath := "C:\XboxGames\Roblox\Content\RobloxPlayerBeta.exe"
 				if FileExist(exePath)
 					return exePath
 			}
@@ -2121,10 +2123,6 @@ RobloxTypes := {
 nm_DetectRobloxType()
 {
 	robloxpath := defaultapp := ""
-	try defaultapp := RegRead("HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\roblox\UserChoice", "ProgId")
-
-	if defaultapp && InStr(defaultapp, "AppX") && InStr(nm_GetRobloxUWPPath(), "ROBLOXCORPORATION.ROBLOX")
-		return RobloxTypes.UWP
 
 	try robloxpath := nm_GetRobloxWebPath()
 	if robloxpath {
@@ -2137,6 +2135,9 @@ nm_DetectRobloxType()
 				return RobloxTypes.Custom
 		}
 	}
+
+	if nm_GetRobloxUWPPath()
+		return RobloxTypes.UWP
 
 	return RobloxTypes.NotFound
 }
@@ -2192,10 +2193,9 @@ nm_LocateRobloxSettingsXML(robloxtype)
 ;//todo: add checkProblem() conditions from debug log
 nm_MsgBoxIncorrectRobloxSettings()
 {
-	; this isnt working rn
-	if IgnoreIncorrectRobloxSettings
+	if IsSet(IgnoreIncorrectRobloxSettings) || IgnoreIncorrectRobloxSettings
 		return
-	local robloxtype := nm_DetectRobloxType()
+	robloxtype := nm_DetectRobloxType()
 	xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
 	if !xmlpath
 		return
@@ -2771,7 +2771,6 @@ MainGui.Add("Text", "x178 yp+16 w200 h15 +BackgroundTrans", "Detected Roblox:")
 MainGui.Add("Button", "x178 yp+15 w45 h15 vRefreshDetectedApplication Disabled", "Refresh").OnEvent("Click", nm_UpdateDetectedApplication)
 MainGui.Add("Text", "x226 yp w70 vDetectedApplicationText +BackgroundTrans", nm_DetectRobloxType())
 MainGui.Add("Button", "x315 yp w10 h15 vDetectedApplicationHelp Disabled", "?").OnEvent("Click", nm_DetectedApplicationHelp)
-MainGui.Add("Button", "xp-14 yp w10 h15 vOpenDefaultApps", "^").OnEvent("Click", nm_OpenDefaultApps)
 nm_UpdateDetectedApplication()
 
 ;character settings
@@ -3393,8 +3392,20 @@ if (A_Args.Has(1) && (A_Args[1] = 1)){
 	SetTimer start, -1000
 }
 
-;check for incorrect roblox settings
-nm_MsgBoxIncorrectRobloxSettings()
+;check for roblox installation & incorrect roblox settings
+{
+	robloxtype := nm_DetectRobloxType()
+	if robloxtype = RobloxTypes.UWP
+		MsgBox (
+			"A traditional Roblox installation was not found on your system. UWP Roblox was detected but Natro Macro currently does not work with it.`nPlease install Roblox from https://www.roblox.com/download"
+		), "UWP Roblox Detected", 0x40010 " T60"
+	else if robloxtype = RobloxTypes.NotFound
+		MsgBox (
+			"A Roblox installation was not found on your system.`nPlease install Roblox from https://www.roblox.com/download"
+		), "Roblox Not Found", 0x40010 " T60"
+	else
+		nm_MsgBoxIncorrectRobloxSettings()
+}
 
 return
 
@@ -7765,9 +7776,10 @@ nm_PublicFallbackHelp(*){ ; public fallback information
 	)", "Public Server Fallback", 0x40000
 }
 nm_UpdateDetectedApplication(*){	; detected roblox link type
-	MainGui["DetectedApplicationText"].Text := nm_DetectRobloxType()
+	local robloxtype := nm_DetectRobloxType()
+	MainGui["DetectedApplicationText"].Text := robloxtype
 
-	if MainGui["DetectedApplicationText"].Text = RobloxTypes.NotFound
+	if robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.UWP
 		MainGui["DetectedApplicationText"].SetFont("c0xAA0000")
 	else
 		MainGui["DetectedApplicationText"].SetFont("c0x0000FF")
@@ -7776,27 +7788,18 @@ nm_DetectedApplicationHelp(*){ ; detected application information
 	MsgBox "
 	(
 	DESCRIPTION:
-	When 'Deeplink' is enabled, the macro will run the default application associated with the 'roblox' link type.
+	This shows if you are using Web or UWP Roblox.
 	If you have multiple Roblox versions installed (including bootstrappers such as Bloxstrap), these are added to the 'roblox' link type.
 
-	To select the app that Natro uses, you will need to change the default app in your settings:
-
-	1. Open 'Default Apps' in settings, or click the "^" button to the left of this one;
-	2. Change the default app for the ROBLOX link type to the app you want the macro to use;
-	3. Press the refresh button & the Test Reconnect button to see if it is using the app you want to use
-
 	IMPORTANT:
-	When using the version from Microsoft Store (UWP app) you need to:
-	- Disable Fullscreen
-	- Disable Shift-Lock
-	Otherwise your macro may not work!
+	Natro Macro currently does not support UWP Roblox due to a recent update!
 	)", "Detected Application", 0x40000
 }
 nm_FPSUnlockerHelp(*) {
     MsgBox "
     (
     "UWP" or "Web" Roblox refers to the difference between the Microsoft Store version (UWP) and the Roblox Player downloaded from the official website. 
-    We recommend using the web version, as the macro currently does not support shift lock within the UWP version.
+    You must use the web version, as the macro currently does not support UWP version.
 
 To reset your Roblox framerate cap without the macro, follow these steps:
 
@@ -7808,7 +7811,6 @@ To reset your Roblox framerate cap without the macro, follow these steps:
     That file does not contain any personal data, and the macro never sends or shares your information externally.
     )", "FPS Unlocker", 0x40000
 }
-nm_OpenDefaultApps(*) => Run("ms-settings:defaultapps")
 nm_moveSpeed(GuiCtrl, *){
 	global MoveSpeedNum
 	p := EditGetCurrentCol(GuiCtrl)
@@ -10120,6 +10122,7 @@ nm_copyDebugLog(param:="", *) {
 			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro Macro version')
 			checkProblem((InStr(EnvGet("SESSIONNAME"), "RDP") && remoteDesktopMinimize != 2), 'Minimizing remote desktop connection will cause Natro Macro to break')
 			checkProblem((DllCall("GetSystemMetrics", "Int", 95) != 0), 'Touchscreen is enabled')
+			checkProblem((robloxtype = RobloxTypes.UWP), 'Using UWP Roblox, it is currently unsupported for this Natro Macro version')
 
 			(problems = 0 ? '`n<None>' : '`n`n> Total: ' problems)
 		)
@@ -22047,6 +22050,19 @@ Background(){
  */
 start(*){
 	global
+
+	if !ForceStart {
+		robloxtype := nm_DetectRobloxType()
+		if robloxtype = RobloxTypes.UWP {
+			MsgBox "UWP Roblox installation is detected, Natro Macro currently does not support it.`nPlease install Roblox from https://www.roblox.com/download", "UWP Roblox Detected", 0x40010 " T60"
+			return
+		}
+		else if robloxtype = RobloxTypes.NotFound {
+			MsgBox "Unable to detect a Roblox installation.`nPlease install Roblox from https://www.roblox.com/download", "Roblox Not Found", 0x40010 " T60"
+			return
+		}
+	}
+
 	SetKeyDelay 100+KeyDelay
 	nm_LockTabs()
 	MainGui["StartButton"].Enabled := 0
