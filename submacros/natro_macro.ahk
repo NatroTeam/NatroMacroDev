@@ -2647,7 +2647,8 @@ TabCtrl.UseTab("Misc")
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x5 y24 w160 h144", "Hive Tools")
 MainGui.Add("GroupBox", "x5 y168 w160 h62", "Other Tools")
-MainGui.Add("GroupBox", "x170 y24 w160 h144", "Calculators")
+MainGui.Add("GroupBox", "x170 y24 w160 h62", "Calculators")
+MainGui.Add("GroupBox", "x170 y106 w160 h62", "Roblox FPS Editor")
 MainGui.Add("GroupBox", "x170 y168 w160 h62 vAutoClickerButton", "AutoClicker (" AutoClickerHotkey ")")
 MainGui.Add("GroupBox", "x335 y24 w160 h84", "Macro Tools")
 MainGui.Add("GroupBox", "x335 y108 w160 h60", "Discord Tools")
@@ -2660,9 +2661,9 @@ MainGui.Add("Button", "x10 y124 w150 h40 vAutoMutatorButton Disabled", "Auto-Jel
 ;other tools
 MainGui.Add("Button", "x10 y184 w150 h42 vGenerateBeeListButton Disabled", "Export Hive Bee List`n(for Hive Builder)").OnEvent("Click", nm_GenerateBeeList)
 ;calculators
-MainGui.Add("Button", "x175 y40 w150 h40 vTicketShopCalculatorButton Disabled", "Ticket Shop Calculator`n(Google Sheets)").OnEvent("Click", nm_TicketShopCalculatorButton)
-MainGui.Add("Button", "x175 y82 w150 h40 vSSACalculatorButton Disabled", "SSA Calculator`n(Google Sheets)").OnEvent("Click", nm_SSACalculatorButton)
-MainGui.Add("Button", "x175 y124 w150 h40 vBondCalculatorButton Disabled", "Bond Calculator`n(Google Sheets)").OnEvent("Click", nm_BondCalculatorButton)
+MainGui.Add("Button", "x175 y40 w150 h40 vBSSCalculatorsButton Disabled", "BSS Calculators`n(Google Sheets)").OnEvent("Click", nm_BSSCalculators)
+;fps editor
+MainGui.Add("Button", "x175 y122 w150 h40 vRobloxFPSButton Disabled", "Edit FPS").OnEvent("Click", robloxFPSGui)
 ;autoclicker
 MainGui.Add("Button", "x175 y184 w150 h42 vAutoClickerGUI Disabled", "AutoClicker`nSettings").OnEvent("Click", nm_AutoClickerButton)
 ;macro tools
@@ -3398,20 +3399,6 @@ if (A_Args.Has(1) && (A_Args[1] = 1)){
 	SetTimer start, -1000
 }
 
-;check for roblox installation & incorrect roblox settings
-{
-	robloxtype := nm_DetectRobloxType()
-	if robloxtype = RobloxTypes.UWP
-		MsgBox (
-			"A traditional Roblox installation was not found on your system. UWP Roblox was detected but Natro Macro currently does not work with it.`nPlease install Roblox from https://www.roblox.com/download"
-		), "UWP Roblox Detected", 0x40010 " T60"
-	else if robloxtype = RobloxTypes.NotFound
-		MsgBox (
-			"A Roblox installation was not found on your system.`nPlease install Roblox from https://www.roblox.com/download"
-		), "Roblox Not Found", 0x40010 " T60"
-	else
-		nm_MsgBoxIncorrectRobloxSettings()
-}
 
 return
 
@@ -4198,10 +4185,9 @@ nm_TabMiscLock(){
 	MainGui["BasicEggHatcherButton"].Enabled := 0
 	MainGui["BitterberryFeederButton"].Enabled := 0
 	MainGui["GenerateBeeListButton"].Enabled := 0
-	MainGui["TicketShopCalculatorButton"].Enabled := 0
-	MainGui["SSACalculatorButton"].Enabled := 0
-	MainGui["BondCalculatorButton"].Enabled := 0
+	MainGui["BSSCalculatorsButton"].Enabled := 0
 	MainGui["AutoClickerGUI"].Enabled := 0
+	MainGui["RobloxFPSButton"].Enabled := 0
 	MainGui["HotkeyGUI"].Enabled := 0
 	MainGui["DebugLogGUI"].Enabled := 0
 	MainGui["AutoStartManagerGUI"].Enabled := 0
@@ -4214,10 +4200,9 @@ nm_TabMiscUnLock(){
 	MainGui["BasicEggHatcherButton"].Enabled := 1
 	MainGui["BitterberryFeederButton"].Enabled := 1
 	MainGui["GenerateBeeListButton"].Enabled := 1
-	MainGui["TicketShopCalculatorButton"].Enabled := 1
-	MainGui["SSACalculatorButton"].Enabled := 1
-	MainGui["BondCalculatorButton"].Enabled := 1
+	MainGui["BSSCalculatorsButton"].Enabled := 1
 	MainGui["AutoClickerGUI"].Enabled := 1
+	MainGui["RobloxFPSButton"].Enabled := 1
 	MainGui["HotkeyGUI"].Enabled := 1
 	MainGui["DebugLogGUI"].Enabled := 1
 	MainGui["AutoStartManagerGUI"].Enabled := 1
@@ -8372,17 +8357,29 @@ nm_GenerateBeeList(*)
 	A_Clipboard := str
 	MsgBox "Copied Bee List to clipboard!`nPaste the output into the '/hive import' command of Hive Builder to view your hive!", "Export Bee List", 0x40040 " T20"
 }
-nm_TicketShopCalculatorButton(*){
-	Run "https://docs.google.com/spreadsheets/d/1_5JP_9uZUv7PUqjL76T5orEA3MIHe4R8gLu27L8KJ-A/"
+nm_BSSCalculators(*){
+	global
+	GuiClose(*){
+		if (IsSet(CalculatorsGui) && IsObject(CalculatorsGui))
+			CalculatorsGui.Destroy(), CalculatorsGui := ""
+	}
+	GuiClose()
+	CalculatorsGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "BSS Calculators")
+	CalculatorsGui.OnEvent("Close", GuiClose)
+	CalculatorsGui.SetFont("s8 cDefault Bold", "Tahoma")
+	CalculatorsGui.Add("Button", "x10 y10 w120 h30", "Ticket Shop Calculator").OnEvent("Click", nm_TicketShopCalculatorButton)
+	CalculatorsGui.Add("Button", "xp yp+35 wp hp", "SSA Calculator").OnEvent("Click", nm_SSACalculatorButton)
+	CalculatorsGui.Add("Button", "xp yp+35 wp hp", "Bond Calculator").OnEvent("Click", nm_BondCalculatorButton)
+	CalculatorsGui.Add("Button", "xp yp+35 wp hp", "Beequip Chances").OnEvent("Click", nm_BeequipChancesButton)
+	CalculatorsGui.Add("Text", "x10 yp+35 wp cGray BackgroundTrans Wrap", "Credits to SP and gyhkijffk for these calculators!")
+
+	CalculatorsGui.Show("Autosize Center")
 }
-nm_SSACalculatorButton(*)
-{
-	Run "https://docs.google.com/spreadsheets/d/1nupF_6g1TLJk1W5MpLBsfe1yk6C99-ooMMffuxdn580/edit?usp=sharing"
-}
-nm_BondCalculatorButton(*)
-{
-	Run "https://docs.google.com/spreadsheets/d/1TFTAahwsB4WRmRkX4YiM8mPQyk53CDmfAKOSOYv-Bow/edit?usp=sharing"
-}
+nm_TicketShopCalculatorButton(*) => Run("https://docs.google.com/spreadsheets/d/1_5JP_9uZUv7PUqjL76T5orEA3MIHe4R8gLu27L8KJ-A/")
+nm_SSACalculatorButton(*) => Run("https://docs.google.com/spreadsheets/d/1nupF_6g1TLJk1W5MpLBsfe1yk6C99-ooMMffuxdn580/")
+nm_BondCalculatorButton(*) => Run("https://docs.google.com/spreadsheets/d/1TFTAahwsB4WRmRkX4YiM8mPQyk53CDmfAKOSOYv-Bow/")
+nm_BeequipChancesButton(*) => Run("https://docs.google.com/spreadsheets/d/10_7oay1yHgykAccrhqYp5gr-P_0jpEKMbTJS9ty4JA8/")
+
 nm_AutoClickerButton(*)
 {
 	global
@@ -9672,7 +9669,6 @@ nm_AdvancedGUI(init:=0){
 	MainGui.SetFont("w700")
 	MainGui.Add("GroupBox", "x5  y24  w240 h90", "Fallback Private Servers")
 	MainGui.Add("GroupBox", "x5  y114 w240 h76", "Danger Zone")
-	MainGui.Add("GroupBox", "x5  y190 w240 h40", "Roblox FPS")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38",  "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -9706,7 +9702,6 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("CheckBox", "x413 y174 vTestMsgBox", "MsgBox")
 	MainGui.Add("Button", "x325 y197 w100 h24", "Start Test").OnEvent("Click", nm_testButton)
 	MainGui.Add("Button", "x15 y164 w220 h22 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
-	MainGui.Add("Button", "x15 y204 w220 h22", "Edit FPS").OnEvent("Click", robloxFPSGui)
 	if (init = 1)
 	{
 		TabCtrl.Choose("Advanced")
@@ -10182,7 +10177,7 @@ robloxFPSGui(*) {
 	global fpsUnlockerGui
 	if isSet(fpsUnlockerGui) && fpsUnlockerGui is Gui
 		fpsUnlockerGui.destroy()
-	fpsUnlockerGui := Gui("+E0x8000008 -MinimizeBox", "FPS Unlocker")
+	fpsUnlockerGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "FPS Unlocker")
 	fpsUnlockerGui.SetFont("s8 cDefault Norm", "Tahoma")
 	fpsUnlockerGui.Show("w150 h60")
 	fpsUnlockerGui.AddText("vWebFPSCountLabel w100 x5 Disabled", "Web Roblox FPS")
@@ -10191,10 +10186,10 @@ robloxFPSGui(*) {
 	fpsUnlockerGui.AddText("vUWPFPSCountLabel w100 x5 Disabled", "UWP Roblox FPS")
 	fpsUnlockerGui.AddText("vUWPFPSCountEdit yp xp+100 w50 Right Disabled")
 	fpsUnlockerGui.AddUpDown("vUWPFPSCount Range15-1000 Disabled", 60)
-	fpsUnlockerGui.AddButton("vApply x45 yp+20 w70 Disabled","Apply").OnEvent("Click", (*) => WriteFPSCounts())
-	fpsUnlockerGui.Add("Button", "xp+98 yp w12", "?").OnEvent("Click", nm_FPSUnlockerHelp)
+	fpsUnlockerGui.AddButton("vApply x5 yp+20 w140 Disabled","Apply").OnEvent("Click", (*) => WriteFPSCounts())
+	fpsUnlockerGui.Add("Button", "xp+140 yp w12", "?").OnEvent("Click", nm_FPSUnlockerHelp)
 	uwpxml := webxml := ""
-	uwpfps := webfps := 60, 60
+	uwpfps := webfps := 60
 	for robloxtype in [RobloxTypes.Web, RobloxTypes.UWP] {
 		xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
 		if !xmlpath
@@ -10234,18 +10229,13 @@ robloxFPSGui(*) {
 			newfps := (newfps = 60) ? "-1" : String(newfps)
 			if newfps = String((robloxtype = RobloxTypes.Web) ? webfps : uwpfps)
 				continue
-			skipwrite := false
 			while (
 				(robloxtype = RobloxTypes.Web && WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) ||
 				(robloxtype = RobloxTypes.Web && WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
 			) {
-				if MsgBox("Please close " robloxtype " Roblox before applying FPS changes.", , 0x40135) != "Retry" {
-					skipwrite := true
-					break
-				}
+				if MsgBox("Please close " robloxtype " Roblox before applying FPS changes.", , 0x40135) != "Retry"
+					continue 2
 			}
-			if skipwrite
-				continue
 			try {
 				xmlcontent := RegExReplace(FileRead(xmlpath), "<int name=`"FramerateCap`">-?\d+</int>",
 				"<int name=`"FramerateCap`">" newfps "</int>")
@@ -22001,17 +21991,7 @@ Background(){
 start(*){
 	global
 
-	if !ForceStart {
-		robloxtype := nm_DetectRobloxType()
-		if robloxtype = RobloxTypes.UWP {
-			MsgBox "UWP Roblox installation is detected, Natro Macro currently does not support it.`nPlease install Roblox from https://www.roblox.com/download", "UWP Roblox Detected", 0x40010 " T60"
-			return
-		}
-		else if robloxtype = RobloxTypes.NotFound {
-			MsgBox "Unable to detect a Roblox installation.`nPlease install Roblox from https://www.roblox.com/download", "Roblox Not Found", 0x40010 " T60"
-			return
-		}
-	}
+	;//todo: make startup errors an array
 
 	SetKeyDelay 100+KeyDelay
 	nm_LockTabs()
@@ -22023,6 +22003,20 @@ start(*){
 		priorityList.push(defaultPriorityList[i])
 	
 	if !ForceStart {
+		robloxtype := nm_DetectRobloxType()
+		if RemoteStart && (robloxtype = RobloxTypes.UWP || robloxtype = RobloxTypes.NotFound) {
+			nm_setStatus("Error","Unable to start macro. Invalid Roblox installation detected. Please install Roblox from https://www.roblox.com/download")
+			return
+		} else {
+			if robloxtype = RobloxTypes.UWP {
+				MsgBox "UWP Roblox installation is detected, Natro Macro currently does not support it.`nPlease install Roblox from https://www.roblox.com/download", "UWP Roblox Detected", 0x40010 " T60"
+				return
+			}
+			if robloxtype = RobloxTypes.NotFound {
+				MsgBox "Unable to detect a Roblox installation.`nPlease install Roblox from https://www.roblox.com/download", "Roblox Not Found", 0x40010 " T60"
+				return
+			}
+		}
 		;Auto Field Boost WARNING @ start
 		;nm_SetStatus("Debug", "AFB" AutoFieldBoostActive " RC" RemoteStart " Force" ForceStart) 
 		if AutoFieldBoostActive {
