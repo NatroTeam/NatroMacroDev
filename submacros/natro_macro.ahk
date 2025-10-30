@@ -2181,15 +2181,16 @@ JoinArray(arr, sep := "`n") {
 }
 nm_LocateRobloxSettingsXML(robloxtype)
 {
+	static localappdata := EnvGet("LOCALAPPDATA")
 	try switch robloxtype {
 		case RobloxTypes.Custom, RobloxTypes.Web, RobloxTypes.Bootstrapper:
-			Loop Files, EnvGet("LOCALAPPDATA") "\Roblox\GlobalBasicSettings_*.xml", "F"
+			Loop Files, localappdata "\Roblox\GlobalBasicSettings_*.xml", "F"
 				if !InStr(A_LoopFileName, "Studio")
 					return A_LoopFileFullPath
 		case RobloxTypes.UWP:
-			Loop Files, EnvGet("LOCALAPPDATA") "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
+			Loop Files, localappdata "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
 				return A_LoopFileFullPath
-			Loop Files, EnvGet("LOCALAPPDATA") "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
+			Loop Files, localappdata "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
 				return A_LoopFileFullPath
 	}
 }
@@ -2207,7 +2208,7 @@ nm_MsgBoxIncorrectRobloxSettings()
 	recommendations := []
 	for tier, tiermap in RecommendedRobloxSettings {
 		for platform, platformmap in tiermap {
-			if platform = "All" || (platform = "UWP Version" && robloxtype = RobloxTypes.UWP) || (platform = "Web Version" && (robloxtype = RobloxTypes.Web || robloxtype = RobloxTypes.Custom || robloxtype = RobloxTypes.Bootstrapper)){
+			if platform = "All" || platform = robloxtype || (platform = "Web Version" && robloxtype != RobloxTypes.UWP)
 				for xmltext, recommendation in platformmap {
 					if tier = "Incorrect" && InStr(xml, xmltext)
 						recommendations.Push("- " recommendation)
