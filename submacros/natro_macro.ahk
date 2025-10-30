@@ -3398,7 +3398,6 @@ if (A_Args.Has(1) && (A_Args[1] = 1)){
 	SetTimer start, -1000
 }
 
-
 return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8165,7 +8164,7 @@ nm_BasicEggHatcher(*)
 				return 1
 			}
 		}
-		else if (Gdip_ImageSearch(pBMScreen, pBMC, , 50, 165, 260, 205, 2, , , 5) = 5) {
+		else if (Gdip_ImageSearch(pBMScreen, pBMC, , 50, 165, 260, 205, 2, , , 5) = 5) { ; check if common
 			rj := 1
 			if (Gdip_ImageSearch(pBMScreen, bitmaps["giftedstar"], , 0, 20, 130, 50, 5) = 1) { ; If gifted is hatched, stop
 				MsgBox "SUCCESS!!!!", "Basic Bee Replacement Program", 0x40020
@@ -8180,6 +8179,7 @@ nm_BasicEggHatcher(*)
 				return 1
 			}
 		}
+		Gdip_DisposeImage(pBMScreen)
 		return 0
 	}
 	YesButton(){
@@ -9666,9 +9666,9 @@ nm_AdvancedGUI(init:=0){
 	TabCtrl.UseTab("Advanced")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	MainGui.SetFont("w700")
-	MainGui.Add("GroupBox", "x5  y24  w240 h90", "Fallback Private Servers")
-	MainGui.Add("GroupBox", "x5  y114 w240 h76", "Danger Zone")
-	MainGui.Add("GroupBox", "x255 y24 w240 h38",  "Debugging")
+	MainGui.Add("GroupBox", "x5 y24 w240 h90", "Fallback Private Servers")
+	MainGui.Add("GroupBox", "x5 y114 w240 h76", "Danger Zone")
+	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
@@ -10339,13 +10339,13 @@ nm_MemoryMatchInterrupt() {
 		|| ((beesmasActive = 1) && WinterMemoryMatchCheck && (now-LastWinterMemoryMatch)>14400))
 	)
 }
+
 ;stats/status
 nm_setStats(){
 	global
 	local rundelta:=0, gatherdelta:=0, convertdelta:=0, TotalStatsString, SessionStatsString
 
 	if (MacroState=2) {
-
 		rundelta:=(nowUnix()-MacroStartTime)
 		if(GatherStartTime > 0)
 			gatherdelta:=(nowUnix()-GatherStartTime)
@@ -22025,7 +22025,7 @@ start(*){
 				MsgBox
 				(
 				"Automatic Field Boost is ACTIVATED.
-				-------------------------------------
+				------------------------------------------------------------------------------------
 				If you continue the following quantity of items can be used:
 				Dice: " futureDice "
 				Glitter: " futureGlitter "
