@@ -2215,7 +2215,6 @@ nm_MsgBoxIncorrectRobloxSettings()
 					else if tier = "Correct" && !InStr(xml, xmltext)
 						recommendations.Push("- " recommendation)
 				}
-			}
 		}
 	}
 	if recommendations.Length {
@@ -2775,7 +2774,7 @@ MainGui.Add("Button", "x315 yp-2 w10 h15 vReconnectTimeHelp Disabled", "?").OnEv
 MainGui.Add("Button", "x315 yp w10 h15 vPublicFallbackHelp Disabled", "?").OnEvent("Click", nm_PublicFallbackHelp)
 MainGui.Add("Text", "x178 yp+16 w200 h15 +BackgroundTrans", "Detected Roblox:")
 MainGui.Add("Button", "x178 yp+15 w45 h15 vRefreshDetectedApplication Disabled", "Refresh").OnEvent("Click", nm_UpdateDetectedApplication)
-MainGui.Add("Text", "x226 yp w70 vDetectedApplicationText +BackgroundTrans", nm_DetectRobloxType())
+MainGui.Add("Text", "x226 yp w85 h15 vDetectedApplicationText +BackgroundTrans", StrReplace(nm_DetectRobloxType(), " (Web)"))
 MainGui.Add("Button", "x315 yp w10 h15 vDetectedApplicationHelp Disabled", "?").OnEvent("Click", nm_DetectedApplicationHelp)
 nm_UpdateDetectedApplication()
 
