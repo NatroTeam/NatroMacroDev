@@ -107,6 +107,7 @@ OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
+OnMessage(0x5560, nm_copyDebugLog)
 OnMessage(0x0020, nm_WM_SETCURSOR)
 
 ; set version identifier
@@ -338,9 +339,11 @@ nm_importConfig()
 		, "TimersHotkey", "F5"
 		, "ShowOnPause", 0
 		, "IgnoreUpdateVersion", ""
+		, "IgnoreIncorrectRobloxSettings", 0 
 		, "FDCWarn", 1
 		, "priorityListNumeric", 12345678
-		, "EnableBeesmasTime", 0)
+		, "EnableBeesmasTime", 0
+		, "DebugHotkey", "F6")
 
 	config["Status"] := Map("StatusLogReverse", 0
 		, "TotalRuntime", 0
@@ -2067,9 +2070,10 @@ TraySetIcon "nm_image_assets\auryn.ico"
 A_TrayMenu.Delete()
 A_TrayMenu.Add()
 A_TrayMenu.Add("Open Logs", (*) => ListLines())
-A_TrayMenu.Add("Copy Logs", copyLogFile)
+A_TrayMenu.Add("Copy Logs", nm_copyDebugLog)
 A_TrayMenu.Add()
-
+A_TrayMenu.Add("Edit Roblox FPS", robloxFPSGui)
+A_TrayMenu.Add()
 A_TrayMenu.Add("Edit This Script", (*) => Edit())
 A_TrayMenu.Add("Suspend Hotkeys", (*) => (A_TrayMenu.ToggleCheck("Suspend Hotkeys"), Suspend()))
 A_TrayMenu.Add()
@@ -2091,7 +2095,155 @@ DllCall(DllCall("GetProcAddress"
 		, "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
 		, "AStr","USkinInit", "Ptr")
 	, "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DEFAULT ROBLOX TYPE/PATH DETECTION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+nm_GetRobloxUWPPath()
+{
+	try {
+		loop Reg, "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages", "K" {
+			if InStr(StrLower(A_LoopRegName),"robloxcorporation") {
+				exePath := "C:\Program Files\WindowsApps\" A_LoopRegName "\Windows10Universal.exe"
+				if FileExist(exePath)
+					return exePath
+				exePath := "C:\XboxGames\Roblox\Content\RobloxPlayerBeta.exe"
+				if FileExist(exePath)
+					return exePath
+			}
+		}
+	}
+}
+nm_GetRobloxWebPath() => RegRead("HKCR\roblox\shell\open\command")
 
+RobloxTypes := {
+	UWP: "UWP Version",
+	Bootstrapper: "Bootstrapper (Web)",
+	Web: "Web Version",
+	Custom: "Custom/Unknown (Web)",
+	NotFound: "Not found"
+}
+
+nm_DetectRobloxType()
+{
+	robloxpath := defaultapp := ""
+
+	try robloxpath := nm_GetRobloxWebPath()
+	if robloxpath {
+		switch {
+			case robloxpath ~= "i)[a-z]+strap":
+				return RobloxTypes.Bootstrapper
+			case InStr(robloxpath, "RobloxPlayerBeta"):
+				return RobloxTypes.Web
+			case robloxpath:
+				return RobloxTypes.Custom
+		}
+	}
+
+	if nm_GetRobloxUWPPath()
+		return RobloxTypes.UWP
+
+	return RobloxTypes.NotFound
+}
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DETECT INCORRECT ROBLOX SETTINGS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+RecommendedRobloxSettings := Map(
+	"Correct", Map(
+		"All", Map(
+			'"GraphicsQualityLevel">3', "Set Graphics Quality to LOWEST",
+			'"PreferredTextSize">1', 'Set Text Size to LOWEST'
+		),
+		"UWP Version", Map(),
+		"Web Version", Map(
+			'"ControlMode">1', 'Turn ON Shift Lock'
+		)
+	),
+	"Incorrect", Map(
+		"All", Map(
+			'"CameraYInverted">true', 'Turn OFF Inverted Camera',
+			'"OnScreenProfilerEnabled">true', 'Turn OFF Microprofiler',
+			'"ComputerCameraMovementMode">2', 'Set Camera Mode to CLASSIC',
+			'"ComputerMovementMode">2', 'Set Movement Mode to KEYBOARD',
+			'"GraphicsQualityLevel">0', "Switch to MANUAL Graphics"
+		),
+		"UWP Version", Map(
+			'"Fullscreen">true', 'Turn OFF Fullscreen',
+			'"ControlMode">1', 'Turn OFF Shift Lock'
+		),
+		"Web Version", Map()
+	)
+)
+JoinArray(arr, sep := "`n") {
+    out := ""
+    for i, val in arr
+        out .= (i > 1 ? sep : "") val
+    return out
+}
+nm_LocateRobloxSettingsXML(robloxtype)
+{
+	static localappdata := EnvGet("LOCALAPPDATA")
+	try switch robloxtype {
+		case RobloxTypes.Custom, RobloxTypes.Web, RobloxTypes.Bootstrapper:
+			Loop Files, localappdata "\Roblox\GlobalBasicSettings_*.xml", "F"
+				if !InStr(A_LoopFileName, "Studio")
+					return A_LoopFileFullPath
+		case RobloxTypes.UWP:
+			Loop Files, localappdata "\Packages\ROBLOXCORPORATION.ROBLOX_" StrReplace(StrSplit(nm_GetRobloxUWPPath(),"__")[2], "\Windows10Universal.exe") "\LocalState\GlobalBasicSettings_*.xml", "F"
+				return A_LoopFileFullPath
+			Loop Files, localappdata "\RobloxPCGDK\GlobalBasicSettings_*.xml", "F"
+				return A_LoopFileFullPath
+	}
+}
+;//todo: add checkProblem() conditions from debug log
+nm_MsgBoxIncorrectRobloxSettings()
+{
+	global IgnoreIncorrectRobloxSettings
+	if IgnoreIncorrectRobloxSettings
+		return
+	robloxtype := nm_DetectRobloxType()
+	xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
+	if !xmlpath
+		return
+	xml := FileRead(xmlpath)
+	recommendations := []
+	for tier, tiermap in RecommendedRobloxSettings {
+		for platform, platformmap in tiermap {
+			if platform = "All" || platform = robloxtype || (platform = "Web Version" && robloxtype != RobloxTypes.UWP)
+				for xmltext, recommendation in platformmap {
+					if tier = "Incorrect" && InStr(xml, xmltext)
+						recommendations.Push("- " recommendation)
+					else if tier = "Correct" && !InStr(xml, xmltext)
+						recommendations.Push("- " recommendation)
+				}
+		}
+	}
+	if recommendations.Length {
+		rectext := JoinArray(recommendations, "`n")
+		IncSettingsGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Incorrect Roblox Settings Detected")
+		IncSettingsGui.SetFont("s9", "Tahoma")
+		IncSettingsGui.OnEvent("Close", (*) => gui.Destroy())
+		IncSettingsGui.SetFont("Bold s10 c" (robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.UWP ? "Red" : "0a7e00"), "Tahoma")
+		IncSettingsGui.Add("Text", "x10 y10 w400 +Center", "Default Roblox Installation: " robloxtype)
+		IncSettingsGui.SetFont("s9 cDefault", "Tahoma")
+		IncSettingsGui.Add("Text", "x10 y40 w400 +BackgroundTrans", "The detected Roblox installation might have incorrect settings, please do these:")
+		IncSettingsGui.SetFont("s9 cRed", "Tahoma")
+		IncSettingsGui.Add("Text", "x10 y70 w400 r" recommendations.Length " +BackgroundTrans", rectext)
+		IncSettingsGui.SetFont("s8 cDefault", "Tahoma")
+		IncSettingsGui.Add("Text", "x10 y" (80 + 14 * recommendations.Length) " w400 +BackgroundTrans", "You can safely ignore this message if you have already changed them.")
+		IncSettingsGui.SetFont("s9", "Tahoma")
+		IncSettingsGui.Add("CheckBox", "x10 y" (110 + 14 * recommendations.Length) " w200 vIncorrectSettingsCheckbox", "Do not show again")
+		IncSettingsGui.SetFont("s9 cDefault Norm", "Tahoma")
+		IncSettingsGui.Add("Button", "x320 y" (110 + 14 * recommendations.Length) " w90 h28 Default", "OK").OnEvent("Click"
+		, (*) => (
+			IncSettingsGui["IncorrectSettingsCheckbox"].Value
+				? (MsgBox("You ticked the 'Do not show again' checkbox, which means you won't get any warning messages about incorrect Roblox settings anymore. Are you sure that you want to do this?", "Are you sure?", 0x1034) = "Yes"
+					? (IniWrite((IgnoreIncorrectRobloxSettings := 1), "settings\nm_config.ini", "Settings", "IgnoreIncorrectRobloxSettings"), IncSettingsGui.Destroy())
+					: "")
+				: IncSettingsGui.Destroy()
+		))
+		IncSettingsGui.Show("AutoSize Center")
+	}
+}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; AUTO-UPDATE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2128,7 +2280,7 @@ nm_AutoUpdateGUI(*)
 			UpdateGui.Destroy(), UpdateGui := ""
 	}
 	GuiClose()
-	UpdateGui := Gui("+Border +Owner" MainGui.Hwnd " -MinimizeBox", "Natro Macro Update")
+	UpdateGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Natro Macro Update")
 	UpdateGui.OnEvent("Close", GuiClose), UpdateGui.OnEvent("Escape", GuiClose)
 	UpdateGui.SetFont("s9 cDefault Norm", "Tahoma")
 	UpdateText := UpdateGui.Add("Text", "x20 w260 +Center +BackgroundTrans", "A newer version of Natro Macro was found!`nDo you want to update now?")
@@ -2494,7 +2646,8 @@ TabCtrl.UseTab("Misc")
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x5 y24 w160 h144", "Hive Tools")
 MainGui.Add("GroupBox", "x5 y168 w160 h62", "Other Tools")
-MainGui.Add("GroupBox", "x170 y24 w160 h144", "Calculators")
+MainGui.Add("GroupBox", "x170 y24 w160 h62", "Calculators")
+MainGui.Add("GroupBox", "x170 y106 w160 h62", "Roblox FPS Editor")
 MainGui.Add("GroupBox", "x170 y168 w160 h62 vAutoClickerButton", "AutoClicker (" AutoClickerHotkey ")")
 MainGui.Add("GroupBox", "x335 y24 w160 h84", "Macro Tools")
 MainGui.Add("GroupBox", "x335 y108 w160 h60", "Discord Tools")
@@ -2507,14 +2660,14 @@ MainGui.Add("Button", "x10 y124 w150 h40 vAutoMutatorButton Disabled", "Auto-Jel
 ;other tools
 MainGui.Add("Button", "x10 y184 w150 h42 vGenerateBeeListButton Disabled", "Export Hive Bee List`n(for Hive Builder)").OnEvent("Click", nm_GenerateBeeList)
 ;calculators
-MainGui.Add("Button", "x175 y40 w150 h40 vTicketShopCalculatorButton Disabled", "Ticket Shop Calculator`n(Google Sheets)").OnEvent("Click", nm_TicketShopCalculatorButton)
-MainGui.Add("Button", "x175 y82 w150 h40 vSSACalculatorButton Disabled", "SSA Calculator`n(Google Sheets)").OnEvent("Click", nm_SSACalculatorButton)
-MainGui.Add("Button", "x175 y124 w150 h40 vBondCalculatorButton Disabled", "Bond Calculator`n(Google Sheets)").OnEvent("Click", nm_BondCalculatorButton)
+MainGui.Add("Button", "x175 y40 w150 h40 vBSSCalculatorsButton Disabled", "BSS Calculators`n(Google Sheets)").OnEvent("Click", nm_BSSCalculators)
+;fps editor
+MainGui.Add("Button", "x175 y122 w150 h40 vRobloxFPSButton Disabled", "Edit FPS").OnEvent("Click", robloxFPSGui)
 ;autoclicker
 MainGui.Add("Button", "x175 y184 w150 h42 vAutoClickerGUI Disabled", "AutoClicker`nSettings").OnEvent("Click", nm_AutoClickerButton)
 ;macro tools
 MainGui.Add("Button", "x340 y40 w150 h20 vHotkeyGUI Disabled", "Change Hotkeys").OnEvent("Click", nm_HotkeyGUI)
-MainGui.Add("Button", "x340 y62 w150 h20 vDebugLogGUI Disabled", "Debug Log Options").OnEvent("Click", nm_DebugLogGUI)
+MainGui.Add("Button", "x340 y62 w150 h20 vDebugLogGUI Disabled", "Debug Options").OnEvent("Click", nm_DebugLogGUI)
 MainGui.Add("Button", "x340 y84 w150 h20 vAutoStartManagerGUI Disabled", "Auto-Start Manager").OnEvent("Click", nm_AutoStartManager)
 ;discord tools
 MainGui.Add("Button", "x340 y124 w150 h40 vNightAnnouncementGUI Disabled", "Night Detection`nAnnouncement").OnEvent("Click", nm_NightAnnouncementGUI)
@@ -2598,27 +2751,32 @@ MainGui.Add("UpDown", "Range0-9999 vKeyDelay Disabled", KeyDelay).OnEvent("Chang
 ;reconnect settings
 MainGui.Add("Button", "x248 y64 w40 h16 vTestReconnectButton Disabled", "Test").OnEvent("Click", nm_testReconnect)
 MainGui.Add("Text", "x178 y82 +BackgroundTrans", "Private Server Link:")
-MainGui.Add("Edit", "x176 yp+15 w148 h16 vPrivServer Disabled", PrivServer).OnEvent("Change", nm_ServerLink)
+MainGui.Add("Edit", "x176 yp+13 w148 h16 vPrivServer Disabled", PrivServer).OnEvent("Change", nm_ServerLink)
 MainGui.Add("Text", "x178 yp+21 +BackgroundTrans", "Join Method:")
 MainGui.Add("Text", "x254 yp w48 vReconnectMethod +Center +BackgroundTrans", ReconnectMethod)
 MainGui.Add("Button", "xp-12 yp-1 w12 h15 vRMLeft Disabled", "<").OnEvent("Click", nm_ReconnectMethod)
 MainGui.Add("Button", "xp+59 yp w12 h15 vRMRight Disabled", ">").OnEvent("Click", nm_ReconnectMethod)
 MainGui.Add("Button", "x315 yp w10 h15 vReconnectMethodHelp Disabled", "?").OnEvent("Click", nm_ReconnectMethodHelp)
-MainGui.Add("Text", "x178 yp+21 +BackgroundTrans", "Daily Reconnect (optional):")
-MainGui.Add("Text", "x178 yp+18 +BackgroundTrans", "Reconnect every")
-MainGui.Add("Edit", "x264 yp-1 w18 h16 Number Limit2 vReconnectInterval Disabled", ValidateInt(&ReconnectInterval, "")).OnEvent("Change", nm_setReconnectInterval)
+MainGui.Add("Text", "x178 yp+18 +BackgroundTrans", "Daily Reconnect (optional):")
+MainGui.Add("Text", "x178 yp+17 +BackgroundTrans", "Reconnect every")
+MainGui.Add("Edit", "x264 yp-2 w18 h15 Number Limit2 vReconnectInterval Disabled", ValidateInt(&ReconnectInterval, "")).OnEvent("Change", nm_setReconnectInterval)
 MainGui.Add("Text", "x287 yp+1 +BackgroundTrans", "hours")
 MainGui.Add("Text", "x196 yp+18 +BackgroundTrans", "starting at")
-MainGui.Add("Edit", "x250 yp-1 w18 h16 Number Limit2 vReconnectHour Disabled", IsInteger(ReconnectHour) ? SubStr("0" ReconnectHour, -2) : "").OnEvent("Change", nm_setReconnectHour)
-MainGui.Add("Edit", "x275 yp w18 h16 Number Limit2 vReconnectMin Disabled", IsInteger(ReconnectMin) ? SubStr("0" ReconnectMin, -2) : "").OnEvent("Change", nm_setReconnectMin)
+MainGui.Add("Edit", "x250 yp w18 h15 Number Limit2 vReconnectHour Disabled", IsInteger(ReconnectHour) ? SubStr("0" ReconnectHour, -2) : "").OnEvent("Change", nm_setReconnectHour)
+MainGui.Add("Edit", "x275 yp w18 h15 Number Limit2 vReconnectMin Disabled", IsInteger(ReconnectMin) ? SubStr("0" ReconnectMin, -2) : "").OnEvent("Change", nm_setReconnectMin)
 MainGui.SetFont("w1000 s11")
-MainGui.Add("Text", "x269 yp-3 +BackgroundTrans", ":")
+MainGui.Add("Text", "x269 yp-2 +BackgroundTrans", ":")
 MainGui.SetFont("s6 w700")
-MainGui.Add("Text", "x295 yp+6 +BackgroundTrans", "UTC")
+MainGui.Add("Text", "x295 yp+5 +BackgroundTrans", "UTC")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
-MainGui.Add("Button", "x315 yp-3 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
-(GuiCtrl := MainGui.Add("CheckBox", "x176 yp+18 w132 h15 vPublicFallback Disabled Checked" PublicFallback, "Fallback to Public Server")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+MainGui.Add("Button", "x315 yp-2 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
+(GuiCtrl := MainGui.Add("CheckBox", "x176 yp+17 w132 h15 vPublicFallback Disabled Checked" PublicFallback, "Fallback to Public Server")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("Button", "x315 yp w10 h15 vPublicFallbackHelp Disabled", "?").OnEvent("Click", nm_PublicFallbackHelp)
+MainGui.Add("Text", "x178 yp+16 w200 h15 +BackgroundTrans", "Detected Roblox:")
+MainGui.Add("Button", "x178 yp+15 w45 h15 vRefreshDetectedApplication Disabled", "Refresh").OnEvent("Click", nm_UpdateDetectedApplication)
+MainGui.Add("Text", "x226 yp w85 h15 vDetectedApplicationText +BackgroundTrans", StrReplace(nm_DetectRobloxType(), " (Web)"))
+MainGui.Add("Button", "x315 yp w10 h15 vDetectedApplicationHelp Disabled", "?").OnEvent("Click", nm_DetectedApplicationHelp)
+nm_UpdateDetectedApplication()
 
 ;character settings
 MainGui.Add("Text", "x345 y40 w110 +BackgroundTrans", "Movement Speed:")
@@ -3231,6 +3389,7 @@ try {
 	Hotkey PauseHotkey, nm_pause, "On"
 	Hotkey AutoClickerHotkey, autoclicker, "On T2"
 	Hotkey TimersHotkey, timers, "On"
+	Hotkey DebugHotkey, nm_copyDebugLog, "On"
 }
 
 SetTimer Background, 2000
@@ -3975,6 +4134,8 @@ nm_TabSettingsLock(){
 	MainGui["ReconnectMin"].Enabled := 0
 	MainGui["ReconnectTimeHelp"].Enabled := 0
 	MainGui["PublicFallbackHelp"].Enabled := 0
+	MainGui["RefreshDetectedApplication"].Enabled := 0
+	MainGui["DetectedApplicationHelp"].Enabled := 0
 	MainGui["NewWalkHelp"].Enabled := 0
 }
 nm_TabSettingsUnLock(){
@@ -4014,16 +4175,17 @@ nm_TabSettingsUnLock(){
 	MainGui["ReconnectMin"].Enabled := 1
 	MainGui["ReconnectTimeHelp"].Enabled := 1
 	MainGui["PublicFallbackHelp"].Enabled := 1
+	MainGui["RefreshDetectedApplication"].Enabled := 1
+	MainGui["DetectedApplicationHelp"].Enabled := 1
 	MainGui["NewWalkHelp"].Enabled := 1
 }
 nm_TabMiscLock(){
 	MainGui["BasicEggHatcherButton"].Enabled := 0
 	MainGui["BitterberryFeederButton"].Enabled := 0
 	MainGui["GenerateBeeListButton"].Enabled := 0
-	MainGui["TicketShopCalculatorButton"].Enabled := 0
-	MainGui["SSACalculatorButton"].Enabled := 0
-	MainGui["BondCalculatorButton"].Enabled := 0
+	MainGui["BSSCalculatorsButton"].Enabled := 0
 	MainGui["AutoClickerGUI"].Enabled := 0
+	MainGui["RobloxFPSButton"].Enabled := 0
 	MainGui["HotkeyGUI"].Enabled := 0
 	MainGui["DebugLogGUI"].Enabled := 0
 	MainGui["AutoStartManagerGUI"].Enabled := 0
@@ -4036,10 +4198,9 @@ nm_TabMiscUnLock(){
 	MainGui["BasicEggHatcherButton"].Enabled := 1
 	MainGui["BitterberryFeederButton"].Enabled := 1
 	MainGui["GenerateBeeListButton"].Enabled := 1
-	MainGui["TicketShopCalculatorButton"].Enabled := 1
-	MainGui["SSACalculatorButton"].Enabled := 1
-	MainGui["BondCalculatorButton"].Enabled := 1
+	MainGui["BSSCalculatorsButton"].Enabled := 1
 	MainGui["AutoClickerGUI"].Enabled := 1
+	MainGui["RobloxFPSButton"].Enabled := 1
 	MainGui["HotkeyGUI"].Enabled := 1
 	MainGui["DebugLogGUI"].Enabled := 1
 	MainGui["AutoStartManagerGUI"].Enabled := 1
@@ -5594,7 +5755,7 @@ nm_BoostedFieldSelectButton(*){
 			BoostedFieldSelectGui.Destroy(), BoostedFieldSelectGui := ""
 	}
 	GuiClose()
-	BoostedFieldSelectGui := Gui("+AlwaysOnTop +Border", "Select boosted gather fields")
+	BoostedFieldSelectGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Select boosted gather fields")
 	BoostedFieldSelectGui.OnEvent("Close", GuiClose)
 	BoostedFieldSelectGui.Add("Text", "x9 y10", "
 	(
@@ -5646,7 +5807,7 @@ nm_autoFieldBoostGui(*){
 			AFBGui.Destroy(), AFBGui := ""
 	}
 	GuiClose()
-	AFBGui := Gui("+Border", "Auto Field Boost Settings")
+	AFBGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Auto Field Boost Settings")
 	AFBGui.OnEvent("Close", GuiClose)
 	AFBGui.SetFont("s8 cDefault Norm", "Tahoma")
 	AFBGui.Add("CheckBox", "x5 y5 vAutoFieldBoostActive Checked" AutoFieldBoostActive, "Activate Automatic Field Boost for Gathering Field:").OnEvent("Click", nm_autoFieldBoostCheck)
@@ -7334,7 +7495,7 @@ nm_ResetFieldDefaultGUI(*){
 			FieldDefaultGui.Destroy(), FieldDefaultGui := ""
 	}
 	GuiClose()
-	FieldDefaultGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Reset Field Defaults")
+	FieldDefaultGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Reset Field Defaults")
 	FieldDefaultGui.OnEvent("Close", GuiClose)
 	FieldDefaultGui.SetFont("s9 cDefault Norm", "Tahoma")
 	i := 0
@@ -7625,6 +7786,42 @@ nm_PublicFallbackHelp(*){ ; public fallback information
 	When this option is enabled, the macro will revert to attempting to join a Public Server if your Server Link failed three times.
 	Otherwise, it will keep trying the Server Link you entered above until it succeeds.
 	)", "Public Server Fallback", 0x40000
+}
+nm_UpdateDetectedApplication(*){	; detected roblox link type
+	local robloxtype := nm_DetectRobloxType()
+	MainGui["DetectedApplicationText"].Text := robloxtype
+
+	if robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.UWP
+		MainGui["DetectedApplicationText"].SetFont("c0xAA0000")
+	else
+		MainGui["DetectedApplicationText"].SetFont("c0x0000FF")
+}
+nm_DetectedApplicationHelp(*){ ; detected application information
+	MsgBox "
+	(
+	DESCRIPTION:
+	This shows if you are using Web or UWP Roblox.
+	If you have multiple Roblox versions installed (including bootstrappers such as Bloxstrap), these are added to the 'roblox' link type.
+
+	IMPORTANT:
+	Natro Macro currently does not support UWP Roblox due to a recent update!
+	)", "Detected Application", 0x40000
+}
+nm_FPSUnlockerHelp(*) {
+    MsgBox "
+    (
+    "UWP" or "Web" Roblox refers to the difference between the Microsoft Store version (UWP) and the Roblox Player downloaded from the official website. 
+    You must use the web version, as the macro currently does not support UWP version.
+
+To reset your Roblox framerate cap without the macro, follow these steps:
+
+1. Open Roblox and join any game/server
+2. Open settings (ESC)
+3. Change Maximum Frame Rate to a different value
+
+    The macro is able to do this by interacting with the launcher's XML file (GlobalSettings_*.xml).
+    That file does not contain any personal data, and the macro never sends or shares your information externally.
+    )", "FPS Unlocker", 0x40000
 }
 nm_moveSpeed(GuiCtrl, *){
 	global MoveSpeedNum
@@ -8157,17 +8354,29 @@ nm_GenerateBeeList(*)
 	A_Clipboard := str
 	MsgBox "Copied Bee List to clipboard!`nPaste the output into the '/hive import' command of Hive Builder to view your hive!", "Export Bee List", 0x40040 " T20"
 }
-nm_TicketShopCalculatorButton(*){
-	Run "https://docs.google.com/spreadsheets/d/1_5JP_9uZUv7PUqjL76T5orEA3MIHe4R8gLu27L8KJ-A/"
+nm_BSSCalculators(*){
+	global
+	GuiClose(*){
+		if (IsSet(CalculatorsGui) && IsObject(CalculatorsGui))
+			CalculatorsGui.Destroy(), CalculatorsGui := ""
+	}
+	GuiClose()
+	CalculatorsGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "BSS Calculators")
+	CalculatorsGui.OnEvent("Close", GuiClose)
+	CalculatorsGui.SetFont("s8 cDefault Bold", "Tahoma")
+	CalculatorsGui.Add("Button", "x10 y10 w120 h30", "Ticket Shop Calculator").OnEvent("Click", nm_TicketShopCalculatorButton)
+	CalculatorsGui.Add("Button", "xp yp+35 wp hp", "SSA Calculator").OnEvent("Click", nm_SSACalculatorButton)
+	CalculatorsGui.Add("Button", "xp yp+35 wp hp", "Bond Calculator").OnEvent("Click", nm_BondCalculatorButton)
+	CalculatorsGui.Add("Button", "xp yp+35 wp hp", "Beequip Chances").OnEvent("Click", nm_BeequipChancesButton)
+	CalculatorsGui.Add("Text", "x10 yp+35 wp cGray BackgroundTrans Wrap", "Credits to SP and gyhkijffk for these calculators!")
+
+	CalculatorsGui.Show("Autosize Center")
 }
-nm_SSACalculatorButton(*)
-{
-	Run "https://docs.google.com/spreadsheets/d/1nupF_6g1TLJk1W5MpLBsfe1yk6C99-ooMMffuxdn580/edit?usp=sharing"
-}
-nm_BondCalculatorButton(*)
-{
-	Run "https://docs.google.com/spreadsheets/d/1TFTAahwsB4WRmRkX4YiM8mPQyk53CDmfAKOSOYv-Bow/edit?usp=sharing"
-}
+nm_TicketShopCalculatorButton(*) => Run("https://docs.google.com/spreadsheets/d/1_5JP_9uZUv7PUqjL76T5orEA3MIHe4R8gLu27L8KJ-A/")
+nm_SSACalculatorButton(*) => Run("https://docs.google.com/spreadsheets/d/1nupF_6g1TLJk1W5MpLBsfe1yk6C99-ooMMffuxdn580/")
+nm_BondCalculatorButton(*) => Run("https://docs.google.com/spreadsheets/d/1TFTAahwsB4WRmRkX4YiM8mPQyk53CDmfAKOSOYv-Bow/")
+nm_BeequipChancesButton(*) => Run("https://docs.google.com/spreadsheets/d/10_7oay1yHgykAccrhqYp5gr-P_0jpEKMbTJS9ty4JA8/")
+
 nm_AutoClickerButton(*)
 {
 	global
@@ -8177,7 +8386,7 @@ nm_AutoClickerButton(*)
 			AutoClickerGui.Destroy(), AutoClickerGui := ""
 	}
 	GuiClose()
-	AutoClickerGui := Gui("+AlwaysOnTop +Border", "AutoClicker")
+	AutoClickerGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "AutoClicker")
 	AutoClickerGui.OnEvent("Close", GuiClose)
 	AutoClickerGui.SetFont("s8 cDefault w700", "Tahoma")
 	AutoClickerGui.Add("GroupBox", "x5 y2 w161 h80", "Settings")
@@ -8223,21 +8432,27 @@ nm_HotkeyGUI(*){
 	HotkeyGui.OnEvent("Close", GuiClose)
 	HotkeyGui.SetFont("s8 cDefault Bold", "Tahoma")
 	HotkeyGui.Add("GroupBox", "x5 y2 w190 h144", "Change Hotkeys")
-	HotkeyGui.Add("GroupBox", "x5 y146 w190 h34", "Settings")
 	HotkeyGui.SetFont("Norm")
 	HotkeyGui.Add("Text", "x10 y23 w60 +BackgroundTrans", "Start:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Pause:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Stop:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "AutoClicker:")
 	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Timers:")
+	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Debug Report:")
 	HotkeyGui.Add("Hotkey", "x70 y20 w120 h18 vStartHotkeyEdit", StartHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vPauseHotkeyEdit", PauseHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vStopHotkeyEdit", StopHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vAutoClickerHotkeyEdit", AutoClickerHotkey).OnEvent("Change", nm_saveHotkey)
 	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vTimersHotkeyEdit", TimersHotkey).OnEvent("Change", nm_saveHotkey)
-	HotkeyGui.Add("Button", "x30 yp+24 w140 h20", "Restore Defaults").OnEvent("Click", nm_ResetHotkeys)
-	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 y162 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
-	HotkeyGui.Show("w190 h175")
+	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vDebugHotkeyEdit", DebugHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Button", "x30 yp+20 w140 h20", "Restore Defaults").OnEvent("Click", nm_ResetHotkeys)
+
+	HotkeyGui.SetFont("s8 cDefault Bold", "Tahoma")
+	HotkeyGui.Add("GroupBox", "x5 yp+22 w190 h34", "Settings")
+	HotkeyGui.SetFont("Norm")
+	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 yp+16 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+
+	HotkeyGui.Show("w190 h190")
 }
 nm_ResetHotkeys(*){
 	global
@@ -8247,17 +8462,20 @@ nm_ResetHotkeys(*){
 		Hotkey StopHotkey, stop, "Off"
 		Hotkey AutoClickerHotkey, autoclicker, "Off"
 		Hotkey TimersHotkey, timers, "Off"
+		Hotkey DebugHotkey, nm_copyDebugLog, "Off"
 	}
 	IniWrite (StartHotkey := "F1"), "settings\nm_config.ini", "Settings", "StartHotkey"
 	IniWrite (PauseHotkey := "F2"), "settings\nm_config.ini", "Settings", "PauseHotkey"
 	IniWrite (StopHotkey := "F3"), "settings\nm_config.ini", "Settings", "StopHotkey"
 	IniWrite (AutoClickerHotkey := "F4"), "settings\nm_config.ini", "Settings", "AutoClickerHotkey"
 	IniWrite (TimersHotkey := "F5"), "settings\nm_config.ini", "Settings", "TimersHotkey"
+	IniWrite (DebugHotkey := "F6"), "settings\nm_config.ini", "Settings", "DebugHotkey"
 	HotkeyGui["StartHotkeyEdit"].Value := "F1"
 	HotkeyGui["PauseHotkeyEdit"].Value := "F2"
 	HotkeyGui["StopHotkeyEdit"].Value := "F3"
 	HotkeyGui["AutoClickerHotkeyEdit"].Value := "F4"
 	HotkeyGui["TimersHotkeyEdit"].Value := "F5"
+	HotkeyGui["DebugHotkeyEdit"].Value := "F6"
 	MainGui["StartButton"].Text := " Start (F1)"
 	MainGui["PauseButton"].Text := " Pause (F2)"
 	MainGui["StopButton"].Text := " Stop (F3)"
@@ -8269,11 +8487,12 @@ nm_ResetHotkeys(*){
 		Hotkey StopHotkey, stop, "On"
 		Hotkey AutoClickerHotkey, autoclicker, "On T2"
 		Hotkey TimersHotkey, timers, "On"
+		Hotkey DebugHotkey, nm_copyDebugLog, "On"
 	}
 }
 nm_saveHotkey(GuiCtrl, *){
 	global
-	local k, v, l, NewHotkey, StartHotkeyEdit, PauseHotkeyEdit, StopHotkeyEdit, TimersHotkeyEdit, AutoClickerHotkeyEdit
+	local k, v, l, NewHotkey, StartHotkeyEdit, PauseHotkeyEdit, StopHotkeyEdit, TimersHotkeyEdit, AutoClickerHotkeyEdit, DebugHotkeyEdit
 	k := GuiCtrl.Name, %k% := GuiCtrl.Value
 
 	v := StrReplace(k, "Edit")
@@ -8293,15 +8512,16 @@ nm_saveHotkey(GuiCtrl, *){
 			return
 		}
 
-		if ((StrLen(%k%) = 0) || (%k% = StartHotkey) || (%k% = PauseHotkey) || (%k% = StopHotkey) || (%k% = AutoClickerHotkey) || (%k% = TimersHotkey)) ; do not allow empty or already used hotkey (not necessary in most cases)
+		if ((StrLen(%k%) = 0) || (%k% = StartHotkey) || (%k% = PauseHotkey) || (%k% = StopHotkey) || (%k% = AutoClickerHotkey) || (%k% = TimersHotkey) || (%k% = DebugHotkey)) ; do not allow empty or already used hotkey (not necessary in most cases)
 			GuiCtrl.Value := %v%
 		else ; update the hotkey
 		{
 			l := StrReplace(v, "Hotkey")
-			try Hotkey %v%, (l = "Pause") ? nm_Pause : %l%, "Off"
+			try Hotkey %v%, (l = "Pause") ? nm_Pause : (l = "Debug") ? nm_copyDebugLog : %l%, "Off"
 			IniWrite (%v% := %k%), "settings\nm_config.ini", "Settings", v
-			MainGui[l "Button"].Text := ((l = "Timers") ? " Show " : (l = "AutoClicker") ? "" : " ") l " (" %v% ")"
-			try Hotkey %v%, (l = "Pause") ? nm_Pause : %l%, (v = "AutoClickerHotkey") ? "On T2" : "On"
+			if l != "Debug"
+				MainGui[l "Button"].Text := ((l = "Timers") ? " Show " : (l = "AutoClicker") ? "" : " ") l " (" %v% ")"
+			try Hotkey %v%, (l = "Pause") ? nm_Pause : (l = "Debug") ? nm_copyDebugLog : %l%, (v = "AutoClickerHotkey") ? "On T2" : "On"
 		}
 	}
 }
@@ -8312,12 +8532,12 @@ nm_DebugLogGUI(*){
 			DebugLogGui.Destroy(), DebugLogGui := ""
 	}
 	GuiClose()
-	DebugLogGui := Gui("+AlwaysOnTop +Owner" MainGui.Hwnd, "Debug Log Options")
+	DebugLogGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Debug Options")
 	DebugLogGui.OnEvent("Close", GuiClose)
 	DebugLogGui.SetFont("s8 cDefault Norm", "Tahoma")
 	DebugLogGui.Add("CheckBox", "x10 y6 vDebugLogEnabled Checked" DebugLogEnabled, "Enable Debug Logging").OnEvent("Click", nm_DebugLogCheck)
 	DebugLogGui.Add("Button", "xp+140 y5 h16", "Go To File").OnEvent("Click", (*) => Run('explorer.exe /e, /n, /select,"' A_WorkingDir '\settings\debug_log.txt"'))
-	DebugLogGui.Add("Button", "xp yp+20 hp wp", "Copy Logs").OnEvent("Click", copyLogFile)
+	DebugLogGui.Add("Button", "x10 yp+20 hp w200", "Copy Logs (" DebugHotkey ")").OnEvent("Click", nm_copyDebugLog)
 	DebugLogGui.Show("w210 h36")
 }
 nm_DebugLogCheck(*){
@@ -8362,7 +8582,7 @@ nm_AutoStartManager(*){
 			ASMGui.Destroy(), ASMGui := ""
 	}
 	GuiClose()
-	ASMGui := Gui("+AlwaysOnTop -MinimizeBox", "Auto-Start Manager")
+	ASMGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Auto-Start Manager")
 	ASMGui.OnEvent("Close", GuiClose)
 	ASMGui.SetFont("s11 cDefault Bold", "Tahoma")
 	ASMGui.Add("Text", "x0 y4 vStatusLabel", "Current Status: ")
@@ -8453,7 +8673,7 @@ nm_NightAnnouncementGUI(*){
 			NightGui.Destroy(), NightGui := ""
 	}
 	GuiClose()
-	NightGui := Gui("+AlwaysOnTop +Border", "Announce Night Detection")
+	NightGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Announce Night Detection")
 	NightGui.OnEvent("Close", GuiClose)
 	NightGui.SetFont("s8 cDefault Bold", "Tahoma")
 	NightGui.Add("GroupBox", "x5 y2 w290 h65", "Settings")
@@ -9441,12 +9661,11 @@ nm_showAdvancedSettings(*){
 nm_AdvancedGUI(init:=0){
 	global
 	local hBM, GuiCtrl
-	
 	TabCtrl.UseTab("Advanced")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	MainGui.SetFont("w700")
 	MainGui.Add("GroupBox", "x5 y24 w240 h90", "Fallback Private Servers")
-	MainGui.Add("GroupBox", "x5 yp+90 w240 h115", "Danger Zone")
+	MainGui.Add("GroupBox", "x5 y114 w240 h76", "Danger Zone")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -9459,7 +9678,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("Edit", "x65 y86 w170 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
 	;danger
 	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
-	GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
+	GuiCtrl := MainGui.Add("CheckBox", "x10 y129 vAnnounceGuidingStar Disabled Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
@@ -9479,7 +9698,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("CheckBox", "x362 y174 vTestReset Checked", "Reset")
 	MainGui.Add("CheckBox", "x413 y174 vTestMsgBox", "MsgBox")
 	MainGui.Add("Button", "x325 y197 w100 h24", "Start Test").OnEvent("Click", nm_testButton)
-	MainGui.Add("Button", "x15 y200 w220 h25 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "x15 y164 w220 h22 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
 	if (init = 1)
 	{
 		TabCtrl.Choose("Advanced")
@@ -9808,46 +10027,230 @@ nm_priorityListGui(*) {
 
 	return (PGUIPID := exec.ProcessID)
 }
+nm_copyDebugLog(param:="", *) {
+	static os_version := "", processorName := "", RAMAmount := 0
+	, robloxtype:="", robloxpath:=""
 
-copyLogFile(*) {
-	static tempPath := A_Temp "\debug_log.txt", os_version := "Cannot detect OS version", processorName := '', RAMAmount := 0
-	alt := !!GetKeyState("Control")
-	if ((!processorName) || (os_version = "Cannot detect OS version"))
-		winmgmts := ComObjGet("winmgmts:")
-	if (os_version = "Cannot detect OS version") {
-		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_OperatingSystem")
-			os_version := Trim(StrReplace(StrReplace(StrReplace(StrReplace(objItem.Caption, "Microsoft"), "Майкрософт"), "مايكروسوفت"), "微软"))
-	}
-	if (!processorName){
-		for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_Processor")
-			processorName := Trim(objItem.Name)
-	}
-	if (!RAMAmount) {
-		MEMORYSTATUSEX := Buffer(64,0)
-		NumPut("uint", 64, MEMORYSTATUSEX)
-		DllCall("kernel32\GlobalMemoryStatusEx", "ptr", MEMORYSTATUSEX)
-		RAMAmount := Round(NumGet(MEMORYSTATUSEX, 8, "int64") / 1073741824, 1)
-	}
-	out :=	
+	fromRC := (param is number && param = 1)
+
+	SetCursor("IDC_APPSTARTING")
+
+	debugReport :=
 	(
 	'``````md
-	# Info -----------------------------------------------
-	OSVersion: ' os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')
-	AutoHotkey Version: ' A_AhkVersion '; ' (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? "Using included AHK" : "Using installed AHK") '
-	Natro Version: ' VersionID '
-	Installation Path: ' StrReplace(A_WorkingDir, A_UserName, '<user>')
-	. (processorName ? '`r`nCPU: ' processorName : '')
-	. (RAMAmount ? '`r`nRAM: ' RAMAmount 'GB' : '')
+	<NM Debug>
+	#PC Info'
+	PcInfo()
 	'
-	# Latest Logs ----------------------------------------
+
+	#Macro Info'
+	MacroInfo()
 	'
+
+	#Roblox Info'
+	RobloxInfo()
+	'
+
+	#Detected Problems'
+	DetectedProblems()
+	'
+
+	#Recent Issues'
+	RecentIssues()
+	'``````'
 	)
-	LatestDebuglog := FileRead(".\settings\debug_log.txt")
-	out .= SubStr(LatestDebugLog, InStr(LatestDebuglog, "`n", , ,-(alt ? 40 : 26)) + 1) "``````" ;InStr: retrieve the last 25 lines of the debug log (log is oldest to newest) [Integer] | SubStr: retrieve the content of the last 25 lines
-	A_Clipboard := out
-	MsgBox("Copied Debug stats to your clipboard.", "Copy Debug Logs", 0x40040)
+	A_Clipboard := debugReport
+	SetCursor("") ;reset back
+	if !fromRC
+		MsgBox("Copied Debug report to your clipboard.", "Copy Debug Logs", "T10 Iconi")
+
+	return 1
+
+	PcInfo(){
+		static DisplayScale := Map(
+		96, 100,
+		120, 125,
+		144, 150,
+		192, 200
+		)
+		if fromRC {
+			return 
+			(
+			'
+			%OS%
+			* Resolution: ' A_ScreenWidth 'x' A_ScreenHeight ' (' DisplayScale[A_ScreenDPI] '%)
+			%CPU%
+			%RAM%'
+			)
+		}
+		winmgmts := ComObjGet("winmgmts:")
+		if (!os_version) {
+			for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_OperatingSystem")
+				os_version := Trim(StrReplace(StrReplace(StrReplace(StrReplace(objItem.Caption, "Microsoft"), "Майкрософт"), "مايكروسوفت"), "微软"))
+		}
+		if (!processorName){
+			for objItem in winmgmts.ExecQuery("SELECT * FROM Win32_Processor")
+				processorName := Trim(objItem.Name)
+		}
+		if (!RAMAmount) {
+			MEMORYSTATUSEX := Buffer(64,0)
+			NumPut("uint", 64, MEMORYSTATUSEX)
+			DllCall("kernel32\GlobalMemoryStatusEx", "ptr", MEMORYSTATUSEX)
+			RAMAmount := Round(NumGet(MEMORYSTATUSEX, 8, "int64") / 1073741824, 1)
+		}
+
+		return
+		(
+		'
+		* OS: ' os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')
+		* Resolution: ' A_ScreenWidth 'x' A_ScreenHeight ' (' DisplayScale[A_ScreenDPI] '%)'
+		. (processorName ? '`n* CPU: ' processorName : '')
+		. (RAMAmount ? '`n* RAM: ' RAMAmount ' GB' : '')
+		)
+	}
+	MacroInfo(){
+		return 
+		(
+		'
+		* AHK Version: ' A_AhkVersion (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? ' (built-in)' : ' (installed)') '
+		* Natro Version: ' VersionID ' (' ((VerCompare(VersionID, LatestVer) = 0) ? 'latest' : 'outdated') ')
+		* Installation Path: ``' StrReplace(A_WorkingDir, EnvGet("USERPROFILE"), '%USERPROFILE%') '``'
+	)
+	}
+	RobloxInfo(){
+		robloxtype := nm_DetectRobloxType()
+		robloxpath := ""
+		if robloxtype = RobloxTypes.UWP
+			robloxpath := nm_GetRobloxUWPPath()
+		else
+			robloxpath := nm_GetRobloxWebPath()
+		return 
+		(
+		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, EnvGet("USERPROFILE"), '%USERPROFILE%'), '%1', ''), '"', '')) '``' : '')
+		'
+		* Default app: ' robloxtype
+		)
+	}
+	DetectedProblems(){
+		try static remoteDesktopMinimize := RegRead("HKLM\Software\Microsoft\Terminal Server Client", "RemoteDesktop_SuppressWhenMinimized")
+		problems := 0
+		return (
+			checkProblem((A_ScreenDPI != 96), 'Display scale is not set to 100%')
+			checkProblem((robloxtype = RobloxTypes.NotFound || robloxtype = RobloxTypes.Custom), 'Roblox not found or using a custom install')
+			checkProblem((robloxtype = RobloxTypes.Bootstrapper), 'Using custom bootstrapper (e.g. Bloxstrap), check config')
+			checkProblem((A_ScreenHeight <= 600) || (A_ScreenWidth <= 1300), 'Low screen resolution')
+			checkProblem((offsetfail ?? 0), 'Recent y-offset fail')
+			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro Macro version')
+			checkProblem((InStr(EnvGet("SESSIONNAME"), "RDP") && remoteDesktopMinimize != 2), 'Minimizing remote desktop connection will cause Natro Macro to break')
+			checkProblem((DllCall("GetSystemMetrics", "Int", 95) != 0), 'Touchscreen is enabled')
+			checkProblem((robloxtype = RobloxTypes.UWP), 'Using UWP Roblox, it is currently unsupported for this Natro Macro version')
+
+			(problems = 0 ? '`n<None>' : '`n`n> Total: ' problems)
+		)
+		checkProblem(condition, text) => ((condition) ? ('`r`n' (++problems) '. ' text) : '')
+	}
+	RecentIssues(){
+		if (DebugLogEnabled = 0)
+			return '`n<Debugging disabled>'
+		latestDebuglog := FileRead('.\settings\debug_log.txt')
+		latestLogs := SubStr(latestDebugLog, InStr(latestDebuglog, '`n', 0, -1, -250))
+		issues := '', totalissues := 0
+
+		loop parse latestLogs, '`r`n' {
+			if InStr(A_LoopField, 'Error') || InStr(A_LoopField, 'Warning') || InStr(A_LoopField, 'Failed'){
+				issues .= A_LoopField '`n'
+				if totalissues > 10	
+					break
+			}
+		}
+		if !issues
+			return '`n<None>'
+
+		return '`n' issues '`n> Total: ' totalissues
+	}
 }
 
+robloxFPSGui(*) {
+	global fpsUnlockerGui
+	if isSet(fpsUnlockerGui) && fpsUnlockerGui is Gui
+		fpsUnlockerGui.destroy()
+	fpsUnlockerGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "FPS Unlocker")
+	fpsUnlockerGui.SetFont("s8 cDefault Norm", "Tahoma")
+	fpsUnlockerGui.Show("w150 h60")
+	fpsUnlockerGui.AddText("vWebFPSCountLabel w100 x5 Disabled", "Web Roblox FPS")
+	fpsUnlockerGui.AddText("vWebFPSCountEdit yp xp+100 w50 Right Disabled")
+	fpsUnlockerGui.AddUpDown("vWebFPSCount Range15-1000 Disabled", 60)
+	fpsUnlockerGui.AddText("vUWPFPSCountLabel w100 x5 Disabled", "UWP Roblox FPS")
+	fpsUnlockerGui.AddText("vUWPFPSCountEdit yp xp+100 w50 Right Disabled")
+	fpsUnlockerGui.AddUpDown("vUWPFPSCount Range15-1000 Disabled", 60)
+	fpsUnlockerGui.AddButton("vApply x5 yp+20 w140 Disabled","Apply").OnEvent("Click", (*) => WriteFPSCounts())
+	fpsUnlockerGui.Add("Button", "xp+140 yp w12", "?").OnEvent("Click", nm_FPSUnlockerHelp)
+	uwpxml := webxml := ""
+	uwpfps := webfps := 60
+	for robloxtype in [RobloxTypes.Web, RobloxTypes.UWP] {
+		xmlpath := nm_LocateRobloxSettingsXML(robloxtype)
+		if !xmlpath
+			continue
+		if RegExMatch(FileRead(xmlpath), "<int name=`"FramerateCap`">(-?\d+)</int>", &match) {
+			fps := match[1] = "-1" ? 60 : Integer(match[1])
+			if robloxtype = RobloxTypes.Web {
+				fpsUnlockerGui["WebFPSCount"].Value := fps
+				fpsUnlockerGui["WebFPSCountLabel"].Enabled := 1
+				fpsUnlockerGui["WebFPSCountEdit"].Enabled := 1
+				fpsUnlockerGui["WebFPSCount"].Enabled := 1
+				fpsUnlockerGui["Apply"].Enabled := 1
+				webxml := xmlpath
+				webfps := fps
+			}
+			else {
+				fpsUnlockerGui["UWPFPSCount"].Value := fps
+				fpsUnlockerGui["UWPFPSCountLabel"].Enabled := 1
+				fpsUnlockerGui["UWPFPSCountEdit"].Enabled := 1
+				fpsUnlockerGui["UWPFPSCount"].Enabled := 1
+				fpsUnlockerGui["Apply"].Enabled := 1
+				uwpxml := xmlpath
+				uwpfps := fps
+			}
+		}
+	}
+	WriteFPSCounts() {
+		if fpsUnlockerGui["WebFPSCount"].Value < 25 && fpsUnlockerGui["WebFPSCount"].Value != webfps
+			|| fpsUnlockerGui["UWPFPSCount"].Value < 25 && fpsUnlockerGui["UWPFPSCount"].Value != uwpfps
+			if MsgBox('An FPS count of less than 25 is not recommended`nAre you sure you want to proceed?', , 0x40134) != "Yes"
+				return
+		for robloxtype, xmlpath in Map(RobloxTypes.Web, webxml, RobloxTypes.UWP, uwpxml) {
+			if !xmlpath
+				continue
+			local guikey := robloxtype == RobloxTypes.Web ? "WebFPSCount" : "UWPFPSCount"
+			local newfps := fpsUnlockerGui[guikey].Value
+			newfps := (newfps = 60) ? "-1" : String(newfps)
+			if newfps = String((robloxtype = RobloxTypes.Web) ? webfps : uwpfps)
+				continue
+			while (
+				(robloxtype = RobloxTypes.Web && WinExist("Roblox ahk_exe RobloxPlayerBeta.exe")) ||
+				(robloxtype = RobloxTypes.Web && WinExist("Roblox ahk_exe ApplicationFrameHost.exe"))
+			) {
+				if MsgBox("Please close " robloxtype " Roblox before applying FPS changes.", , 0x40135) != "Retry"
+					continue 2
+			}
+			try {
+				xmlcontent := RegExReplace(FileRead(xmlpath), "<int name=`"FramerateCap`">-?\d+</int>",
+				"<int name=`"FramerateCap`">" newfps "</int>")
+				FileDelete(xmlpath)
+				FileAppend(xmlcontent, xmlpath)
+			}
+			catch Error as e {
+				MsgBox("Failed to write FPS settings to " robloxtype " Roblox settings file.`nSupposed path: " StrReplace(xmlpath,
+					EnvGet("USERPROFILE"), '%USERPROFILE%') '``', , 0x40030)
+			}
+			MsgBox(robloxtype " Roblox FPS limit has been set to " ((newfps = "-1") ? "60" : newfps) "", , 0x40040)
+			if robloxtype = RobloxTypes.Web
+				webfps := newfps
+			else
+				uwpfps := newfps
+		}
+	}
+}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; MAIN LOOP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21584,6 +21987,9 @@ Background(){
  */
 start(*){
 	global
+
+	;//todo: make startup errors an array
+
 	SetKeyDelay 100+KeyDelay
 	nm_LockTabs()
 	MainGui["StartButton"].Enabled := 0
@@ -21594,6 +22000,20 @@ start(*){
 		priorityList.push(defaultPriorityList[i])
 	
 	if !ForceStart {
+		robloxtype := nm_DetectRobloxType()
+		if RemoteStart && (robloxtype = RobloxTypes.UWP || robloxtype = RobloxTypes.NotFound) {
+			nm_setStatus("Error","Unable to start macro. Invalid Roblox installation detected. Please install Roblox from https://www.roblox.com/download")
+			return
+		} else {
+			if robloxtype = RobloxTypes.UWP {
+				MsgBox "UWP Roblox installation is detected, Natro Macro currently does not support it.`nPlease install Roblox from https://www.roblox.com/download", "UWP Roblox Detected", 0x40010 " T60"
+				return
+			}
+			if robloxtype = RobloxTypes.NotFound {
+				MsgBox "Unable to detect a Roblox installation.`nPlease install Roblox from https://www.roblox.com/download", "Roblox Not Found", 0x40010 " T60"
+				return
+			}
+		}
 		;Auto Field Boost WARNING @ start
 		;nm_SetStatus("Debug", "AFB" AutoFieldBoostActive " RC" RemoteStart " Force" ForceStart) 
 		if AutoFieldBoostActive {
