@@ -15359,72 +15359,72 @@ nm_convert(){
 nm_setSprinkler(field, loc, dist){
 	static FieldDim := {  ; Times are roughly 1/10 of the way to the edge of the field. | Width = Right/Left Key | Length = Fwd/Back Key
 		sunflower: {
-		Length: 0.8,
-		Width: 1.4
+			Length: 0.8,
+			Width: 1.4
 		},
 		dandelion: {
-		Length: 1.6,
-		Width: 0.8
+			Length: 1.6,
+			Width: 0.8
 		},
 		mushroom: {
-		Length: 0.88,
-		Width: 1.28
+			Length: 0.88,
+			Width: 1.28
 		},
 		blueflower: { ;(!)
-		Length: 2,
-		Width: 0.7
+			Length: 2,
+			Width: 0.7
 		},
 		clover: {
-		Length: 1.75,
-		Width: 1.25
+			Length: 1.75,
+			Width: 1.25
 		},
 		spider: {
-		Length: 1.75,
-		Width: 1.75
+			Length: 1.75,
+			Width: 1.75
 		},
 		strawberry: {
-		Length: 1.25,
-		Width: 1.75
+			Length: 1.25,
+			Width: 1.75
 		},
 		bamboo: {
-		Length: 2.75,
-		Width: 1
+			Length: 2.75,
+			Width: 1
 		},
 		pineapple: {
-		Length: 1.5,
-		Width: 2.75
+			Length: 1.5,
+			Width: 2.75
 		},
 		stump: {
-		Length: 1.25,
-		Width: 1.25
+			Length: 1.25,
+			Width: 1.25
 		},
 		cactus: {
-		Length: 1.25,
-		Width: 2.25
+			Length: 1.25,
+			Width: 2.25
 		},
 		pumpkin: {
-		Length: 1.25,
-		Width: 2.25
+			Length: 1.25,
+			Width: 2.25
 		},
 		pinetree: {
-		Length: 2.25,
-		Width: 1.5
+			Length: 2.25,
+			Width: 1.5
 		},
 		rose: {
-		Length: 2.25,
-		Width: 1.25
+			Length: 2.25,
+			Width: 1.25
 		},
 		mountaintop: {
-		Length: 2,
-		Width: 1.25
+			Length: 2,
+			Width: 1.25
 		},
 		pepper: {
-		Length: 1.25,
-		Width: 2
+			Length: 1.25,
+			Width: 2
 		},
 		coconut: {
-		Length: 1.25,
-		Width: 2
+			Length: 1.25,
+			Width: 2
 		}
 	}
 	if (SprinklerType = "None")
@@ -15459,16 +15459,19 @@ nm_setSprinkler(field, loc, dist){
 ;Place 1 sprinkler if loc is not defined, otherwise place all.
 nm_placeSprinkler(loc?){ 
 	;sprinkler data
-	(SprinklerReps := Map()).CaseSense := 0
-	SprinklerReps.Set("Silver", 2
-	, "Golden", 3
-	, "Diamond", 4)
+	static SprinklerReps, SprinklerDirectionKeys
+	if !IsSet(SprinklerReps) {
+		(SprinklerReps := Map()).CaseSense := 0
+		SprinklerReps.Set("Silver", 2
+		, "Golden", 3
+		, "Diamond", 4)
 
-	(SprinklerDirectionKeys := Map()).CaseSense := 0
-	SprinklerDirectionKeys.Set("Upper", ["BackKey", "FwdKey"]
-	, "Lower", ["FwdKey", "BackKey"]
-	, "Left", ["RightKey", "LeftKey"]
-	, "Right", ["LeftKey", "RightKey"])
+		(SprinklerDirectionKeys := Map()).CaseSense := 0
+		SprinklerDirectionKeys.Set("Upper", ["BackKey", "FwdKey"]
+		, "Lower", ["FwdKey", "BackKey"]
+		, "Left", ["RightKey", "LeftKey"]
+		, "Right", ["LeftKey", "RightKey"])
+	}
 
 	if (SprinklerReps.Has(SprinklerType) && IsSet(loc)){
 		RecentMovements := []
