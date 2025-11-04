@@ -1466,14 +1466,14 @@ CommandoChickHealth := Map(3, 150
 	, 19, 7500000)
 
 ; Hive slot walk distances
-slotMove := Map(
-	1, [{dir:"Right", dist:4}, {dir:["Right", "Fwd"], dist:20}],
-	2, [{dir:["Fwd", "Right"], dist:13}, {dir:"Fwd", dist:6}],
-	3, [{dir:"Fwd", dist:20}, {dir:"Back", dist:4}],
-	4, [{dir:["Left", "Fwd"], dist:13}, {dir:"Fwd", dist:6}],
-	5, [{dir:"Left", dist:4}, {dir:["Left", "Fwd"], dist:20}],
-	6, [{dir:["Left", "Fwd"], dist:12}, {dir:"Left", dist:13}, {dir:["Left", "Fwd"], dist:10}]
-)
+slotMove := [
+	[{dir:"Right", dist:4}, {dir:["Right", "Fwd"], dist:20}],
+	[{dir:["Fwd", "Right"], dist:13}, {dir:"Fwd", dist:6}],
+	[{dir:"Fwd", dist:20}, {dir:"Back", dist:4}],
+	[{dir:["Left", "Fwd"], dist:13}, {dir:"Fwd", dist:6}],
+	[{dir:"Left", dist:4}, {dir:["Left", "Fwd"], dist:20}],
+	[{dir:["Left", "Fwd"], dist:12}, {dir:"Left", dist:13}, {dir:["Left", "Fwd"], dist:10}]
+]
 
 #Include "data\memorymatch.ahk"
 
@@ -10585,9 +10585,8 @@ nm_HealthBar() {
 	static isDead(c) =>   ((((c) & 0x00FF0000 >= 0x004D0000) && ((c) & 0x00FF0000 <= 0x00830000)) ; 4D4D4D-blackBG|838383-whiteBG
 						&& (((c) & 0x0000FF00 >= 0x00004D00) && ((c) & 0x0000FF00 <= 0x00008300))
 						&& (((c) & 0x000000FF >= 0x0000004D) && ((c) & 0x000000FF <= 0x00000083)))
-	GetRobloxClientPos(hwnd:=GetRobloxHWND())
-	offsetY := GetYOffset(hwnd)
-	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth-100 "|" windowY+offsetY "|50|24")
+	GetRobloxClientPos()
+	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth-100 "|" windowY "|50|24")
 	if isDead(Gdip_GetPixel(pBMScreen, 25, 12))
 		detection:=1
 	Gdip_DisposeImage(pBMScreen)
@@ -17605,10 +17604,12 @@ nm_NightMemoryMatch(){
 }
 nm_NightInterrupt() => (CheckNight=1) ; set by background via SetGlobalInt
 nm_ViciousBee(){
-	nm_locateVB()
-	; If no vicious bee found
-	vicEnd('All fields checked')
+	if !nm_locateVB()
+		vicEnd('All fields checked')
 }
+/**
+ * Check each enabled field for vicious
+ */
 nm_locateVB(){ 
 	global vicStart := nowUnix()
 	; don't run if disabled or only daily bonus
@@ -17616,7 +17617,7 @@ nm_locateVB(){
 		return
 	}
 
-	VicData := [
+	static VicData := [
 		{ field: "Pepper", enabled: StingerPepperCheck
 		, bees: 35
 		, reps: 1
@@ -17666,7 +17667,7 @@ nm_locateVB(){
 		, initFwd: 10 }
 	]
 
-	for , data in VicData { ; if no fields enabled, return
+	for data in VicData { ; if no fields enabled, return
 		if data["enabled"]
 			break
 		if A_Index = VicData.Count
@@ -17684,7 +17685,7 @@ nm_locateVB(){
 	fieldsChecked := 0
 	for data in VicData
 	{
-		if !data.enabled || data.bees > HiveBees
+		if !data.enabled || data.bees >= HiveBees
 			continue
 
 		fieldloop:
@@ -17692,42 +17693,43 @@ nm_locateVB(){
 		{
 			nm_Reset(1, 2000, 0)
 			nm_setStatus("Traveling", "Vicious Bee (" data.field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
-			nm_gotoField((data.field = "MountainTop") ? "Mountain Top" : data.field)
-			Click "Up"
+			nm_gotoField(data.field)
 			nm_setStatus("Searching", "Vicious Bee (" data.field ")")
-			LRDist := data.lrdist, FBDist := data.fbdist
+
+			LRDist := data.lrdist
+			FBDist := data.fbdist
 
 			if !DisableToolUse
 				Click "Down"
+
 			alignment := nm_Walk(data.initRight, RightKey) "`n" nm_Walk(data.initFwd, FwdKey)
-			if (vic := SearchforVB(alignment, data.field)).result = "success"
-				vicEnd()
-			else if vic.result = "inactiveHoney"
+
+			if (vic := SearchforVB(alignment, data.field)).result = "inactivehoney"
 				continue fieldloop
+			else if vic.result = "otherplayer"
+				return vicEnd("Killed by another player")
 
 			patterns := [
 				nm_Walk(LRDist, LeftKey) "`n" nm_Walk(FBDist, BackKey) "`n" nm_Walk(LRDist, RightKey) "`n" nm_Walk(FBDist, BackKey),
 				nm_Walk(LRDist, LeftKey)
 			]
+
 			Loop data.reps {
-				if (vic := SearchforVB(patterns[1], data.field)).result = "success" {
-					vicEnd(), Click("Up")
-					return
-				} else if vic.result = "otherplayer" {
-					vicEnd("Killed by another player"), Click("Up")
-					return
-				} else if vic.result = "inactivehoney"
+				if (vic := SearchforVB(patterns[1], data.field)).result = "success" 
+					return vicEnd()
+				else if vic.result = "otherplayer" 
+					return vicEnd("Killed by another player")
+				else if vic.result = "inactivehoney"
 					continue fieldloop
 			}
 			
-			if (vic := SearchforVB(patterns[2], data.field)).result = "success" {
-				vicEnd(), Click("Up")
-				return
-			} else if vic.result = "otherplayer" {
-				vicEnd("Killed by another player"), Click("Up")
-				return
-			} else if vic.result = "inactivehoney"
+			if (vic := SearchforVB(patterns[2], data.field)).result = "success"
+				return vicEnd()
+			else if vic.result = "otherplayer"
+				return vicEnd("Killed by another player")
+			else if vic.result = "inactivehoney"
 				continue fieldloop
+
 			Click "Up"
 			break fieldLoop
 		}
@@ -17748,6 +17750,8 @@ vicEnd(reason:='Killed'){
 
 		IniWrite((VBLastKilled:=nowUnix()), "settings\nm_config.ini", "Collect", "VBLastKilled")
 	}
+
+	return true
 }
 /** 
  * Create a movement with vicious bee detection. Used in both find and attack VB
@@ -17833,7 +17837,7 @@ nm_killVB(field) {
 	return {result: 0}
 }
 /**
- * Vicious bee detection using bottom right notification
+ * Vicious bee detection using chat
  * @returns {{result: String or false}}
  */
 nm_ViciousCheck() {
