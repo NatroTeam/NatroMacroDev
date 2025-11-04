@@ -17600,11 +17600,11 @@ DisconnectCheck(testCheck := 0)
 			;seems like ShellRun is less consistent
 			if ((StrLen(exe) > 0) && (StrLen(params) > 0)) {
 				ShellRun(exe, StrReplace(params, "%1", url))
-				tooltip(reconnect_debug . "`nShellRun")
+				;tooltip(reconnect_debug . "`nShellRun")
 			}
 			else {
 				Run('"' url '"')
-				tooltip(reconnect_debug . "`nRun")
+				;tooltip(reconnect_debug . "`nRun")
 			}
 		}
 
