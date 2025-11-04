@@ -22116,6 +22116,10 @@ start(*){
 				return
 			}
 		}
+
+		nm_MsgBoxIncorrectRobloxSettings()
+
+		
 		;Auto Field Boost WARNING @ start
 		;nm_SetStatus("Debug", "AFB" AutoFieldBoostActive " RC" RemoteStart " Force" ForceStart) 
 		if AutoFieldBoostActive {
