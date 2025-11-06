@@ -11,6 +11,7 @@ bitmaps["hive"]["noshadow-night"] := Gdip_CreateBitmap(22, 4), G := Gdip_Graphic
 bitmaps["hive"]["noshadow-gifted"] := Gdip_CreateBitmap(22, 4), G := Gdip_GraphicsFromImage(bitmaps["hive"]["noshadow-gifted"]), Gdip_GraphicsClear(G, 0xffe39d1f), Gdip_DeleteGraphics(G)
 bitmaps["hive"]["wing"] := Gdip_CreateBitmap(22, 4), G := Gdip_GraphicsFromImage(bitmaps["hive"]["wing"]), Gdip_GraphicsClear(G, 0xffa28645), Gdip_DeleteGraphics(G)
 
+; night honey/meteor currently missing. snow(storm) currently not possible until beesmas.
 bitmaps["spawn"] := Map()
 bitmaps["spawn"]["day"] := Gdip_CreateBitmap(22, 4), G := Gdip_GraphicsFromImage(bitmaps["spawn"]["day"]), Gdip_GraphicsClear(G, 0xff937B1F), Gdip_DeleteGraphics(G)
 bitmaps["spawn"]["night"] := Gdip_CreateBitmap(22, 4), G := Gdip_GraphicsFromImage(bitmaps["spawn"]["night"]), Gdip_GraphicsClear(G, 0xff796615), Gdip_DeleteGraphics(G)
