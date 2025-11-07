@@ -10793,7 +10793,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	DisconnectCheck()
 	nm_setShiftLock(0)
 	nm_OpenMenu()
-	if(youDied && !(instr(objective, "mondo") || CheckNight)){ ; add extra time if player died before reset expect when fighting bosses
+	if(youDied && !(instr(objective, "mondo") || nm_NightInterrupt())){ ; add extra time if player died before reset expect when fighting bosses
 		wait:=max(wait, 20000)
 	}
 	;mondo or coconut crab likely killed you here! skip over this field if possible
@@ -16439,7 +16439,7 @@ nm_GoGather(){
 					interruptReason := "You Died!"
 					break
 				}
-				if CheckNight {
+				if nm_NightInterrupt() {
 					interruptReason := "Night"
 					break
 				}
@@ -17967,7 +17967,7 @@ nm_searchForE(){
 nm_boostBypassCheck() => 0 ; always returns 0 for now: no field boost bypass implemented
 nm_Night(){
 	global CheckNight
-	if CheckNight != 1
+	if nm_NightInterrupt() != 1
 		return
 	nm_NightMemoryMatch()
 	nm_ViciousBee()
@@ -22578,7 +22578,7 @@ nm_sendHeartbeat(*){
 nm_backgroundEvent(wParam, lParam, *){
 	Critical
 	global youDied, BackpackPercent, BackpackPercentFiltered, FieldGuidDetected, HasPopStar, PopStarActive, CheckNight
-	static arr:=["youDied", 0, 0, "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive"]
+	static arr:=["youDied", 0, 0, "BackpackPercent", "BackpackPercentFiltered", "FieldGuidDetected", "HasPopStar", "PopStarActive", "CheckNight"]
 	var := arr[wParam], %var% := lParam
 	return 0
 }
