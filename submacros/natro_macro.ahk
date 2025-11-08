@@ -17997,13 +17997,9 @@ nm_confirmNight(){
 	return (findImg[1]=0)
 }
 nm_NightMemoryMatch(){
-	if (!(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || nm_NightInterrupt())
-		return
-
-	if !nm_confirmNight(){
-		return
-	}
-
+	; night (general) + no amulet + nightmm ready + night confirmed (last b/c reset)
+	if (!nm_NightInterrupt() || nm_AmuletPrompt(3) || !(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || !nm_confirmNight())
+			return
 	nm_MemoryMatch("Night")
 }
 nm_NightInterrupt() => (CheckNight=1) ; set by background via SetGlobalInt
