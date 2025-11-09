@@ -18002,7 +18002,7 @@ nm_NightMemoryMatch(){
 			return
 	nm_MemoryMatch("Night")
 }
-nm_NightInterrupt() => (CheckNight=1) ; set by background via SetGlobalInt
+nm_NightInterrupt() => CheckNight=1 && ((NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || !(StingerCheck=0 || (StingerDailyBonusCheck=1 && (vicStart-VBLastKilled)<79200)))
 nm_ViciousBee(){
 	if !nm_locateVB()
 		vicEnd('All fields checked')
