@@ -10983,6 +10983,18 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			Sleep (remaining*1000) ;miliseconds
 		}
 	}
+
+	atHive() {
+		ActivateRoblox()
+		GetRobloxClientPos()
+		pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + GetYOffset() + 40 "|350|60")
+		success := (Gdip_ImageSearch(pBMScreen, bitmaps["colhey"],,,,,,5) = 1)
+		Gdip_DisposeImage(pBMScreen)
+
+		tooltip "success: " success
+
+		return success
+	}
 }
 nm_HealthBar() {
 	local detection := 0
@@ -11004,20 +11016,6 @@ nm_ConfirmAtHive(){
 	}
 	Gdip_DisposeImage(pBMScreen)
 	return 0
-}
-atHive() {
-	static fail:=0
-    ActivateRoblox()
-    GetRobloxClientPos()
-    pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth // 2 - 150 "|" windowY + GetYOffset() + 40 "|350|60")
-    out := Gdip_ImageSearch(pBMScreen, bitmaps["colhey"],,,,,,5)
-	Gdip_DisposeImage(pBMScreen)
-	fail := out ? 0 : fail + 1
-	if fail > 3 {
-		fail:=0
-		return 1
-	}
-    return out
 }
 nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here since it seems to reliably detect hive slots even when the stuff is really bad
     ActivateRoblox()
@@ -12557,7 +12555,7 @@ nm_MemoryMatch(MemoryMatchGame) {
 	global NormalMemoryMatchCheck, MegaMemoryMatchCheck, ExtremeMemoryMatchCheck, NightMemoryMatchCheck, WinterMemoryMatchCheck
 		, LastNormalMemoryMatch, LastMegaMemoryMatch, LastExtremeMemoryMatch, LastNightMemoryMatch, LastWinterMemoryMatch
 
-	if !(%MemoryMatchGame%MemoryMatchCheck && (nowUnix()-Last%MemoryMatchGame%MemoryMatch)>MemoryMatchGames[MemoryMatchGame].cooldown)
+	if !(%MemoryMatchGame%MemoryMatchCheck && (nowUnix()-Last%MemoryMatchGame%MemoryMatch)>MemoryMatchGames[MemoryMatchGame].cooldown) || nm_AmuletPrompt(3)
 		return
 
 	success := deaths := 0
@@ -16439,7 +16437,7 @@ nm_GoGather(){
 					interruptReason := "You Died!"
 					break
 				}
-				if CheckNight {
+				if nm_NightInterrupt() {
 					interruptReason := "Night"
 					break
 				}
