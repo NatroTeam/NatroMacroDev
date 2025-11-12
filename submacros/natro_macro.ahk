@@ -4838,6 +4838,257 @@ nm_PasteGatherSettings(GuiCtrl, *){
 	}
 	nm_FieldSelect%i%()
 }
+nm_CopyPlantersSettings(*){
+	global PlanterMode
+	static q := Chr(34), ob := Chr(123), cb := Chr(125)
+	
+	if (PlanterMode=2) {
+		A_Clipboard := ob q "nPreset" q ":" q nPreset q ","
+			. q "n1priority" q ":" q N1priority q ","
+			. q "n2priority" q ":" q N2priority q ","
+			. q "n3priority" q ":" q N3priority q ","
+			. q "n4priority" q ":" q N4priority q ","
+			. q "n5priority" q ":" q N5priority q ","
+			. q "n1minPercent" q ":" n1minpercent ","
+			. q "n2minPercent" q ":" n2minpercent ","
+			. q "n3minPercent" q ":" N3minPercent ","
+			. q "n4minPercent" q ":" N4minPercent ","
+			. q "n5minPercent" q ":" N5minPercent ","
+			. q "SunflowerFieldCheck" q ":" SunflowerFieldCheck ","
+			. q "MushroomFieldCheck" q ":" MushroomFieldCheck ","
+			. q "DandelionFieldCheck" q ":" DandelionFieldCheck ","
+			. q "BlueFlowerFieldCheck" q ":" BlueFlowerFieldCheck ","
+			. q "CloverFieldCheck" q ":" CloverFieldCheck ","
+			. q "StrawberryFieldCheck" q ":" StrawberryFieldCheck ","
+			. q "SpiderFieldCheck" q ":" SpiderFieldCheck ","
+			. q "BambooFieldCheck" q ":" BambooFieldCheck ","
+			. q "PineappleFieldCheck" q ":" PineappleFieldCheck ","
+			. q "StumpFieldCheck" q ":" StumpFieldCheck ","
+			. q "RoseFieldCheck" q ":" RoseFieldCheck ","
+			. q "CactusFieldCheck" q ":" CactusFieldCheck ","
+			. q "PumpkinFieldCheck" q ":" PumpkinFieldCheck ","
+			. q "PineTreeFieldCheck" q ":" PineTreeFieldCheck ","
+			. q "CoconutFieldCheck" q ":" CoconutFieldCheck ","
+			. q "MountainTopFieldCheck" q ":" MountainTopFieldCheck ","
+			. q "PepperFieldCheck" q ":" PepperFieldCheck ","
+			. q "ConvertFullBagHarvest" q ":" ConvertFullBagHarvest ","
+			. q "PlasticPlanterCheck" q ":" PlasticPlanterCheck ","
+			. q "CandyPlanterCheck" q ":" CandyPlanterCheck ","
+			. q "BlueClayPlanterCheck" q ":" BlueClayPlanterCheck ","
+			. q "RedClayPlanterCheck" q ":" RedClayPlanterCheck ","
+			. q "TackyPlanterCheck" q ":" TackyPlanterCheck ","
+			. q "PesticidePlanterCheck" q ":" PesticidePlanterCheck ","
+			. q "HeatTreatedPlanterCheck" q ":" HeatTreatedPlanterCheck ","
+			. q "HydroponicPlanterCheck" q ":" HydroponicPlanterCheck ","
+			. q "PetalPlanterCheck" q ":" PetalPlanterCheck ","
+			. q "PlanterOfPlentyCheck" q ":" PlanterOfPlentyCheck ","
+			. q "PaperPlanterCheck" q ":" PaperPlanterCheck ","
+			. q "TicketPlanterCheck" q ":" TicketPlanterCheck ","
+			. q "HarvestFullGrown" q ":" HarvestFullGrown ","
+			. q "MaxAllowedPlanters" q ":" MaxAllowedPlanters ","
+			. q "AutomaticHarvestInterval" q ":" AutomaticHarvestInterval ","
+			. q "HarvestInterval" q ":" HarvestInterval ","
+			. q "GatherPlanterLoot" q ":" GatherPlanterLoot ","
+			. q "gotoPlanterField" q ":" gotoPlanterField ","
+			. q "gatherFieldSipping" q ":" gatherFieldSipping ","
+			. q "PlanterMode" q ":" PlanterMode cb
+	}
+	else if (PlanterMode=1){
+		A_Clipboard := ob
+			. q "PlanterMode" q ":" PlanterMode ","
+			. q "MHarvestInterval" q ":" q MHarvestInterval q ","
+			. q "MConvertFullBagHarvest" q ":" MConvertFullBagHarvest ","
+			. q "MGatherPlanterLoot" q ":" MGatherPlanterLoot ","
+			. q "MPlanterGather1" q ":" MPlanterGather1 ","
+			. q "MPlanterGather2" q ":" MPlanterGather2 ","
+			. q "MPlanterGather3" q ":" MPlanterGather3 ","
+			. q "MPlanterGatherA" q ":" MPlanterGatherA ","
+			. q "MPlanterHold1" q ":" MPlanterHold1 ","
+			. q "MPlanterHold2" q ":" MPlanterHold2 ","
+			. q "MPlanterHold3" q ":" MPlanterHold3 ","
+			. q "MPlanterSmoking1" q ":" MPlanterSmoking1 ","
+			. q "MPlanterSmoking2" q ":" MPlanterSmoking2 ","
+			. q "MPlanterSmoking3" q ":" MPlanterSmoking3 ","
+			. q "MPuffMode1" q ":" MPuffMode1 ","
+			. q "MPuffMode2" q ":" MPuffMode2 ","
+			. q "MPuffMode3" q ":" MPuffMode3 ","
+			. q "MPuffModeA" q ":" MPuffModeA ","
+		for sNum in [1,2,3] {
+			Loop 9 {
+				A_Clipboard .= q "MSlot" sNum "Cycle" A_Index "AutoFull" q ":" q %"MSlot" sNum "Cycle" A_Index "AutoFull"% q ","
+					. q "MSlot" sNum "Cycle" A_Index "Field" q ":" q %"MSlot" sNum "Cycle" A_Index "Field"% q ","
+					. q "MSlot" sNum "Cycle" A_Index "Glitter" q ":" %"MSlot" sNum "Cycle" A_Index "Glitter"% ","
+					. q "MSlot" sNum "Cycle" A_Index "Planter" q ":" q %"MSlot" sNum "Cycle" A_Index "Planter"% q
+				if !(sNum=3 && A_Index=9) {
+					A_Clipboard .= ","
+				}
+			}
+		}
+		A_Clipboard .= cb
+	}
+	return
+}
+
+nm_pastePlanterSettings(*) {
+	global
+	if (!RegExMatch(A_Clipboard, "^\s*\{.*\}\s*$")) {
+		MsgBox("Clipboard format invalid!`nMust include { and }", "WARNING!!", 0x1030 " T60")
+		return
+	}
+	try obj := JSON.parse(A_Clipboard)
+	catch {
+		MsgBox("Clipboard is not valid JSON!", "Error", 0x1030 " T60")
+		return
+	}
+	if (!obj.Has("PlanterMode") || obj["PlanterMode"] != PlanterMode) {
+		MsgBox("These settings are for a different planter mode!", "WARNING!!", 0x1030 " T60")
+		return
+	}
+	
+	if (PlanterMode=2) {
+		static validation := Map(
+			"nPreset", "^(Custom|Red|White|Blue)$",
+			"n1priority", "^(Comforting|Motivating|Satisfying|Invigorating|Refreshing|None)$",
+			"n2priority", "^(Comforting|Motivating|Satisfying|Invigorating|Refreshing|None)$",
+			"n3priority", "^(Comforting|Motivating|Satisfying|Invigorating|Refreshing|None)$",
+			"n4priority", "^(Comforting|Motivating|Satisfying|Invigorating|Refreshing|None)$",
+			"n5priority", "^(Comforting|Motivating|Satisfying|Invigorating|Refreshing|None)$",
+			"n1minPercent", "^(100|[1-9]?[05])$",
+			"n2minPercent", "^(100|[1-9]?[05])$",
+			"n3minPercent", "^(100|[1-9]?[05])$",
+			"n4minPercent", "^(100|[1-9]?[05])$",
+			"n5minPercent", "^(100|[1-9]?[05])$",
+			"SunflowerFieldCheck", "^[01]$",
+			"MushroomFieldCheck", "^[01]$",
+			"DandelionFieldCheck", "^[01]$",
+			"BlueFlowerFieldCheck", "^[01]$",
+			"CloverFieldCheck", "^[01]$",
+			"StrawberryFieldCheck", "^[01]$",
+			"SpiderFieldCheck", "^[01]$",
+			"BambooFieldCheck", "^[01]$",
+			"PineappleFieldCheck", "^[01]$",
+			"StumpFieldCheck", "^[01]$",
+			"RoseFieldCheck", "^[01]$",
+			"CactusFieldCheck", "^[01]$",
+			"PumpkinFieldCheck", "^[01]$",
+			"PineTreeFieldCheck", "^[01]$",
+			"CoconutFieldCheck", "^[01]$",
+			"MountainTopFieldCheck", "^[01]$",
+			"PepperFieldCheck", "^[01]$",
+			"ConvertFullBagHarvest", "^[01]$",
+			"PlasticPlanterCheck", "^[01]$",
+			"CandyPlanterCheck", "^[01]$",
+			"BlueClayPlanterCheck", "^[01]$",
+			"RedClayPlanterCheck", "^[01]$",
+			"TackyPlanterCheck", "^[01]$",
+			"PesticidePlanterCheck", "^[01]$",
+			"HeatTreatedPlanterCheck", "^[01]$",
+			"HydroponicPlanterCheck", "^[01]$",
+			"PetalPlanterCheck", "^[01]$",
+			"PlanterOfPlentyCheck", "^[01]$",
+			"PaperPlanterCheck", "^[01]$",
+			"TicketPlanterCheck", "^[01]$",
+			"HarvestFullGrown", "^[01]$",
+			"MaxAllowedPlanters", "^[0-3]$",
+			"AutomaticHarvestInterval", "^[01]$",
+			"HarvestInterval", "^(0|[1-9][0-9]?)$",
+			"GatherPlanterLoot", "^[01]$",
+			"gotoPlanterField", "^[01]$",
+			"gatherFieldSipping", "^[01]$"
+		)
+		
+		for k, v in validation {
+			if (!obj.Has(k))
+				continue
+				
+			if (obj[k] ~= v) {
+				%k% := obj[k]
+				IniWrite(obj[k], "settings\nm_config.ini", "Planters", k)
+				try ctrl := MainGui[k]
+				if (ctrl) {
+					switch ctrl.Type, 0 {
+						case "DDL", "Text":
+							ctrl.Text := obj[k]
+						default:
+							ctrl.Value := obj[k]
+					}
+				}
+			} else {
+				MsgBox("Invalid import: " k ":" obj[k], "WARNING!!", 0x1030 " T60")
+			}
+		}
+	} 
+	else if (PlanterMode=1) {
+		static validation := Map(
+			"MHarvestInterval", "^.*$",
+			"MConvertFullBagHarvest", "^[01]$",
+			"MGatherPlanterLoot", "^[01]$",
+			"MPlanterGather1", "^[01]$",
+			"MPlanterGather2", "^[01]$",
+			"MPlanterGather3", "^[01]$",
+			"MPlanterGatherA", "^[01]$",
+			"MPlanterHold1", "^[01]$",
+			"MPlanterHold2", "^[01]$",
+			"MPlanterHold3", "^[01]$",
+			"MPlanterSmoking1", "^[01]$",
+			"MPlanterSmoking2", "^[01]$",
+			"MPlanterSmoking3", "^[01]$",
+			"MPuffMode1", "^[01]$",
+			"MPuffMode2", "^[01]$",
+			"MPuffMode3", "^[01]$",
+			"MPuffModeA", "^[01]$"
+		)
+		
+		for sNum in [1,2,3] {
+			Loop 9 {
+				validation["MSlot" sNum "Cycle" A_Index "AutoFull"] := "^(Timed|Full|None)?$"
+				validation["MSlot" sNum "Cycle" A_Index "Field"] := "^.*$"
+				validation["MSlot" sNum "Cycle" A_Index "Glitter"] := "^[01]$"
+				validation["MSlot" sNum "Cycle" A_Index "Planter"] := "^.*$"
+			}
+		}
+		
+		for k, v in validation {
+			if (!obj.Has(k))
+				continue
+				
+			if (obj[k] ~= v) {
+				%k% := obj[k]
+
+				; theres probably a more efficient way to do this but im starting to fatigue
+				if (k = "MHarvestInterval") {
+					section := "Planters"
+				} else if (RegExMatch(k, "^MSlot([123])", &match)) {
+					section := "Slot " match[1]
+				} else {
+					section := "Settings"
+				}
+				
+				iniFile := (k = "MHarvestInterval" || RegExMatch(k, "^MSlot[123]Cycle[1-9]")) 
+					? "settings\manual_planters.ini" 
+					: "settings\nm_config.ini"
+				iniSection := (k = "MHarvestInterval" || RegExMatch(k, "^MSlot[123]")) ? section : "Settings"
+				
+				IniWrite(obj[k], iniFile, iniSection, k)
+				
+				try ctrl := MainGui[k]
+				if (ctrl) {
+					switch ctrl.Type, 0 {
+						case "DDL", "Text":
+							ctrl.Text := obj[k]
+						default:
+							ctrl.Value := obj[k]
+					}
+				}
+			} else {
+				MsgBox("Invalid import: " k ":" obj[k], "WARNING!!", 0x1030 " T60")
+			}
+		}
+	
+		mp_UpdatePage()
+		mp_UpdateControls()
+	}
+}
 nm_WebhookEasterEgg(){
 	global WebhookEasterEgg
 	FieldName1 := MainGui["FieldName1"].Text
