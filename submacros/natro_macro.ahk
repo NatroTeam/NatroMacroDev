@@ -6374,6 +6374,53 @@ nm_QuestGatherReturnBy(GuiCtrl, *){
 
 ; PLANTERS TAB
 ; ------------------------
+ba_allowedFieldsGUI(*) {
+	global DandelionFieldCheck, SunflowerFieldCheck, MushroomFieldCheck, BlueFlowerFieldCheck, CloverFieldCheck
+	global SpiderFieldCheck, StrawberryFieldCheck, BambooFieldCheck, PineappleFieldCheck, StumpFieldCheck 
+	global CactusFieldCheck, PumpkinFieldCheck, PineTreeFieldCheck, RoseFieldCheck 
+	global MountainTopFieldCheck, CoconutFieldCheck, PepperFieldCheck 
+	global bFieldGUI
+
+	if !IsSet(bFieldGUI)
+		bFieldGUI := Gui("+AlwaysOnTop", "Allowed Fields")
+
+	bFieldGUI.SetFont("w700")
+
+	bFieldGUI.Add("Groupbox", "x5 y2 w115 h86", "Starter Zone")
+	bFieldGUI.Add("Groupbox", "x5 y89 w115 h59", "5 Bee Zone")
+	bFieldGUI.Add("Groupbox", "x5 y150 w115 h43", "10 Bee Zone")
+
+	bFieldGUI.Add("Groupbox", "x124 y2 w122 h74", "15 Bee Zone")
+	bFieldGUI.Add("Groupbox", "x124 y78 w122 h30", "25 Bee Zone")
+	bFieldGUI.Add("Groupbox", "x124 y109 w122 h45", "35 Bee Zone")
+
+	bFieldGUI.SetFont("s8 cDefault Norm", "Tahoma")
+
+	bFieldGUI.Add("CheckBox", "x10 y16 vDandelionFieldCheck Checked" DandelionFieldCheck, "Dandelion (COM)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y30 vSunflowerFieldCheck Checked" SunflowerFieldCheck, "Sunflower (SAT)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y44 vMushroomFieldCheck Checked" MushroomFieldCheck, "Mushroom (MOT)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y58 vBlueFlowerFieldCheck Checked" BlueFlowerFieldCheck, "Blue Flower (REF)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y72 vCloverFieldCheck Checked" CloverFieldCheck, "Clover (INV)").OnEvent("Click", nm_saveConfig)
+
+	bFieldGUI.Add("CheckBox", "x10 y104 vSpiderFieldCheck Checked" SpiderFieldCheck, "Spider (MOT)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y118 vStrawberryFieldCheck Checked" StrawberryFieldCheck, "Strawberry (REF)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y132 vBambooFieldCheck Checked" BambooFieldCheck, "Bamboo (COM)").OnEvent("Click", nm_saveConfig)
+
+	bFieldGUI.Add("CheckBox", "x10 y163 vPineappleFieldCheck Checked" PineappleFieldCheck, "Pineapple (SAT)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y177 vStumpFieldCheck Checked" StumpFieldCheck, "Stump (MOT)").OnEvent("Click", nm_saveConfig)
+
+	bFieldGUI.Add("CheckBox", "x129 y17 vCactusFieldCheck Checked" CactusFieldCheck, "Cactus (INV)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y31 vPumpkinFieldCheck Checked" PumpkinFieldCheck, "Pumpkin (SAT)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y45 vPineTreeFieldCheck Checked" PineTreeFieldCheck, "Pine Tree (COM)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y59 vRoseFieldCheck Checked" RoseFieldCheck, "Rose (MOT)").OnEvent("Click", nm_saveConfig)
+
+	bFieldGUI.Add("CheckBox", "xp y91 vMountainTopFieldCheck Checked" MountainTopFieldCheck, "Mountain Top (INV)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y121 vCoconutFieldCheck Checked" CoconutFieldCheck, "Coconut (REF)").OnEvent("Click", nm_saveConfig)
+	bFieldGUI.Add("CheckBox", "xp y135 vPepperFieldCheck Checked" PepperFieldCheck, "Pepper (INV)").OnEvent("Click", nm_saveConfig)
+
+	bFieldGUI.Show("w245 h190")
+}
+
 ba_planterSwitch(*){
 	global
 	static PlantersPlusControls := ["N1Priority","N2Priority","N3Priority","N4Priority","N5Priority"
