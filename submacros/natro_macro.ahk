@@ -2834,17 +2834,17 @@ MainGui.Add("GroupBox", "x5 y42 w125 h124 vCollectGroupBox", "Collect")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 (GuiCtrl := MainGui.Add("CheckBox", "x10 y57 vClockCheck Disabled Checked" ClockCheck, "Clock (tickets)")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "x10 yp+18 w50 vMondoBuffCheck Disabled Checked" MondoBuffCheck, "Mondo")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-MondoActionList := ["Buff", "Kill"], PMondoGuid && MondoActionList.Push("Tag", "Guid"), MondoActionList.Default := "", MondoActionList.Length := 4
+MondoActionList := ["Buff", "Kill", "Gather", "Follow"], PMondoGuid && MondoActionList.Push("Tag", "Guid"), MondoActionList.Default := "", MondoActionList.Length := 4
 MainGui.Add("Text", "x75 yp w40 vMondoAction +Center +BackgroundTrans", MondoAction)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vMALeft Disabled", "<").OnEvent("Click", nm_MondoAction)
 MainGui.Add("Button", "xp+51 yp w12 h16 vMARight Disabled", ">").OnEvent("Click", nm_MondoAction)
-MainGui.Add("Text", "x14 yp+15 w110 vMondoPointText +BackgroundTrans Section Hidden" (MondoAction != "Buff" && MondoAction != "Kill"), "\__")
+MainGui.Add("Text", "x14 yp+15 w110 vMondoPointText +BackgroundTrans Section Hidden" (MondoAction != "Buff" && MondoAction != "Kill" && MondoAction != "Follow"), "\__")
 (GuiCtrl := MainGui.Add("Edit", "xs+20 ys+3 w30 h18 number Limit3 vMondoSecs Disabled Hidden" (MondoAction != "Buff"), ValidateInt(&MondoSecs, 120))).Section := "Collect", GuiCtrl.OnEvent("Change", nm_saveConfig)
 MainGui.Add("Text", "x+4 yp+2 vMondoSecsText Hidden" (MondoAction != "Buff"), "Secs")
-MainGui.Add("Text", "xs+18 ys+4 vMondoLootText Hidden" (MondoAction != "Kill"), "Loot:")
-MainGui.Add("Text", "x+13 yp w45 vMondoLootDirection +Center +BackgroundTrans Hidden" (MondoAction != "Kill"), MondoLootDirection)
-MainGui.Add("Button", "xp-12 yp-1 w12 h16 vMLDLeft Disabled Hidden" (MondoAction != "Kill"), "<").OnEvent("Click", nm_MondoLootDirection)
-MainGui.Add("Button", "xp+56 yp w12 h16 vMLDRight Disabled Hidden" (MondoAction != "Kill"), ">").OnEvent("Click", nm_MondoLootDirection)
+MainGui.Add("Text", "xs+18 ys+4 vMondoLootText Hidden" (MondoAction != "Kill" && MondoAction != "Follow"), "Loot:")
+MainGui.Add("Text", "x+13 yp w45 vMondoLootDirection +Center +BackgroundTrans Hidden" (MondoAction != "Kill" && MondoAction != "Follow"), MondoLootDirection)
+MainGui.Add("Button", "xp-12 yp-1 w12 h16 vMLDLeft Disabled Hidden" (MondoAction != "Kill" && MondoAction != "Follow"), "<").OnEvent("Click", nm_MondoLootDirection)
+MainGui.Add("Button", "xp+56 yp w12 h16 vMLDRight Disabled Hidden" (MondoAction != "Kill" && MondoAction != "Follow"), ">").OnEvent("Click", nm_MondoLootDirection)
 (GuiCtrl := MainGui.Add("CheckBox", "x10 y112 w35 vAntPassCheck Disabled Checked" AntPassCheck, "Ant")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("Text", "x60 yp w55 vAntPassAction +Center +BackgroundTrans", AntPassAction)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vAPALeft Disabled", "<").OnEvent("Click", nm_AntPassAction)
@@ -4925,14 +4925,18 @@ nm_MondoAction(GuiCtrl?, *){
 		i := 2
 		case MondoActionList[3]:
 		i := 3
-		default:
+		case MondoActionList[4]:
 		i := 4
+		case MondoActionList[4]:
+		i := 5
+		default:
+		i := 6
 	}
 
 	MainGui["MondoAction"].Text := MondoAction := MondoActionList[(GuiCtrl.Name = "MARight") ? (Mod(i, l) + 1) : (GuiCtrl.Name = "MALeft") ? (Mod(l + i - 2, l) + 1) : i]
 	MainGui["MondoPointText"].Visible := (MondoAction = "Buff") || (MondoAction = "Kill")
 	MainGui["MondoSecs"].Visible := MainGui["MondoSecsText"].Visible := (MondoAction = "Buff")
-	MainGui["MondoLootText"].Visible := MainGui["MondoLootDirection"].Visible := MainGui["MLDLeft"].Visible := MainGui["MLDRight"].Visible := (MondoAction = "Kill")
+	MainGui["MondoLootText"].Visible := MainGui["MondoLootDirection"].Visible := MainGui["MLDLeft"].Visible := MainGui["MLDRight"].Visible := (MondoAction = "Kill" || MondoAction = "Follow")
 	IniWrite MondoAction, "settings\nm_config.ini", "Collect", "MondoAction"
 }
 nm_MondoLootDirection(GuiCtrl, *){
@@ -10327,13 +10331,21 @@ nm_Start(){
 #Include "nm_OpenMenu.ahk"
 #Include "nm_InventorySearch.ahk"
 ;interrupts
-nm_MondoInterrupt() => (utc_min := FormatTime(A_NowUTC, "m"), now := nowUnix(),
-	((MondoBuffCheck = 1) && ((utc_min<14 && (now-LastMondoBuff)>960 && MondoAction="Kill")
-		|| (!nm_GatherBoostInterrupt()
-			&& ((utc_min<14 && (now-LastMondoBuff)>960 && MondoAction="Buff")
-			|| (utc_min<12 && (now-LastGuid)<60 && PMondoGuid && MondoAction="Guid")
-			|| (utc_min<=8 && (now-LastMondoBuff)>960 && PMondoGuid && MondoAction="Tag")))
-		)
+nm_MondoInterrupt() => (
+	utc_min := FormatTime(A_NowUTC, "m"), utc_sec := FormatTime(A_NowUTC, "s"),
+	now := nowUnix(), isReady := (now - LastMondoBuff > 960),
+	(MondoBuffCheck = 1) && (
+		(MondoAction = "Gather" && isReady && (utc_min > 58 || (utc_min = 58 && utc_sec >= 30) || utc_min < 14))
+		|| (utc_min < 14 && (
+			(isReady && MondoAction ~= "Kill|Follow")
+			|| (!nm_GatherBoostInterrupt() && (
+				(MondoAction = "Buff" && isReady)
+				|| (PMondoGuid && (
+					(MondoAction = "Guid" && utc_min < 12 && now - LastGuid < 60)
+					|| (MondoAction = "Tag" && utc_min <= 8 && isReady)
+				))
+			))
+		))
 	)
 )
 nm_BeesmasInterrupt() {
@@ -15849,194 +15861,326 @@ nm_Bugrun(){
 		}
 	}
 }
-nm_Mondo(){
-	global youDied
-	;mondo buff
-	global MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter
+nm_Mondo() {
+	global youDied, MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff
+	global PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter, FwdKey, LeftKey, BackKey
+	global RightKey, RotLeft, RotRight, SC_E, DisableToolUse, KeyDelay, MoveMethod, MoveSpeedNum
+	global AFBrollingDice, AFBuseGlitter, AFBuseBooster, CurrentField, MondoSecs, MondoLootDirection
 	if nm_NightInterrupt()
 		return
-	if nm_MondoInterrupt(){
-		mondobuff := nm_imgSearch("mondobuff.png",50,"buff")
-		If (mondobuff[1] = 0) {
-			LastMondoBuff:=nowUnix()
-			IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
-			return
+	if !nm_MondoInterrupt()
+		return
+	MondoBuff := nm_imgSearch("mondobuff.png",50,"buff")
+	if (mondoBuff[1] = 0) {
+		nm_UpdateMondoTime()
+		return
+	}
+	nm_updateAction("Mondo")
+
+	nm_Reset(0, 2000, 0)
+	nm_setStatus("Traveling", "Mondo (" MondoAction ")")
+	nm_gotoPlanter("Mountain Top")
+	send "{" SC_1 "}"
+
+	if (MondoAction = "Follow")
+		nm_createWalk(nm_Walk(4, BackKey))
+	else if (MondoAction = "Gather")
+		nm_createWalk(nm_Walk(4, FwdKey))
+	else
+		nm_createWalk(nm_Walk(14, RightKey) "`nsend '{" RotLeft "}'")
+	KeyWait "F14", "D T5 L"
+	KeyWait "F14", "T30 L"
+	nm_endWalk()
+
+	found := (MondoAction = "Gather") ? 1 : 0
+	if !(MondoAction = "Gather") {
+		nm_setStatus("Searching", "Mondo")
+		loop (MondoAction = "Gather") ? 480 : 20 {
+			mondoCheck := nm_HealthDetection()
+			if (mondoCheck.Length > 0) {
+				found := 1
+				break
+			}
+			sleep 250
 		}
-		repeat:=1
-		global FwdKey, LeftKey, BackKey, RightKey, RotLeft, RotRight, SC_E, DisableToolUse
-		global KeyDelay
-		global MoveMethod
-		global MoveSpeedNum
-		global AFBrollingDice
-		global AFBuseGlitter
-		global AFBuseBooster
-		global CurrentField
-		global MondoSecs, MondoLootDirection
-		nm_updateAction("Mondo")
-		MoveSpeedFactor:=round(18/MoveSpeedNum, 2)
-		while(repeat){
-			nm_Reset(0, 2000, 0)
-			nm_setStatus("Traveling", ("Mondo (" . MondoAction . ")"))
-			nm_gotoPlanter("mountain top")
-			nm_createWalk(nm_Walk(14, RightKey) "`nsend '{" RotLeft "}'")
-			KeyWait "F14", "D T5 L"
-			KeyWait "F14", "T30 L"
-			nm_endWalk()
-			;;; (+) new conditions probably
-			found := 0
-			mondoChick := 0
-			loop 20
-			{
-				mChick:= nm_HealthDetection()
-				if(mChick.Length > 0)
-				{
-					found:=1
-					break
-				}
-				Sleep 250
-			}
-			if (found)
-			{
-				nm_setStatus("Found", "Mondo")
-				for index, value in mChick ;Mondo is already dmging itself before we get there
-				{
-					if (value = 100.00) ;Planter detected since mondo will already have taken dmg by the time you come up
-					{
-						continue
-					}
-					else
-					{
-						mondoChick:=1
-					}
-				}
-				if (mondoChick)
-				{
-					nm_setStatus("Attacking", "Mondo")
-					if(MondoAction="Buff"){
-						repeat:=0
-						loop MondoSecs { ;2 mins
-							nm_autoFieldBoost(CurrentField)
-							if(youDied || AFBrollingDice || AFBuseGlitter || AFBuseBooster)
-								break
-							Sleep 1000
-						}
-					}
-					else if(MondoAction="Tag"){
-						repeat:=0
-						;zaappiix5
-						nm_Move(2000*MoveSpeedFactor, LeftKey)
-						nm_Move(2000*MoveSpeedFactor, BackKey)
-						nm_Move(1000*MoveSpeedFactor, LeftKey)
-						nm_Move(3500*MoveSpeedFactor, FwdKey)
-						loop 25 { ;25 sec
-							if(youDied)
-								break
-							Sleep 1000
-						}
-					}
-					else if(MondoAction="Guid" && PMondoGuid=1 && PMondoGuidComplete=0){
-						repeat:=0
-						PMondoGuidComplete:=1
-						while ((nowUnix()-LastGuid)<=210 && utc_min<15 && A_Index<210) { ;3.5 mins since guid
-							if(youDied)
-								break
-							;check for mondo death here
-							mondo := nm_imgSearch("mondo3.png",50,"lowright")
-							If (mondo[1] = 0) {
-								break
-							}
-							Sleep 1000
-							utc_min := FormatTime(A_NowUTC, "m")
-						}
-					} else if(MondoAction="Kill"){
-						repeat:=1
-						success:=count:=0
-						loop 3600 { ;15 mins
-							mondoDead:=nm_HealthDetection()
-							if ((mondoDead.Length = 0) || (mondoDead.Length = 1 && mondoDead[1] = 100.00)) {
-								if (++count >= 60) { ; Changed from 5 seconds to 15 seconds for when mondo goes off screen
-									success := 1
-									break
-								}
-							}
-							else ; one health bar < 100 or multiple health bars (assumed Mondo is one of them)
-								count := 0
-							if(Mod(A_Index, 4)=0) { ; 1 second
-								nm_autoFieldBoost(CurrentField)
-								if(nm_NightInterrupt() || AFBrollingDice || AFBuseGlitter || AFBuseBooster) {
-									return
-								}
-								if(youDied)
-									break
-								if(FormatTime(A_NowUTC, "m")>14) {
-									repeat:=0
-									break
-								}
-								If (nm_imgSearch("mondo3.png",50,"lowright")[1] = 0) { ;check for mondo death here
-									success := 1
-									break
-								}
-							}
-							if(Mod(A_Index, 40)=0) ; 10 seconds
-								nm_OpenMenu()
-							if(Mod(A_Index, 240)=0) ; 1 minute
-								click
-							if(A_Index=3600) {
-								repeat:=0
-								break
-							}
-							sleep 250
-						}
-						if (success = 1) {
-							nm_setStatus("Defeated", "Mondo")
-							repeat := 0
-							if !(MondoLootDirection = "Ignore") {
-								;loot mondo after death
-								if (MondoLootDirection = "Random")
-									dir := Random(0, 1)
-								else
-									dir := (MondoLootDirection = "Right")
+	}
+	if (!found) {
+		nm_UpdateMondoTime()
+		return
+	}
 
-								if (dir = 0)
-									tc := "left", afc := "right"
-								else
-									tc := "right", afc := "left"
-
-								nm_setStatus("Looting", "Mondo")
-								movement :=
-								(
-								"send '{" RotLeft "}'
-								" nm_Walk(7.5, FwdKey, RightKey) "
-								" nm_Walk(7.5, %tc%Key)
-								)
-								nm_createWalk(movement)
-								KeyWait "F14", "D T5 L"
-								KeyWait "F14", "T30 L"
-								nm_endWalk()
-
-								if(!DisableToolUse)
-									click "down"
-								DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
-								n := s, f := s+450000000 ; 45 seconds loot timeout
-								while ((n < f) && (A_Index <= 12)) {
-									nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
-									DllCall("GetSystemTimeAsFileTime","int64p",&n)
-								}
-								click "up"
-							}
-						}
-					}
-				}
-			}
+	if !(MondoAction = "Gather")
+		nm_setStatus("Found", "Mondo")
+	mondoChick := (MondoAction = "Gather") ? 1 : 0
+	if !(MondoAction = "Gather") {
+		mondoCheck := nm_HealthDetection()
+		for i, x in mondoCheck {
+			if (x = 100.00 && PlanterField1 = "MountainTop" || PlanterField2 = "MountainTop" || PlanterField3 = "MountainTop")
+				continue
 			else
-			{
-				Break
-			}
-
+				mondoChick := 1
 		}
+	}
+	if !mondoChick
+		return
+
+	nm_setStatus("Attacking", "Mondo - " MondoAction)
+	if (MondoAction = "Guid" && PMondoGuid = 1 && PMondoGuidComplete = 0)
+		nm_MondoAction_Guid()
+	else if (MondoAction = "Kill" && nm_MondoAction_Kill(3600))
+		nm_MondoLoot()
+	else if (MondoAction = "Follow") {
+		send "{" RotRight " 2}{" RotUp " 5}"
+		loop 5
+			send "{" ZoomOut "}"
+		if (nm_MondoAction_Kill(900, true))
+			nm_MondoLoot(true)
+	} else
+		nm_MondoAction_%MondoAction%()
+
+	nm_UpdateMondoTime()
+}
+nm_UpdateMondoTime() {
+	global LastMondoBuff := nowUnix()
+	IniWrite LastMondoBuff, "settings\nm_config.ini", "collect", "LastMondoBuff"
+}
+nm_MondoAction_Gather() {
+	global ConvertGatherFlag
+	nm_OpenMenu()
+	sleep 100
+	send "{" RotLeft " 4}"
+	nm_setSprinkler("mountain top", "Center", 1)
+
+	success:=0, MondoSpawned:=0, MondoSpawnedTime := 0
+	start := nowUnix()
+
+	hwnd := GetRobloxHWND()
+	GetRobloxClientPos(hwnd)
+	MouseMove windowX+350, windowY+offsetY+100
+
+	pattern :=
+	(
+	nm_Walk(2.5, RightKey) "
+	" nm_Walk(2.5, FwdKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(5, BackKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(2.5, FwdKey) "
+	" nm_Walk(5, RightKey) "
+	" nm_Walk(2.5, BackKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(5, FwdKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(2.5, BackKey) "
+	" nm_Walk(2.5, Rightkey)
+	)
+
+	while ((nowUnix()-start) < 900 && success = 0 && !YouDied) {
+		utc_min := FormatTime(A_NowUTC, "m"), utc_sec := FormatTime(A_NowUTC, "s")
+		click "Down"
+		if (!MondoSpawned && nm_imgSearch("mondo3.png",50,"lowright")[1] = 0)
+			MondoSpawned := 1, MondoSpawnedTime := nowUnix()
+		
+		if (utc_min < 14 || (utc_min=0 && utc_sec>=5)) || MondoSpawned = 1 {
+			(currentWalk.name != "mondo") ? nm_createWalk(pattern, "mondo") : Send("{F13}")
+			KeyWait "F14", "D T5 L"
+		}
+
+		while ((GetKeyState("F14") && A_Index <= 3600) || A_INdex = 1) {
+			if (nm_CheckMondoDead() || (MondoSpawned && nowUnix() - MondoSpawnedTime >= 5 && nm_imgSearch("mondo3.png",50,"lowright")[1] = 0)) {
+				success := 1
+				break 2
+			}
+			if (Mod(A_Index, 5) = 0) {
+				if (DisconnectCheck() || YouDied || FormatTime(A_NowUTC, "m") > 14)
+					break 2
+				nm_autoFieldBoost(CurrentField)
+				if (nm_NightInterrupt() || AFBuseGlitter || AFBuseBooster)
+					return 2
+			}
+			if (Mod(A_Index, 200) = 0)
+				nm_OpenMenu()
+			sleep 50
+		}
+		click "up"
+		if (SprinklerType = "Supreme" && !GetKeyState("F14"))
+			nm_fieldDriftCompensation()
+	}
+
+	nm_endWalk()
+	ConvertGatherFlag := 1
+	nm_setStatus("Defeated", "Mondo")
+}
+nm_MondoAction_Buff() {
+	global ConvertGatherFlag
+	loop MondoSecs {
+		nm_autoFieldBoost(CurrentField)
+		if (youDied || AFBrollingDice || AFBuseGlitter || AFBuseBooster)
+			break
+			sleep 1000
+	}
+	ConvertGatherFlag := 1
+}
+nm_MondoAction_Tag() {
+	global ConvertGatherFlag
+	MoveSpeedFactor:=round(18/MoveSpeedNum, 2)
+	nm_Move(2000*MoveSpeedFactor, LeftKey)
+	nm_Move(2000*MoveSpeedFactor, BackKey)
+	nm_Move(2000*MoveSpeedFactor, LeftKey)
+	nm_Move(2000*MoveSpeedFactor, FwdKey)
+	loop 25 {
+		if (youDied)
+			break
+		sleep 1000
+	}
+	ConvertGatherFlag := 1
+}
+nm_MondoAction_Guid() {
+	global PMondoGuidComplete, ConvertGatherFlag
+	PMondoGuidComplete := 1
+	while ((nowUnix()-LastGuid) <= 210 && FormatTime(A_NowUTC, "m") < 14 && A_Index < 210) {
+		if (youDied)
+			break
+		mondo := nm_imgSearch("mondo3.png", 50, "lowright")
+		if (mondo[1] = 0) {
+			ConvertGatherFlag := 1
+			break
+		}
+		sleep 1000
+	}
+}
+nm_MondoAction_Kill(timeLimit, isFollow := false) {
+	global ConvertGatherFlag
+
+	start := nowUnix()
+	success := 0
+	count := 0
+
+	while (nowUnix() - start < timeLimit) {
+		if (isFollow) {
+			loop 10
+				nm_MondoMove()
+		}
+
+		mondoDead := nm_HealthDetection()
+		if ((mondoDead.Length = 0) || (mondoDead = 1 && mondoDead[1] = 100.00)) {
+			if (++count >= 60) {
+				success := 1
+				break
+			}
+		} else
+			count := 0
+
+		if (Mod(A_Index, 4) = 0) {
+			nm_autoFieldBoost(CurrentField)
+			if (nm_NightInterrupt() || AFBrollingDice || AFBuseGlitter || AFBuseBooster)
+				return 0
+			if (YouDied)
+				break
+			if (FormatTime(A_NowUTC, "m") >1 14)
+				break
+			if (nm_imgSearch("mondo3.png", 50, "lowright")[1] = 0 || nm_CheckMondoDead()) {
+				success := 1
+				break
+			}
+		}
+		if (Mod(A_Index, 40) = 0)
+			nm_OpenMenu()
+		if (Mod(A_Index, 240) = 0)
+			click
+		sleep 250
+	}
+
+	if (success = 1) {
+		ConvertGatherFlag := 1
+		nm_setStatus("Defeated", "Mondo")
+		if (isFollow) {
+			nm_fieldDriftCompensation()
+			send "{" RotRight " 4}{" RotDown " 4}"
+		}
+		return 1
+	}
+	return 0
+}
+nm_MondoLoot(isFollow := false) {
+	if (MondoLootDirection = "Ignore")
+		return
+	(MondoLootDirection = "Random") ? dir := Random(0, 1) : dir := (MondoLootDirection = "Right")
+	(dir = 0) ? (tc := "left", afc := "right") : (tc := "right", afc := "left")
+	nm_setStatus("Looting", "Mondo")
+
+	movement := ""
+	if (isFollow)
+		movement :=
+		(
+		nm_Walk(8, BackKey) "
+		" nm_Walk((tc="left")?2:14, %tc%Key)
+		)
+	else
+		movement :=
+		(
+		"send '{" RotLeft "}'
+		" nm_Walk(7.5, FwdKey, RightKey) "
+		" nm_Walk(7.5, %tc%Key)
+		)
+	nm_createWalk(movement)
+	KeyWait "F14", "D T5 L"
+	KeyWait "F14", "T30 L"
+	nm_endWalk()
+
+	DllCall("GetSystemTimeAsFileTime", "int64p", &s := 0)
+	n := s, f := s+450000000
+
+	loopIndex := 0
+	while ((n < f) && (loopIndex <= 12)) {
+		loopIndex++
+		nm_loot(16, 5, Mod(loopIndex, 2) = 1 ? afc : tc)
+		DllCall("GetSystemTimeAsFileTime", "int64p", &n)
+	}
+}
+nm_MondoTimer() {
+	static L, R
+	; timer: 0xff9d7249 0xff533e29
+	; health: 0xff1fe744 0xff6b131a
+	if !(IsSet(L) && IsSet(R)) {
+		L := Gdip_CreateBitmap(1,4), pGraphics := Gdip_GraphicsFromImage(L), Gdip_GraphicsClear(pGraphics, 0xff9d7249), Gdip_DeleteGraphics(pGraphics)
+		R := Gdip_CreateBitmap(1,4), pGraphics := Gdip_GraphicsFromImage(R), Gdip_GraphicsClear(pGraphics, 0xff533e29), Gdip_DeleteGraphics(pGraphics)
+	}
+	GetRobloxClientPos()
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight) 
+	if (Gdip_ImageSearch(pBMScreen, L, &S) > 0 && Gdip_ImageSearch(pBMScreen, R, &E, , , , , , , 8) > 0) {
+		Gdip_DisposeImage(pBMScreen)
+		S := StrSplit(S, ","), E := StrSplit(E, ",")
+		return {X: S[1] + ((E[1] - S[1]) // 2), Y: S[2] + ((E[2] - S[2]) // 2)} 
+	}
+	Gdip_DisposeImage(pBMScreen)
+	return 0
+}
+nm_MondoMove() {
+    if !(pos := nm_MondoTimer())
+        return
+    Safe := windowHeight * 0.4, DeadZoneWidth := windowWidth * 0.035
+    VecX := pos.x - (windowWidth // 2)
+    Gap := Safe - Abs(VecX)
+    DirX := ""
+    if Abs(Gap) > DeadZoneWidth
+        DirX := (Gap > 0 ) ? ((VecX < 0) ? "Right" : "Left") : ((VecX < 0) ? "Left" : "Right")
+    if (DirX) {
+        Send "{" %DirX%Key " down}"
+        Sleep 150
+        Send "{" %DirX%Key " up}"
+    }
+}
+nm_CheckMondoDead() { ; just says if you have the buff, nothing special
+	global LastMondoBuff, MondoBuffCheck
+	GetRobloxClientPos()
+	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+30 "|" windowWidth "|50")
+	if (Gdip_ImageSearch(pBMArea, bitmaps["mondo"], &list, , 20, , 46, 21, , 7) = 1) {
 		LastMondoBuff:=nowUnix()
 		IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
+		return 1
 	}
+	return 0
 }
 nm_GoGather(){
 	global youDied
