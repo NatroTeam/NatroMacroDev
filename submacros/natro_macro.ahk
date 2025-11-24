@@ -4927,7 +4927,7 @@ nm_MondoAction(GuiCtrl?, *){
 		i := 3
 		case MondoActionList[4]:
 		i := 4
-		case MondoActionList[4]:
+		case MondoActionList[5]:
 		i := 5
 		default:
 		i := 6
