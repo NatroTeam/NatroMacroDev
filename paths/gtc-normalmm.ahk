@@ -1,4 +1,4 @@
-if (MoveMethod = "walk")
+﻿if (MoveMethod = "walk")
 {
 	nm_gotoramp()
 	nm_Walk(69, BackKey, LeftKey)
