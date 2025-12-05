@@ -76,4 +76,5 @@
 	, "PlanterNectar3"
 	, "PlanterHarvestFull1"
 	, "PlanterHarvestFull2"
-	, "PlanterHarvestFull3"]
+	, "PlanterHarvestFull3"
+	, "ClaimMethod"]

@@ -318,7 +318,7 @@ nm_importConfig()
 		, "FallbackServer2", ""
 		, "FallbackServer3", ""
 		, "ReconnectMethod", "Deeplink"
-		, "ClaimMethod", "To Slot"
+		, "ClaimMethod", "ToSlot"
 		, "ReconnectInterval", ""
 		, "ReconnectHour", ""
 		, "ReconnectMin", ""
@@ -7746,7 +7746,7 @@ nm_ClaimMethod(GuiCtrl, *){
 	global ClaimMethod
 	static val := ["Detect", "To Slot"], l := val.Length
 
-	if (ClaimMethod = "Deeplink")
+	if (ClaimMethod = "Detect")
 	{
 		if (MsgBox("
 		(
