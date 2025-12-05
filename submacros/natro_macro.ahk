@@ -22912,7 +22912,7 @@ PackAll(presetname) {
                     if !settings.Has(currentSection)
                         settings[currentSection] := Map("__file__", filePath, "data", Map())
                 case (RegExMatch(line, "^([^=]+)=(.*)$", &match)):
-                    if (currentSection != "") {
+                    if currentSection != "" {
                         varName := Trim(match[1])
                         varValue := Trim(match[2])
                         
@@ -22931,8 +22931,7 @@ UnpackAll(preset) {
     global
     
     PresetCont := FileRead("settings\presets\" preset ".nm")
-    try
-        parsed := JSON.parse(PresetCont)
+    try parsed := JSON.parse(PresetCont)
     catch as e {
         msgbox e.Message
         return
@@ -23048,10 +23047,8 @@ ApplyPresetSettings(settingsMap) {
         for key, value in sectionData["data"] {
             ; is ts in the blacklist?
             if !blacklist.Has(sectionName "." key) {
-                try
-                    %key% := value
-                try
-                    nm_UpdateGUIVar(key)
+                try %key% := value
+                try nm_UpdateGUIVar(key)
             }
         }
     }
@@ -23059,7 +23056,9 @@ ApplyPresetSettings(settingsMap) {
     WriteToIni(settingsMap)
 }
 
-FileToClipboard(PathToCopy) {
+FileToClipboard(PathToCopy){
+	; @Author Myurial
+	; @Note Leaving it in global scope incase needed for something else
 	Loop Files, PathToCopy
 		PathToCopy := A_LoopFileFullPath
 
@@ -23102,6 +23101,7 @@ nm_PresetGUI(*){
 	PresetName := PresetGUI.Add("Edit", "x10 y38 w130 h20")
 	PresetGUI.Add("Button", "x10 y70 w130 h25", "Create").OnEvent("Click", CreatePreset)
 	PresetGUI.Add("Button", "x10 yp+30 w130 h25", "Import").OnEvent("Click", ImportPreset)
+	PresetGUI.Add("Text", "x20 yp+40 w100 h50 vStatsText", "")
 	
 	; Manage
 	PresetList := PresetGUI.Add("DropDownList", "x160 y38 w130 vPresetList", GetAllPresets())
@@ -23109,8 +23109,61 @@ nm_PresetGUI(*){
 	PresetGUI.Add("Button", "x160 y70 w130 h25", "Load").OnEvent("Click", LoadPreset)
 	PresetGUI.Add("Button", "x160 y100 w130 h25", "Export").OnEvent("Click", ExportPresetBtn)
 	PresetGUI.Add("Button", "x160 y130 w130 h25", "Delete").OnEvent("Click", DeletePreset)
+	PresetGUI.Add("Button", "x160 y160 w130 h25", "Update").OnEvent("Click", UpdatePreset)
+
+	PresetGUI.Show("w300 h190")
+
+	UpdateStats()
 	
-	PresetGUI.Show("w300 h200")
+	UpdateStats(){ 
+		presetCount := 0
+		totalSize := 0
+		Loop Files, "settings\presets\*.nm" {
+			presetCount++
+			totalSize += A_LoopFileSize
+		}
+		
+		; formatting :tongue:
+		sizeStr := ""
+		switch totalSize {
+			case totalSize < 1024:
+				sizeStr := totalSize "B" ; literally wont happen but it might
+			case totalSize < 1048576:
+				sizeStr := Round(totalSize / 1024, 2) "KB"
+			default:
+				sizeStr := Round(totalSize / 1048576, 2) "MB"	
+		}
+
+		Message := 
+		(
+		"Preset Count=" presetCount "
+		Total Size=" sizeStr
+		)
+		
+		PresetGUI["StatsText"].Value := Message
+	}
+
+	UpdatePreset(*) {
+		selected := PresetList.Text
+		if selected = "" {
+			MsgBox("Please select a preset!", "Error", 0x10)
+			return
+		}
+		
+		result := MsgBox("This will overwrite '" selected "' with your current settings. Continue?", "Confirm Update", 0x34)
+		if result != "Yes"
+			return
+
+		presetPath := "settings\presets\" selected ".nm"
+		try FileDelete(presetPath)
+		try {
+			PackAll(selected)
+			MsgBox("Preset updated successfully!", "Success", 0x40)
+			RefreshPresetList()
+			PresetList.Text := selected
+			UpdateStats()
+		}
+	}
 
 	RefreshPresetList() {
 		presets := GetAllPresets()
@@ -23119,6 +23172,7 @@ nm_PresetGUI(*){
 		for preset in presets
 			PresetList.Add([preset])
 		try PresetList.Text := currentText
+		UpdateStats()
 	}
 
 	ImportPreset(*) {
@@ -23168,7 +23222,7 @@ nm_PresetGUI(*){
 
 	ExportPresetBtn(*){
 		selected := PresetList.Text
-		if selected = ""
+		if (selected = "")
 			MsgBox("Please select a preset!", "Error", 0x10)
 		else
 			ExportPreset(selected), MsgBox("Preset copied to clipboard!", "Success", 0x40)
@@ -23192,11 +23246,13 @@ nm_PresetGUI(*){
 		arr := []
 		Loop Files, "settings\presets\*.nm"
 			arr.Push(StrReplace(A_LoopFileName, ".nm", ""))
-		return arr.Length ? arr : ["No presets found"]
+		return arr.Length ? arr : ["No presets found..."]
 	}
 
 	ExportPreset(presetname) => FileToClipboard(A_WorkingDir "\settings\presets\" presetname ".nm")
 
 	PresetGUI.OnEvent("Close", (*) => PresetGUI.destroy())
+
 }
+
 
