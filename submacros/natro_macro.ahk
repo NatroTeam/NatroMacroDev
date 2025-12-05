@@ -7746,7 +7746,7 @@ nm_ClaimMethod(GuiCtrl, *){
 	global ClaimMethod
 	static val := ["Detect", "To Slot"], l := val.Length
 
-	if (ClaimMethod = "Detect")
+	if (ClaimMethod = "To Slot")
 	{
 		if (MsgBox("
 		(

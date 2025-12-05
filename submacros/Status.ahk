@@ -277,7 +277,7 @@ settings["PlanterNectar3"] := {enum: 76, type: "str", section: "Planters", regex
 settings["PlanterHarvestFull1"] := {enum: 77, type: "str", section: "Planters", regex: "i)^(Full|Timed)$"}
 settings["PlanterHarvestFull2"] := {enum: 78, type: "str", section: "Planters", regex: "i)^(Full|Timed)$"}
 settings["PlanterHarvestFull3"] := {enum: 79, type: "str", section: "Planters", regex: "i)^(Full|Timed)$"}
-settings["ClaimMethod"] := {enum: 80, type: "str", section: "Planters", regex: "i)^(Detect|To Slot)$"}
+settings["ClaimMethod"] := {enum: 80 , type: "str", section: "Settings", regex: "i)^(Detect|To Slot)$"}
 
 ;settings["discordMode"] := {enum: 1, type: "int", section: "Status", regex: "i)^(0|1|2)$"} dangerous
 ;settings["discordCheck"] := {enum: 2, type: "int", section: "Status", regex: "i)^(0|1)$"} dangerous
