@@ -318,6 +318,7 @@ nm_importConfig()
 		, "FallbackServer2", ""
 		, "FallbackServer3", ""
 		, "ReconnectMethod", "Deeplink"
+		, "ClaimMethod", "To Slot"
 		, "ReconnectInterval", ""
 		, "ReconnectHour", ""
 		, "ReconnectMin", ""
@@ -2753,9 +2754,14 @@ MainGui.Add("Text", "x10 y125 w110 +BackgroundTrans", "My Hive Has:")
 MainGui.Add("Edit", "x75 y124 w18 h16 Limit2 number vHiveBees Disabled", ValidateInt(&HiveBees, 50)).OnEvent("Change", nm_HiveBees)
 MainGui.Add("Text", "x98 y125 w110 +BackgroundTrans", "Bees")
 MainGui.Add("Button", "x150 y124 w10 h15 vHiveBeesHelp Disabled", "?").OnEvent("Click", nm_HiveBeesHelp)
-MainGui.Add("Text", "x9 y142 w110 +BackgroundTrans", "Wait")
-(GuiCtrl := MainGui.Add("Edit", "x33 y141 w18 h16 Limit2 number vConvertDelay Disabled", ValidateInt(&ConvertDelay))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "x54 y142 w110 +BackgroundTrans", "seconds after convert")
+MainGui.Add("Text", "x9 y142 w110 +BackgroundTrans", "Claim Method: ")
+MainGui.Add("Text", "x92 yp w48 vClaimMethod +Center +BackgroundTrans", ClaimMethod)
+MainGui.Add("Button", "x80 yp w12 h15 vCMLeft Disabled", "<").OnEvent("Click", nm_ClaimMethod)
+MainGui.Add("Button", "x139 yp w12 h15 vCMRight Disabled", ">").OnEvent("Click", nm_ClaimMethod)
+MainGui.Add("Button", "x150 yp w10 h15 vClaimMethodHelp Disabled", "?").OnEvent("Click", nm_ClaimMethodHelp)
+;MainGui.Add("Text", "x9 y142 w110 +BackgroundTrans", "Wait")
+;(GuiCtrl := MainGui.Add("Edit", "x33 y141 w18 h16 Limit2 number vConvertDelay Disabled", ValidateInt(&ConvertDelay))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+;MainGui.Add("Text", "x54 y142 w110 +BackgroundTrans", "seconds after convert")
 
 ;reset settings
 MainGui.Add("Button", "x20 y183 w130 h22 vResetFieldDefaultsButton Disabled", "Reset Field Defaults").OnEvent("Click", nm_ResetFieldDefaultGUI)
@@ -4143,6 +4149,8 @@ nm_TabSettingsLock(){
 	MainGui["STRight"].Enabled := 0
 	MainGui["CBLeft"].Enabled := 0
 	MainGui["CBRight"].Enabled := 0
+	MainGui["CMLeft"].Enabled := 0
+	MainGui["CMRight"].Enabled := 0
 	MainGui["ConvertMins"].Enabled := 0
 	MainGui["DisableToolUse"].Enabled := 0
 	MainGui["AnnounceGuidingStar"].Enabled := 0
@@ -4166,6 +4174,7 @@ nm_TabSettingsLock(){
 	MainGui["RefreshDetectedApplication"].Enabled := 0
 	MainGui["DetectedApplicationHelp"].Enabled := 0
 	MainGui["NewWalkHelp"].Enabled := 0
+	MainGui["ClaimMethodHelp"].Enabled := 0
 }
 nm_TabSettingsUnLock(){
 	global
@@ -4182,6 +4191,8 @@ nm_TabSettingsUnLock(){
 	MainGui["STRight"].Enabled := 1
 	MainGui["CBLeft"].Enabled := 1
 	MainGui["CBRight"].Enabled := 1
+	MainGui["CMLeft"].Enabled := 1
+	MainGui["CMRight"].Enabled := 1
 	if (ConvertBalloon="every")
 		MainGui["ConvertMins"].Enabled := 1
 	MainGui["DisableToolUse"].Enabled := 1
@@ -4206,6 +4217,7 @@ nm_TabSettingsUnLock(){
 	MainGui["RefreshDetectedApplication"].Enabled := 1
 	MainGui["DetectedApplicationHelp"].Enabled := 1
 	MainGui["NewWalkHelp"].Enabled := 1
+	MainGui["ClaimMethodHelp"].Enabled := 1
 }
 nm_TabMiscLock(){
 	MainGui["BasicEggHatcherButton"].Enabled := 0
@@ -7730,6 +7742,31 @@ nm_ReconnectMethod(GuiCtrl, *){
 	MainGui["ReconnectMethod"].Text := ReconnectMethod := val[(GuiCtrl.Name = "RMRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
 	IniWrite ReconnectMethod, "settings\nm_config.ini", "Settings", "ReconnectMethod"
 }
+nm_ClaimMethod(GuiCtrl, *){
+	global ClaimMethod
+	static val := ["Detect", "To Slot"], l := val.Length
+
+	if (ClaimMethod = "Deeplink")
+	{
+		if (MsgBox("
+		(
+		Using 'Detect' Might have the possiblity to incorrectly detect hive slots if the red arrows are being blocked by something.
+		e.g. Tide Popper
+
+		Are you sure you want to use Detection?
+		)", "Calim Hive Method", 0x1034 " T60 Owner" MainGui.Hwnd) = "Yes")
+			i := 1
+		else
+			return
+	}
+	else
+		i := 2
+
+	i := (ClaimMethod = "Detect") ? 1 : 2
+
+	MainGui["ClaimMethod"].Text := ClaimMethod := val[(GuiCtrl.Name = "CMRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	IniWrite ClaimMethod, "settings\nm_config.ini", "Settings", "ClaimMethod"
+}
 nm_setReconnectInterval(GuiCtrl, *){
 	global ReconnectInterval
 	p := EditGetCurrentCol(GuiCtrl)
@@ -7793,6 +7830,19 @@ nm_ReconnectMethodHelp(*){ ; join method information
 	'Browser' should only be used when 'Deeplink' does not work.
 	This is the old/legacy method of reconnecting: it can have inconsistencies between browsers (e.g. failure to close tabs, Roblox not logged in)
 	and you will not be able to join a public server directly ('Deeplink' is forced when joining public servers).
+	)", "Join Method", 0x40000
+}
+nm_ClaimMethodHelp(*){ ; join method information
+	MsgBox "
+	(
+	DESCRIPTION:
+	This option lets you choose between 'Detect' and 'To Hive' Hive Claiming.
+
+	'To Hive' is the more reliable option out of the bunch, this will go straight to hive without any concern to if it's claimed or not.
+	Really good if you are in a private server.
+
+	'Detect' Is only recommended if you are playing in a public server for speed.
+	This won't work if the red arrows pointing to unclaimed hiveslots are covered, which can happen with looks like Tide Popper or Dark Scythe.
 	)", "Join Method", 0x40000
 }
 nm_ReconnectTimeHelp(*){
@@ -17729,24 +17779,25 @@ nm_claimHiveSlot(){
 
 		; detect unclaimed hive slots.
 		if newSystem {
-			preferred := 0
-			slots := nm_detectHiveSlots()
-			for i, slot in slots {
-				if (HiveSlot = slot.HiveSlot && slot.Claimed = "Empty") {
-					preferred := HiveSlot
-					break
-				}
-			}
-
-			if (!preferred) {
+			preferred := (ClaimMethod = "Detect") ? 0 : HiveSlot
+			if ClaimMethod = "Detect" {
+				slots := nm_detectHiveSlots()
 				for i, slot in slots {
-					if (slot.Claimed = "Empty") {
-						preferred := slot.HiveSlot
+					if (HiveSlot = slot.HiveSlot && slot.Claimed = "Empty") {
+						preferred := HiveSlot
 						break
 					}
 				}
-			}
 
+				if (!preferred) {
+					for i, slot in slots {
+						if (slot.Claimed = "Empty") {
+							preferred := slot.HiveSlot
+							break
+						}
+					}
+				}
+			}
 			if (preferred) {
 				movement := nm_spawnMoveTo(slotMove[preferred])
 				nm_createWalk(movement)
@@ -17772,10 +17823,12 @@ nm_claimHiveSlot(){
 				Gdip_DisposeImage(pBMScreen)
 			}
 			newSystem := 0
+			continue
 		}
 
 		; USE OLD SYSTEM IF NEW SYSTEM DIDN'T WORK
-		nm_setStatus("Warning", "Unable to detect hive slot from spawn, attempting with old system.")
+		if A_Index = 2
+			nm_setStatus("Warning", "Unable to detect hive slot from spawn, attempting with old system.")
 		;go to slot 1
 		Sleep 500
 		GetRobloxClientPos(hwnd)
