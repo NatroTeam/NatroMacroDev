@@ -11016,7 +11016,7 @@ nm_HealthBar() {
 						&& (((c) & 0x0000FF00 >= 0x00004D00) && ((c) & 0x0000FF00 <= 0x00008300))
 						&& (((c) & 0x000000FF >= 0x0000004D) && ((c) & 0x000000FF <= 0x00000083)))
 	GetRobloxClientPos()
-	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth-100 "|" windowY "|50|24")
+	pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth-100 "|" windowY+24 "|50|20")
 	if isDead(Gdip_GetPixel(pBMScreen, 25, 12))
 		detection:=1
 	Gdip_DisposeImage(pBMScreen)
