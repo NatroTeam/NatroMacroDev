@@ -896,97 +896,7 @@ nm_importConfig() {
 		, "TimerY", 150
 		, "TimersOpen", 0)
 
-	config["PresetBlacklist"] := Map(
-		"LastAntPass", "Collect",
-		"LastBlueBoost", "Collect",
-		"LastBlueberryDis", "Collect",
-		"LastBugrunLadybugs", "Collect",
-		"LastBugrunMantis", "Collect",
-		"LastBugrunRhinoBeetles", "Collect",
-		"LastBugrunScorpions", "Collect",
-		"LastBugrunSpider", "Collect",
-		"LastBugrunWerewolf", "Collect",
-		"LastCandles", "Collect",
-		"LastClock", "Collect",
-		"LastCocoCrab", "Collect",
-		"LastCoconutDis", "Collect",
-		"LastCommando", "Collect",
-		"LastExtremeMemoryMatch", "Collect",
-		"LastFeast", "Collect",
-		"LastGingerbread", "Collect",
-		"LastGlueDis", "Collect",
-		"LastGummyBeacon", "Collect",
-		"LastHoneyDis", "Collect",
-		"LastHoneystorm", "Collect",
-		"LastKingBeetle", "Collect",
-		"LastLidArt", "Collect",
-		"LastMegaMemoryMatch", "Collect",
-		"LastMondoBuff", "Collect",
-		"LastMountainBoost", "Collect",
-		"LastNightMemoryMatch", "Collect",
-		"LastNormalMemoryMatch", "Collect",
-		"LastRBPDelevel", "Collect",
-		"LastRedBoost", "Collect",
-		"LastRoboPass", "Collect",
-		"LastRoyalJellyDis", "Collect",
-		"LastSamovar", "Collect",
-		"LastSnowMachine", "Collect",
-		"LastStickerPrinter", "Collect",
-		"LastStockings", "Collect",
-		"LastStrawberryDis", "Collect",
-		"LastStumpSnail", "Collect",
-		"LastTreatDis", "Collect",
-		"LastTunnelBear", "Collect",
-		"LastWinterMemoryMatch", "Collect",
-		"LastWreath", "Collect",
-		"LastBlenderRot", "Blender",
-		"LastGlitter", "Boost",
-		"LastGuid", "Boost",
-		"LastHotkey2", "Boost",
-		"LastHotkey3", "Boost",
-		"LastHotkey4", "Boost",
-		"LastHotkey5", "Boost",
-		"LastHotkey6", "Boost",
-		"LastHotkey7", "Boost",
-		"PlanterHarvestNow1", "Planters",
-		"PlanterHarvestNow2", "Planters",
-		"PlanterHarvestNow3", "Planters",
-		"PlanterHarvestTime1", "Planters",
-		"PlanterHarvestTime2", "Planters",
-		"PlanterHarvestTime3", "Planters",
-		"PlanterManualCycle1", "Planters",
-		"PlanterManualCycle2", "Planters",
-		"PlanterManualCycle3", "Planters",
-		"PlanterMode", "Planters",
-		"PlanterName1", "Planters",
-		"PlanterName2", "Planters",
-		"PlanterName3", "Planters",
-		"PlanterNectar1", "Planters",
-		"PlanterNectar2", "Planters",
-		"PlanterNectar3", "Planters",
-		"TotalBossKills", "Status",
-		"TotalBugKills", "Status",
-		"TotalConvertTime", "Status",
-		"TotalDisconnects", "Status",
-		"TotalGatherTime", "Status",
-		"TotalPlantersCollected", "Status",
-		"TotalQuestsComplete", "Status",
-		"TotalRuntime", "Status",
-		"TotalViciousKills", "Status",
-		"SessionViciousKills", "Status",
-		"SessionBossKills", "Status",
-		"SessionBugKills", "Status",
-		"SessionConvertTime", "Status",
-		"SessionDisconnects", "Status",
-		"SessionPlantersCollected", "Status",
-		"SessionTotalHoney", "Status",
-		"MainChannelID", "Status", ; security reasons
-		"BotToken", "Status",
-		"ReportChannelID", "Status",
-		"DiscordUID", "Status",
-		"Webhook", "Status",
-		"NightAnnouncementWebhook", "Status"
-	)
+		
 	
 
 	local k, v, i, j
@@ -22946,48 +22856,42 @@ nm_UpdateGUIVar(var)
 }
 
 SavePresetToFile(presetname) {
-    SavePreset(presetname, presetContent) {
-        if !DirExist("settings\presets")
-            DirCreate("settings\presets")
-
-        filepath := "settings\presets\" presetname ".nm"
-
-        if FileExist(filepath) {
-            while FileExist(filepath)
-                filepath := "settings\presets\" presetname " (" A_Index ").nm"
-        }
-        fs := FileOpen(filepath, "w")
-        fs.Write(presetContent)
-        fs.Close()
-    }
-    
     settings := Map(), settings.CaseSense := 0
 
-    (settings["config"] := Map()).CaseSense := 0
-    (settings["manualplanters"] := Map()).CaseSense := 0
-    (settings["fields"] := Map()).CaseSense := 0
+	for iniName, iniData in iniFiles {
+		(settings[iniName] := Map()).CaseSense := 0
+	}
 
-    for name, ini in iniFiles {
-        settings[name] := nm_ReadIni(ini.path)
-        
-        /* example blacklist
-        for section, itemData in ini.globalObj {
-            for key, itemObj in itemData {
-                if itemObj.HasOwnProp("type") && itemObj.type = configTypes.blacklist {
-                    settings[name][section].Delete(key)
-                }
-            }
-        }
-        */
-    }
+    for section, itemData in iniData {
+		for key, value in itemData {
+			configItem := iniFiles[iniName].globalObj[section][key]
+
+			if IsObject(configItem) && configItem.HasOwnProp("type") && configItem.type = configTypes.blacklist
+				continue
+			
+			try {
+				%key% := value
+				nm_UpdateGUIVar(key)
+			}
+		}
+	}
 
     try settings := JSON.stringify(settings)
     
-    SavePreset(presetname, settings)
+   	if !DirExist("settings\presets")
+		DirCreate("settings\presets")
+
+	filepath := "settings\presets\" presetname ".nm"
+
+	while FileExist(filepath)
+		filepath := "settings\presets\" presetname " (" A_Index ").nm"
+
+	fs := FileOpen(filepath, "w")
+	fs.Write(settings)
+	fs.Close()
 }
 
 GetPresetFromFile(preset) {
-    ; you should probably still verify that the preset is here ↓
     PresetCont := FileRead("settings\presets\" preset ".nm")
     try parsed := JSON.parse(PresetCont)
     catch as e {
