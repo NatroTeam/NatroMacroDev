@@ -1,4 +1,4 @@
-/*
+﻿/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -117,7 +117,7 @@ ImportPreset(wParam, *){
     filename := GetFileByPosition(wParam)
     nm_LockTabs()
     if filename != ""
-        UnpackAll(filename)
+        GetPresetFromFile(filename)
 	nm_LockTabs(0)
 
 	GetFileByPosition(position) {
@@ -328,11 +328,33 @@ nm_importPaths()
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; IMPORT GLOBALS FROM CONFIG
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+configTypes := {
+	blacklist: 0,
+	allow: 1
+}
 nm_importConfig() {
     global
     global config := Map()
     
     ; store default values, these are loaded initially
+
+    /*
+	//todo: add the object to every setting
+    EXAMPLE of the structure
+
+    ; I would start with a simple blacklist, but this can be later expanded to more types to allow for finer control.
+    ideas: [
+        timers
+        bss stuff
+    ]
+
+    You could also filter a single section only later down the line too
+    
+    config["settings"] := Map("GuiTheme", {default: "MacLion3", type: configTypes.allow}
+    , "MoveMethod", {default: 0, type: configTypes.allow}
+    , "BotToken", {default: "", type: configTypes.blacklist}
+    )
+    */
     config["Settings"] := Map("GuiTheme", "MacLion3"
         , "AlwaysOnTop", 0
         , "MoveSpeedNum", 28
@@ -645,26 +667,26 @@ nm_importConfig() {
         , "ShrineIndex2", 1
         , "ShrineRot", 1)
     
-    config["Blender"] := Map("BlenderRot", 1
-        , "BlenderCheck", 1
-        , "TimerInterval", 0
-        , "BlenderItem1", "None"
-        , "BlenderItem2", "None"
-        , "BlenderItem3", "None"
-        , "BlenderAmount1", 0
-        , "BlenderAmount2", 0
-        , "BlenderAmount3", 0
-        , "BlenderIndex1", 1
-        , "BlenderIndex2", 1
-        , "BlenderIndex3", 1
-        , "BlenderTime1", 0
-        , "BlenderTime2", 0
-        , "BlenderTime3", 0
-        , "BlenderEnd", 0
-        , "LastBlenderRot", 1
-        , "BlenderCount1", 0
-        , "BlenderCount2", 0
-        , "BlenderCount3", 0)
+    config["Blender"] := Map("BlenderRot", {default: 1, type: configTypes.allow}
+        , "BlenderCheck", {default: 0, type: configTypes.allow}
+        , "TimerInterval", {default: 0, type: configTypes.allow}
+        , "BlenderItem1", {default: "None", type: configTypes.allow}
+        , "BlenderItem2", {default: "None", type: configTypes.allow}
+        , "BlenderItem3", {default: "None", type: configTypes.allow}
+        , "BlenderAmount1", {default: 0, type: configTypes.allow}
+        , "BlenderAmount2", {default: 0, type: configTypes.allow}
+        , "BlenderAmount3", {default: 0, type: configTypes.allow}
+        , "BlenderIndex1", {default: 1, type: configTypes.allow}
+        , "BlenderIndex2", {default: 1, type: configTypes.allow}
+        , "BlenderIndex3", {default: 1, type: configTypes.allow}
+        , "BlenderTime1", {default: 0, type: configTypes.blacklist}
+        , "BlenderTime2", {default: 0, type: configTypes.blacklist}
+        , "BlenderTime3", {default: 0, type: configTypes.blacklist}
+        , "BlenderEnd", {default: 1, type: configTypes.allow}
+        , "LastBlenderRot", {default: 1, type: configTypes.blacklist}
+        , "BlenderCount1", {default: 0, type: configTypes.allow}
+        , "BlenderCount2", {default: 0, type: configTypes.allow}
+        , "BlenderCount3", {default: 0, type: configTypes.allow})
     
     config["Boost"] := Map("FieldBoostStacks", 0
         , "FieldBooster1", "None"
@@ -975,7 +997,7 @@ nm_importConfig() {
 
     local inipath := A_WorkingDir "\settings\nm_config.ini"
     if FileExist(inipath) ; update default values with new ones read from any existing .ini
-        nm_ReadIni(inipath)
+        nm_LoadGlobalsFromIni(inipath)
     
     local ini := ""
     for k, v in config ; overwrite any existing .ini with updated one with all new keys and old values
@@ -992,25 +1014,77 @@ nm_importConfig() {
 }
 nm_importConfig()
 
+/**
+ * parse ini file to a map
+ * @returns Map()[section][key] = value
+ */
 nm_ReadIni(path)
 {
-	global
-	local ini, str, c, p, k, v
-
 	ini := FileOpen(path, "r"), str := ini.Read(), ini.Close()
+    config := Map()
+    config.CaseSense := 0
+
 	Loop Parse str, "`n", "`r" A_Space A_Tab
 	{
 		switch (c := SubStr(A_LoopField, 1, 1))
 		{
-			; ignore comments and section names
-			case "[",";":
-			continue
+			; ignore comments
+            case ";":
+			    continue
+            ; section names
+			case "[":
+                lastsection := Trim(A_LoopField, "[] ")
+                config[lastsection] := Map()
 
 			default:
-			if (p := InStr(A_LoopField, "="))
-				try k := SubStr(A_LoopField, 1, p-1), %k% := IsInteger(v := SubStr(A_LoopField, p+1)) ? Integer(v) : v
+                try {
+                    if (p := InStr(A_LoopField, "=")) {
+                        key := SubStr(A_LoopField, 1, p-1)
+                        value := IsInteger(v := SubStr(A_LoopField, p+1)) ? Integer(v) : v
+                        config[lastsection][key] := value
+                    }
+                }
 		}
 	}
+    return config
+}
+/**
+ * convert map to ini string
+ * @returns ini string
+ */
+nm_stringifyIni(map)
+{
+    ini := ""
+
+    for section, var in map {
+        ini .= "[" section "]`r`n"
+        for name, value in var {
+            ini .= name "=" value "`r`n"
+        }
+        ini .= "`r`n"
+    }
+    return ini
+}
+
+nm_LoadGlobalsFromIni(path)
+{
+    global
+    local ini, var, name, value
+
+    ini := nm_ReadIni(path)
+    for , var in ini {
+        for name, value in var {
+            try %name% := value
+        }
+    }
+}
+
+nm_saveIniFromMap(map, path)
+{
+    ini := nm_stringifyIni(map)
+    fs := FileOpen(path, "w-d")
+    fs.Write(ini)
+    fs.Close()
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1954,7 +2028,7 @@ ObjMinIndex(obj)
 nm_importManualPlanters()
 {
 	global
-	local ManualPlanters := Map()
+	global ManualPlanters := Map()
 
 	ManualPlanters["General"] := Map("MHarvestInterval", "2 hours")
 
@@ -2077,7 +2151,7 @@ nm_importManualPlanters()
 	local inipath := A_WorkingDir "\settings\manual_planters.ini"
 
 	if FileExist(inipath)
-		nm_ReadIni(inipath)
+		nm_LoadGlobalsFromIni(inipath)
 
 	local ini := ""
 	for k,v in ManualPlanters ; overwrite any existing .ini with updated one with all new keys and old values
@@ -2092,6 +2166,11 @@ nm_importManualPlanters()
 }
 nm_importManualPlanters()
 
+iniFiles := Map(
+	"config", {path: "settings\nm_config.ini", globalObj: config},
+	"manualplanters", {path: "settings\manual_planters.ini", globalObj: manualPlanters},
+	"fields", {path: "settings\field_config.ini", globalObj: FieldDefault}
+)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DECLARE GLOBALS AND PREPARE GUI
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -22866,70 +22945,49 @@ nm_UpdateGUIVar(var)
 	}
 }
 
-PackAll(presetname) {
-    global
-    
-    GetAllIni() {
-        static IniFiles := ["settings\nm_config.ini", "settings\manual_planters.ini", "settings\field_config.ini"]
-        fileData := Map()
-        for k in IniFiles
-            fileData[k] := FileRead(k)
-        return fileData
-    }
-    
+SavePresetToFile(presetname) {
     SavePreset(presetname, presetContent) {
         if !DirExist("settings\presets")
             DirCreate("settings\presets")
-        
-        existingFiles := Map()
-        Loop Files, "settings\presets\*.nm"
-            existingFiles[A_LoopFileName] := true
-        
-        filename := presetname ".nm", counter := 1
-        while existingFiles.Has(filename)
-            filename := presetname " (" counter++ ").nm"
-        
-        filepath := "settings\presets\" filename
-        fs := FileOpen(filepath, "w"), fs.Write(presetContent), fs.Close()
-        return filepath
+
+        filepath := "settings\presets\" presetname ".nm"
+
+        if FileExist(filepath) {
+            while FileExist(filepath)
+                filepath := "settings\presets\" presetname " (" A_Index ").nm"
+        }
+        fs := FileOpen(filepath, "w")
+        fs.Write(presetContent)
+        fs.Close()
     }
     
-	; zone of innefficiency lol
-    blacklist := Map()
-    for varName, sectionName in config["PresetBlacklist"]
-        blacklist[sectionName "." varName] := true
-    
-    fileData := GetAllIni(), settings := Map()
-    for filePath, content in fileData {
-        currentSection := ""
-        Loop Parse, content, "`n", "`r" {
-            line := Trim(A_LoopField)
-            switch {
-                case (line = "" || SubStr(line, 1, 1) = ";"):
-                    continue
-                case (RegExMatch(line, "^\[(.+)\]$", &match)):
-                    currentSection := match[1]
-                    if !settings.Has(currentSection)
-                        settings[currentSection] := Map("__file__", filePath, "data", Map())
-                case (RegExMatch(line, "^([^=]+)=(.*)$", &match)):
-                    if currentSection != "" {
-                        varName := Trim(match[1])
-                        varValue := Trim(match[2])
-                        
-                        ; is blacklisted var?
-                        if !blacklist.Has(currentSection "." varName)
-                            settings[currentSection]["data"][varName] := varValue
-                    }
+    settings := Map(), settings.CaseSense := 0
+
+    (settings["config"] := Map()).CaseSense := 0
+    (settings["manualplanters"] := Map()).CaseSense := 0
+    (settings["fields"] := Map()).CaseSense := 0
+
+    for name, ini in iniFiles {
+        settings[name] := nm_ReadIni(ini.path)
+        
+        /* example blacklist
+        for section, itemData in ini.globalObj {
+            for key, itemObj in itemData {
+                if itemObj.HasOwnProp("type") && itemObj.type = configTypes.blacklist {
+                    settings[name][section].Delete(key)
+                }
             }
         }
+        */
     }
+
+    try settings := JSON.stringify(settings)
     
-    SavePreset(presetname, JSON.stringify(settings))
+    SavePreset(presetname, settings)
 }
 
-UnpackAll(preset) {
-    global
-    
+GetPresetFromFile(preset) {
+    ; you should probably still verify that the preset is here ↓
     PresetCont := FileRead("settings\presets\" preset ".nm")
     try parsed := JSON.parse(PresetCont)
     catch as e {
@@ -22940,125 +22998,31 @@ UnpackAll(preset) {
     ApplyPresetSettings(parsed)
 }
 
-ApplyPresetSettings(settingsMap) {
+ApplyPresetSettings(presetData) {
     global
-	
-	WriteToIni(settingsMap) {
-		global
-		
-		blacklist := Map()
-		for varName, sectionName in config["PresetBlacklist"]
-			blacklist[sectionName "." varName] := true
-		
-		; from current config
-		local k, v, i
-		local ini := ""
-		
-		for k, v in config {
-			if k = "PresetBlacklist"
-				continue
-				
-			ini .= "[" k "]`r`n"
-			
-			for i in v {
-				local updatedValue := ""
-				local wasUpdated := false
-				
-				if settingsMap.Has(k) && settingsMap[k]["data"].Has(i) {
-					updatedValue := settingsMap[k]["data"][i]
-					wasUpdated := true
-				}
-				
-				if (wasUpdated && !blacklist.Has(k "." i))
-					ini .= i "=" updatedValue "`r`n"
-				else
-					ini .= i "=" %i% "`r`n"
-			}
-			
-			ini .= "`r`n"
-		}
-		
-		local inipath := A_WorkingDir "\settings\nm_config.ini"
-		local file := FileOpen(inipath, "w-d")
-		file.Write(ini), file.Close()
-		
-		for sectionName, sectionData in settingsMap {
-			filePath := sectionData["__file__"]
-			
-			if filePath = "settings\nm_config.ini"
-				continue
-				
-			if FileExist(filePath) {
-				existingContent := FileRead(filePath)
-				newContent := ""
-				currentSection := ""
-				sectionData := Map()
-				
-				Loop Parse, existingContent, "`n", "`r" {
-					line := Trim(A_LoopField)
-					
-					if (line = "" || SubStr(line, 1, 1) = ";") {
-						newContent .= line "`r`n"
-						continue
-					}
-					
-					if RegExMatch(line, "^\[(.+)\]$", &match) {
-						; does prev exist
-						if (currentSection != "") {
-							newContent .= "[" currentSection "]`r`n"
-							for key, val in sectionData
-								newContent .= key "=" val "`r`n"
-							newContent .= "`r`n"
-							sectionData := Map()
-						}
-						currentSection := match[1]
-						continue
-					}
-					
-					if RegExMatch(line, "^([^=]+)=(.*)$", &match) && (currentSection != "") {
-						key := Trim(match[1])
-						value := Trim(match[2])
-						
-						; preset has different value for this key?
-						if settingsMap.Has(currentSection) && settingsMap[currentSection]["data"].Has(key) && !blacklist.Has(currentSection "." key)
-							sectionData[key] := settingsMap[currentSection]["data"][key]
-						else
-							sectionData[key] := value
-					}
-				}
-				
-				if currentSection != "" {
-					newContent .= "[" currentSection "]`r`n"
-					for key, val in sectionData
-						newContent .= key "=" val "`r`n"
-				}
-				
-				file := FileOpen(filePath, "w")
-				file.Write(newContent), file.Close()
-			}
-		}
-	}
-
-    blacklist := Map()
-    for varName, sectionName in config["PresetBlacklist"]
-        blacklist[sectionName "." varName] := true
+    local iniName, iniData, section, itemData, key, value, itemObj
     
-    for sectionName, sectionData in settingsMap {
-        for key, value in sectionData["data"] {
-            ; is ts in the blacklist?
-            if !blacklist.Has(sectionName "." key) {
-                try %key% := value
-                try nm_UpdateGUIVar(key)
+    for iniName, iniData in presetData {
+        for section, itemData in iniData {
+            for key, value in itemData {
+				configItem := iniFiles[iniName].globalObj[section][key]
+				
+				if IsObject(configItem) && configItem.HasOwnProp("type") && configItem.type = configTypes.blacklist
+					continue
+                
+                try {
+                    %key% := value
+                    nm_UpdateGUIVar(key)
+                }
             }
         }
+        nm_saveIniFromMap(iniData, iniFiles[iniName].path)
     }
-    
-    WriteToIni(settingsMap)
 }
 
 FileToClipboard(PathToCopy){
 	; @Author Myurial
-	; @Note Leaving it in global scope incase needed for something else
+	; Leaving it in global scope incase needed for something else
 	Loop Files, PathToCopy
 		PathToCopy := A_LoopFileFullPath
 
@@ -23083,11 +23047,13 @@ FileToClipboard(PathToCopy){
 
 nm_PresetGUI(*){
 	global PresetGUI, ManagingPreset
-
-	if !IsSet(PresetGUI)
-		PresetGUI := Gui("", "Presets")
-	else
-		PresetGUI.Destroy(), PresetGUI := Gui("", "Presets")
+	GuiClose(*){
+		if (IsSet(PresetGUI) && IsObject(PresetGUI))
+			PresetGUI.Destroy(), PresetGUI := ""
+	}
+	GuiClose()
+	PresetGUI := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Presets")
+    PresetGUI.OnEvent("Close", GuiClose)
 
 	PresetGUI.SetFont("w700")
 	PresetGUI.Add("Groupbox", "x3 y3 w145 h195", "Create Preset")
@@ -23111,9 +23077,9 @@ nm_PresetGUI(*){
 	PresetGUI.Add("Button", "x160 y130 w130 h25", "Delete").OnEvent("Click", DeletePreset)
 	PresetGUI.Add("Button", "x160 y160 w130 h25", "Update").OnEvent("Click", UpdatePreset)
 
-	PresetGUI.Show("w300 h190")
-
 	UpdateStats()
+
+    PresetGUI.Show("w300 h190")
 	
 	UpdateStats(){ 
 		presetCount := 0
@@ -23136,8 +23102,8 @@ nm_PresetGUI(*){
 
 		Message := 
 		(
-		"Preset Count=" presetCount "
-		Total Size=" sizeStr
+		"Preset Count: " presetCount "
+		Total Size: " sizeStr
 		)
 		
 		PresetGUI["StatsText"].Value := Message
@@ -23145,19 +23111,18 @@ nm_PresetGUI(*){
 
 	UpdatePreset(*) {
 		selected := PresetList.Text
-		if selected = "" {
-			MsgBox("Please select a preset!", "Error", 0x10)
-			return
-		}
+		if !selected
+			return MsgBox("Please select a preset!", "Error", 0x10)
 		
 		result := MsgBox("This will overwrite '" selected "' with your current settings. Continue?", "Confirm Update", 0x34)
-		if result != "Yes"
+		
+        if result != "Yes"
 			return
 
 		presetPath := "settings\presets\" selected ".nm"
-		try FileDelete(presetPath)
 		try {
-			PackAll(selected)
+            FileDelete(presetPath)
+			SavePresetToFile(selected)
 			MsgBox("Preset updated successfully!", "Success", 0x40)
 			RefreshPresetList()
 			PresetList.Text := selected
@@ -23203,7 +23168,7 @@ nm_PresetGUI(*){
 			MsgBox("Please enter a preset name!", "Error", 0x10)
 			return
 		}
-		PackAll(name)
+		SavePresetToFile(name)
 		MsgBox("Preset created successfully!", "Success", 0x40)
 		RefreshPresetList()
 		PresetList.Text := name
@@ -23216,7 +23181,7 @@ nm_PresetGUI(*){
 			return
 		}
 		nm_LockTabs(1)
-		UnpackAll(selected)
+		GetPresetFromFile(selected)
 		nm_LockTabs(0)
 	}
 
@@ -23230,12 +23195,12 @@ nm_PresetGUI(*){
 
 	DeletePreset(*){
 		selected := PresetList.Text
-		if selected = "" {
-			MsgBox("Please select a preset!", "Error", 0x10)
-			return
-		}
+		if !selected
+			return MsgBox("Please select a preset!", "Error", 0x10)
+
 		result := MsgBox("Are you sure you want to delete '" selected "'?", "Confirm Delete", 0x34)
-		if result = "Yes" {
+		
+        if result = "Yes" {
 			FileDelete("settings\presets\" selected ".nm")
 			MsgBox("Preset deleted!", "Success", 0x40)
 			RefreshPresetList()
@@ -23245,14 +23210,16 @@ nm_PresetGUI(*){
 	GetAllPresets(){
 		arr := []
 		Loop Files, "settings\presets\*.nm"
-			arr.Push(StrReplace(A_LoopFileName, ".nm", ""))
+			arr.Push(RemoveNMextension(A_LoopFileName))
 		return arr.Length ? arr : ["No presets found..."]
 	}
 
 	ExportPreset(presetname) => FileToClipboard(A_WorkingDir "\settings\presets\" presetname ".nm")
 
-	PresetGUI.OnEvent("Close", (*) => PresetGUI.destroy())
-
+    RemoveNMextension(str){
+        name := Trim(str)
+        return SubStr(name, -3) = ".nm" ? SubStr(name, 1, -3) : name
+    }
 }
 
 

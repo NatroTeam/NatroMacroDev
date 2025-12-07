@@ -2439,21 +2439,24 @@ nm_command(command)
 			DetectHiddenWindows 0
 		
 		case "preset":
-			static validate := ["export", "delete", "create", "load"]
-			args := SubStr(command.content, StrLen(commandPrefix)+7, 60) ; i mean, idk? how long would people make their preset names
-			for k in validate {
-				if InStr(args, k) {
-					mode := k
-				}
+			if !(params[2] && params[3]) {
+				command_buffer.RemoveAt(1) ; since we're returning
+				return discord.SendEmbed("Missing parameters!\n``````" commandPrefix "preset [export/load/delete/create] [presetname]``````", 16711731, , , , id)
 			}
-			presetname := StrReplace(Trim(SubStr(args, StrLen(mode)+StrLen(commandPrefix)+1, 50), ".nm"), " ", "")
-			static path := A_WorkingDir "\settings\presets\" presetname ".nm"
+			name := Trim(params[3])
+			presetname := StrReplace(SubStr(name, -3) = ".nm" ? SubStr(name, 1, -3) : name, " ") ; trim .nm from preset name and remove spaces
+			path := A_WorkingDir "\settings\presets\" presetname ".nm"
 			dirlist := []
-			switch mode {
+			switch params[2], 0  {
 				case "export":
-					discord.SendFile(path, 1)
+					if FileExist(path) {
+						discord.SendFile(path, 1)
+					} else {
+						discord.SendEmbed("Preset ``" presetname "`` does not exist at path (" path ")", 16711731, , , , id)
+					}
 				case "load":
 					; use order in dir so i can get around not knowing how to use wm_copydata
+					;//todo: change to UpdateInt like other similar commands
 					dirlist := []
 			
 					Loop Files, A_WorkingDir "\settings\presets\*.nm"
@@ -2486,7 +2489,9 @@ nm_command(command)
 							discord.SendEmbed("Error: SendMessage Timeout! " e.Message, 16711731, , , , id)
 						}
 					}
-				}
+				default:
+					discord.SendEmbed("``" commandPrefix name " " params[2] "``is not a valid subcommand!\nUse ``" commandPrefix "help preset`` for a list of preset commands.", 16711731, , , , id)
+			}
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
 
