@@ -119,7 +119,8 @@ ImportPreset(wParam, *){
     if filename != ""
         GetPresetFromFile(filename)
 	nm_LockTabs(0)
-
+	
+	;//todo: change to use Loop Files
 	GetFileByPosition(position) {
 		dirlist := []
 		
@@ -22855,23 +22856,21 @@ nm_UpdateGUIVar(var)
 	}
 }
 
+;//todo: fix once globalObj is all using new system with an object instead of just a value
 SavePresetToFile(presetname) {
     settings := Map(), settings.CaseSense := 0
 
 	for iniName, iniData in iniFiles {
-		(settings[iniName] := Map()).CaseSense := 0
-	}
+		settings[iniName] := Map()
+		for section, itemData in nm_ReadIni(iniData.path) {
+			settings[iniName][section] := Map()
+			for key, value in itemData {
+				configItem := iniFiles[iniName].globalObj[section][key] ; Only here to check for blacklist
 
-    for section, itemData in iniData {
-		for key, value in itemData {
-			configItem := iniFiles[iniName].globalObj[section][key]
-
-			if IsObject(configItem) && configItem.HasOwnProp("type") && configItem.type = configTypes.blacklist
-				continue
-			
-			try {
-				%key% := value
-				nm_UpdateGUIVar(key)
+				if IsObject(configItem) && configItem.HasOwnProp("type") && configItem.type = configTypes.blacklist
+					continue
+				
+				settings[iniName][section][key] := value
 			}
 		}
 	}

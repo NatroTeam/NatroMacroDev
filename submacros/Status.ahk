@@ -2456,39 +2456,22 @@ nm_command(command)
 					}
 				case "load":
 					; use order in dir so i can get around not knowing how to use wm_copydata
-					;//todo: change to UpdateInt like other similar commands
-					dirlist := []
+					;//todo: change to use Loop Files
+					dirlist := Map()
 			
-					Loop Files, A_WorkingDir "\settings\presets\*.nm"
-						dirlist.Push({name: A_LoopFileName, time: A_LoopFileTimeCreated})
-					
-					; BUHBBLE SRT
-					Loop dirlist.Length - 1 {
-						i := A_Index
-						Loop dirlist.Length - i {
-							j := A_Index + i
-							if (dirlist[i].time > dirlist[j].time) {
-								temp := dirlist[i]
-								dirlist[i] := dirlist[j]
-								dirlist[j] := temp
+					Loop Files, A_WorkingDir "\settings\presets\*.nm" {
+						if A_LoopFileName = presetname {
+							DetectHiddenWindows 1
+							if WinExist("natro_macro ahk_class AutoHotkey"){
+								try result := SendMessage(0x5561, A_Index)
+								catch Error as e {
+									discord.SendEmbed("Error: SendMessage Timeout! " e.Message, 16711731, , , , id)
+								}
 							}
-						}
-					}
-				
-					position := 0
-					for index, file in dirlist {
-						if (file.name = presetname ".nm") {
-							position := index
 							break
 						}
 					}
-					DetectHiddenWindows 1
-					if WinExist("natro_macro ahk_class AutoHotkey"){
-						try result := SendMessage(0x5561, position)
-						catch Error as e {
-							discord.SendEmbed("Error: SendMessage Timeout! " e.Message, 16711731, , , , id)
-						}
-					}
+				
 				default:
 					discord.SendEmbed("``" commandPrefix name " " params[2] "``is not a valid subcommand!\nUse ``" commandPrefix "help preset`` for a list of preset commands.", 16711731, , , , id)
 			}
