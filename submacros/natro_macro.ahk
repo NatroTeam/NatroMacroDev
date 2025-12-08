@@ -108,8 +108,43 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5560, nm_copyDebugLog)
+OnMessage(0x5561, ImportPreset)
 OnMessage(0x0020, nm_WM_SETCURSOR)
 
+ImportPreset(wParam, *){
+    Critical
+    
+    filename := GetFileByPosition(wParam)
+    nm_LockTabs()
+    if filename != ""
+        GetPresetFromFile(filename)
+	nm_LockTabs(0)
+	
+	;//todo: change to use Loop Files
+	GetFileByPosition(position) {
+		dirlist := []
+		
+		Loop Files, A_WorkingDir "\settings\presets\*.nm"
+			dirlist.Push({name: A_LoopFileName, time: A_LoopFileTimeCreated})
+		
+		Loop dirlist.Length - 1 {
+			i := A_Index
+			Loop dirlist.Length - i {
+				j := A_Index + i
+				if (dirlist[i].time > dirlist[j].time) {
+					temp := dirlist[i]
+					dirlist[i] := dirlist[j]
+					dirlist[j] := temp
+				}
+			}
+		}
+		
+		if (position > 0 && position <= dirlist.Length)
+			return StrReplace(dirlist[position].name, ".nm", "")  ; strip extension
+		
+		return ""
+	}
+}
 ; set version identifier
 VersionID := "1.0.1"
 
@@ -294,444 +329,465 @@ nm_importPaths()
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; IMPORT GLOBALS FROM CONFIG
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-nm_importConfig()
-{
-	global
-	local config := Map() ; store default values, these are loaded initially
+configTypes := {
+	blacklist: 0,
+	allow: 1
+}
+nm_importConfig() {
+    global
+    global config := Map()
+    
+    ; store default values, these are loaded initially
 
-	config["Settings"] := Map("GuiTheme", "MacLion3"
-		, "AlwaysOnTop", 0
-		, "MoveSpeedNum", 28
-		, "MoveMethod", "Cannon"
-		, "SprinklerType", "Supreme"
-		, "ConvertBalloon", "Gather"
-		, "ConvertMins", 30
-		, "LastConvertBalloon", 1
-		, "DisableToolUse", 0
-		, "AnnounceGuidingStar", 0
-		, "NewWalk", 1
-		, "HiveSlot", 6
-		, "HiveBees", 50
-		, "ConvertDelay", 5
-		, "PrivServer", ""
-		, "FallbackServer1", ""
-		, "FallbackServer2", ""
-		, "FallbackServer3", ""
-		, "ReconnectMethod", "Deeplink"
-		, "ReconnectInterval", ""
-		, "ReconnectHour", ""
-		, "ReconnectMin", ""
-		, "PublicFallback", 1
-		, "GuiX", ""
-		, "GuiY", ""
-		, "GuiTransparency", 0
-		, "BuffDetectReset", 0
-		, "ClickCount", 1000
-		, "ClickDelay", 10
-		, "ClickMode", 1
-		, "ClickDuration", 50
-		, "KeyDelay", 20
-		, "StartHotkey", "F1"
-		, "PauseHotkey", "F2"
-		, "StopHotkey", "F3"
-		, "AutoClickerHotkey", "F4"
-		, "TimersHotkey", "F5"
-		, "ShowOnPause", 0
-		, "IgnoreUpdateVersion", ""
-		, "IgnoreIncorrectRobloxSettings", 0 
-		, "FDCWarn", 1
-		, "priorityListNumeric", 12345678
-		, "EnableBeesmasTime", 0
-		, "HideErrors", 1
-		, "DebugHotkey", "F6"
-	)
+    /*
+	//todo: add the object to every setting
+    EXAMPLE of the structure
 
-	config["Status"] := Map("StatusLogReverse", 0
-		, "TotalRuntime", 0
-		, "SessionRuntime", 0
-		, "TotalGatherTime", 0
-		, "SessionGatherTime", 0
-		, "TotalConvertTime", 0
-		, "SessionConvertTime", 0
-		, "TotalViciousKills", 0
-		, "SessionViciousKills", 0
-		, "TotalBossKills", 0
-		, "SessionBossKills", 0
-		, "TotalBugKills", 0
-		, "SessionBugKills", 0
-		, "TotalPlantersCollected", 0
-		, "SessionPlantersCollected", 0
-		, "TotalQuestsComplete", 0
-		, "SessionQuestsComplete", 0
-		, "TotalDisconnects", 0
-		, "SessionDisconnects", 0
-		, "DiscordMode", 0
-		, "DiscordCheck", 0
-		, "Webhook", ""
-		, "BotToken", ""
-		, "MainChannelCheck", 1
-		, "MainChannelID", ""
-		, "ReportChannelCheck", 1
-		, "ReportChannelID", ""
-		, "WebhookEasterEgg", 0
-		, "ssCheck", 0
-		, "ssDebugging", 0
-		, "CriticalSSCheck", 1
-		, "AmuletSSCheck", 1
-		, "MachineSSCheck", 1
-		, "BalloonSSCheck", 1
-		, "ViciousSSCheck", 1
-		, "DeathSSCheck", 1
-		, "PlanterSSCheck", 1
-		, "HoneySSCheck", 0
-		, "criticalCheck", 0
-		, "discordUID", ""
-		, "CriticalErrorPingCheck", 1
-		, "DisconnectPingCheck", 1
-		, "GameFrozenPingCheck", 1
-		, "PhantomPingCheck", 1
-		, "UnexpectedDeathPingCheck", 0
-		, "EmergencyBalloonPingCheck", 0
-		, "commandPrefix", "?"
-		, "NightAnnouncementCheck", 0
-		, "NightAnnouncementName", ""
-		, "NightAnnouncementPingID", ""
-		, "NightAnnouncementWebhook", ""
-		, "DebugLogEnabled", 1
-		, "SessionTotalHoney", 0
-		, "HoneyAverage", 0
-		, "HoneyUpdateSSCheck", 1)
+    ; I would start with a simple blacklist, but this can be later expanded to more types to allow for finer control.
+    ideas: [
+        timers
+        bss stuff
+    ]
 
-	config["Gather"] := Map("FieldName1", "Sunflower"
-		, "FieldName2", "None"
-		, "FieldName3", "None"
-		, "FieldPattern1", "Squares"
-		, "FieldPattern2", "Lines"
-		, "FieldPattern3", "Lines"
-		, "FieldPatternSize1", "M"
-		, "FieldPatternSize2", "M"
-		, "FieldPatternSize3", "M"
-		, "FieldPatternReps1", 3
-		, "FieldPatternReps2", 3
-		, "FieldPatternReps3", 3
-		, "FieldPatternShift1", 0
-		, "FieldPatternShift2", 0
-		, "FieldPatternShift3", 0
-		, "FieldPatternInvertFB1", 0
-		, "FieldPatternInvertFB2", 0
-		, "FieldPatternInvertFB3", 0
-		, "FieldPatternInvertLR1", 0
-		, "FieldPatternInvertLR2", 0
-		, "FieldPatternInvertLR3", 0
-		, "FieldUntilMins1", 20
-		, "FieldUntilMins2", 15
-		, "FieldUntilMins3", 15
-		, "FieldUntilPack1", 95
-		, "FieldUntilPack2", 95
-		, "FieldUntilPack3", 95
-		, "FieldReturnType1", "Walk"
-		, "FieldReturnType2", "Walk"
-		, "FieldReturnType3", "Walk"
-		, "FieldSprinklerLoc1", "Center"
-		, "FieldSprinklerLoc2", "Center"
-		, "FieldSprinklerLoc3", "Center"
-		, "FieldSprinklerDist1", 10
-		, "FieldSprinklerDist2", 10
-		, "FieldSprinklerDist3", 10
-		, "FieldRotateDirection1", "None"
-		, "FieldRotateDirection2", "None"
-		, "FieldRotateDirection3", "None"
-		, "FieldRotateTimes1", 1
-		, "FieldRotateTimes2", 1
-		, "FieldRotateTimes3", 1
-		, "FieldDriftCheck1", 1
-		, "FieldDriftCheck2", 1
-		, "FieldDriftCheck3", 1
-		, "CurrentFieldNum", 1)
-
-	config["Collect"] := Map("ClockCheck", 1
-		, "LastClock", 1
-		, "MondoBuffCheck", 0
-		, "MondoAction", "Buff"
-		, "MondoLootDirection", "Random"
-		, "LastMondoBuff", 1
-		, "AntPassCheck", 0
-		, "AntPassBuyCheck", 0
-		, "AntPassAction", "Pass"
-		, "LastAntPass", 1
-		, "RoboPassCheck", 0
-		, "LastRoboPass", 1
-		, "HoneystormCheck", 0
-		, "LastHoneystorm", 1
-		, "HoneyDisCheck", 0
-		, "LastHoneyDis", 1
-		, "TreatDisCheck", 0
-		, "LastTreatDis", 1
-		, "BlueberryDisCheck", 0
-		, "LastBlueberryDis", 1
-		, "StrawberryDisCheck", 0
-		, "LastStrawberryDis", 1
-		, "CoconutDisCheck", 0
-		, "LastCoconutDis", 1
-		, "RoyalJellyDisCheck", 0
-		, "LastRoyalJellyDis", 1
-		, "GlueDisCheck", 0
-		, "LastGlueDis", 1
-		, "LastBlueBoost", 1
-		, "LastRedBoost", 1
-		, "LastMountainBoost", 1
-		, "BeesmasGatherInterruptCheck", 0
-		, "StockingsCheck", 0
-		, "LastStockings", 1
-		, "WreathCheck", 0
-		, "LastWreath", 1
-		, "FeastCheck", 0
-		, "LastFeast", 1
-		, "RBPDelevelCheck", 0
-		, "LastRBPDelevel", 1
-		, "GingerbreadCheck", 0
-		, "LastGingerbread", 1
-		, "SnowMachineCheck", 0
-		, "LastSnowMachine", 1
-		, "CandlesCheck", 0
-		, "LastCandles", 1
-		, "SamovarCheck", 0
-		, "LastSamovar", 1
-		, "LidArtCheck", 0
-		, "LastLidArt", 1
-		, "GummyBeaconCheck", 0
-		, "LastGummyBeacon", 1
-		, "MonsterRespawnTime", 0
-		, "BugrunInterruptCheck", 0
-		, "BugrunLadybugsCheck", 0
-		, "BugrunLadybugsLoot", 0
-		, "LastBugrunLadybugs", 1
-		, "BugrunRhinoBeetlesCheck", 0
-		, "BugrunRhinoBeetlesLoot", 0
-		, "LastBugrunRhinoBeetles", 1
-		, "BugrunSpiderCheck", 0
-		, "BugrunSpiderLoot", 0
-		, "LastBugrunSpider", 1
-		, "BugrunMantisCheck", 0
-		, "BugrunMantisLoot", 0
-		, "LastBugrunMantis", 1
-		, "BugrunScorpionsCheck", 0
-		, "BugrunScorpionsLoot", 0
-		, "LastBugrunScorpions", 1
-		, "BugrunWerewolfCheck", 0
-		, "BugrunWerewolfLoot", 0
-		, "LastBugrunWerewolf", 1
-		, "TunnelBearCheck", 0
-		, "TunnelBearBabyCheck", 0
-		, "LastTunnelBear", 1
-		, "KingBeetleCheck", 0
-		, "KingBeetleBabyCheck", 0
-		, "KingBeetleAmuletMode", 1
-		, "LastKingBeetle", 1
-		, "InputSnailHealth", 100.00
-		, "SnailTime", 15
-		, "InputChickHealth", 100.00
-		, "ChickLevel", 10
-		, "ChickTime", 15
-		, "StumpSnailCheck", 0
-		, "ShellAmuletMode", 1
-		, "LastStumpSnail", 1
-		, "CommandoCheck", 0
-		, "LastCommando", 1
-		, "CocoCrabCheck", 0
-		, "LastCocoCrab", 1
-		, "StingerCheck", 0
-		, "StingerPepperCheck", 1
-		, "StingerMountainTopCheck", 1
-		, "StingerRoseCheck", 1
-		, "StingerCactusCheck", 1
-		, "StingerSpiderCheck", 1
-		, "StingerCloverCheck", 1
-		, "StingerDailyBonusCheck", 0
-		, "VBLastKilled", 1
-		, "MondoSecs", 120
-		, "NormalMemoryMatchCheck", 0
-		, "LastNormalMemoryMatch", 1
-		, "MegaMemoryMatchCheck", 0
-		, "LastMegaMemoryMatch", 1
-		, "ExtremeMemoryMatchCheck", 0
-		, "LastExtremeMemoryMatch", 1
-		, "NightMemoryMatchCheck", 0
-		, "LastNightMemoryMatch", 1
-		, "WinterMemoryMatchCheck", 0
-		, "LastWinterMemoryMatch", 1
-		, "MicroConverterMatchIgnore", 0
-		, "SunflowerSeedMatchIgnore", 0
-		, "JellyBeanMatchIgnore", 0
-		, "RoyalJellyMatchIgnore", 0
-		, "TicketMatchIgnore", 0
-		, "CyanTrimMatchIgnore", 0
-		, "OilMatchIgnore", 0
-		, "StrawberryMatchIgnore", 0
-		, "CoconutMatchIgnore", 0
-		, "TropicalDrinkMatchIgnore", 0
-		, "RedExtractMatchIgnore", 0
-		, "MagicBeanMatchIgnore", 0
-		, "PineappleMatchIgnore", 0
-		, "StarJellyMatchIgnore", 0
-		, "EnzymeMatchIgnore", 0
-		, "BlueExtractMatchIgnore", 0
-		, "GumdropMatchIgnore", 0
-		, "FieldDiceMatchIgnore", 0
-		, "MoonCharmMatchIgnore", 0
-		, "BlueberryMatchIgnore", 0
-		, "GlitterMatchIgnore", 0
-		, "StingerMatchIgnore", 0
-		, "TreatMatchIgnore", 0
-		, "GlueMatchIgnore", 0
-		, "CloudVialMatchIgnore", 0
-		, "SoftWaxMatchIgnore", 0
-		, "HardWaxMatchIgnore", 0
-		, "SwirledWaxMatchIgnore", 0
-		, "NightBellMatchIgnore", 0
-		, "HoneysuckleMatchIgnore", 0
-		, "SuperSmoothieMatchIgnore", 0
-		, "SmoothDiceMatchIgnore", 0
-		, "NeonberryMatchIgnore", 0
-		, "GingerbreadMatchIgnore", 0
-		, "SilverEggMatchIgnore", 0
-		, "GoldEggMatchIgnore", 0
-		, "DiamondEggMatchIgnore", 0
-		, "MemoryMatchInterruptCheck", 0
-		, "StickerPrinterCheck", 0
-		, "LastStickerPrinter", 1
-		, "StickerPrinterEgg", "Basic")
-
-	config["Shrine"] := Map("ShrineCheck", 0
-		, "LastShrine", 1
-		, "ShrineAmount1", 0
-		, "ShrineAmount2", 0
-		, "ShrineItem1", "None"
-		, "ShrineItem2", "None"
-		, "ShrineIndex1", 1
-		, "ShrineIndex2", 1
-		, "ShrineRot", 1)
-
-	config["Blender"] := Map("BlenderRot", 1
-		, "BlenderCheck", 1
-		, "TimerInterval", 0
-		, "BlenderItem1", "None"
-		, "BlenderItem2", "None"
-		, "BlenderItem3", "None"
-		, "BlenderAmount1", 0
-		, "BlenderAmount2", 0
-		, "BlenderAmount3", 0
-		, "BlenderIndex1", 1
-		, "BlenderIndex2", 1
-		, "BlenderIndex3", 1
-		, "BlenderTime1", 0
-		, "BlenderTime2", 0
-		, "BlenderTime3", 0
-		, "BlenderEnd",  0
-		, "LastBlenderRot", 1
-		, "BlenderCount1", 0
-		, "BlenderCount2", 0
-		, "BlenderCount3", 0)
-
-	config["Boost"] := Map("FieldBoostStacks", 0
-		, "FieldBooster1", "None"
-		, "FieldBooster2", "None"
-		, "FieldBooster3", "None"
-		, "BoostChaserCheck", 0
-		, "HotbarWhile2", "Never"
-		, "HotbarWhile3", "Never"
-		, "HotbarWhile4", "Never"
-		, "HotbarWhile5", "Never"
-		, "HotbarWhile6", "Never"
-		, "HotbarWhile7", "Never"
-		, "FieldBoosterMins", 15
-		, "HotbarTime2", 900
-		, "HotbarTime3", 900
-		, "HotbarTime4", 900
-		, "HotbarTime5", 900
-		, "HotbarTime6", 900
-		, "HotbarTime7", 900
-		, "HotbarMax2", 0
-		, "HotbarMax3", 0
-		, "HotbarMax4", 0
-		, "HotbarMax5", 0
-		, "HotbarMax6", 0
-		, "HotbarMax7", 0
-		, "LastHotkey2", 1
-		, "LastHotkey3", 1
-		, "LastHotkey4", 1
-		, "LastHotkey5", 1
-		, "LastHotkey6", 1
-		, "LastHotkey7", 1
-		, "LastWhirligig", 1
-		, "LastEnzymes", 1
-		, "LastGlitter", 1
-		, "LastMicroConverter", 1
-		, "LastGuid", 1
-		, "AutoFieldBoostActive", 0
-		, "AutoFieldBoostRefresh", 12.5
-		, "AFBDiceEnable", 0
-		, "AFBGlitterEnable", 0
-		, "AFBFieldEnable", 0
-		, "AFBDiceHotbar", "None"
-		, "AFBGlitterHotbar", "None"
-		, "AFBDiceLimitEnable", 1
-		, "AFBGlitterLimitEnable", 1
-		, "AFBHoursLimitEnable", 0
-		, "AFBDiceLimit", 1
-		, "AFBGlitterLimit", 1
-		, "AFBHoursLimit", .01
-		, "FieldLastBoosted", 1
-		, "FieldLastBoostedBy", "None"
-		, "FieldNextBoostedBy", "None"
-		, "AFBdiceUsed", 0
-		, "AFBglitterUsed", 0
-		, "BlueFlowerBoosterCheck", 1
-		, "BambooBoosterCheck", 1
-		, "PineTreeBoosterCheck", 1
-		, "DandelionBoosterCheck", 1
-		, "SunflowerBoosterCheck", 1
-		, "CloverBoosterCheck", 1
-		, "SpiderBoosterCheck", 1
-		, "PineappleBoosterCheck", 1
-		, "CactusBoosterCheck", 1
-		, "PumpkinBoosterCheck", 1
-		, "MushroomBoosterCheck", 1
-		, "StrawberryBoosterCheck", 1
-		, "RoseBoosterCheck", 1
-		, "PepperBoosterCheck", 1
-		, "StumpBoosterCheck", 1
-		, "CoconutBoosterCheck", 0
-		, "StickerStackCheck", 0
-		, "LastStickerStack", 1
-		, "StickerStackItem", "Tickets"
-		, "StickerStackMode", 0
-		, "StickerStackTimer", 900
-		, "StickerStackHive", 0
-		, "StickerStackCub", 0
-		, "StickerStackVoucher", 0)
-
-	config["Quests"] := Map("QuestGatherMins", 5
-		, "QuestGatherReturnBy", "Walk"
-		, "QuestBoostCheck", 0
-		, "PolarQuestCheck", 0
-		, "PolarQuestGatherInterruptCheck", 1
-		, "PolarQuestProgress", "Unknown"
-		, "HoneyQuestCheck", 0
-		, "HoneyQuestProgress", "Unknown"
-		, "BlackQuestCheck", 0
-		, "BlackQuestProgress", "Unknown"
-		, "LastBlackQuest", 1
-		, "BrownQuestCheck", 0
-		, "BrownQuestProgress", "Unknown"
-		, "LastBrownQuest", 1
-		, "BuckoQuestCheck", 0
-		, "BuckoQuestGatherInterruptCheck", 1
-		, "BuckoQuestProgress", "Unknown"
-		, "RileyQuestCheck", 0
-		, "RileyQuestGatherInterruptCheck", 1
-		, "RileyQuestProgress", "Unknown")
-
+    You could also filter a single section only later down the line too
+    
+    config["settings"] := Map("GuiTheme", {default: "MacLion3", type: configTypes.allow}
+    , "MoveMethod", {default: 0, type: configTypes.allow}
+    , "BotToken", {default: "", type: configTypes.blacklist}
+    )
+    */
+    config["Settings"] := Map("GuiTheme", "MacLion3"
+        , "AlwaysOnTop", 0
+        , "MoveSpeedNum", 28
+        , "MoveMethod", "Cannon"
+        , "SprinklerType", "Supreme"
+        , "ConvertBalloon", "Gather"
+        , "ConvertMins", 30
+        , "LastConvertBalloon", 1
+        , "DisableToolUse", 0
+        , "AnnounceGuidingStar", 0
+        , "NewWalk", 1
+        , "HiveSlot", 6
+        , "HiveBees", 50
+        , "ConvertDelay", 5
+        , "PrivServer", ""
+        , "FallbackServer1", ""
+        , "FallbackServer2", ""
+        , "FallbackServer3", ""
+        , "ReconnectMethod", "Deeplink"
+        , "ReconnectInterval", ""
+        , "ReconnectHour", ""
+        , "ReconnectMin", ""
+        , "PublicFallback", 1
+        , "GuiX", ""
+        , "GuiY", ""
+        , "GuiTransparency", 0
+        , "BuffDetectReset", 0
+        , "ClickCount", 1000
+        , "ClickDelay", 10
+        , "ClickMode", 1
+        , "ClickDuration", 50
+        , "KeyDelay", 20
+        , "StartHotkey", "F1"
+        , "PauseHotkey", "F2"
+        , "StopHotkey", "F3"
+        , "AutoClickerHotkey", "F4"
+        , "TimersHotkey", "F5"
+        , "ShowOnPause", 0
+        , "IgnoreUpdateVersion", ""
+        , "IgnoreIncorrectRobloxSettings", 0
+        , "FDCWarn", 1
+        , "priorityListNumeric", 12345678
+        , "EnableBeesmasTime", 0
+        , "HideErrors", 1
+        , "DebugHotkey", "F6")
+    
+    config["Status"] := Map("StatusLogReverse", 0
+        , "TotalRuntime", 0
+        , "SessionRuntime", 0
+        , "TotalGatherTime", 0
+        , "SessionGatherTime", 0
+        , "TotalConvertTime", 0
+        , "SessionConvertTime", 0
+        , "TotalViciousKills", 0
+        , "SessionViciousKills", 0
+        , "TotalBossKills", 0
+        , "SessionBossKills", 0
+        , "TotalBugKills", 0
+        , "SessionBugKills", 0
+        , "TotalPlantersCollected", 0
+        , "SessionPlantersCollected", 0
+        , "TotalQuestsComplete", 0
+        , "SessionQuestsComplete", 0
+        , "TotalDisconnects", 0
+        , "SessionDisconnects", 0
+        , "DiscordMode", 0
+        , "DiscordCheck", 0
+        , "Webhook", ""
+        , "BotToken", ""
+        , "MainChannelCheck", 1
+        , "MainChannelID", ""
+        , "ReportChannelCheck", 1
+        , "ReportChannelID", ""
+        , "WebhookEasterEgg", 0
+        , "ssCheck", 0
+        , "ssDebugging", 0
+        , "CriticalSSCheck", 1
+        , "AmuletSSCheck", 1
+        , "MachineSSCheck", 1
+        , "BalloonSSCheck", 1
+        , "ViciousSSCheck", 1
+        , "DeathSSCheck", 1
+        , "PlanterSSCheck", 1
+        , "HoneySSCheck", 0
+        , "criticalCheck", 0
+        , "discordUID", ""
+        , "CriticalErrorPingCheck", 1
+        , "DisconnectPingCheck", 1
+        , "GameFrozenPingCheck", 1
+        , "PhantomPingCheck", 1
+        , "UnexpectedDeathPingCheck", 0
+        , "EmergencyBalloonPingCheck", 0
+        , "commandPrefix", "?"
+        , "NightAnnouncementCheck", 0
+        , "NightAnnouncementName", ""
+        , "NightAnnouncementPingID", ""
+        , "NightAnnouncementWebhook", ""
+        , "DebugLogEnabled", 1
+        , "SessionTotalHoney", 0
+        , "HoneyAverage", 0
+        , "HoneyUpdateSSCheck", 1)
+    
+    config["Gather"] := Map("FieldName1", "Sunflower"
+        , "FieldName2", "None"
+        , "FieldName3", "None"
+        , "FieldPattern1", "Squares"
+        , "FieldPattern2", "Lines"
+        , "FieldPattern3", "Lines"
+        , "FieldPatternSize1", "M"
+        , "FieldPatternSize2", "M"
+        , "FieldPatternSize3", "M"
+        , "FieldPatternReps1", 3
+        , "FieldPatternReps2", 3
+        , "FieldPatternReps3", 3
+        , "FieldPatternShift1", 0
+        , "FieldPatternShift2", 0
+        , "FieldPatternShift3", 0
+        , "FieldPatternInvertFB1", 0
+        , "FieldPatternInvertFB2", 0
+        , "FieldPatternInvertFB3", 0
+        , "FieldPatternInvertLR1", 0
+        , "FieldPatternInvertLR2", 0
+        , "FieldPatternInvertLR3", 0
+        , "FieldUntilMins1", 20
+        , "FieldUntilMins2", 15
+        , "FieldUntilMins3", 15
+        , "FieldUntilPack1", 95
+        , "FieldUntilPack2", 95
+        , "FieldUntilPack3", 95
+        , "FieldReturnType1", "Walk"
+        , "FieldReturnType2", "Walk"
+        , "FieldReturnType3", "Walk"
+        , "FieldSprinklerLoc1", "Center"
+        , "FieldSprinklerLoc2", "Center"
+        , "FieldSprinklerLoc3", "Center"
+        , "FieldSprinklerDist1", 10
+        , "FieldSprinklerDist2", 10
+        , "FieldSprinklerDist3", 10
+        , "FieldRotateDirection1", "None"
+        , "FieldRotateDirection2", "None"
+        , "FieldRotateDirection3", "None"
+        , "FieldRotateTimes1", 1
+        , "FieldRotateTimes2", 1
+        , "FieldRotateTimes3", 1
+        , "FieldDriftCheck1", 1
+        , "FieldDriftCheck2", 1
+        , "FieldDriftCheck3", 1
+        , "CurrentFieldNum", 1)
+    
+    config["Collect"] := Map("ClockCheck", 1
+        , "LastClock", 1
+        , "MondoBuffCheck", 0
+        , "MondoAction", "Buff"
+        , "MondoLootDirection", "Random"
+        , "LastMondoBuff", 1
+        , "AntPassCheck", 0
+        , "AntPassBuyCheck", 0
+        , "AntPassAction", "Pass"
+        , "LastAntPass", 1
+        , "RoboPassCheck", 0
+        , "LastRoboPass", 1
+        , "HoneystormCheck", 0
+        , "LastHoneystorm", 1
+        , "HoneyDisCheck", 0
+        , "LastHoneyDis", 1
+        , "TreatDisCheck", 0
+        , "LastTreatDis", 1
+        , "BlueberryDisCheck", 0
+        , "LastBlueberryDis", 1
+        , "StrawberryDisCheck", 0
+        , "LastStrawberryDis", 1
+        , "CoconutDisCheck", 0
+        , "LastCoconutDis", 1
+        , "RoyalJellyDisCheck", 0
+        , "LastRoyalJellyDis", 1
+        , "GlueDisCheck", 0
+        , "LastGlueDis", 1
+        , "LastBlueBoost", 1
+        , "LastRedBoost", 1
+        , "LastMountainBoost", 1
+        , "BeesmasGatherInterruptCheck", 0
+        , "StockingsCheck", 0
+        , "LastStockings", 1
+        , "WreathCheck", 0
+        , "LastWreath", 1
+        , "FeastCheck", 0
+        , "LastFeast", 1
+        , "RBPDelevelCheck", 0
+        , "LastRBPDelevel", 1
+        , "GingerbreadCheck", 0
+        , "LastGingerbread", 1
+        , "SnowMachineCheck", 0
+        , "LastSnowMachine", 1
+        , "CandlesCheck", 0
+        , "LastCandles", 1
+        , "SamovarCheck", 0
+        , "LastSamovar", 1
+        , "LidArtCheck", 0
+        , "LastLidArt", 1
+        , "GummyBeaconCheck", 0
+        , "LastGummyBeacon", 1
+        , "MonsterRespawnTime", 0
+        , "BugrunInterruptCheck", 0
+        , "BugrunLadybugsCheck", 0
+        , "BugrunLadybugsLoot", 0
+        , "LastBugrunLadybugs", 1
+        , "BugrunRhinoBeetlesCheck", 0
+        , "BugrunRhinoBeetlesLoot", 0
+        , "LastBugrunRhinoBeetles", 1
+        , "BugrunSpiderCheck", 0
+        , "BugrunSpiderLoot", 0
+        , "LastBugrunSpider", 1
+        , "BugrunMantisCheck", 0
+        , "BugrunMantisLoot", 0
+        , "LastBugrunMantis", 1
+        , "BugrunScorpionsCheck", 0
+        , "BugrunScorpionsLoot", 0
+        , "LastBugrunScorpions", 1
+        , "BugrunWerewolfCheck", 0
+        , "BugrunWerewolfLoot", 0
+        , "LastBugrunWerewolf", 1
+        , "TunnelBearCheck", 0
+        , "TunnelBearBabyCheck", 0
+        , "LastTunnelBear", 1
+        , "KingBeetleCheck", 0
+        , "KingBeetleBabyCheck", 0
+        , "KingBeetleAmuletMode", 1
+        , "LastKingBeetle", 1
+        , "InputSnailHealth", 100.00
+        , "SnailTime", 15
+        , "InputChickHealth", 100.00
+        , "ChickLevel", 10
+        , "ChickTime", 15
+        , "StumpSnailCheck", 0
+        , "ShellAmuletMode", 1
+        , "LastStumpSnail", 1
+        , "CommandoCheck", 0
+        , "LastCommando", 1
+        , "CocoCrabCheck", 0
+        , "LastCocoCrab", 1
+        , "StingerCheck", 0
+        , "StingerPepperCheck", 1
+        , "StingerMountainTopCheck", 1
+        , "StingerRoseCheck", 1
+        , "StingerCactusCheck", 1
+        , "StingerSpiderCheck", 1
+        , "StingerCloverCheck", 1
+        , "StingerDailyBonusCheck", 0
+        , "VBLastKilled", 1
+        , "MondoSecs", 120
+        , "NormalMemoryMatchCheck", 0
+        , "LastNormalMemoryMatch", 1
+        , "MegaMemoryMatchCheck", 0
+        , "LastMegaMemoryMatch", 1
+        , "ExtremeMemoryMatchCheck", 0
+        , "LastExtremeMemoryMatch", 1
+        , "NightMemoryMatchCheck", 0
+        , "LastNightMemoryMatch", 1
+        , "WinterMemoryMatchCheck", 0
+        , "LastWinterMemoryMatch", 1
+        , "MicroConverterMatchIgnore", 0
+        , "SunflowerSeedMatchIgnore", 0
+        , "JellyBeanMatchIgnore", 0
+        , "RoyalJellyMatchIgnore", 0
+        , "TicketMatchIgnore", 0
+        , "CyanTrimMatchIgnore", 0
+        , "OilMatchIgnore", 0
+        , "StrawberryMatchIgnore", 0
+        , "CoconutMatchIgnore", 0
+        , "TropicalDrinkMatchIgnore", 0
+        , "RedExtractMatchIgnore", 0
+        , "MagicBeanMatchIgnore", 0
+        , "PineappleMatchIgnore", 0
+        , "StarJellyMatchIgnore", 0
+        , "EnzymeMatchIgnore", 0
+        , "BlueExtractMatchIgnore", 0
+        , "GumdropMatchIgnore", 0
+        , "FieldDiceMatchIgnore", 0
+        , "MoonCharmMatchIgnore", 0
+        , "BlueberryMatchIgnore", 0
+        , "GlitterMatchIgnore", 0
+        , "StingerMatchIgnore", 0
+        , "TreatMatchIgnore", 0
+        , "GlueMatchIgnore", 0
+        , "CloudVialMatchIgnore", 0
+        , "SoftWaxMatchIgnore", 0
+        , "HardWaxMatchIgnore", 0
+        , "SwirledWaxMatchIgnore", 0
+        , "NightBellMatchIgnore", 0
+        , "HoneysuckleMatchIgnore", 0
+        , "SuperSmoothieMatchIgnore", 0
+        , "SmoothDiceMatchIgnore", 0
+        , "NeonberryMatchIgnore", 0
+        , "GingerbreadMatchIgnore", 0
+        , "SilverEggMatchIgnore", 0
+        , "GoldEggMatchIgnore", 0
+        , "DiamondEggMatchIgnore", 0
+        , "MemoryMatchInterruptCheck", 0
+        , "StickerPrinterCheck", 0
+        , "LastStickerPrinter", 1
+        , "StickerPrinterEgg", "Basic")
+    
+    config["Shrine"] := Map("ShrineCheck", 0
+        , "LastShrine", 1
+        , "ShrineAmount1", 0
+        , "ShrineAmount2", 0
+        , "ShrineItem1", "None"
+        , "ShrineItem2", "None"
+        , "ShrineIndex1", 1
+        , "ShrineIndex2", 1
+        , "ShrineRot", 1)
+    
+    config["Blender"] := Map("BlenderRot", {default: 1, type: configTypes.allow}
+        , "BlenderCheck", {default: 0, type: configTypes.allow}
+        , "TimerInterval", {default: 0, type: configTypes.allow}
+        , "BlenderItem1", {default: "None", type: configTypes.allow}
+        , "BlenderItem2", {default: "None", type: configTypes.allow}
+        , "BlenderItem3", {default: "None", type: configTypes.allow}
+        , "BlenderAmount1", {default: 0, type: configTypes.allow}
+        , "BlenderAmount2", {default: 0, type: configTypes.allow}
+        , "BlenderAmount3", {default: 0, type: configTypes.allow}
+        , "BlenderIndex1", {default: 1, type: configTypes.allow}
+        , "BlenderIndex2", {default: 1, type: configTypes.allow}
+        , "BlenderIndex3", {default: 1, type: configTypes.allow}
+        , "BlenderTime1", {default: 0, type: configTypes.blacklist}
+        , "BlenderTime2", {default: 0, type: configTypes.blacklist}
+        , "BlenderTime3", {default: 0, type: configTypes.blacklist}
+        , "BlenderEnd", {default: 1, type: configTypes.allow}
+        , "LastBlenderRot", {default: 1, type: configTypes.blacklist}
+        , "BlenderCount1", {default: 0, type: configTypes.allow}
+        , "BlenderCount2", {default: 0, type: configTypes.allow}
+        , "BlenderCount3", {default: 0, type: configTypes.allow})
+    
+    config["Boost"] := Map("FieldBoostStacks", 0
+        , "FieldBooster1", "None"
+        , "FieldBooster2", "None"
+        , "FieldBooster3", "None"
+        , "BoostChaserCheck", 0
+        , "HotbarWhile2", "Never"
+        , "HotbarWhile3", "Never"
+        , "HotbarWhile4", "Never"
+        , "HotbarWhile5", "Never"
+        , "HotbarWhile6", "Never"
+        , "HotbarWhile7", "Never"
+        , "FieldBoosterMins", 15
+        , "HotbarTime2", 900
+        , "HotbarTime3", 900
+        , "HotbarTime4", 900
+        , "HotbarTime5", 900
+        , "HotbarTime6", 900
+        , "HotbarTime7", 900
+        , "HotbarMax2", 0
+        , "HotbarMax3", 0
+        , "HotbarMax4", 0
+        , "HotbarMax5", 0
+        , "HotbarMax6", 0
+        , "HotbarMax7", 0
+        , "LastHotkey2", 1
+        , "LastHotkey3", 1
+        , "LastHotkey4", 1
+        , "LastHotkey5", 1
+        , "LastHotkey6", 1
+        , "LastHotkey7", 1
+        , "LastWhirligig", 1
+        , "LastEnzymes", 1
+        , "LastGlitter", 1
+        , "LastMicroConverter", 1
+        , "LastGuid", 1
+        , "AutoFieldBoostActive", 0
+        , "AutoFieldBoostRefresh", 12.5
+        , "AFBDiceEnable", 0
+        , "AFBGlitterEnable", 0
+        , "AFBFieldEnable", 0
+        , "AFBDiceHotbar", "None"
+        , "AFBGlitterHotbar", "None"
+        , "AFBDiceLimitEnable", 1
+        , "AFBGlitterLimitEnable", 1
+        , "AFBHoursLimitEnable", 0
+        , "AFBDiceLimit", 1
+        , "AFBGlitterLimit", 1
+        , "AFBHoursLimit", .01
+        , "FieldLastBoosted", 1
+        , "FieldLastBoostedBy", "None"
+        , "FieldNextBoostedBy", "None"
+        , "AFBdiceUsed", 0
+        , "AFBglitterUsed", 0
+        , "BlueFlowerBoosterCheck", 1
+        , "BambooBoosterCheck", 1
+        , "PineTreeBoosterCheck", 1
+        , "DandelionBoosterCheck", 1
+        , "SunflowerBoosterCheck", 1
+        , "CloverBoosterCheck", 1
+        , "SpiderBoosterCheck", 1
+        , "PineappleBoosterCheck", 1
+        , "CactusBoosterCheck", 1
+        , "PumpkinBoosterCheck", 1
+        , "MushroomBoosterCheck", 1
+        , "StrawberryBoosterCheck", 1
+        , "RoseBoosterCheck", 1
+        , "PepperBoosterCheck", 1
+        , "StumpBoosterCheck", 1
+        , "CoconutBoosterCheck", 0
+        , "StickerStackCheck", 0
+        , "LastStickerStack", 1
+        , "StickerStackItem", "Tickets"
+        , "StickerStackMode", 0
+        , "StickerStackTimer", 900
+        , "StickerStackHive", 0
+        , "StickerStackCub", 0
+        , "StickerStackVoucher", 0)
+    
+    config["Quests"] := Map("QuestGatherMins", 5
+        , "QuestGatherReturnBy", "Walk"
+        , "QuestBoostCheck", 0
+        , "PolarQuestCheck", 0
+        , "PolarQuestGatherInterruptCheck", 1
+        , "PolarQuestProgress", "Unknown"
+        , "HoneyQuestCheck", 0
+        , "HoneyQuestProgress", "Unknown"
+        , "BlackQuestCheck", 0
+        , "BlackQuestProgress", "Unknown"
+        , "LastBlackQuest", 1
+        , "BrownQuestCheck", 0
+        , "BrownQuestProgress", "Unknown"
+        , "LastBrownQuest", 1
+        , "BuckoQuestCheck", 0
+        , "BuckoQuestGatherInterruptCheck", 1
+        , "BuckoQuestProgress", "Unknown"
+        , "RileyQuestCheck", 0
+        , "RileyQuestGatherInterruptCheck", 1
+        , "RileyQuestProgress", "Unknown")
+    
 	config["Planters"] := Map("LastComfortingField", "None"
 		, "LastRefreshingField", "None"
 		, "LastSatisfyingField", "None"
@@ -841,49 +897,105 @@ nm_importConfig()
 		, "TimerY", 150
 		, "TimersOpen", 0)
 
+		
+	
+
 	local k, v, i, j
-	for k,v in config ; load the default values as globals, will be overwritten if a new value exists when reading
-		for i,j in v
-			%i% := j
-
-	local inipath := A_WorkingDir "\settings\nm_config.ini"
-
-	if FileExist(inipath) ; update default values with new ones read from any existing .ini
-		nm_ReadIni(inipath)
-
-	local ini := ""
-	for k,v in config ; overwrite any existing .ini with updated one with all new keys and old values
-	{
-		ini .= "[" k "]`r`n"
-		for i in v
-			ini .= i "=" %i% "`r`n"
-		ini .= "`r`n"
+	for k, v in config {
+		for i, j in v
+			%i% := j ; load the default values as globals
 	}
 
-	local file := FileOpen(inipath, "w-d")
-	file.Write(ini), file.Close()
+    local inipath := A_WorkingDir "\settings\nm_config.ini"
+    if FileExist(inipath) ; update default values with new ones read from any existing .ini
+        nm_LoadGlobalsFromIni(inipath)
+    
+    local ini := ""
+    for k, v in config ; overwrite any existing .ini with updated one with all new keys and old values
+    {
+		if k = "PresetBlacklist"
+            continue
+        ini .= "[" k "]`r`n"
+        for i in v
+            ini .= i "=" %i% "`r`n"
+        ini .= "`r`n"
+    }
+    local file := FileOpen(inipath, "w-d")
+    file.Write(ini), file.Close()
 }
 nm_importConfig()
 
+/**
+ * parse ini file to a map
+ * @returns Map()[section][key] = value
+ */
 nm_ReadIni(path)
 {
-	global
-	local ini, str, c, p, k, v
-
 	ini := FileOpen(path, "r"), str := ini.Read(), ini.Close()
+    config := Map()
+    config.CaseSense := 0
+
 	Loop Parse str, "`n", "`r" A_Space A_Tab
 	{
 		switch (c := SubStr(A_LoopField, 1, 1))
 		{
-			; ignore comments and section names
-			case "[",";":
-			continue
+			; ignore comments
+            case ";":
+			    continue
+            ; section names
+			case "[":
+                lastsection := Trim(A_LoopField, "[] ")
+                config[lastsection] := Map()
 
 			default:
-			if (p := InStr(A_LoopField, "="))
-				try k := SubStr(A_LoopField, 1, p-1), %k% := IsInteger(v := SubStr(A_LoopField, p+1)) ? Integer(v) : v
+                try {
+                    if (p := InStr(A_LoopField, "=")) {
+                        key := SubStr(A_LoopField, 1, p-1)
+                        value := IsInteger(v := SubStr(A_LoopField, p+1)) ? Integer(v) : v
+                        config[lastsection][key] := value
+                    }
+                }
 		}
 	}
+    return config
+}
+/**
+ * convert map to ini string
+ * @returns ini string
+ */
+nm_stringifyIni(map)
+{
+    ini := ""
+
+    for section, var in map {
+        ini .= "[" section "]`r`n"
+        for name, value in var {
+            ini .= name "=" value "`r`n"
+        }
+        ini .= "`r`n"
+    }
+    return ini
+}
+
+nm_LoadGlobalsFromIni(path)
+{
+    global
+    local ini, var, name, value
+
+    ini := nm_ReadIni(path)
+    for , var in ini {
+        for name, value in var {
+            try %name% := value
+        }
+    }
+}
+
+nm_saveIniFromMap(map, path)
+{
+    ini := nm_stringifyIni(map)
+    fs := FileOpen(path, "w-d")
+    fs.Write(ini)
+    fs.Close()
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1827,7 +1939,7 @@ ObjMinIndex(obj)
 nm_importManualPlanters()
 {
 	global
-	local ManualPlanters := Map()
+	global ManualPlanters := Map()
 
 	ManualPlanters["General"] := Map("MHarvestInterval", "2 hours")
 
@@ -1950,7 +2062,7 @@ nm_importManualPlanters()
 	local inipath := A_WorkingDir "\settings\manual_planters.ini"
 
 	if FileExist(inipath)
-		nm_ReadIni(inipath)
+		nm_LoadGlobalsFromIni(inipath)
 
 	local ini := ""
 	for k,v in ManualPlanters ; overwrite any existing .ini with updated one with all new keys and old values
@@ -1965,6 +2077,11 @@ nm_importManualPlanters()
 }
 nm_importManualPlanters()
 
+iniFiles := Map(
+	"config", {path: "settings\nm_config.ini", globalObj: config},
+	"manualplanters", {path: "settings\manual_planters.ini", globalObj: manualPlanters},
+	"fields", {path: "settings\field_config.ini", globalObj: FieldDefault}
+)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DECLARE GLOBALS AND PREPARE GUI
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2667,8 +2784,8 @@ MainGui.Add("GroupBox", "x5 y168 w160 h62", "Other Tools")
 MainGui.Add("GroupBox", "x170 y24 w160 h62", "Calculators")
 MainGui.Add("GroupBox", "x170 y106 w160 h62", "Roblox FPS Editor")
 MainGui.Add("GroupBox", "x170 y168 w160 h62 vAutoClickerButton", "AutoClicker (" AutoClickerHotkey ")")
-MainGui.Add("GroupBox", "x335 y24 w160 h84", "Macro Tools")
-MainGui.Add("GroupBox", "x335 y108 w160 h60", "Discord Tools")
+MainGui.Add("GroupBox", "x335 y24 w160 h106", "Macro Tools")
+MainGui.Add("GroupBox", "x335 y130 w160 h38", "Discord Tools")
 MainGui.Add("GroupBox", "x335 y168 w160 h62", "Bugs and Suggestions")
 MainGui.SetFont("s9 cDefault Norm", "Tahoma")
 ;hive tools
@@ -2687,8 +2804,9 @@ MainGui.Add("Button", "x175 y184 w150 h42 vAutoClickerGUI Disabled", "AutoClicke
 MainGui.Add("Button", "x340 y40 w150 h20 vHotkeyGUI Disabled", "Change Hotkeys").OnEvent("Click", nm_HotkeyGUI)
 MainGui.Add("Button", "x340 y62 w150 h20 vDebugLogGUI Disabled", "Debug Options").OnEvent("Click", nm_DebugLogGUI)
 MainGui.Add("Button", "x340 y84 w150 h20 vAutoStartManagerGUI Disabled", "Auto-Start Manager").OnEvent("Click", nm_AutoStartManager)
+MainGui.Add("Button", "xp yp+22 w150 h20 vPresetManagerGUI Disabled", "Presets").OnEvent("Click", nm_PresetGUI)
 ;discord tools
-MainGui.Add("Button", "x340 y124 w150 h40 vNightAnnouncementGUI Disabled", "Night Detection`nAnnouncement").OnEvent("Click", nm_NightAnnouncementGUI)
+MainGui.Add("Button", "x340 y144 w150 h20 vNightAnnouncementGUI Disabled", "Night Announcement").OnEvent("Click", nm_NightAnnouncementGUI)
 ;reporting
 MainGui.Add("Button", "x340 y184 w150 h20 vReportBugButton Disabled", "Report Bugs").OnEvent("Click", nm_ReportBugButton)
 MainGui.Add("Button", "x340 y206 w150 h20 vMakeSuggestionButton Disabled", "Make Suggestions").OnEvent("Click", nm_MakeSuggestionButton)
@@ -4221,6 +4339,7 @@ nm_TabMiscLock(){
 	MainGui["ReportBugButton"].Enabled := 0
 	MainGui["MakeSuggestionButton"].Enabled := 0
 	MainGui["AutoMutatorButton"].Enabled := 0
+	MainGui["PresetManagerGUI"].Enabled := 0
 }
 nm_TabMiscUnLock(){
 	MainGui["BasicEggHatcherButton"].Enabled := 1
@@ -4236,6 +4355,7 @@ nm_TabMiscUnLock(){
 	MainGui["ReportBugButton"].Enabled := 1
 	MainGui["MakeSuggestionButton"].Enabled := 1
 	MainGui["AutoMutatorButton"].Enabled := 1
+	MainGui["PresetManagerGUI"].Enabled := 1
 }
 
 ;update config
@@ -22743,3 +22863,274 @@ nm_UpdateGUIVar(var)
 		}
 	}
 }
+
+;//todo: fix once globalObj is all using new system with an object instead of just a value
+SavePresetToFile(presetname) {
+    settings := Map(), settings.CaseSense := 0
+
+	for iniName, iniData in iniFiles {
+		settings[iniName] := Map()
+		for section, itemData in nm_ReadIni(iniData.path) {
+			settings[iniName][section] := Map()
+			for key, value in itemData {
+				configItem := iniFiles[iniName].globalObj[section][key] ; Only here to check for blacklist
+
+				if IsObject(configItem) && configItem.HasOwnProp("type") && configItem.type = configTypes.blacklist
+					continue
+				
+				settings[iniName][section][key] := value
+			}
+		}
+	}
+
+    try settings := JSON.stringify(settings)
+    
+   	if !DirExist("settings\presets")
+		DirCreate("settings\presets")
+
+	filepath := "settings\presets\" presetname ".nm"
+
+	while FileExist(filepath)
+		filepath := "settings\presets\" presetname " (" A_Index ").nm"
+
+	fs := FileOpen(filepath, "w")
+	fs.Write(settings)
+	fs.Close()
+}
+
+GetPresetFromFile(preset) {
+    PresetCont := FileRead("settings\presets\" preset ".nm")
+    try parsed := JSON.parse(PresetCont)
+    catch as e {
+        msgbox e.Message
+        return
+    }
+    
+    ApplyPresetSettings(parsed)
+}
+
+ApplyPresetSettings(presetData) {
+    global
+    local iniName, iniData, section, itemData, key, value, itemObj
+    
+    for iniName, iniData in presetData {
+        for section, itemData in iniData {
+            for key, value in itemData {
+				configItem := iniFiles[iniName].globalObj[section][key]
+				
+				if IsObject(configItem) && configItem.HasOwnProp("type") && configItem.type = configTypes.blacklist
+					continue
+                
+                try {
+                    %key% := value
+                    nm_UpdateGUIVar(key)
+                }
+            }
+        }
+        nm_saveIniFromMap(iniData, iniFiles[iniName].path)
+    }
+}
+
+FileToClipboard(PathToCopy){
+	; @Author Myurial
+	; Leaving it in global scope incase needed for something else
+	Loop Files, PathToCopy
+		PathToCopy := A_LoopFileFullPath
+
+	GMEM_MOVEABLE := 0x2
+	GMEM_ZEROINIT := 0x40
+	CF_HDROP := 0xF
+
+	hDROPFILES := DllCall("GlobalAlloc", "uint", GMEM_MOVEABLE | GMEM_ZEROINIT, "uint", 20 + StrPut(PathToCopy) + 2, "ptr")
+	pDROPFILES := DllCall("GlobalLock", "ptr", hDROPFILES, "ptr")
+
+	NumPut("uint", 20, pDROPFILES) 
+	NumPut("uint", 1 , pDROPFILES, 16) 
+	StrPut(PathToCopy, pDROPFILES + 20)
+
+	DllCall("GlobalUnlock", "ptr", hDROPFILES)
+	DllCall("OpenClipboard", "ptr", 0)
+	DllCall("EmptyClipboard")
+	DllCall("SetClipboardData","uint", CF_HDROP, "ptr", hDROPFILES)
+	DllCall("CloseClipboard")
+	DllCall("GlobalFree", "ptr", hDROPFILES)
+}
+
+nm_PresetGUI(*){
+	global PresetGUI, ManagingPreset
+	GuiClose(*){
+		if (IsSet(PresetGUI) && IsObject(PresetGUI))
+			PresetGUI.Destroy(), PresetGUI := ""
+	}
+	GuiClose()
+	PresetGUI := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Presets")
+    PresetGUI.OnEvent("Close", GuiClose)
+
+	PresetGUI.SetFont("w700")
+	PresetGUI.Add("Groupbox", "x3 y3 w145 h195", "Create Preset")
+	PresetGUI.Add("Groupbox", "xp+150 y3 w145 h195", "Manage Presets")
+	PresetGUI.SetFont("w700 underline")
+	PresetGUI.Add("Text", "x40 y18 +Center", "Preset Name")
+	PresetGUI.Add("Text", "x185 y18 +Center", "Current Preset")
+	PresetGUI.SetFont("s8 cDefault Norm", "Tahoma")
+
+	; Create
+	PresetName := PresetGUI.Add("Edit", "x10 y38 w130 h20")
+	PresetGUI.Add("Button", "x10 y70 w130 h25", "Create").OnEvent("Click", CreatePreset)
+	PresetGUI.Add("Button", "x10 yp+30 w130 h25", "Import").OnEvent("Click", ImportPreset)
+	PresetGUI.Add("Text", "x20 yp+40 w100 h50 vStatsText", "")
+	
+	; Manage
+	PresetList := PresetGUI.Add("DropDownList", "x160 y38 w130 vPresetList", GetAllPresets())
+	PresetList.Text := IsSet(ManagingPreset) ? ManagingPreset : ""
+	PresetGUI.Add("Button", "x160 y70 w130 h25", "Load").OnEvent("Click", LoadPreset)
+	PresetGUI.Add("Button", "x160 y100 w130 h25", "Export").OnEvent("Click", ExportPresetBtn)
+	PresetGUI.Add("Button", "x160 y130 w130 h25", "Delete").OnEvent("Click", DeletePreset)
+	PresetGUI.Add("Button", "x160 y160 w130 h25", "Update").OnEvent("Click", UpdatePreset)
+
+	UpdateStats()
+
+    PresetGUI.Show("w300 h190")
+	
+	UpdateStats(){ 
+		presetCount := 0
+		totalSize := 0
+		Loop Files, "settings\presets\*.nm" {
+			presetCount++
+			totalSize += A_LoopFileSize
+		}
+		
+		; formatting :tongue:
+		sizeStr := ""
+		switch totalSize {
+			case totalSize < 1024:
+				sizeStr := totalSize "B" ; literally wont happen but it might
+			case totalSize < 1048576:
+				sizeStr := Round(totalSize / 1024, 2) "KB"
+			default:
+				sizeStr := Round(totalSize / 1048576, 2) "MB"	
+		}
+
+		Message := 
+		(
+		"Preset Count: " presetCount "
+		Total Size: " sizeStr
+		)
+		
+		PresetGUI["StatsText"].Value := Message
+	}
+
+	UpdatePreset(*) {
+		selected := PresetList.Text
+		if !selected
+			return MsgBox("Please select a preset!", "Error", 0x10)
+		
+		result := MsgBox("This will overwrite '" selected "' with your current settings. Continue?", "Confirm Update", 0x34)
+		
+        if result != "Yes"
+			return
+
+		presetPath := "settings\presets\" selected ".nm"
+		try {
+            FileDelete(presetPath)
+			SavePresetToFile(selected)
+			MsgBox("Preset updated successfully!", "Success", 0x40)
+			RefreshPresetList()
+			PresetList.Text := selected
+			UpdateStats()
+		}
+	}
+
+	RefreshPresetList() {
+		presets := GetAllPresets()
+		currentText := PresetList.Text
+		PresetList.Delete()
+		for preset in presets
+			PresetList.Add([preset])
+		try PresetList.Text := currentText
+		UpdateStats()
+	}
+
+	ImportPreset(*) {
+		if InStr(A_Clipboard, ".nm") {
+			src := A_Clipboard
+			SplitPath(src, &name)
+			dest := "settings\presets\" name
+			FileCopy(src, dest, 1)
+			MsgBox("Preset Imported!", "Success", 0x40) 
+		}
+		else {
+			PresetFile := FileSelect(, , "Select Preset", "NM File (*.nm)")
+			if !InStr(PresetFile, ".nm") {
+				MsgBox("This is not a valid preset!", "Error", 0x10)
+				return
+			}
+			try FileCopy(PresetFile, "settings\presets")
+			catch {
+				MsgBox("A preset may already exist with this name!", "Error", 0x10)
+			}
+		}
+		RefreshPresetList()
+	}
+
+	CreatePreset(*){
+		name := PresetName.Value
+		if name = "" {
+			MsgBox("Please enter a preset name!", "Error", 0x10)
+			return
+		}
+		SavePresetToFile(name)
+		MsgBox("Preset created successfully!", "Success", 0x40)
+		RefreshPresetList()
+		PresetList.Text := name
+	}
+
+	LoadPreset(*){
+		selected := PresetList.Text
+		if selected = "" {
+			MsgBox("Please select a preset!", "Error", 0x10)
+			return
+		}
+		nm_LockTabs(1)
+		GetPresetFromFile(selected)
+		nm_LockTabs(0)
+	}
+
+	ExportPresetBtn(*){
+		selected := PresetList.Text
+		if (selected = "")
+			MsgBox("Please select a preset!", "Error", 0x10)
+		else
+			ExportPreset(selected), MsgBox("Preset copied to clipboard!", "Success", 0x40)
+	}
+
+	DeletePreset(*){
+		selected := PresetList.Text
+		if !selected
+			return MsgBox("Please select a preset!", "Error", 0x10)
+
+		result := MsgBox("Are you sure you want to delete '" selected "'?", "Confirm Delete", 0x34)
+		
+        if result = "Yes" {
+			FileDelete("settings\presets\" selected ".nm")
+			MsgBox("Preset deleted!", "Success", 0x40)
+			RefreshPresetList()
+		}
+	}
+
+	GetAllPresets(){
+		arr := []
+		Loop Files, "settings\presets\*.nm"
+			arr.Push(RemoveNMextension(A_LoopFileName))
+		return arr.Length ? arr : ["No presets found..."]
+	}
+
+	ExportPreset(presetname) => FileToClipboard(A_WorkingDir "\settings\presets\" presetname ".nm")
+
+    RemoveNMextension(str){
+        name := Trim(str)
+        return SubStr(name, -3) = ".nm" ? SubStr(name, 1, -3) : name
+    }
+}
+
+

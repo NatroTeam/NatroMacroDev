@@ -2437,8 +2437,44 @@ nm_command(command)
 				discord.SendEmbed('**Debug Log**\nTo get help with debugging you can join [our discord](https:\/\/discord.gg\/invite\/xbkXjwWh8U) and ask for help here: https:\/\/discord.com\/channels\/1012610056921038868\/1073389106568122378', , str, , , id)
 			}
 			DetectHiddenWindows 0
-
-
+		
+		case "preset":
+			if !(params[2] && params[3]) {
+				command_buffer.RemoveAt(1) ; since we're returning
+				return discord.SendEmbed("Missing parameters!\n``````" commandPrefix "preset [export/load/delete/create] [presetname]``````", 16711731, , , , id)
+			}
+			name := Trim(params[3])
+			presetname := StrReplace(SubStr(name, -3) = ".nm" ? SubStr(name, 1, -3) : name, " ") ; trim .nm from preset name and remove spaces
+			path := A_WorkingDir "\settings\presets\" presetname ".nm"
+			dirlist := []
+			switch params[2], 0  {
+				case "export":
+					if FileExist(path) {
+						discord.SendFile(path, 1)
+					} else {
+						discord.SendEmbed("Preset ``" presetname "`` does not exist at path (" path ")", 16711731, , , , id)
+					}
+				case "load":
+					; use order in dir so i can get around not knowing how to use wm_copydata
+					;//todo: change to use Loop Files
+					dirlist := Map()
+			
+					Loop Files, A_WorkingDir "\settings\presets\*.nm" {
+						if A_LoopFileName = presetname {
+							DetectHiddenWindows 1
+							if WinExist("natro_macro ahk_class AutoHotkey"){
+								try result := SendMessage(0x5561, A_Index)
+								catch Error as e {
+									discord.SendEmbed("Error: SendMessage Timeout! " e.Message, 16711731, , , , id)
+								}
+							}
+							break
+						}
+					}
+				
+				default:
+					discord.SendEmbed("``" commandPrefix name " " params[2] "``is not a valid subcommand!\nUse ``" commandPrefix "help preset`` for a list of preset commands.", 16711731, , , , id)
+			}
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
 
