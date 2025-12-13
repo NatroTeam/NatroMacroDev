@@ -23,8 +23,9 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Discord.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "Roblox.ahk"
+#Include "ErrorHandling.ahk"
+#Include "Auxiliary.ahk"
 
-OnError (e, mode) => (mode = "Return") ? -1 : 0
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
 
@@ -339,7 +340,7 @@ settings["SpiderFieldCheck"] := {enum: 58, type: "int", section: "Planters", reg
 settings["StrawberryFieldCheck"] := {enum: 59, type: "int", section: "Planters", regex: "i)^(0|1)$"}
 settings["StumpFieldCheck"] := {enum: 60, type: "int", section: "Planters", regex: "i)^(0|1)$"}
 settings["SunflowerFieldCheck"] := {enum: 61, type: "int", section: "Planters", regex: "i)^(0|1)$"}
-settings["MultiReset"] := {enum: 62, type: "int", section: "Settings", regex: "i)^(0|1|2|3)$"}
+;settings["MultiReset"] := {enum: 62, type: "int", section: "Settings", regex: "i)^(0|1|2|3)$"} retired
 settings["ConvertMins"] := {enum: 63, type: "int", section: "Settings", regex: "i)^\d{1,2}$"}
 settings["LastConvertBalloon"] := {enum: 64, type: "int", section: "Settings", regex: "i)^\d{1,10}$"}
 settings["DisableToolUse"] := {enum: 65, type: "int", section: "Settings", regex: "i)^(0|1)$"}
@@ -500,7 +501,7 @@ settings["NightAnnouncementCheck"] := {enum: 220, type: "int", section: "Status"
 ;settings["PublicJoined"] := {enum: 221, type: "int", regex: "i)^(0|1)$"} dangerous
 settings["DebugLogEnabled"] := {enum: 222, type: "int", section: "Status", regex: "i)^(0|1)$"}
 settings["StingerDailyBonusCheck"] := {enum: 223, type: "int", section: "Collect", regex: "i)^(0|1)$"}
-settings["GatherDoubleReset"] := {enum: 224, type: "int", section: "Settings", regex: "i)^(0|1)$"}
+;settings["GatherDoubleReset"] := {enum: 224, type: "int", section: "Settings", regex: "i)^(0|1)$"} retired
 settings["HoneystormCheck"] := {enum: 225, type: "int", section: "Collect", regex: "i)^(0|1)$"}
 settings["LastHoneystorm"] := {enum: 226, type: "int", section: "Collect", regex: "i)^\d{1,10}$"}
 settings["RBPDelevelCheck"] := {enum: 227, type: "int", section: "Collect", regex: "i)^(0|1)$"}
@@ -2437,7 +2438,65 @@ nm_command(command)
 				discord.SendEmbed('**Debug Log**\nTo get help with debugging you can join [our discord](https:\/\/discord.gg\/invite\/xbkXjwWh8U) and ask for help here: https:\/\/discord.com\/channels\/1012610056921038868\/1073389106568122378', , str, , , id)
 			}
 			DetectHiddenWindows 0
-
+		
+		case "alt":
+			categories := ["send"], category := (val:=findClosestItem(categories, params[2])).dist <= 2 ? val.item : 0
+			fields := ["Blue Flower", "Bamboo", "Pine Tree", "Stump", "Mushroom", "Strawberry", "Rose", "Pepper", "Dandelion", "Spider", "Pineapple", "Coconut", "Clover", "Cactus", "Pumpkin", "MountainTop", "Sunflower"]
+			if category = "send" {
+				full := ""
+				Loop params.Length
+					if A_Index > 2
+						full .= params[A_Index] " "
+				full := Trim(full)
+				words := StrSplit(full, " ")
+				field := ""
+				bestDist := 100
+				match := 0
+				if (words.Length >= 2) {
+					word2 := words[words.Length - 1] " " words[words.Length]
+					check2 := findClosestItem(fields, word2)
+					if (check2.dist < 5) {
+						bestDist := check2.dist
+						field := check2.item
+						match := 2
+					}
+				}
+				if (words.Length >= 1) {
+					word1 := words[words.Length]
+					check1 := findClosestItem(fields, word1)
+					if (match = 0 &&check1.dist < bestDist) {
+						bestDist := check1.dist
+						field := check1.item
+						match := 1
+					}
+				} else if (match = 2 && check1.dist <= 1 && bestDist > 3) {
+					bestDist := check1.dist
+					field := check1.item
+					match := 1
+				}
+				if (bestDist > 4) {
+					command_buffer.RemoveAt(1)
+					return discord.SendEmbed("Invalid field!", 16711731, , , , id)
+				}
+				remaining := ""
+				Loop words.Length - match
+					remaining .= words[A_Index] " "
+				remaining := Trim(remaining)
+				otherParams := StrSplit(remaining, " ")
+				amount := (remaining = "") ? 0 : otherParams.Length
+				alt := "all" ; only for socket "ID limitations on discord"
+				time := 9999
+				if (amount = 2)
+					alt := otherParams[1], time := otherParams[2]
+				else if (amount = 1)
+					time := otherParams[1]
+			}
+			msgbox(
+				"Category: " category "`n"
+				"Field: " field "`n"
+				"Alt: " alt "`n"
+				"Time: " time
+			)
 
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
@@ -2473,12 +2532,6 @@ nm_command(command)
 		if !IsSet(item)
 			return {item:0,dist:100} ;large dist to break
 		return {item:item,dist:dist}
-	}
-	ObjHasValue(obj, value) {
-		for k,v in obj
-			if (v = value)
-			return k
-		return 0
 	}
 }
 
