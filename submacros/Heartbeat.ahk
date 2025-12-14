@@ -21,7 +21,7 @@ SetWorkingDir A_ScriptDir
 OnMessage(0x5552, nm_SetGlobalInt)
 OnMessage(0x5556, nm_SetHeartbeat)
 
-LastRobloxWindow := LastStatusHeartbeat := LastMainHeartbeat := LastBackgroundHeartbeat := nowUnix()
+LastRobloxWindow := LastStatusHeartbeat := LastMainHeartbeat := LastBackgroundHeartbeat := LastCommunicatorHeartbeat := nowUnix()
 MacroState := 0
 path := '"' A_AhkPath '" "' A_ScriptDir '\natro_macro.ahk"'
 
@@ -39,15 +39,19 @@ Loop
 		PostMessage 0x5556
 	if WinExist("background.ahk ahk_class AutoHotkey")
 		PostMessage 0x5556
+	if WinExist("Communicator.ahk ahk_class AutoHotkey")
+		PostMessage 0x5556
 	; check for timeouts
 	if (((MacroState = 2) && (((time - LastMainHeartbeat > 120) && (reason := "Macro Unresponsive Timeout!"))
 		|| ((time - LastBackgroundHeartbeat > 120) && (reason := "Background Script Timeout!"))
 		|| ((time - LastStatusHeartbeat > 120) && (reason := "Status Script Timeout!"))
+		|| ((time - LastCommunicatorHeartbeat > 120) && (reason := "Communicator Script Timeout!"))
 		|| ((time - LastRobloxWindow > 600) && (reason := "No Roblox Window Timeout!"))))
 
 		|| ((MacroState = 1) && (((time - LastMainHeartbeat > 120) && (reason := "Macro Unresponsive Timeout!"))
 		|| ((time - LastBackgroundHeartbeat > 120) && (reason := "Background Script Timeout!"))
-		|| ((time - LastStatusHeartbeat > 120) && (reason := "Status Script Timeout!"))))) {
+		|| ((time - LastStatusHeartbeat > 120) && (reason := "Status Script Timeout!"))
+		|| ((time - LastCommunicatorHeartbeat > 120) && (reason := "Communicator Script Timeout!"))))) {
 		Prev_MacroState := MacroState, MacroState := 0
 		Loop
 		{
@@ -65,7 +69,7 @@ Loop
 				Sleep 2000
 				Send_WM_COPYDATA("Error: " reason "`nSuccessfully restarted macro!", "natro_macro ahk_class AutoHotkey")
 				Sleep 1000
-				LastRobloxWindow := LastStatusHeartbeat := LastMainHeartbeat := LastBackgroundHeartbeat := nowUnix()
+				LastRobloxWindow := LastStatusHeartbeat := LastMainHeartbeat := LastBackgroundHeartbeat := LastCommunicatorHeartbeat := nowUnix()
 				break
 			}
 		}
@@ -105,7 +109,7 @@ nm_SetHeartbeat(wParam, *)
 {
 	global
 	Critical
-	static arr := ["Main", "Background", "Status"]
+	static arr := ["Main", "Background", "Status", "Communicator"]
 	script := arr[wParam], Last%script%Heartbeat := nowUnix()
 }
 

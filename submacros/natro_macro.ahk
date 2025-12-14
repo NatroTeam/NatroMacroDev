@@ -327,6 +327,7 @@ nm_importConfig()
 		, "IgnoreUpdateVersion", ""
 		, "IgnoreIncorrectRobloxSettings", 0 
 		, "FDCWarn", 1
+		, "SocketFirewallWarning", 1
 		, "priorityListNumeric", 12345678
 		, "EnableBeesmasTime", 0
 		, "HideErrors", 1
@@ -8100,45 +8101,79 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 	txtChannelID := ConfGui.Add("Text", "xs+10 y+5", "Channel ID:")
 	(edtChannelID := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap Number vCommunicationChannelID", CommunicationChannelID)).OnEvent("Change", SaveConf)
 	; Socket
-	confSocket := ConfGui.Add("GroupBox", "xm ym w300 h" (AccountType = "Main Acc" ? 70 : 150), "Socket Configuration")
-    txtPort := ConfGui.Add("Text", "xs+10 ys+15", "Port Number:")
-    (edtPort := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap Number vPortNumber", PortNumber)).OnEvent("Change", SaveConf)
-    txtIP := ConfGui.Add("Text", "xs+10 y+5", "IP Address:")
-    (edtIP := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap vCommunicationIP", CommunicationIP)).OnEvent("Change", SaveConf)
-	txtID := ConfGui.Add("Text", "xs+10 y+5", "Indentification:")
-	(edtID := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap Number vCommunicationID", CommunicationID)).OnEvent("Change", SaveConf)
+	confSocket := ConfGui.Add("GroupBox", "xm ym w300 h" (AccountType = "Main Acc" ? 105 : 150), "Socket Configuration")
+	(btnPort := ConfGui.Add("Button", "xs+10 ys+15 w10 h15", "?")).OnEvent("Click", PortHelpButton)
+    txtPort := ConfGui.Add("Text", "xs+25 yp", "Port Number:")
+    (edtPort := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap Number vPortNumber", PortNumber)).OnEvent("Change", SaveConf)
+    (btnIP := ConfGui.Add("Button", "xs+10 y+5 w10 h15", "?")).OnEvent("Click", IPHelpButton)
+	txtIP := ConfGui.Add("Text", "xs+25 yp", "IP Address:")
+    (edtIP := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap vCommunicationIP", CommunicationIP)).OnEvent("Change", SaveConf)
+	(btnID := ConfGui.Add("Button", "xs+10 y+5 w10 h15", "?")).OnEvent("Click", IDHelpButton)
+	txtID := ConfGui.Add("Text", "xs+25 yp", "Indentification:")
+	(edtID := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap Number vCommunicationID", CommunicationID)).OnEvent("Change", SaveConf)
+	(btnConnectionIP := ConfGui.Add("Button", "xs+10 yp-60 w10 h15", "?")).OnEvent("Click", ConnectIPHelpButton)
+	txtConnectionIP := ConfGui.Add("Text", "xs+25 yp", "Connection IP:")
+	(edtConnectionIP := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap ReadOnly", SysGetIPAddresses()[1]))
 	ToggleFields(*) {
 		isMain := AccountType = "Main Acc"
 		isDiscord := CommunicationStyle = "Discord"  
-		confDiscord.Visible := isDiscord
-        txtWebhook.Visible  := isMain && isDiscord
-        edtWebhook.Visible  := isMain && isDiscord
-        txtBotToken.Visible := !isMain && isDiscord
+		confDiscord.Visible	:= isDiscord
+        txtWebhook.Visible := isMain && isDiscord
+        edtWebhook.Visible := isMain && isDiscord
+        txtBotToken.Visible	:= !isMain && isDiscord
         edtBotToken.Visible := !isMain && isDiscord
-        txtChannelID.Visible   := !isMain && isDiscord
-        edtChannelID.Visible   := !isMain && isDiscord
+        txtChannelID.Visible := !isMain && isDiscord
+        edtChannelID.Visible := !isMain && isDiscord
 		confSocket.Visible := !isDiscord
+		btnPort.Visible := !isDiscord
 		txtPort.Visible := !isDiscord
 		edtPort.Visible := !isDiscord
-        txtIP.Visible       := !isMain && !isDiscord
-        edtIP.Visible       := !isMain && !isDiscord
-		txtID.Visible	   := !isMain && !isDiscord
-		edtID.Visible       := !isMain && !isDiscord
+		btnIP.Visible := !isDiscord && !isMain
+        txtIP.Visible := !isMain && !isDiscord
+        edtIP.Visible := !isMain && !isDiscord
+		btnID.Visible := !isMain && !isDiscord
+		txtID.Visible := !isMain && !isDiscord
+		edtID.Visible := !isMain && !isDiscord
+		txtConnectionIP.Visible := !isDiscord && isMain
+		edtConnectionIP.Visible := !isDiscord && isMain
+		btnConnectionIP.Visible := !isDiscord && isMain
 	}
 	SaveConf(GuiCtrl, *) {
 		global CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, CommunicationID, PortNumber
 		%GuiCtrl.Name% := ConfGui[GuiCtrl.Name].Value
 		IniWrite GuiCtrl.Value, "settings\nm_config.ini", "Alts", GuiCtrl.Name
 	}
+	PortHelpButton(*) {
+		MsgBox "The sockets connect to a specific port number. The tad alt account's port number needs to be the same as the main account's. for the connection to work.", "Port", 0x40000
+	}
+	ConnectIPHelpButton(*) {
+		MsgBox "The IP address other computers on the network need to use to connect to this PC. Not needed for local connections.", "Connect IP", 0x40000
+	}
+	IPHelpButton(*) {
+		MsgBox "The IP address the alt account will connet to.", "IP", 0x40000
+	}
+	IDHelpButton(*) {
+		MsgBox "The unique identifier the main account uses to distinguish the different alt accounts.", "ID", 0x40000
+	}
 	ToggleFields()
 	ConfGui.Show("AutoSize")
 }
 
 nm_CommunicationStyleRot(GuiCtrl, *) {
-	global CommunicationStyle
+	global CommunicationStyle, SocketFirewallWarning
 	static val := ["Discord", "Socket"], l := val.Length ; hybrid coming soon
 	i := (CommunicationStyle = "Discord") ? 1 : 2
 	MainGui["CommunicationStyle"].Text := CommunicationStyle := val[(GuiCtrl.Name = "CSRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	if CommunicationStyle = "Socket" && SocketFirewallWarning {
+		disable_warning := MsgBox(
+		"The first time this application connects with sockets, Windows may show a firewall prompt. "
+		"This is normal and happens because the app uses the network to communicate. "
+		"For the socket communication to work, you will need to allow Windows Firewall access so it can communicate over the network."
+		"`r`nDo you want to disable this warning?"
+		, "Firewall Warning", "Icon! YesNo")
+		if disable_warning = "Yes"
+			IniWrite SocketFirewallWarning := 0, "settings\nm_config.ini", "Settings", "SocketFirewallWarning"
+	}
 	nm_LaunchCommunicator()
 	IniWrite CommunicationStyle, "settings\nm_config.ini", "Alts", "CommunicationStyle"
 }
