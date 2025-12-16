@@ -2393,7 +2393,7 @@ nm_command(command)
 		UI := SubStr(command.content, StrLen(commandPrefix)+10) ; user input
 		if !(UI) {
 			command_buffer.RemoveAt(1)
-			return discord.SendEmbed("Missing item name!\n``````?finditem [itemname]``````", 16711731, , , , id)
+			return discord.SendEmbed("Missing item name!\n``````" . commandPrefix . "finditem [itemname]``````", 16711731, , , , id)
 		}
 		closestItem:=findClosestItem(items,UI)
 		if closestItem.dist > 6 || not closestItem.item
