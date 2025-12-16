@@ -7750,10 +7750,9 @@ nm_ClaimMethod(GuiCtrl, *){
 	{
 		if (MsgBox("
 		(
-		Using 'Detect' Might have the possiblity to incorrectly detect hive slots if the red arrows are being blocked by something.
-		e.g. Tide Popper
+		Using 'Detect' might have the possiblity to incorrectly detect hive slots if the red arrows are being blocked by something. The most common example is a tool, such as Tide Popper.
 
-		Are you sure you want to use Detection?
+		Are you sure you want to use 'Detect'?
 		)", "Claim Hive Method", 0x1034 " T60 Owner" MainGui.Hwnd) = "Yes")
 			i := 1
 		else
@@ -7839,11 +7838,11 @@ nm_ClaimMethodHelp(*){ ; join method information
 	This option lets you choose between 'Detect' and 'To Hive' Hive Claiming.
 
 	'To Hive' is the more reliable option out of the bunch, this will go straight to hive without any concern to if it's claimed or not.
-	Really good if you are in a private server.
+	This is the best choice if you are in a private server.
 
-	'Detect' Is only recommended if you are playing in a public server for speed.
-	This won't work if the red arrows pointing to unclaimed hiveslots are covered, which can happen with looks like Tide Popper or Dark Scythe.
-	)", "Join Method", 0x40000
+	'Detect' is only recommended if you are playing in a public server for speed.
+	It won't work if the red arrows pointing to unclaimed hive slots are covered, which can happen with tools like Tide Popper or Dark Scythe.
+	)", "Claim Method", 0x40000
 }
 nm_ReconnectTimeHelp(*){
 	global ReconnectHour, ReconnectMin, ReconnectInterval
@@ -17746,7 +17745,7 @@ nm_claimHiveSlot(){
 		return pBMScreen
 	}
 
-	newSystem := 1
+	DetectHiveslots := 1
 	Loop 5
 	{
 		ActivateRoblox()
@@ -17778,7 +17777,7 @@ nm_claimHiveSlot(){
 		}
 
 		; detect unclaimed hive slots.
-		if newSystem {
+		if DetectHiveslots {
 			preferred := (ClaimMethod = "Detect") ? 0 : HiveSlot
 			if ClaimMethod = "Detect" {
 				slots := nm_detectHiveSlots()
@@ -17822,13 +17821,12 @@ nm_claimHiveSlot(){
 				}
 				Gdip_DisposeImage(pBMScreen)
 			}
-			newSystem := 0
+			DetectHiveslots := 0
 			continue
 		}
 
-		; USE OLD SYSTEM IF NEW SYSTEM DIDN'T WORK
-		if A_Index = 2
-			nm_setStatus("Warning", "Unable to detect hive slot from spawn, attempting with old system.")
+		; old system
+		
 		;go to slot 1
 		Sleep 500
 		GetRobloxClientPos(hwnd)
