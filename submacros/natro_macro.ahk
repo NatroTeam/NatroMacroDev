@@ -7754,7 +7754,7 @@ nm_ClaimMethod(GuiCtrl, *){
 		e.g. Tide Popper
 
 		Are you sure you want to use Detection?
-		)", "Calim Hive Method", 0x1034 " T60 Owner" MainGui.Hwnd) = "Yes")
+		)", "Claim Hive Method", 0x1034 " T60 Owner" MainGui.Hwnd) = "Yes")
 			i := 1
 		else
 			return
