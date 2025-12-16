@@ -139,7 +139,7 @@ EventHandler := {
 }
 
 SocketAccept(self) {
-	static WM := 0x5565 
+	static WM := 0x5565
 	try {
 		newSock := Socket.Client(EventHandler.Alt, ++WM, self.Accept())
 		newSock.AsyncSelect(Socket.FD.READ | Socket.FD.CLOSE)
@@ -149,22 +149,22 @@ SocketAccept(self) {
 	newSock.IsIdentified := 0
 	newSock.Identifier := -1
 	newSock.IdentifiedIndex := 0
-	newSock.SendText("identify")
+	newSock.SendText(JSON.stringify({type: "identify"}))
 }
 
 SocketReceive(self) {
-	try message := self.ReceiveText()
+	try message := JSON.parse(self.ReceiveText())
 	catch
 		return
 	if self.IsIdentified {
-		Interpreter(JSON.parse(message))	
+		Interpreter(message)	
 		return 
 	}
 	SocketIdentification(self, message)
 }
 
 SocketClose(Self) {
-	global CommunicatorIsConnected
+	global CommunicatorSocket, CommunicatorIsConnected
 	try self.Close()
 	if self.ClientSide = "Alt" {
 		CommunicatorIsConnected := 0
@@ -179,13 +179,16 @@ SocketClose(Self) {
 }
 
 SocketIdentification(self, message) {
-	if self.ClientSide = "Alt" {
-		payload := JSON.stringify({identifier: CommunicationID})
-		try self.SendText(payload)
+	if self.ClientSide = "Alt" && message["type"] = "identify" {
+		try {
+			payload := JSON.stringify({identifier: CommunicationID})
+			try self.SendText(payload)
+		}
+		catch
+			SocketReconnect()
 		self.IsIdentified := 1
 	} else {
-		jsonObj := JSON.parse(message,, false)
-		identifier := jsonObj.Identifier
+		identifier := message["identifier"]
 		self.Identifier := identifier
 		self.IdentifiedIndex := IdentifiedConnections.Length + 1
 		IdentifiedConnections.Push(self)
@@ -193,7 +196,12 @@ SocketIdentification(self, message) {
 	}
 }
 
-SocketReconnect() => SetTimer((*) => SocketSetup(), -10000)
+SocketReconnect() {
+	global CommunicatorSocket, CommunicatorIsConnected
+	CommunicatorSocket := 0
+	CommunicatorIsConnected := 0
+	SetTimer((*) => SocketSetup(), -10000)
+}
 
 if CommunicationStyle = "Socket"
 	SocketSetup()

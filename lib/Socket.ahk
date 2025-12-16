@@ -5,22 +5,16 @@
 */
 #DllLoad "ws2_32.dll"
 class Socket {
-    static AF_INET => 2
-    static SOCK_STREAM => 1
-    static IPPROTO_TCP => 6
-    static WSAEWOULDBLOCK => 10035
     static FD => {
         READ: 0x01,
         ACCEPT: 0x08,
         CLOSE: 0x20
     }
 
-    static initialized := false
-    static initialize() {
+    static __New() {
         WSAData := Buffer(394 + A_PtrSize)
         if err := DllCall("ws2_32\WSAStartup", "ushort", 0x0202, "ptr", WSAData.Ptr, "int") > 0
             throw OSError(err)
-
         if NumGet(WSAData, 2, "ushort") != 0x0202
             throw Error("Winsock version 2.2 not available", -1)  
         Socket.initialized := true
@@ -29,18 +23,17 @@ class Socket {
     __New(EventObject, WM := 0x5566, Sock := -1) {
         if (this is Socket.Server || Socket.Client) = false
             throw Error("This method can only be called from the Socket.Server or Socket.Client class.")
-            
-        if Socket.initialized = false
-            Socket.initialize()
+
         this._wm := WM
         this._sock := Sock
         this._eventobj := EventObject
     }
 
     CreateSock() {
+        static AF_INET := 2, SOCK_STREAM := 1, IPPROTO_TCP := 6
         if this._sock != -1
             throw Error("Socket already exists", -1)
-        if (this._sock := DllCall("ws2_32\socket", "int", Socket.AF_INET, "int", Socket.SOCK_STREAM, "int", Socket.IPPROTO_TCP)) = -1
+        if (this._sock := DllCall("ws2_32\socket", "int", AF_INET, "int", SOCK_STREAM, "int", IPPROTO_TCP)) = -1
             throw OSError(DllCall("ws2_32\WSAGetLastError"))
     }
 
@@ -85,6 +78,7 @@ class Socket {
     }
 
     class Server extends Socket {
+        static __New() => 0
         Bind(Host, Port, sockaddr?) {
             if this._sock = -1
                 this.CreateSock()
@@ -100,13 +94,14 @@ class Socket {
         }
 
         Accept() {
-            if (sock := DllCall("ws2_32\accept", "ptr", this._sock, "ptr", 0, "ptr", 0)) = 0
-                if (err := DllCall("ws2_32\WSAGetLastError")) != Socket.WSAEWOULDBLOCK
+            if (sock := DllCall("ws2_32\accept", "ptr", this._sock, "ptr", 0, "ptr", 0)) = -1
+                if (err := DllCall("ws2_32\WSAGetLastError"))
                     throw OSError(err)
             return sock
         }
     }
     class Client extends Socket {
+        static __New() => 0
         Connect(Host, Port, sockaddr?) {
             if this._sock = -1
                 this.CreateSock()
@@ -119,7 +114,7 @@ class Socket {
         ReceiveRaw(MessageBuffer) {
             size := DllCall("ws2_32\recv", "ptr", this._sock, "ptr", MessageBuffer.Ptr, "int", MessageBuffer.Size, "int", 0)
             if size = -1
-                if (err := DllCall("ws2_32\WSAGetLastError")) != Socket.WSAEWOULDBLOCK
+                if (err := DllCall("ws2_32\WSAGetLastError"))
                     throw OSError(err)
             return size
         }
@@ -132,7 +127,7 @@ class Socket {
 
         SendRaw(MessageBuffer) {
             if DllCall("ws2_32\send", "ptr", this._sock, "ptr", MessageBuffer.Ptr, "int", MessageBuffer.Size, "int", 0) = -1
-                if (err := DllCall("ws2_32\WSAGetLastError")) != Socket.WSAEWOULDBLOCK
+                if (err := DllCall("ws2_32\WSAGetLastError"))
                     throw OSError(err)
         }
         
