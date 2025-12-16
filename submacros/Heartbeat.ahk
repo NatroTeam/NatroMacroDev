@@ -76,12 +76,7 @@ Loop
 	}
 	else
 	{
-		switch MacroState
-		{
-			case 1:
-			LastRobloxWindow += 5
-
-			case 0:
+		if MacroState != 2 {
 			LastBackgroundHeartbeat += 5
 			LastRobloxWindow += 5
 		}
