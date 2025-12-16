@@ -345,6 +345,7 @@ nm_importConfig()
 		, "EnableBeesmasTime", 0
 		, "HideErrors", 1
 		, "DebugHotkey", "F6"
+		, "ReleaseChannel", "Stable"
 	)
 
 	config["Status"] := Map("StatusLogReverse", 0
@@ -2269,13 +2270,33 @@ nm_MsgBoxIncorrectRobloxSettings()
 nm_AutoUpdateHandler(req)
 {
 	global
+	local release, releases
 
 	if (req.readyState != 4)
 		return
 
 	if (req.status = 200)
 	{
-		LatestVer := Trim((latest_release := JSON.parse(req.responseText))["tag_name"], "v")
+		; determine release channel
+
+		releases := JSON.parse(req.responseText)
+		for , release in releases
+		{
+			if (
+				release["prerelease"] = true && ReleaseChannel = "Beta"
+				|| release["prerelease"] = false
+			) && (
+				IsObject(release["assets"]) && release["assets"].Length > 0
+			) {
+				latest_release := release
+				break
+			}
+			; should only be here if latest is pre release + on stable channel
+		}
+		if !IsSet(latest_release)
+			latest_release := releases[1] ; should never happen unless we publish 30+ betas
+
+		LatestVer := Trim(latest_release["tag_name"], "v")
 		if (VerCompare(VersionID, LatestVer) < 0)
 		{
 			MainGui["ImageUpdateLink"].Visible := 1
@@ -2392,7 +2413,7 @@ nm_UpdateButton(*)
 		{
 			wr := ComObject("WinHttp.WinHttpRequest.5.1")
 			wr.Open("GET", "https://api.github.com/repos/NatroTeam/NatroMacro/tags?per_page=100", 1)
-			wr.SetRequestHeader("accept", "application/vnd.github+json")
+			wr.SetRequestHeader("accept", "application/vnd.github+json", "X-GitHub-Api-Version", "2022-11-28")
 			wr.Send()
 			wr.WaitForResponse()
 			for k,v in (tags := JSON.parse(wr.ResponseText))
@@ -2403,7 +2424,7 @@ nm_UpdateButton(*)
 
 			wr := ComObject("WinHttp.WinHttpRequest.5.1")
 			wr.Open("GET", "https://api.github.com/repos/NatroTeam/NatroMacro/compare/" base "..." latest_release["tag_name"] , 1)
-			wr.SetRequestHeader("accept", "application/vnd.github+json")
+			wr.SetRequestHeader("accept", "application/vnd.github+json", "X-GitHub-Api-Version", "2022-11-28")
 			wr.Send()
 			wr.WaitForResponse()
 			for k,v in (files := JSON.parse(wr.ResponseText)["files"])
@@ -2474,7 +2495,8 @@ TabArr := ["Gather","Collect/Kill","Boost","Quests","Planters","Status","Setting
 (TabCtrl := MainGui.Add("Tab", "x0 y-1 w500 h240 -Wrap", TabArr)).OnEvent("Change", (*) => TabCtrl.Focus())
 SendMessage 0x1331, 0, 20, , TabCtrl ; set minimum tab width
 ; check for update
-try AsyncHttpRequest("GET", "https://api.github.com/repos/NatroTeam/NatroMacro/releases/latest", nm_AutoUpdateHandler, Map("accept", "application/vnd.github+json"))
+try AsyncHttpRequest("GET", "https://api.github.com/repos/NatroTeam/NatroMacro/releases", nm_AutoUpdateHandler
+, Map("accept", "application/vnd.github+json", "X-GitHub-Api-Version", "2022-11-28"))
 ; open Timers
 if (TimersOpen = 1)
 	run '"' exe_path32 '" /script "' A_WorkingDir '\submacros\PlanterTimers.ahk"'
@@ -2728,7 +2750,8 @@ MainGui.Add("GroupBox", "x5 y95 w160 h65", "Hive")
 MainGui.Add("GroupBox", "x5 y165 w160 h70", "Reset")
 MainGui.Add("GroupBox", "x170 y25 w160 h35", "Input")
 MainGui.Add("GroupBox", "x170 y65 w160 h170", "Reconnect")
-MainGui.Add("GroupBox", "x335 y25 w160 h210", "Character")
+MainGui.Add("GroupBox", "x335 y25 w160 h165", "Character")
+MainGui.Add("GroupBox", "x335 y190 w160 h45", "Updates")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
 ;gui settings
@@ -2826,6 +2849,12 @@ MainGui.Add("Text", "x370 y147 w110 +BackgroundTrans", "\____\___")
 (GuiCtrl := MainGui.Add("Edit", "x422 y150 w30 h18 number Limit3 vConvertMins Disabled", ValidateInt(&ConvertMins, 30))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 MainGui.Add("Text", "x456 y152", "Mins")
 (GuiCtrl := MainGui.Add("CheckBox", "x345 y171 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+
+;update settings
+MainGui.Add("Text", "x340 y210 w110 +BackgroundTrans vReleaseChannelText", "Release Channel:")
+MainGui.Add("Text", "x443 yp w35 +BackgroundTrans +Center vReleaseChannel" , ReleaseChannel)
+MainGui.Add("Button", "xp-16 yp w12 h16 vRCLeft Disabled", "<").OnEvent("Click", nm_ReleaseChannel)
+MainGui.Add("Button", "xp+52 yp wp hp vRCRight Disabled", ">").OnEvent("Click", nm_ReleaseChannel)
 SetLoadingProgress(30)
 
 ;COLLECT/Kill TAB
@@ -4175,6 +4204,8 @@ nm_TabSettingsLock(){
 	MainGui["DetectedApplicationHelp"].Enabled := 0
 	MainGui["NewWalkHelp"].Enabled := 0
 	MainGui["ClaimMethodHelp"].Enabled := 0
+	MainGui["RCLeft"].Enabled := 0
+	MainGui["RCRight"].Enabled := 0
 }
 nm_TabSettingsUnLock(){
 	global
@@ -4218,6 +4249,8 @@ nm_TabSettingsUnLock(){
 	MainGui["DetectedApplicationHelp"].Enabled := 1
 	MainGui["NewWalkHelp"].Enabled := 1
 	MainGui["ClaimMethodHelp"].Enabled := 1
+	MainGui["RCLeft"].Enabled := 1
+	MainGui["RCRight"].Enabled := 1
 }
 nm_TabMiscLock(){
 	MainGui["BasicEggHatcherButton"].Enabled := 0
@@ -8001,6 +8034,30 @@ nm_ConvertBalloon(GuiCtrl, *){
 	MainGui["ConvertBalloon"].Text := ConvertBalloon := val[(GuiCtrl.Name = "CBRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
 	MainGui["ConvertMins"].Enabled := (ConvertBalloon = "Every")
 	IniWrite ConvertBalloon, "settings\nm_config.ini", "Settings", "ConvertBalloon"
+}
+nm_ReleaseChannel(GuiCtrl, *){
+	global ReleaseChannel
+	static val := ["Stable", "Beta"], l := val.Length
+
+	if (ReleaseChannel = "Stable"){ ; change to beta
+		if MsgBox(
+		(
+		'
+		WARNING:
+		Switching to the beta release channel may expose your macro to more bugs than normal. This can cause your macro to function unexpectedly.
+		
+		You will need to restart the macro to fetch beta updates (if any exist)
+
+		Only enable this feature if you know what you are doing!
+		'
+		), "Release Channel", 0x40031) != "Ok"
+			return
+	}
+
+	i := (ReleaseChannel = "Stable") ? 1 : 2
+
+	MainGui["ReleaseChannel"].Text := ReleaseChannel := val[(GuiCtrl.Name = "RCRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	IniWrite ReleaseChannel, "settings\nm_config.ini", "Settings", "ReleaseChannel"
 }
 
 ; MISC TAB
