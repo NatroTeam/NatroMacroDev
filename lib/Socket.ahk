@@ -10,7 +10,7 @@ class Socket {
         ACCEPT: 0x08,
         CLOSE: 0x20
     }
-
+    
     static __New() {
         WSAData := Buffer(394 + A_PtrSize)
         if err := DllCall("ws2_32\WSAStartup", "ushort", 0x0202, "ptr", WSAData.Ptr, "int") > 0
@@ -31,7 +31,7 @@ class Socket {
 
     CreateSock() {
         static AF_INET := 2, SOCK_STREAM := 1, IPPROTO_TCP := 6
-        if this._sock != -1
+        if this._sock != -1 
             throw Error("Socket already exists", -1)
         if (this._sock := DllCall("ws2_32\socket", "int", AF_INET, "int", SOCK_STREAM, "int", IPPROTO_TCP)) = -1
             throw OSError(DllCall("ws2_32\WSAGetLastError"))

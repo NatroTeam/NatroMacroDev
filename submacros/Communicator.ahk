@@ -53,7 +53,7 @@ CommunicationChannelID := A_Args[12]
 ; Socket
 IP := A_Args[13]
 PortNumber := A_Args[14]
-IdentifiedConnections := []
+IdentifiedConnections := {}
 CommunicatorSocket := 0
 CommunicatorIsConnected := 0
 ; general
@@ -103,11 +103,12 @@ ReadMessages() {
 ;-----------------
 SocketSetup() {
 	global CommunicatorSocket, CommunicatorIsConnected
+	static WM := 0x5565
 	if AccountType != "Main Acc" {
 		try {
-			CommunicatorSocket := Socket.Client(EventHandler.Alt)
+			CommunicatorSocket := Socket.Client(EventHandler.Alt, ++WM)
 			CommunicatorSocket.Connect(IP, PortNumber)
-			CommunicatorSocket.AsyncSelect(Socket.FD.READ | Socket.FD.Close)
+			CommunicatorSocket.AsyncSelect(Socket.FD.READ | Socket.FD.CLOSE)
 		} catch {
 			SocketReconnect()
 			return
@@ -116,7 +117,7 @@ SocketSetup() {
 		CommunicatorSocket.ClientSide := "Alt"
 	} else {
 		try {
-			CommunicatorSocket := Socket.Server(EventHandler.Main)
+			CommunicatorSocket := Socket.Server(EventHandler.Main, ++WM)
 			CommunicatorSocket.Bind("0.0.0.0", PortNumber)
 			CommunicatorSocket.Listen(10)
 			CommunicatorSocket.AsyncSelect(Socket.FD.ACCEPT)
@@ -130,11 +131,11 @@ SocketSetup() {
 
 EventHandler := {
 	Alt: {
-		Receive: (self) => SocketReceive(self),
-		Close: (self) => SocketClose(self)
+		Receive: SocketReceive, 
+		Close: SocketClose
 	},
 	Main: {
-		Accept: (self) => SocketAccept(self)
+		Accept: SocketAccept
 	}
 }
 
@@ -148,8 +149,7 @@ SocketAccept(self) {
 	newSock.ClientSide := "Main"
 	newSock.IsIdentified := 0
 	newSock.Identifier := -1
-	newSock.IdentifiedIndex := 0
-	newSock.SendText(JSON.stringify({type: "identify"}))
+	try newSock.SendText(JSON.stringify({type: "identify"}))
 }
 
 SocketReceive(self) {
@@ -163,7 +163,7 @@ SocketReceive(self) {
 	SocketIdentification(self, message)
 }
 
-SocketClose(Self) {
+SocketClose(self) {
 	global CommunicatorSocket, CommunicatorIsConnected
 	try self.Close()
 	if self.ClientSide = "Alt" {
@@ -172,9 +172,9 @@ SocketClose(Self) {
 		SocketReconnect()
 	} else {
 		self.IsIdentified := 0
+		if self.Identifier > 0
+			IdentifiedConnections.DeleteProp(self.Identifier)
 		self.Identifier := 0
-		if self.IdentifiedIndex > 0 
-			IdentifiedConnections.RemoveAt(self.IdentifiedIndex)
 	}
 }
 
@@ -190,9 +190,20 @@ SocketIdentification(self, message) {
 	} else {
 		identifier := message["identifier"]
 		self.Identifier := identifier
-		self.IdentifiedIndex := IdentifiedConnections.Length + 1
-		IdentifiedConnections.Push(self)
+		IdentifiedConnections.%identifier% := self
 		self.IsIdentified := 1
+	}
+}
+
+; not currently in use, but might be soon
+SocketListenerExists() {
+	sock := Socket.Client({})
+	try sock.Connect("127.0.0.1", PortNumber)
+	catch
+		return 0
+	else {
+		sock.Close()
+		return 1
 	}
 }
 
@@ -227,7 +238,7 @@ SendMessageToAlts(wParam, lParam, *) {
 			return
 	}
 	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && CommunicatorIsConnected {
-		for sock in IdentifiedConnections {
+		for sock in IdentifiedConnections.OwnProps() {
 			sock.SendText(JSON.Stringify(jsonObj))
 		}
 	}
@@ -285,9 +296,8 @@ Send_WM_COPYDATA(StringToSend, TargetScriptTitle, wParam:=0)
 
 nm_sendHeartbeat(*){
 	Critical
-	if WinExist("Heartbeat.ahk ahk_class AutoHotkey") {
-		PostMessage 0x5556, 2
-	}
+	if WinExist("Heartbeat.ahk ahk_class AutoHotkey") 
+		PostMessage 0x5556, 4
 }
 
 nm_setGlobalInt(wParam, lParam, *)
