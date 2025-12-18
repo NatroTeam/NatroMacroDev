@@ -108,43 +108,9 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5560, nm_copyDebugLog)
-OnMessage(0x5561, ImportPreset)
+OnMessage(0x5561, PresetHandler)
 OnMessage(0x0020, nm_WM_SETCURSOR)
 
-ImportPreset(wParam, *){
-    Critical
-    
-    filename := GetFileByPosition(wParam)
-    nm_LockTabs()
-    if filename != ""
-        GetPresetFromFile(filename)
-	nm_LockTabs(0)
-	
-	;//todo: change to use Loop Files
-	GetFileByPosition(position) {
-		dirlist := []
-		
-		Loop Files, A_WorkingDir "\settings\presets\*.nm"
-			dirlist.Push({name: A_LoopFileName, time: A_LoopFileTimeCreated})
-		
-		Loop dirlist.Length - 1 {
-			i := A_Index
-			Loop dirlist.Length - i {
-				j := A_Index + i
-				if (dirlist[i].time > dirlist[j].time) {
-					temp := dirlist[i]
-					dirlist[i] := dirlist[j]
-					dirlist[j] := temp
-				}
-			}
-		}
-		
-		if (position > 0 && position <= dirlist.Length)
-			return StrReplace(dirlist[position].name, ".nm", "")  ; strip extension
-		
-		return ""
-	}
-}
 ; set version identifier
 VersionID := "1.0.1"
 
@@ -23124,5 +23090,16 @@ nm_PresetGUI(*){
         return SubStr(name, -3) = ".nm" ? SubStr(name, 1, -3) : name
     }
 }
-
-
+PresetHandler(wParam, *){
+    Critical
+    nm_LockTabs()
+	loop files A_WorkingDir "\settings\presets\*.nm", 'F'
+	{
+		if A_Index = wParam
+		{
+			GetPresetFromFile(RTrim(A_LoopFileShortName, ".nm"))
+			break
+		}
+	}
+	nm_LockTabs(0)
+}

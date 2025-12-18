@@ -2438,42 +2438,94 @@ nm_command(command)
 			}
 			DetectHiddenWindows 0
 		
-		case "preset":
-			if !(params[2] && params[3]) {
-				command_buffer.RemoveAt(1) ; since we're returning
-				return discord.SendEmbed("Missing parameters!\n``````" commandPrefix "preset [export/load/delete/create] [presetname]``````", 16711731, , , , id)
-			}
-			name := Trim(params[3])
-			presetname := StrReplace(SubStr(name, -3) = ".nm" ? SubStr(name, 1, -3) : name, " ") ; trim .nm from preset name and remove spaces
-			path := A_WorkingDir "\settings\presets\" presetname ".nm"
-			dirlist := []
-			switch params[2], 0  {
-				case "export":
-					if FileExist(path) {
-						discord.SendFile(path, 1)
-					} else {
-						discord.SendEmbed("Preset ``" presetname "`` does not exist at path (" path ")", 16711731, , , , id)
+			case "preset":
+				loop 2
+					params[A_Index] := StrLower(params[A_Index])
+
+				if params.Has(3) {
+					PresetPath := A_WorkingDir "\settings\presets\" (InStr(params[3], ".nm") ? params[3] : params[3] ".nm")
+					
+					if !FileExist(PresetPath) {
+						discord.SendEmbed("Preset does not exist! To see your presets, use ?preset list.", 16711731)
+						command_buffer.RemoveAt(1)
+						return
 					}
-				case "load":
-					; use order in dir so i can get around not knowing how to use wm_copydata
-					;//todo: change to use Loop Files
-					dirlist := Map()
-			
-					Loop Files, A_WorkingDir "\settings\presets\*.nm" {
-						if A_LoopFileName = presetname {
-							DetectHiddenWindows 1
-							if WinExist("natro_macro ahk_class AutoHotkey"){
-								try result := SendMessage(0x5561, A_Index)
-								catch Error as e {
-									discord.SendEmbed("Error: SendMessage Timeout! " e.Message, 16711731, , , , id)
-								}
-							}
-							break
+				}
+
+				switch params[2] {
+					case "help":
+						postdata := '{"embeds":[{"title":"Preset Commands","color":"48128","fields":[{"name":"' commandPrefix 'preset delete [name]","value":"Deletes a preset (without extension)","inline":false},{"name":"' commandPrefix 'preset export [name]","value":"Sends the preset as an attachment (without extension)","inline":false},{"name":"' commandPrefix 'preset create [name]","value":"Creates a preset from current macro settings (without extension)","inline":false},{"name":"' commandPrefix 'preset list","value":"Returns a list of existing presets.","inline":false}],"footer":{"text":"A preset is a file which contains all of the macros settings."}}],"allowed_mentions":{"parse":[]},"message_reference":{"message_id":"' id '","fail_if_not_exists":false}}'
+						discord.SendMessageAPI(postdata, "application/json")
+					
+					case "delete":
+						if !params.Has(3)
+							return discord.SendEmbed("Please specify a preset!", 16711731)
+						try FileDelete(PresetPath)
+						catch
+							discord.SendEmbed("An error occured. Preset may not exist or the macro might not have the privelleges to delete this file.", 16711731)
+						else 
+							discord.SendEmbed("Preset deleted!", 48128)
+					
+					case "export":
+						if !params.Has(3)
+							return discord.SendEmbed("Please specify a preset!", 16711731)
+						discord.SendFile(PresetPath, ID)
+					
+					case "load":
+						if !params.Has(3) {
+							discord.SendEmbed("Please specify a preset!", 16711731)
+							command_buffer.RemoveAt(1)
+							return
 						}
-					}
+
+						PresetPos := 0
+						
+						loop files A_WorkingDir "\settings\presets\*.nm", 'F' {
+							if (A_LoopFileName = InStr(params[3], ".nm") ? params[3] : params[3] ".nm") {
+								PresetPos := A_Index
+								break
+							}
+						}
+
+						DetectHiddenWindows 1
+
+						if PresetPos {
+							try SendMessage(0x5561, PresetPos, , , "natro_macro ahk_class AutoHotkey")
+							catch {
+								discord.SendEmbed("Error! SendMessage timeout.", 16711731)
+								command_buffer.RemoveAt(1)
+								return
+							}
+							discord.SendEmbed("Preset loaded!", 48128)
+						} else
+							discord.SendEmbed("i coouildnt find it", 16711731)
+	
+						command_buffer.RemoveAt(1)
+					
+					case "list":
+						fileList := "", fileCount := 0, totalSize := 0
+						
+						loop files A_WorkingDir "\settings\presets\*.nm", 'F' {
+							fileList .= A_LoopFileName "`n"
+							fileCount++
+							totalSize += A_LoopFileSize
+						}
+						
+						fileList := !fileList ? "No presets found" : Trim(fileList, "`n")
+						fileList := StrReplace(fileList, "`n", "\n")
+						
+						sizeStr := totalSize < 1024 ? totalSize " bytes" : totalSize < 1048576 ? Round(totalSize / 1024, 2) "KB" : totalSize < 1073741824 ? Round(totalSize / 1048576, 2) "MB" : Round(totalSize / 1073741824, 2) "GB"
+						
+						postdata := '{"embeds":[{"title":"Existing Presets","color":48128,"description":"````\n' fileList '\n````","fields":[{"name":"Total","value":"**' fileCount ' presets** (' sizeStr ')","inline":false}],"footer":{"text":"Your preset collection"}}],"allowed_mentions":{"parse":[]},"message_reference":{"message_id":"' id '","fail_if_not_exists":false}}'
+						
+						discord.SendMessageAPI(postdata, "application/json")
+
+					;TODO//Change validation and use send_wm_copydata to make a create preset command
+					; not urgent so leave for now.
+
+					default:
+						discord.SendEmbed("``" commandPrefix name " " params[2] "``is not a valid subcommand!\nUse ``" commandPrefix "help preset`` for a list of preset commands.", 16711731, , , , id)
 				
-				default:
-					discord.SendEmbed("``" commandPrefix name " " params[2] "``is not a valid subcommand!\nUse ``" commandPrefix "help preset`` for a list of preset commands.", 16711731, , , , id)
 			}
 		#Include "*i %A_ScriptDir%\..\settings\personal_commands.ahk"
 
