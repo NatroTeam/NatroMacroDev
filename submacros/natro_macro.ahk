@@ -8095,18 +8095,18 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 	txtBotToken := ConfGui.Add("Text", "xs+10 ys+15", "Bot Token:")
 	(edtBotToken := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap vCommunicationBotToken", CommunicationBotToken)).OnEvent("Change", SaveConf)
 	txtChannelID := ConfGui.Add("Text", "xs+10 y+5", "Channel ID:")
-	(edtChannelID := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap Number vCommunicationChannelID", CommunicationChannelID)).OnEvent("Change", SaveConf)
+	(edtChannelID := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap Number vCommunicationChannelID", CommunicationChannelID)).OnEvent("Change", ValidateNumberCtrl)
 	; Socket
 	confSocket := ConfGui.Add("GroupBox", "xm ym w300 h" (AccountType = "Main Acc" ? 105 : 150), "Socket Configuration")
 	(btnPort := ConfGui.Add("Button", "xs+10 ys+15 w10 h15", "?")).OnEvent("Click", PortHelpButton)
     txtPort := ConfGui.Add("Text", "xs+25 yp", "Port Number:")
-    (edtPort := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap Number vPortNumber", PortNumber)).OnEvent("Change", SaveConf)
+    (edtPort := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap Number vPortNumber", PortNumber)).OnEvent("Change", ValidateNumberCtrl)
     (btnIP := ConfGui.Add("Button", "xs+10 y+5 w10 h15", "?")).OnEvent("Click", IPHelpButton)
 	txtIP := ConfGui.Add("Text", "xs+25 yp", "IP Address:")
     (edtIP := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap vCommunicationIP", CommunicationIP)).OnEvent("Change", SaveConf)
 	(btnID := ConfGui.Add("Button", "xs+10 y+5 w10 h15", "?")).OnEvent("Click", IDHelpButton)
 	txtID := ConfGui.Add("Text", "xs+25 yp", "Indentification:")
-	(edtID := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap Number vCommunicationID", CommunicationID)).OnEvent("Change", SaveConf)
+	(edtID := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap Number vCommunicationID", CommunicationID)).OnEvent("Change", ValidateNumberCtrl)
 	(btnConnectionIP := ConfGui.Add("Button", "xs+10 yp-60 w10 h15", "?")).OnEvent("Click", ConnectIPHelpButton)
 	txtConnectionIP := ConfGui.Add("Text", "xs+25 yp", "Connection IP:")
 	(edtConnectionIP := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap ReadOnly", SysGetIPAddresses()[1]))
@@ -8138,6 +8138,11 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 		global CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, CommunicationID, PortNumber
 		%GuiCtrl.Name% := ConfGui[GuiCtrl.Name].Value
 		IniWrite GuiCtrl.Value, "settings\nm_config.ini", "Alts", GuiCtrl.Name
+	}
+	ValidateNumberCtrl(GuiCtrl, *) {
+		if InStr(GuiCtrl.Value, "-")
+			GuiCtrl.Value := StrReplace(GuiCtrl.Value, "-")
+		SaveConf(GuiCtrl)
 	}
 	PortHelpButton(*) {
 		MsgBox "The sockets connect to a specific port number. The tad alt account's port number needs to be the same as the main account's. for the connection to work.", "Port", 0x40000

@@ -55,7 +55,7 @@ IP := A_Args[13]
 PortNumber := A_Args[14]
 IdentifiedConnections := {}
 CommunicatorSocket := 0
-CommunicatorIsConnected := 0
+CommunicatorIsConnected := false
 ; general
 CommunicationStyle := A_Args[15]
 CommunicationID := (AccountType = "Main Acc" ? -1 : A_Args[16])
@@ -113,7 +113,7 @@ SocketSetup() {
 			SocketReconnect()
 			return
 		}
-		CommunicatorSocket.IsIdentified := 0
+		CommunicatorSocket.IsIdentified := false
 		CommunicatorSocket.ClientSide := "Alt"
 	} else {
 		try {
@@ -126,7 +126,7 @@ SocketSetup() {
 			return
 		}
 	}
-	CommunicatorIsConnected := 1
+	CommunicatorIsConnected := true
 }
 
 EventHandler := {
@@ -147,7 +147,7 @@ SocketAccept(self) {
 	} catch 
 		return
 	newSock.ClientSide := "Main"
-	newSock.IsIdentified := 0
+	newSock.IsIdentified := false
 	newSock.Identifier := -1
 	try newSock.SendText(JSON.stringify({type: "identify"}))
 }
@@ -156,7 +156,7 @@ SocketReceive(self) {
 	try message := JSON.parse(self.ReceiveText())
 	catch
 		return
-	if self.IsIdentified {
+	if self.IsIdentified = true {
 		Interpreter(message)	
 		return 
 	}
@@ -167,14 +167,16 @@ SocketClose(self) {
 	global CommunicatorSocket, CommunicatorIsConnected
 	try self.Close()
 	if self.ClientSide = "Alt" {
-		CommunicatorIsConnected := 0
+		CommunicatorIsConnected := false
 		CommunicatorSocket := 0
 		SocketReconnect()
 	} else {
-		self.IsIdentified := 0
-		if self.Identifier > 0
+		self.IsIdentified := false
+		if self.Identifier > 0 && IdentifiedConnections.HasOwnProp(self.Identifier)
 			IdentifiedConnections.DeleteProp(self.Identifier)
 		self.Identifier := 0
+		if (SocketListenerExists() = false) && (CommunicatorIsConnected = true)
+			SocketReconnect()
 	}
 }
 
@@ -186,31 +188,41 @@ SocketIdentification(self, message) {
 		}
 		catch
 			SocketReconnect()
-		self.IsIdentified := 1
+		self.IsIdentified := true
 	} else {
 		identifier := message["identifier"]
 		self.Identifier := identifier
 		IdentifiedConnections.%identifier% := self
-		self.IsIdentified := 1
+		self.IsIdentified := true
 	}
 }
 
-; not currently in use, but might be soon
 SocketListenerExists() {
-	sock := Socket.Client({})
-	try sock.Connect("127.0.0.1", PortNumber)
-	catch
-		return 0
-	else {
-		sock.Close()
-		return 1
+	static AF_INET := 2, TCP_TABLE_BASIC_LISTENER := 0
+	pTcpTable := Buffer(4096)
+	DllCall("IPHLPAPI\GetExtendedTcpTable",
+		"ptr", pTcpTable.Ptr,
+		"uint*", &(size := pTcpTable.Size),
+		"uchar", true,
+		"uint64", AF_INET,
+		"int", TCP_TABLE_BASIC_LISTENER,
+		"uint64", 0,
+		"uint")
+
+	struct_count := NumGet(pTcpTable, "uint")
+	loop struct_count {
+		MIB_TCPROW := pTcpTable.Ptr + 4 + (20 * (A_Index - 1))    
+		dwLocalPort := NumGet(MIB_TCPROW, 8, "uint")
+		if (((dwLocalPort >> 8) & 0xff) | ((dwLocalPort & 0xff) << 8)) = PortNumber
+			return true
 	}
+	return false
 }
 
 SocketReconnect() {
 	global CommunicatorSocket, CommunicatorIsConnected
 	CommunicatorSocket := 0
-	CommunicatorIsConnected := 0
+	CommunicatorIsConnected := false
 	SetTimer((*) => SocketSetup(), -10000)
 }
 
@@ -237,8 +249,8 @@ SendMessageToAlts(wParam, lParam, *) {
 		catch
 			return
 	}
-	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && CommunicatorIsConnected {
-		for sock in IdentifiedConnections.OwnProps() {
+	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && (CommunicatorIsConnected = true ){
+		for identifier, sock in IdentifiedConnections.OwnProps() {
 			sock.SendText(JSON.Stringify(jsonObj))
 		}
 	}
