@@ -109,6 +109,7 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5560, nm_copyDebugLog)
+OnMessage(0x5561, nm_UpdateConnectionTotal)
 OnMessage(0x0020, nm_WM_SETCURSOR)
 
 ; set version identifier
@@ -279,6 +280,8 @@ nm_importPaths()
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; IMPORT GLOBALS FROM CONFIG
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; temp unset vars
+BoosterGatherInterrupt := 0
 nm_importConfig()
 {
 	global
@@ -303,6 +306,7 @@ nm_importConfig()
 		, "FallbackServer2", ""
 		, "FallbackServer3", ""
 		, "ReconnectMethod", "Deeplink"
+		, "ClaimMethod", "ToSlot"
 		, "ReconnectInterval", ""
 		, "ReconnectHour", ""
 		, "ReconnectMin", ""
@@ -695,7 +699,8 @@ nm_importConfig()
 		, "StickerStackTimer", 900
 		, "StickerStackHive", 0
 		, "StickerStackCub", 0
-		, "StickerStackVoucher", 0)
+		, "StickerStackVoucher", 0
+		, "BoosterGatherInterrupt", 0)
 
 	config["Quests"] := Map("QuestGatherMins", 5
 		, "QuestGatherReturnBy", "Walk"
@@ -837,11 +842,11 @@ nm_importConfig()
 		, "CommunicationID", Random(100000000, 999999999))
 
 	config["TadSync"] := Map("GlitterEnabled", 0
-		, "GlitterFieldConfig", "Blue Flower|Bamboo|Pine Tree"
+		, "GlitterFieldConfig", "BlueFlower|Bamboo|PineTree"
 		, "GlitterBefore", 0
 		, "GlitterAfter", 0
 		, "ActionInterrupts", 0
-		, "ActionInterruptConfig", "Mondo|Honeystorm|Bugrun|Memory Match|Planters")
+		, "ActionInterruptConfig", "Booster|WindShrine|Ant|Blender|Clock|Dispensers|Honeystorm|MemoryMatch|RoboPass|StickerPrinter|Backpack|Blessing|Bosses|Bugrun|ViciousBee|Comforting|Invigorating|Motivating|Refreshing|BlackBear|BrownBear|BuckoBee|HoneyBee|PolarBear|RileyBee")
 
 	local k, v, i, j
 	for k,v in config ; load the default values as globals, will be overwritten if a new value exists when reading
@@ -1984,6 +1989,29 @@ HiveConfirmed := 0
 ShiftLockEnabled := 0
 vicStart := 0
 CUSTOM_CURSOR := 1
+TempGather_Interrupt := 0
+TempGather_Field := ""
+TempGather_Duration := 0
+TempGather_StartTime := 0
+TempGather := false
+UseGlitter := 0
+GatherBoostedFieldTime := 15
+(ActionList := Map()).CaseSense := 0
+ActionList["Convert"] := Map("Backpack", 1, "Blessing", 1)
+ActionList["Collect"] := Map("Clock", 1, "Mondo", 0, "Ant", 1, "Honeystorm", 1, "MemoryMatch", 1, "Dispensers", 1, "Blender", 1, "RoboPass", 1, "StickerPrinter", 1)
+ActionList["Beesmas"] := Map("Stockings", 0, "Gingerbread", 0, "Samovar", 0, "HoneyWreath", 0, "SnowMachine", 0, "LidArt", 0, "Feast", 0, "Candles", 0, "GummyBeacon", 0, "RoboParty", 0, "BeesmasMM", 0)
+ActionList["Kill"]    := Map("Bugrun", 1, "ViciousBee", 1)
+ActionList["Boost"]   := Map("WindShrine", 1, "StickerStack", 1, "Booster", 1)
+ActionList["Quests"]  := Map("PolarBear", 1, "BlackBear", 1, "BuckoBee", 1, "HoneyBee", 1, "BrownBear", 1, "RileyBee", 1)
+ActionList["Planters"]:= Map("Comforting", 1, "Motivating", 1, "Satisfying", 0, "Refreshing", 1, "Invigorating", 1)
+for i, x in ActionList {
+	for j, y in x {
+		if InStr("|" ActionInterruptConfig "|", "|" j "|")
+			x[j] := 1
+		else
+			x[j] := 0
+	}
+}
 nm_WM_SETCURSOR(*) => CUSTOM_CURSOR
 
 ForceStart := 0
@@ -2024,7 +2052,9 @@ Run
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 nm_LaunchCommunicator() {
 	path := '"' exe_path64 '" /script "' A_WorkingDir '\submacros\Communicator.ahk" '
-	params := [AccountType, discordMode, discordCheck, MainChannelCheck, MainChannelID, ReportChannelCheck, ReportChannelID, WebhookEasterEgg, DiscordUID, CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, PortNumber, CommunicationStyle, CommunicationID, A_TickCount]
+	params := [AccountType, discordMode, discordCheck, MainChannelCheck, MainChannelID, ReportChannelCheck, ReportChannelID, WebhookEasterEgg
+	, DiscordUID, CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, PortNumber, CommunicationStyle
+	, CommunicationID, A_TickCount]
 	vars := ""
 	for i, x in params
 		vars .= '"' (x = "" ? "" : x) '" '
@@ -2463,8 +2493,8 @@ for k,v in ["PMondoGuid","PMondoGuidComplete","PFieldBoosted","PFieldGuidExtend"
 
 ; add tabs
 TabArr := ["Gather","Collect/Kill","Boost","Quests","Planters","Status","Alts","Settings","Misc","Credits"], (BuffDetectReset = 1) && TabArr.Push("Adv")
-(TabCtrl := MainGui.Add("Tab", "x0 y-1 w510 h240 -Wrap", TabArr)).OnEvent("Change", (*) => TabCtrl.Focus())
-SendMessage 0x1331, 0, 10, , TabCtrl ; set minimum tab width
+(TabCtrl := MainGui.Add("Tab", "x0 y-1 w520 h240 -Wrap", TabArr)).OnEvent("Change", (*) => TabCtrl.Focus())
+SendMessage 0x1331, 0, 20, , TabCtrl ; set minimum tab width
 ; check for update
 try AsyncHttpRequest("GET", "https://api.github.com/repos/NatroTeam/NatroMacro/releases/latest", nm_AutoUpdateHandler, Map("accept", "application/vnd.github+json"))
 ; open Timers
@@ -2800,8 +2830,14 @@ MainGui.Add("Edit", "x75 y124 w18 h16 Limit2 number vHiveBees Disabled", Validat
 MainGui.Add("Text", "x98 y125 w110 +BackgroundTrans", "Bees")
 MainGui.Add("Button", "x150 y124 w10 h15 vHiveBeesHelp Disabled", "?").OnEvent("Click", nm_HiveBeesHelp)
 MainGui.Add("Text", "x9 y142 w110 +BackgroundTrans", "Wait")
-(GuiCtrl := MainGui.Add("Edit", "x33 y141 w18 h16 Limit2 number vConvertDelay Disabled", ValidateInt(&ConvertDelay))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
-MainGui.Add("Text", "x54 y142 w110 +BackgroundTrans", "seconds after convert")
+MainGui.Add("Text", "x9 y142 w110 +BackgroundTrans", "Claim Method: ")
+MainGui.Add("Text", "x92 yp w48 vClaimMethod +Center +BackgroundTrans", ClaimMethod)
+MainGui.Add("Button", "x80 yp w12 h15 vCMLeft Disabled", "<").OnEvent("Click", nm_ClaimMethod)
+MainGui.Add("Button", "x139 yp w12 h15 vCMRight Disabled", ">").OnEvent("Click", nm_ClaimMethod)
+MainGui.Add("Button", "x150 yp w10 h15 vClaimMethodHelp Disabled", "?").OnEvent("Click", nm_ClaimMethodHelp)
+;MainGui.Add("Text", "x9 y142 w110 +BackgroundTrans", "Wait")
+;(GuiCtrl := MainGui.Add("Edit", "x33 y141 w18 h16 Limit2 number vConvertDelay Disabled", ValidateInt(&ConvertDelay))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+;MainGui.Add("Text", "x54 y142 w110 +BackgroundTrans", "seconds after convert")
 
 ;reset settings
 MainGui.Add("Button", "x20 y183 w130 h22 vResetFieldDefaultsButton Disabled", "Reset Field Defaults").OnEvent("Click", nm_ResetFieldDefaultGUI)
@@ -2880,17 +2916,17 @@ MainGui.Add("GroupBox", "x5 y42 w125 h124 vCollectGroupBox", "Collect")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 (GuiCtrl := MainGui.Add("CheckBox", "x10 y57 vClockCheck Disabled Checked" ClockCheck, "Clock (tickets)")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "x10 yp+18 w50 vMondoBuffCheck Disabled Checked" MondoBuffCheck, "Mondo")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
-MondoActionList := ["Buff", "Kill"], PMondoGuid && MondoActionList.Push("Tag", "Guid"), MondoActionList.Default := "", MondoActionList.Length := 4
+MondoActionList := ["Buff", "Kill", "Gather", "Follow"], PMondoGuid && MondoActionList.Push("Tag", "Guid"), MondoActionList.Default := "", MondoActionList.Length := 4
 MainGui.Add("Text", "x75 yp w40 vMondoAction +Center +BackgroundTrans", MondoAction)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vMALeft Disabled", "<").OnEvent("Click", nm_MondoAction)
 MainGui.Add("Button", "xp+51 yp w12 h16 vMARight Disabled", ">").OnEvent("Click", nm_MondoAction)
-MainGui.Add("Text", "x14 yp+15 w110 vMondoPointText +BackgroundTrans Section Hidden" (MondoAction != "Buff" && MondoAction != "Kill"), "\__")
+MainGui.Add("Text", "x14 yp+15 w110 vMondoPointText +BackgroundTrans Section Hidden" (MondoAction != "Buff" && MondoAction != "Kill" && MondoAction != "Follow"), "\__")
 (GuiCtrl := MainGui.Add("Edit", "xs+20 ys+3 w30 h18 number Limit3 vMondoSecs Disabled Hidden" (MondoAction != "Buff"), ValidateInt(&MondoSecs, 120))).Section := "Collect", GuiCtrl.OnEvent("Change", nm_saveConfig)
 MainGui.Add("Text", "x+4 yp+2 vMondoSecsText Hidden" (MondoAction != "Buff"), "Secs")
-MainGui.Add("Text", "xs+18 ys+4 vMondoLootText Hidden" (MondoAction != "Kill"), "Loot:")
-MainGui.Add("Text", "x+13 yp w45 vMondoLootDirection +Center +BackgroundTrans Hidden" (MondoAction != "Kill"), MondoLootDirection)
-MainGui.Add("Button", "xp-12 yp-1 w12 h16 vMLDLeft Disabled Hidden" (MondoAction != "Kill"), "<").OnEvent("Click", nm_MondoLootDirection)
-MainGui.Add("Button", "xp+56 yp w12 h16 vMLDRight Disabled Hidden" (MondoAction != "Kill"), ">").OnEvent("Click", nm_MondoLootDirection)
+MainGui.Add("Text", "xs+18 ys+4 vMondoLootText Hidden" (MondoAction != "Kill" && MondoAction != "Follow"), "Loot:")
+MainGui.Add("Text", "x+13 yp w45 vMondoLootDirection +Center +BackgroundTrans Hidden" (MondoAction != "Kill" && MondoAction != "Follow"), MondoLootDirection)
+MainGui.Add("Button", "xp-12 yp-1 w12 h16 vMLDLeft Disabled Hidden" (MondoAction != "Kill" && MondoAction != "Follow"), "<").OnEvent("Click", nm_MondoLootDirection)
+MainGui.Add("Button", "xp+56 yp w12 h16 vMLDRight Disabled Hidden" (MondoAction != "Kill" && MondoAction != "Follow"), ">").OnEvent("Click", nm_MondoLootDirection)
 (GuiCtrl := MainGui.Add("CheckBox", "x10 y112 w35 vAntPassCheck Disabled Checked" AntPassCheck, "Ant")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("Text", "x60 yp w55 vAntPassAction +Center +BackgroundTrans", AntPassAction)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vAPALeft Disabled", "<").OnEvent("Click", nm_AntPassAction)
@@ -3100,7 +3136,7 @@ MainGui.Add("GroupBox", "x10 y97 w285 h138", "Hotbar Slots")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
 ;field booster
-MainGui.Add("Text", "x15 y40 +BackgroundTrans Section", "1:")
+MainGui.Add("Text", "x13 y40 +BackgroundTrans Section", "1:")
 MainGui.Add("Text", "x+14 yp w50 vFieldBooster1 +Center +BackgroundTrans", FieldBooster1)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vFB1Left Disabled", "<").OnEvent("Click", nm_FieldBooster)
 MainGui.Add("Button", "xp+61 yp w12 h16 vFB1Right Disabled", ">").OnEvent("Click", nm_FieldBooster)
@@ -3112,12 +3148,13 @@ MainGui.Add("Text", "xs ys+36 +BackgroundTrans", "3:")
 MainGui.Add("Text", "x+14 yp w50 vFieldBooster3 +Center +BackgroundTrans", FieldBooster3)
 MainGui.Add("Button", "xp-12 yp-1 w12 h16 vFB3Left Disabled", "<").OnEvent("Click", nm_FieldBooster)
 MainGui.Add("Button", "xp+61 yp w12 h16 vFB3Right Disabled", ">").OnEvent("Click", nm_FieldBooster)
-MainGui.Add("Text", "x120 y35 left +BackgroundTrans", "Separate By:")
+MainGui.Add("Text", "x102 y35 left +BackgroundTrans", "Separate By")
 MainGui.Add("Text", "xp+3 y+1 w12 vFieldBoosterMins +Center", FieldBoosterMins)
 MainGui.Add("UpDown", "xp+14 yp-1 h16 -16 Range0-12 vFieldBoosterMinsUpDown Disabled", FieldBoosterMins//5).OnEvent("Change", nm_FieldBoosterMins)
 MainGui.Add("Text", "xp+20 yp+1 w100 left +BackgroundTrans", "Mins")
 MainGui.Add("CheckBox", "x109 y67 +center vBoostChaserCheck Disabled Checked" BoostChaserCheck, "Gather in`nBoosted Field").OnEvent("Click", nm_BoostChaserCheck)
-MainGui.Add("Button", "x200 y65 w90 h30 vBoostedFieldSelectButton Disabled", "Select Boosted Gather Fields").OnEvent("Click", nm_BoostedFieldSelectButton)
+(GuiCtrl := MainGui.Add("CheckBox", "x165 y32 w124 h20 vBoosterGatherInterrupt Disabled Checked" BoosterGatherInterrupt, "Allow Gather Interrupt")).Section := "Boost", GuiCtrl.OnEvent("Click", nm_saveConfig)
+MainGui.Add("Button", "x198 y75 w92 h20 vBoostedFieldSelectButton Disabled", "Select Fields").OnEvent("Click", nm_BoostedFieldSelectButton)
 MainGui.SetFont("w700")
 
 ;shrine
@@ -3165,7 +3202,7 @@ Loop 6
 	SetLoadingProgress(31+A_Index)
 }
 nm_HotbarWhile()
-MainGui.Add("Button", "x200 y34 w90 h30 vAutoFieldBoostButton Disabled", (AutoFieldBoostActive ? "Auto Field Boost`n[ON]" : "Auto Field Boost`n[OFF]")).OnEvent("Click", nm_autoFieldBoostGui)
+MainGui.Add("Button", "x198 y54 w92 h20 vAutoFieldBoostButton Disabled", (AutoFieldBoostActive ? "AFB: [ON]" : "AFB: [OFF]")).OnEvent("Click", nm_autoFieldBoostGui)
 MainGui.SetFont("w700")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
@@ -3902,6 +3939,7 @@ nm_TabBoostLock(){
 	MainGui["FieldBoosterMinsUpDown"].Enabled := 0
 	MainGui["BoostChaserCheck"].Enabled := 0
 	MainGui["AutoFieldBoostButton"].Enabled := 0
+	MainGui["BoosterGatherInterrupt"].Enabled := 0
 	MainGui["BoostedFieldSelectButton"].Enabled := 0
 	MainGui["HotbarWhile2"].Enabled := 0
 	MainGui["HotbarWhile3"].Enabled := 0
@@ -3953,6 +3991,7 @@ nm_TabBoostUnLock(){
 	MainGui["FieldBoosterMinsUpDown"].Enabled := 1
 	MainGui["BoostChaserCheck"].Enabled := 1
 	MainGui["AutoFieldBoostButton"].Enabled := 1
+	MainGui["BoosterGatherInterrupt"].Enabled := 1
 	MainGui["BoostedFieldSelectButton"].Enabled := 1
 	MainGui["HotbarWhile2"].Enabled := 1
 	MainGui["HotbarWhile3"].Enabled := 1
@@ -4229,6 +4268,8 @@ nm_TabSettingsLock(){
 	MainGui["STRight"].Enabled := 0
 	MainGui["CBLeft"].Enabled := 0
 	MainGui["CBRight"].Enabled := 0
+	MainGui["CMLeft"].Enabled := 0
+	MainGui["CMRight"].Enabled := 0
 	MainGui["ConvertMins"].Enabled := 0
 	MainGui["DisableToolUse"].Enabled := 0
 	MainGui["AnnounceGuidingStar"].Enabled := 0
@@ -4237,7 +4278,7 @@ nm_TabSettingsLock(){
 	MainGui["HiveSlot"].Enabled := 0
 	MainGui["HiveBees"].Enabled := 0
 	MainGui["HiveBeesHelp"].Enabled := 0
-	MainGui["ConvertDelay"].Enabled := 0
+	;MainGui["ConvertDelay"].Enabled := 0
 	MainGui["PrivServer"].Enabled := 0
 	MainGui["PublicFallback"].Enabled := 0
 	MainGui["ResetFieldDefaultsButton"].Enabled := 0
@@ -4252,6 +4293,7 @@ nm_TabSettingsLock(){
 	MainGui["RefreshDetectedApplication"].Enabled := 0
 	MainGui["DetectedApplicationHelp"].Enabled := 0
 	MainGui["NewWalkHelp"].Enabled := 0
+	MainGui["ClaimMethodHelp"].Enabled := 0
 }
 nm_TabSettingsUnLock(){
 	global
@@ -4268,6 +4310,8 @@ nm_TabSettingsUnLock(){
 	MainGui["STRight"].Enabled := 1
 	MainGui["CBLeft"].Enabled := 1
 	MainGui["CBRight"].Enabled := 1
+	MainGui["CMLeft"].Enabled := 1
+	MainGui["CMRight"].Enabled := 1
 	if (ConvertBalloon="every")
 		MainGui["ConvertMins"].Enabled := 1
 	MainGui["DisableToolUse"].Enabled := 1
@@ -4277,7 +4321,7 @@ nm_TabSettingsUnLock(){
 	MainGui["HiveSlot"].Enabled := 1
 	MainGui["HiveBees"].Enabled := 1
 	MainGui["HiveBeesHelp"].Enabled := 1
-	MainGui["ConvertDelay"].Enabled := 1
+	;MainGui["ConvertDelay"].Enabled := 1
 	MainGui["PrivServer"].Enabled := 1
 	MainGui["PublicFallback"].Enabled := 1
 	MainGui["ResetFieldDefaultsButton"].Enabled := 1
@@ -4292,6 +4336,7 @@ nm_TabSettingsUnLock(){
 	MainGui["RefreshDetectedApplication"].Enabled := 1
 	MainGui["DetectedApplicationHelp"].Enabled := 1
 	MainGui["NewWalkHelp"].Enabled := 1
+	MainGui["ClaimMethodHelp"].Enabled := 1
 }
 nm_TabMiscLock(){
 	MainGui["BasicEggHatcherButton"].Enabled := 0
@@ -5011,14 +5056,18 @@ nm_MondoAction(GuiCtrl?, *){
 		i := 2
 		case MondoActionList[3]:
 		i := 3
-		default:
+		case MondoActionList[4]:
 		i := 4
+		case MondoActionList[5]:
+		i := 5
+		default:
+		i := 6
 	}
 
 	MainGui["MondoAction"].Text := MondoAction := MondoActionList[(GuiCtrl.Name = "MARight") ? (Mod(i, l) + 1) : (GuiCtrl.Name = "MALeft") ? (Mod(l + i - 2, l) + 1) : i]
 	MainGui["MondoPointText"].Visible := (MondoAction = "Buff") || (MondoAction = "Kill")
 	MainGui["MondoSecs"].Visible := MainGui["MondoSecsText"].Visible := (MondoAction = "Buff")
-	MainGui["MondoLootText"].Visible := MainGui["MondoLootDirection"].Visible := MainGui["MLDLeft"].Visible := MainGui["MLDRight"].Visible := (MondoAction = "Kill")
+	MainGui["MondoLootText"].Visible := MainGui["MondoLootDirection"].Visible := MainGui["MLDLeft"].Visible := MainGui["MLDRight"].Visible := (MondoAction = "Kill" || MondoAction = "Follow")
 	IniWrite MondoAction, "settings\nm_config.ini", "Collect", "MondoAction"
 }
 nm_MondoLootDirection(GuiCtrl, *){
@@ -5859,7 +5908,7 @@ nm_BoostChaserCheck(*){
 	if (BoostChaserCheck = 1) {
 		(IsSet(AFBGui) && IsObject(AFBGui)) && (AFBGui["AutoFieldBoostActive"].Value := AutoFieldBoostActive := 0)
 		IniWrite 0, "settings\nm_config.ini", "Boost", "AutoFieldBoostActive"
-		MainGui["AutoFieldBoostButton"].Text := "Auto Field Boost`n[OFF]"
+		MainGui["AutoFieldBoostButton"].Text := "AFB: [OFF]"
 	}
 }
 nm_BoostedFieldSelectButton(*){
@@ -6115,11 +6164,11 @@ nm_autoFieldBoostCheck(*){
 			IniWrite 0, "settings\nm_config.ini", "Boost", "BoostChaserCheck"
 		} else {
 			AFBGui["AutoFieldBoostActive"].Value := AutoFieldBoostActive := 0
-			MainGui["AutoFieldBoostButton"].Text := "Auto Field Boost`n[OFF]"
+			MainGui["AutoFieldBoostButton"].Text := "AFB: [OFF]"
 		}
 	}
 	IniWrite AutoFieldBoostActive, "settings\nm_config.ini", "Boost", "AutoFieldBoostActive"
-	MainGui["AutoFieldBoostButton"].Text := AutoFieldBoostActive ? "Auto Field Boost`n[ON]" : "Auto Field Boost`n[OFF]"
+	MainGui["AutoFieldBoostButton"].Text := AutoFieldBoostActive ? "AFB: [ON]" : "AFB: [OFF]"
 }
 nm_AFBDiceEnableCheck(*){
 	global
@@ -7816,6 +7865,30 @@ nm_ReconnectMethod(GuiCtrl, *){
 	MainGui["ReconnectMethod"].Text := ReconnectMethod := val[(GuiCtrl.Name = "RMRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
 	IniWrite ReconnectMethod, "settings\nm_config.ini", "Settings", "ReconnectMethod"
 }
+nm_ClaimMethod(GuiCtrl, *){
+	global ClaimMethod
+	static val := ["Detect", "To Slot"], l := val.Length
+
+	if (ClaimMethod = "To Slot")
+	{
+		if (MsgBox("
+		(
+		Using 'Detect' might have the possiblity to incorrectly detect hive slots if the red arrows are being blocked by something. The most common example is a tool, such as Tide Popper.
+
+		Are you sure you want to use 'Detect'?
+		)", "Claim Hive Method", 0x1034 " T60 Owner" MainGui.Hwnd) = "Yes")
+			i := 1
+		else
+			return
+	}
+	else
+		i := 2
+
+	i := (ClaimMethod = "Detect") ? 1 : 2
+
+	MainGui["ClaimMethod"].Text := ClaimMethod := val[(GuiCtrl.Name = "CMRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	IniWrite ClaimMethod, "settings\nm_config.ini", "Settings", "ClaimMethod"
+}
 nm_setReconnectInterval(GuiCtrl, *){
 	global ReconnectInterval
 	p := EditGetCurrentCol(GuiCtrl)
@@ -7880,6 +7953,19 @@ nm_ReconnectMethodHelp(*){ ; join method information
 	This is the old/legacy method of reconnecting: it can have inconsistencies between browsers (e.g. failure to close tabs, Roblox not logged in)
 	and you will not be able to join a public server directly ('Deeplink' is forced when joining public servers).
 	)", "Join Method", 0x40000
+}
+nm_ClaimMethodHelp(*){ ; join method information
+	MsgBox "
+	(
+	DESCRIPTION:
+	This option lets you choose between 'Detect' and 'To Hive' Hive Claiming.
+
+	'To Hive' is the more reliable option out of the bunch, this will go straight to hive without any concern to if it's claimed or not.
+	This is the best choice if you are in a private server.
+
+	'Detect' is only recommended if you are playing in a public server for speed.
+	It won't work if the red arrows pointing to unclaimed hive slots are covered, which can happen with tools like Tide Popper or Dark Scythe.
+	)", "Claim Method", 0x40000
 }
 nm_ReconnectTimeHelp(*){
 	global ReconnectHour, ReconnectMin, ReconnectInterval
@@ -8181,12 +8267,91 @@ nm_CommunicationStyleRot(GuiCtrl, *) {
 
 nm_GlitterFieldConfig(GuiCtrl, *) {
 	global GlitterFieldConfig
-	GlitterFieldConfig := "Blue Flower|Bamboo|Pine Tree"
+	UpdateConfig(*) {
+		checked := []
+		for field in CAFieldList
+			if ConfGui[field].Value = 1
+				checked.Push(field)
+		val := ObjStrJoin("|", checked)
+		try IniWrite val, "settings\nm_config.ini", "TadSync", "GlitterFieldConfig"
+	}
+	GuiClose(*) {
+		if (IsSet(GlitterFieldGui) && IsObject(GlitterFieldGui))
+			try GlitterFieldGui.Destroy(), GlitterFieldGui := ""
+	}
+	GuiClose()
+
+	ConfGui := Gui("+AlwaysOntop +Border +OwnDialogs", "Glitter Field Configuration")
+	ConfGui.OnEvent("Close", GuiClose)
+	ConfGui.SetFont("s8 cDefault Norm", "Tahoma")
+	
+	selected := StrSplit(GlitterFieldConfig, "|")
+	colX := [5, 90, 175], rowY := 25, rowHeight := 22
+
+	loop CAFieldList.Length {
+		index := A_Index - 1
+		col := Mod(index, 3), row := Floor(index/3)
+		fieldName := CAFieldList[A_Index]
+		x := colX[col+1], y := rowY - 20 + (row * rowHeight)
+		isChecked := ObjHasValue(selected, fieldName) ? " Checked" : ""
+		ConfGui.Add("Checkbox", "x" x " y" y " w85 h20 v" fieldName isChecked, fieldName).OnEvent("Click", UpdateConfig)
+	}
+	ConfGui.Show("w240 h135")
 }
 
 nm_ActionInterruptConfig(GuiCtrl, *) {
-	global ActionInterruptConfig
-	ActionInterruptConfig := "Mondo|Honeystorm|Bugrun|Memory Match|Planters"
+	global ActionInterruptConfig, ActionList
+	UpdateConfig(ctrl, *) {
+		checked := []
+		for i, x in ActionList {
+			for k, _ in x {
+				try {
+					isChecked := ConfGui[k].Value
+					ActionList[i][k] := isChecked
+					if isChecked
+						checked.Push(k)
+				}
+			}
+		}
+		val := ""
+		for i in checked
+			val .= i "|"
+		val := RTrim(val, "|")
+		ActionInterruptConfig := val
+		try IniWrite val, "settings\nm_config.ini", "TadSync", "ActionInterruptConfig"
+	}
+	GuiClose(*) {
+		if (IsSet(ConfGui) && IsObject(ConfGui))
+			try ConfGui.Destroy(), ConfGui := ""
+	}
+	GuiClose()
+	ConfGui := Gui("+AlwaysOnTop +Border +OwnDialogs", "Action Interrupt Configuration")
+	ConfGui.OnEvent("Close", GuiClose)
+	ConfGui.SetFont("s8 cDefault Norm", "Tahoma")
+	TabsList := ["Convert", "Collect", "Kill", "Boost", "Quests", "Planters", "Beesmas"]
+	Tab := ConfGui.Add("Tab", "w314 h140", TabsList)
+	SendMessage 0x1331, 0, 20, , Tab ; set minimum tab width
+	selected := StrSplit(ActionInterruptConfig, "|")
+	for i, x in ActionList {
+		Tab.UseTab(i)
+		colX := [20, 120, 220], rowY := 60, rowH := 25
+		idx := 0
+		for k, j in x {
+			col := Mod(idx, 3)
+			row := Floor(idx / 3)
+			x := colX[col + 1]
+			y := rowY - 20 + (row * rowH)
+			isChecked := ObjHasValue(selected, k) ? " Checked" : ""
+			ConfGui.Add("Checkbox", "x" x " y" y " w90 h20 v" k isChecked, k).OnEvent("Click", UpdateConfig)
+			idx++
+		}
+	}
+	Tab.UseTab()
+	ConfGui.Show("w330 h150")
+}
+
+nm_UpdateConnectionTotal(num, *) {
+	try MainGui["ConnectionStatus"].Text := "Connected: " num
 }
 
 nm_ControlAltSelect(GuiCtrl, *) {
@@ -10647,31 +10812,38 @@ nm_Start(){
 #Include "nm_OpenMenu.ahk"
 #Include "nm_InventorySearch.ahk"
 ;interrupts
-nm_MondoInterrupt() => (utc_min := FormatTime(A_NowUTC, "m"), now := nowUnix(),
-	((MondoBuffCheck = 1) && ((utc_min<14 && (now-LastMondoBuff)>960 && MondoAction="Kill")
-		|| (!nm_GatherBoostInterrupt()
-			&& ((utc_min<14 && (now-LastMondoBuff)>960 && MondoAction="Buff")
-			|| (utc_min<12 && (now-LastGuid)<60 && PMondoGuid && MondoAction="Guid")
-			|| (utc_min<=8 && (now-LastMondoBuff)>960 && PMondoGuid && MondoAction="Tag")))
-		)
+nm_MondoInterrupt() => (
+	utc_min := FormatTime(A_NowUTC, "m"), utc_sec := FormatTime(A_NowUTC, "s"),
+	now := nowUnix(), isReady := (now - LastMondoBuff > 960),
+	(MondoBuffCheck = 1) && (
+		(MondoAction = "Gather" && isReady && (utc_min > 58 || (utc_min = 58 && utc_sec >= 30) || utc_min < 14))
+		|| (utc_min < 14 && (
+			(isReady && MondoAction ~= "Kill|Follow")
+			|| (!nm_GatherBoostInterrupt() && (
+				(MondoAction = "Buff" && isReady)
+				|| (PMondoGuid && (
+					(MondoAction = "Guid" && utc_min < 12 && now - LastGuid < 60)
+					|| (MondoAction = "Tag" && utc_min <= 8 && isReady)
+				))
+			))
+		))
 	)
 )
-nm_BlueBoostInterrupt() {
-	utc_min := +FormatTime(A_NowUTC, "m")
-	isAvailable := nowUnix() - LastBlueBoost > 2700 && (FieldBooster1="blue" || FieldBooster2="blue" || FieldBooster3="blue")
-	return (isAvailable && !nm_MondoInterrupt)
+nm_fieldBoosterInterrupt(type) {
+	utc_min := +FormatTime(A_NowUTC, "m"), isAvailable := nowUnix() - Last%type%Boost > 2700 && FieldBooster1 = type
+	return (BoosterGatherInterrupt && isAvailable && !nm_MondoInterrupt())
 }
-nm_StickerStackInterrupt() => (StickerStackCheck && (nowUnix()-LastStickerStack)>StickerStackTimer && !(DuringGlitter() || DuringDice() || nm_MondoGlitterInterrupt() || NearGlitter(150) || NearDice(150)))
-nm_WindShrineInterrupt() => (ShrineCheck && (nowUnix()-LastShrine)>3600 && !(DuringGlitter() || DuringDice() || nm_MondoGlitterInterrupt() || NearGlitter(120) || NearDice(120)) && (!(FieldBooster1="blue" || FieldBooster2="blue" || FieldBooster3="blue") || (nowUnix()-LastBlueBoost < 2700  nowUnix()-LastBlueBoost > 2580)))
+nm_StickerStackInterrupt() => (StickerStackCheck && (nowUnix()-LastStickerStack)>StickerStackTimer && !(DuringGlitter() || nm_MondoGlitterInterrupt() || NearGlitter(150)))
+nm_WindShrineInterrupt() => (ShrineCheck && (nowUnix()-LastShrine)>3600 && !(DuringGlitter() || nm_MondoGlitterInterrupt() || NearGlitter(120)) && (!(FieldBooster1="blue" || FieldBooster2="blue" || FieldBooster3="blue") || (nowUnix()-LastBlueBoost < 2700  nowUnix()-LastBlueBoost > 2580)))
 nm_MondoGlitterInterrupt() {
 	utc_min := +FormatTime(A_NowUTC, "m"), now := nowUnix()
 	return (
-		(EnableGlitterUse)
-		&& (GlitterTime = 1 || DiceTime)
+		(GlitterEnabled)
+		&& (UseGlitter = 1)
 		&& MondoBuffCheck = 1
 		&& (utc_min <= 15 || (utc_min > 57 && utc_min < 60))
 		&& (now - LastMondoBuff > 960)
-		&& (DuringGlitter() || NearGlitter(120) || DuringDice() || NearDice(120))
+		&& (DuringGlitter() || NearGlitter(120))
 	)
 }
 nm_BeesmasInterrupt() {
@@ -11761,7 +11933,6 @@ nm_findHiveSlot(){
 				KeyWait "F14", "T5 L"
 				nm_endWalk()
 			}
-			Gdip_DisposeImage(pBMScreen)
 		}
 	}
 
@@ -11776,43 +11947,47 @@ nm_Collect(){
 		return
 
 	;MACHINES
-	nm_Clock()
-	nm_Blender()
-	nm_Ant()
-	nm_RoboPass()
+	nm_ActionInterrupt("Collect", "Clock") ? "" : nm_Clock()
+	nm_ActionInterrupt("Collect", "Blender") ? "" : nm_Blender()
+	nm_ActionInterrupt("Collect", "Ant") ? "" : nm_Ant()
+	nm_ActionInterrupt("Collect", "RoboPass") ? "" : nm_RoboPass()
 
 	;DISPENSERS
-	nm_HoneyDis()
-	nm_TreatDis()
-	nm_BlueberryDis()
-	nm_StrawberryDis()
-	nm_CoconutDis()
-	nm_GlueDis()
-	nm_RoyalJellyDis()
+	if !nm_ActionInterrupt("Collect", "Dispensers") {
+		nm_HoneyDis()
+		nm_TreatDis()
+		nm_BlueberryDis()
+		nm_StrawberryDis()
+		nm_CoconutDis()
+		nm_GlueDis()
+		nm_RoyalJellyDis()
+	}
 
 	;BEESMAS
 	if beesmasActive {
-		nm_Stockings()
-		nm_Feast()
-		nm_GingerbreadHouse()
-		nm_SnowMachine()
-		nm_Candles()
-		nm_Samovar()
-		nm_LidArt()
-		nm_GummyBeacon()
-		nm_RBPDelevel()
-		nm_MemoryMatch("Winter")
+		nm_ActionInterrupt("Beesmas", "Stockings") ? "" : nm_Stockings()
+		nm_ActionInterrupt("Beesmas", "Feast") ? "" : nm_Feast()
+		nm_ActionInterrupt("Beesmas", "GingerbreadHouse") ? "" : nm_GingerbreadHouse()
+		nm_ActionInterrupt("Beesmas", "SnowMachine") ? "" : nm_SnowMachine()
+		nm_ActionInterrupt("Beesmas", "Candles") ? "" : nm_Candles()
+		nm_ActionInterrupt("Beesmas", "Samovar") ? "" : nm_Samovar()
+		nm_ActionInterrupt("Beesmas", "LidArt") ? "" : nm_LidArt()
+		nm_ActionInterrupt("Beesmas", "GummyBeacon") ? "" : nm_GummyBeacon()
+		nm_ActionInterrupt("Beesmas", "RoboParty") ? "" : nm_RBPDelevel()
+		nm_ActionInterrupt("Beesmas", "BeesmasMM") ? "" : nm_MemoryMatch("Winter")
 	}
 
 	;MEMORY MATCH
-	nm_MemoryMatch("Normal")
-	nm_MemoryMatch("Mega")
-	nm_MemoryMatch("Extreme")
+	if !nm_ActionInterrupt("Collect", "MemoryMatch") {
+		nm_MemoryMatch("Normal")
+		nm_MemoryMatch("Mega")
+		nm_MemoryMatch("Extreme")
+	}
 
 	;OTHER
-	nm_Honeystorm()
+	nm_ActionInterrupt("Collect", "Honeystorm") ? "" : nm_Honeystorm()
 	nm_HoneyLB()
-	nm_StickerPrinter()
+	nm_ActionInterrupt("Collect", "StickerPrinter") ? "" : nm_StickerPrinter()
 }
 nm_Clock(){
 	global ClockCheck, LastClock
@@ -13358,14 +13533,14 @@ nm_Boost(){
 	if(nm_NightInterrupt() || nm_MondoInterrupt())
 		return
 
-	nm_StickerStack()
+	nm_ActionInterrupt("Boost", "StickerStack", 1) ? "" : nm_StickerStack()
 
 	if ((QuestBoostCheck = 0) && QuestGatherField && (QuestGatherField != "None"))
 		return
 	try
 		if (nm_PBoost() = 1)
 			return
-	nm_shrine()
+	nm_ActionInterrupt("Boost", "WindShrine") ? "" : nm_shrine()
 	nm_toAnyBooster()
 }
 nm_StickerStack(){
@@ -13723,8 +13898,11 @@ nm_toBooster(location){
 				for k,v in %location%BoosterFields {
 					if nm_fieldBoostCheck(v, 1) {
 						nm_setStatus("Boosted", v), RecentFBoost := v
-						EnableGlitterBoost(v, (GlitterEnabled && ObjHasValue(StrSplit(GlitterFieldConfig, "|"), v)))
-						nm_SendTadSyncMessage({type: "Tad Alt", action: "Field Boost", field: v, time: GatherBoostedFieldTime})
+						EnableGlitterBoost(v, (GlitterEnabled && ObjHasValue(StrSplit(GlitterFieldConfig, "|"), StrReplace(v, " ", ""))))
+						if BoostChaserCheck && v != FieldName1 {
+							nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: v, time: GatherBoostedFieldTime})
+							nm_TempGather(v, GatherBoostedFieldTime, 0)
+						}
 						break 2
 					}
 				}
@@ -13757,7 +13935,7 @@ nm_AutoFieldBoost(fieldName){
 	if(not AutoFieldBoostActive)
 		return
 	if(AFBHoursLimitEnable && (nowUnix()-serverStart)>(AFBHoursLimit*60*60)){
-		MainGui["AutoFieldBoostButton"].Text := "Auto Field Boost`n[OFF]"
+		MainGui["AutoFieldBoostButton"].Text := "AFB: [OFF]"
 		try AFBGui["AutoFieldBoostActive"].Value := 0
 		IniWrite AutoFieldBoostActive := 0, "settings\nm_config.ini", "Boost", "AutoFieldBoostActive"
 		return
@@ -13795,32 +13973,53 @@ nm_AutoFieldBoost(fieldName){
 		return
 	}
 }
-nm_fieldBoostCheck(fieldName, variant:=0){
-
+nm_fieldBoostCheck(fieldName, variant:=0, timeLeft?){
+	static isWind(c) => ((((c) & 0x00FF0000 >= 0x00a60000) && ((c) & 0x00FF0000 <= 0x00cf0000)) ; a6b2b8-blackBG|cfdbe1-whiteBG
+						&& (((c) & 0x0000FF00 >= 0x0000b200) && ((c) & 0x0000FF00 <= 0x0000db00))
+						&& (((c) & 0x000000FF >= 0x000000b8) && ((c) & 0x000000FF <= 0x000000e1)))
+	static isBooster(c) => ((((c) & 0x00FF0000 >= 0x00b80000) && ((c) & 0x00FF0000 <= 0x00e10000)) ; b8a43a-blackBG|e1cd63-whiteBG
+						&& (((c) & 0x0000FF00 >= 0x0000a400) && ((c) & 0x0000FF00 <= 0x0000cd00))
+						&& (((c) & 0x000000FF >= 0x0000003a) && ((c) & 0x000000FF <= 0x00000063)))
 	GetRobloxClientPos(hwnd:=GetRobloxHWND())
-	pBMScreen:=Gdip_BitmapFromScreen(windowX "|" windowY + GetYOffset(hwnd) + 36 "|" windowWidth "|" 38)
-	loop Floor(windowWidth/38) ; flooring because you won't have half of an icon
-	{ 
-		ico:=(A_Index-1)*38
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],,ico,,ico+38,,(variant=1 || variant=0) ? 35 : 50)) ; testing tighter variation
-		{ ; check with original 30 not 35
-			p:=PixelGetColor(ico+windowX, windowY+GetYOffset(hwnd)+73)
-			if ((p & 0xFF0000 >= 0xa60000) && (p & 0xFF0000 <= 0xcf0000)) ; a6b2b8-blackBG|cfdbe1-whiteBG
-			&& ((p & 0x00FF00 >= 0x00b200) && (p & 0x00FF00 <= 0x00db00))
-			&& ((p & 0x0000FF >= 0x0000b8) && (p & 0x0000FF <= 0x0000e1))
-				continue ; winds: keep searching, winds and booster may both have boosted the field
-			else if ((p & 0xFF0000 >= 0xb80000) && (p & 0xFF0000 <= 0xe10000)) ; b8a43a-blackBG|e1cd63-whiteBG
-				&& ((p & 0x00FF00 >= 0x00a400) && (p & 0x00FF00 <= 0x00cd00))
-				&& ((p & 0x0000FF >= 0x00003a) && (p & 0x0000FF <= 0x000063)) 
-				{
-					Gdip_DisposeImage(pBMScreen)
-					return 1 ; booster
-				}	
+	retryAttempts:=20
+	while (retryAttempts--) {
+		pBMScreen:=Gdip_BitmapFromScreen(windowX "|" windowY + offsetY + 36 "|" windowWidth "|" 38)
+		loop Floor(windowWidth/38) { ; flooring because you won't have half of an icon
+			ico:=(A_Index-1)*38
+			if !(Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],,ico,,ico+38,,(variant=1 || variant=0) ? 35 : 50))
+				continue
+			p:=Gdip_GetPixel(pBMScreen, ico, 37)
+			if isWind(p)
+				continue ; winds  |  keep searching, winds and booster may both have boosted the field
+			else if !isBooster(p) {
+				Gdip_DisposeImage(pBMScreen)
+				return 0 ; DNE
+			}
+			if !IsSet(timeLeft) {
+				Gdip_DisposeImage(pBMScreen)
+				return 1 ; booster
+			}
+			; percentage left on booster
+			if !isBooster(Gdip_GetPixel(pBMScreen, ico, 37)) { ; left side is blocked ?
+				sleep 15
+				break
+			}
+			bottomY:=high:=37, low:=0
+			while (low < high) {
+				if A_Index > 20
+					return 0
+				mid := Floor((low + high) / 2)
+				if isBooster(Gdip_GetPixel(pBMScreen, ico, mid))
+					high := mid
+				else
+					low := mid + 1
+			}
+			Gdip_DisposeImage(pBMScreen)
+			return round((bottomY - low) / 38, 2)
 		}
 	}
 	Gdip_DisposeImage(pBMScreen)
 	return 0
-
 }
 nm_fieldBoostBooster(){
 	global CurrentField, FieldBooster, AFBuseBooster, FieldLastBoosted, FieldBoostStacks, FieldLastBoostedBy, FieldNextBoostedBy, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, FieldBoostStacks
@@ -13886,7 +14085,7 @@ nm_fieldBoostDice(){
 		}
 		if(not AFBGlitterEnable and not AFBDiceEnable){
 			try AFBGui["AutoFieldBoostActive"].Value := 0
-			MainGui["AutoFieldBoostButton"].Text := "Auto Field Boost`n[OFF]"
+			MainGui["AutoFieldBoostButton"].Text := "AFB: [OFF]"
 			IniWrite AutoFieldBoostActive := 0, "settings\nm_config.ini", "Boost", "AutoFieldBoostActive"
 		}
 	} else {
@@ -13949,7 +14148,7 @@ nm_fieldBoostGlitter(){
 		}
 		if(not AFBGlitterEnable and not AFBDiceEnable){
 			try AFBGui["AutoFieldBoostActive"].Value := 0
-			MainGui["AutoFieldBoostButton"].Text := "Auto Field Boost`n[OFF]"
+			MainGui["AutoFieldBoostButton"].Text := "AFB: [OFF]"
 			IniWrite AutoFieldBoostActive := 0, "settings\nm_config.ini", "Boost", "AutoFieldBoostActive"
 		}
 		AFBuseGlitter:=0
@@ -14020,7 +14219,7 @@ nm_Bugrun(){
 		, KingBeetleAmuletMode, ShellAmuletMode
 
 	;interrupts
-	if (nm_NightInterrupt() || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
+	if (nm_NightInterrupt() || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt() || nm_ActionInterrupt("Kill", "Bugrun"))
 		return
 
 	nm_setShiftLock(0)
@@ -16186,194 +16385,325 @@ nm_Bugrun(){
 		}
 	}
 }
-nm_Mondo(){
-	global youDied
-	;mondo buff
-	global MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter
+nm_Mondo() {
+	global youDied, MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff
+	global PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter, FwdKey, LeftKey, BackKey
+	global RightKey, RotLeft, RotRight, SC_E, DisableToolUse, KeyDelay, MoveMethod, MoveSpeedNum
+	global AFBrollingDice, AFBuseGlitter, AFBuseBooster, CurrentField, MondoSecs, MondoLootDirection
 	if nm_NightInterrupt()
 		return
-	if nm_MondoInterrupt(){
-		mondobuff := nm_imgSearch("mondobuff.png",50,"buff")
-		If (mondobuff[1] = 0) {
-			LastMondoBuff:=nowUnix()
-			IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
-			return
+	if !nm_MondoInterrupt()
+		return
+	MondoBuff := nm_imgSearch("mondobuff.png",50,"buff")
+	if (mondoBuff[1] = 0) {
+		nm_UpdateMondoTime()
+		return
+	}
+	nm_updateAction("Mondo")
+
+	nm_Reset(0, 2000, 0)
+	nm_setStatus("Traveling", "Mondo (" MondoAction ")")
+	nm_gotoPlanter("Mountain Top")
+	send "{" SC_1 "}"
+
+	if (MondoAction = "Follow")
+		nm_createWalk(nm_Walk(4, BackKey))
+	else if (MondoAction = "Gather")
+		nm_createWalk(nm_Walk(4, FwdKey))
+	else
+		nm_createWalk(nm_Walk(14, RightKey) "`nsend '{" RotLeft "}'")
+	KeyWait "F14", "D T5 L"
+	KeyWait "F14", "T30 L"
+	nm_endWalk()
+
+	found := (MondoAction = "Gather") ? 1 : 0
+	if !(MondoAction = "Gather") {
+		nm_setStatus("Searching", "Mondo")
+		loop (MondoAction = "Gather") ? 480 : 20 {
+			mondoCheck := nm_HealthDetection()
+			if (mondoCheck.Length > 0) {
+				found := 1
+				break
+			}
+			sleep 250
 		}
-		repeat:=1
-		global FwdKey, LeftKey, BackKey, RightKey, RotLeft, RotRight, SC_E, DisableToolUse
-		global KeyDelay
-		global MoveMethod
-		global MoveSpeedNum
-		global AFBrollingDice
-		global AFBuseGlitter
-		global AFBuseBooster
-		global CurrentField
-		global MondoSecs, MondoLootDirection
-		nm_updateAction("Mondo")
-		MoveSpeedFactor:=round(18/MoveSpeedNum, 2)
-		while(repeat){
-			nm_Reset(0, 2000, 0)
-			nm_setStatus("Traveling", ("Mondo (" . MondoAction . ")"))
-			nm_gotoPlanter("mountain top")
-			nm_createWalk(nm_Walk(14, RightKey) "`nsend '{" RotLeft "}'")
-			KeyWait "F14", "D T5 L"
-			KeyWait "F14", "T30 L"
-			nm_endWalk()
-			;;; (+) new conditions probably
-			found := 0
-			mondoChick := 0
-			loop 20
-			{
-				mChick:= nm_HealthDetection()
-				if(mChick.Length > 0)
-				{
-					found:=1
-					break
-				}
-				Sleep 250
-			}
-			if (found)
-			{
-				nm_setStatus("Found", "Mondo")
-				for index, value in mChick ;Mondo is already dmging itself before we get there
-				{
-					if (value = 100.00) ;Planter detected since mondo will already have taken dmg by the time you come up
-					{
-						continue
-					}
-					else
-					{
-						mondoChick:=1
-					}
-				}
-				if (mondoChick)
-				{
-					nm_setStatus("Attacking", "Mondo")
-					if(MondoAction="Buff"){
-						repeat:=0
-						loop MondoSecs { ;2 mins
-							nm_autoFieldBoost(CurrentField)
-							if(youDied || AFBrollingDice || AFBuseGlitter || AFBuseBooster)
-								break
-							Sleep 1000
-						}
-					}
-					else if(MondoAction="Tag"){
-						repeat:=0
-						;zaappiix5
-						nm_Move(2000*MoveSpeedFactor, LeftKey)
-						nm_Move(2000*MoveSpeedFactor, BackKey)
-						nm_Move(1000*MoveSpeedFactor, LeftKey)
-						nm_Move(3500*MoveSpeedFactor, FwdKey)
-						loop 25 { ;25 sec
-							if(youDied)
-								break
-							Sleep 1000
-						}
-					}
-					else if(MondoAction="Guid" && PMondoGuid=1 && PMondoGuidComplete=0){
-						repeat:=0
-						PMondoGuidComplete:=1
-						while ((nowUnix()-LastGuid)<=210 && utc_min<15 && A_Index<210) { ;3.5 mins since guid
-							if(youDied)
-								break
-							;check for mondo death here
-							mondo := nm_imgSearch("mondo3.png",50,"lowright")
-							If (mondo[1] = 0) {
-								break
-							}
-							Sleep 1000
-							utc_min := FormatTime(A_NowUTC, "m")
-						}
-					} else if(MondoAction="Kill"){
-						repeat:=1
-						success:=count:=0
-						loop 3600 { ;15 mins
-							mondoDead:=nm_HealthDetection()
-							if ((mondoDead.Length = 0) || (mondoDead.Length = 1 && mondoDead[1] = 100.00)) {
-								if (++count >= 60) { ; Changed from 5 seconds to 15 seconds for when mondo goes off screen
-									success := 1
-									break
-								}
-							}
-							else ; one health bar < 100 or multiple health bars (assumed Mondo is one of them)
-								count := 0
-							if(Mod(A_Index, 4)=0) { ; 1 second
-								nm_autoFieldBoost(CurrentField)
-								if(nm_NightInterrupt() || AFBrollingDice || AFBuseGlitter || AFBuseBooster) {
-									return
-								}
-								if(youDied)
-									break
-								if(FormatTime(A_NowUTC, "m")>14) {
-									repeat:=0
-									break
-								}
-								If (nm_imgSearch("mondo3.png",50,"lowright")[1] = 0) { ;check for mondo death here
-									success := 1
-									break
-								}
-							}
-							if(Mod(A_Index, 40)=0) ; 10 seconds
-								nm_OpenMenu()
-							if(Mod(A_Index, 240)=0) ; 1 minute
-								click
-							if(A_Index=3600) {
-								repeat:=0
-								break
-							}
-							sleep 250
-						}
-						if (success = 1) {
-							nm_setStatus("Defeated", "Mondo")
-							repeat := 0
-							if !(MondoLootDirection = "Ignore") {
-								;loot mondo after death
-								if (MondoLootDirection = "Random")
-									dir := Random(0, 1)
-								else
-									dir := (MondoLootDirection = "Right")
+	}
+	if (!found) {
+		nm_UpdateMondoTime()
+		return
+	}
 
-								if (dir = 0)
-									tc := "left", afc := "right"
-								else
-									tc := "right", afc := "left"
-
-								nm_setStatus("Looting", "Mondo")
-								movement :=
-								(
-								"send '{" RotLeft "}'
-								" nm_Walk(7.5, FwdKey, RightKey) "
-								" nm_Walk(7.5, %tc%Key)
-								)
-								nm_createWalk(movement)
-								KeyWait "F14", "D T5 L"
-								KeyWait "F14", "T30 L"
-								nm_endWalk()
-
-								if(!DisableToolUse)
-									click "down"
-								DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
-								n := s, f := s+450000000 ; 45 seconds loot timeout
-								while ((n < f) && (A_Index <= 12)) {
-									nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
-									DllCall("GetSystemTimeAsFileTime","int64p",&n)
-								}
-								click "up"
-							}
-						}
-					}
-				}
-			}
+	if !(MondoAction = "Gather")
+		nm_setStatus("Found", "Mondo")
+	mondoChick := (MondoAction = "Gather") ? 1 : 0
+	if !(MondoAction = "Gather") {
+		mondoCheck := nm_HealthDetection()
+		for i, x in mondoCheck {
+			if (x = 100.00 && PlanterField1 = "MountainTop" || PlanterField2 = "MountainTop" || PlanterField3 = "MountainTop")
+				continue
 			else
-			{
-				Break
-			}
-
+				mondoChick := 1
 		}
+	}
+	if !mondoChick
+		return
+
+	nm_setStatus("Attacking", "Mondo - " MondoAction)
+	if (MondoAction = "Guid" && PMondoGuid = 1 && PMondoGuidComplete = 0)
+		nm_MondoAction_Guid()
+	else if (MondoAction = "Kill" && nm_MondoAction_Kill(3600))
+		nm_MondoLoot()
+	else if (MondoAction = "Follow") {
+		send "{" RotRight " 2}{" RotUp " 5}"
+		loop 5
+			send "{" ZoomOut "}"
+		if (nm_MondoAction_Kill(900, true))
+			nm_MondoLoot(true)
+	} else
+		nm_MondoAction_%MondoAction%()
+
+	nm_UpdateMondoTime()
+}
+nm_UpdateMondoTime() {
+	global LastMondoBuff := nowUnix()
+	IniWrite LastMondoBuff, "settings\nm_config.ini", "collect", "LastMondoBuff"
+}
+nm_MondoAction_Gather() {
+	global ConvertGatherFlag
+	nm_OpenMenu()
+	sleep 100
+	send "{" RotLeft " 4}"
+	nm_setSprinkler("mountain top", "Center", 1)
+
+	success:=0, MondoSpawned:=0, MondoSpawnedTime := 0
+	start := nowUnix()
+
+	hwnd := GetRobloxHWND()
+	GetRobloxClientPos(hwnd)
+	MouseMove windowX+350, windowY+offsetY+100
+
+	pattern :=
+	(
+	nm_Walk(2.5, RightKey) "
+	" nm_Walk(2.5, FwdKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(5, BackKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(2.5, FwdKey) "
+	" nm_Walk(5, RightKey) "
+	" nm_Walk(2.5, BackKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(5, FwdKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(2.5, BackKey) "
+	" nm_Walk(2.5, Rightkey)
+	)
+
+	while ((nowUnix()-start) < 900 && success = 0 && !YouDied) {
+		utc_min := FormatTime(A_NowUTC, "m"), utc_sec := FormatTime(A_NowUTC, "s")
+		click "Down"
+		if (!MondoSpawned && nm_imgSearch("mondo3.png",50,"lowright")[1] = 0)
+			MondoSpawned := 1, MondoSpawnedTime := nowUnix()
+		
+		if (utc_min < 14 || (utc_min=0 && utc_sec>=5)) || MondoSpawned = 1 {
+			(currentWalk.name != "mondo") ? nm_createWalk(pattern, "mondo") : Send("{F13}")
+			KeyWait "F14", "D T5 L"
+		}
+
+		while ((GetKeyState("F14") && A_Index <= 3600) || A_INdex = 1) {
+			if (nm_CheckMondoDead() || (MondoSpawned && nowUnix() - MondoSpawnedTime >= 5 && nm_imgSearch("mondo3.png",50,"lowright")[1] = 0)) {
+				success := 1
+				break 2
+			}
+			if (Mod(A_Index, 5) = 0) {
+				if (DisconnectCheck() || YouDied || FormatTime(A_NowUTC, "m") > 14)
+					break 2
+				nm_autoFieldBoost(CurrentField)
+				if (nm_NightInterrupt() || AFBuseGlitter || AFBuseBooster)
+					return 2
+			}
+			if (Mod(A_Index, 200) = 0)
+				nm_OpenMenu()
+			sleep 50
+		}
+		click "up"
+		if (SprinklerType = "Supreme" && !GetKeyState("F14"))
+			nm_fieldDriftCompensation()
+	}
+	nm_endWalk()
+	ConvertGatherFlag := 1
+	nm_setStatus("Defeated", "Mondo")
+}
+nm_MondoAction_Buff() {
+	global ConvertGatherFlag
+	loop MondoSecs {
+		nm_autoFieldBoost(CurrentField)
+		if (youDied || AFBrollingDice || AFBuseGlitter || AFBuseBooster)
+			break
+			sleep 1000
+	}
+	ConvertGatherFlag := 1
+}
+nm_MondoAction_Tag() {
+	global ConvertGatherFlag
+	MoveSpeedFactor:=round(18/MoveSpeedNum, 2)
+	nm_Move(2000*MoveSpeedFactor, LeftKey)
+	nm_Move(2000*MoveSpeedFactor, BackKey)
+	nm_Move(2000*MoveSpeedFactor, LeftKey)
+	nm_Move(2000*MoveSpeedFactor, FwdKey)
+	loop 25 {
+		if (youDied)
+			break
+		sleep 1000
+	}
+	ConvertGatherFlag := 1
+}
+nm_MondoAction_Guid() {
+	global PMondoGuidComplete, ConvertGatherFlag
+	PMondoGuidComplete := 1
+	while ((nowUnix()-LastGuid) <= 210 && FormatTime(A_NowUTC, "m") < 14 && A_Index < 210) {
+		if (youDied)
+			break
+		mondo := nm_imgSearch("mondo3.png", 50, "lowright")
+		if (mondo[1] = 0) {
+			ConvertGatherFlag := 1
+			break
+		}
+		sleep 1000
+	}
+}
+nm_MondoAction_Kill(timeLimit, isFollow := false) {
+	global ConvertGatherFlag
+
+	start := nowUnix()
+	success := 0
+	count := 0
+
+	while (nowUnix() - start < timeLimit) {
+		if (isFollow) {
+			loop 10
+				nm_MondoMove()
+		}
+
+		mondoDead := nm_HealthDetection()
+		if ((mondoDead.Length = 0) || (mondoDead = 1 && mondoDead[1] = 100.00)) {
+			if (++count >= 60) {
+				success := 1
+				break
+			}
+		} else
+			count := 0
+
+		if (Mod(A_Index, 4) = 0) {
+			nm_autoFieldBoost(CurrentField)
+			if (nm_NightInterrupt() || AFBrollingDice || AFBuseGlitter || AFBuseBooster)
+				return 0
+			if (YouDied)
+				break
+			if (FormatTime(A_NowUTC, "m") >1 14)
+				break
+			if (nm_imgSearch("mondo3.png", 50, "lowright")[1] = 0 || nm_CheckMondoDead()) {
+				success := 1
+				break
+			}
+		}
+		if (Mod(A_Index, 40) = 0)
+			nm_OpenMenu()
+		if (Mod(A_Index, 240) = 0)
+			click
+		sleep 250
+	}
+
+	if (success = 1) {
+		ConvertGatherFlag := 1
+		nm_setStatus("Defeated", "Mondo")
+		if (isFollow) {
+			nm_fieldDriftCompensation()
+			send "{" RotRight " 4}{" RotDown " 4}"
+		}
+		return 1
+	}
+	return 0
+}
+nm_MondoLoot(isFollow := false) {
+	if (MondoLootDirection = "Ignore")
+		return
+	(MondoLootDirection = "Random") ? dir := Random(0, 1) : dir := (MondoLootDirection = "Right")
+	(dir = 0) ? (tc := "left", afc := "right") : (tc := "right", afc := "left")
+	nm_setStatus("Looting", "Mondo")
+
+	movement := ""
+	if (isFollow)
+		movement :=
+		(
+		nm_Walk(8, BackKey) "
+		" nm_Walk((tc="left")?2:14, %tc%Key)
+		)
+	else
+		movement :=
+		(
+		"send '{" RotLeft "}'
+		" nm_Walk(7.5, FwdKey, RightKey) "
+		" nm_Walk(7.5, %tc%Key)
+		)
+	nm_createWalk(movement)
+	KeyWait "F14", "D T5 L"
+	KeyWait "F14", "T30 L"
+	nm_endWalk()
+
+	DllCall("GetSystemTimeAsFileTime", "int64p", &s := 0)
+	n := s, f := s+450000000
+
+	loopIndex := 0
+	while ((n < f) && (loopIndex <= 12)) {
+		loopIndex++
+		nm_loot(16, 5, Mod(loopIndex, 2) = 1 ? afc : tc)
+		DllCall("GetSystemTimeAsFileTime", "int64p", &n)
+	}
+}
+nm_MondoTimer() {
+	static L, R
+	; timer: 0xff9d7249 0xff533e29
+	; health: 0xff1fe744 0xff6b131a
+	if !(IsSet(L) && IsSet(R)) {
+		L := Gdip_CreateBitmap(1,4), pGraphics := Gdip_GraphicsFromImage(L), Gdip_GraphicsClear(pGraphics, 0xff9d7249), Gdip_DeleteGraphics(pGraphics)
+		R := Gdip_CreateBitmap(1,4), pGraphics := Gdip_GraphicsFromImage(R), Gdip_GraphicsClear(pGraphics, 0xff533e29), Gdip_DeleteGraphics(pGraphics)
+	}
+	GetRobloxClientPos()
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight) 
+	if (Gdip_ImageSearch(pBMScreen, L, &S) > 0 && Gdip_ImageSearch(pBMScreen, R, &E, , , , , , , 8) > 0) {
+		Gdip_DisposeImage(pBMScreen)
+		S := StrSplit(S, ","), E := StrSplit(E, ",")
+		return {X: S[1] + ((E[1] - S[1]) // 2), Y: S[2] + ((E[2] - S[2]) // 2)} 
+	}
+	Gdip_DisposeImage(pBMScreen)
+	return 0
+}
+nm_MondoMove() {
+    if !(pos := nm_MondoTimer())
+        return
+    Safe := windowHeight * 0.4, DeadZoneWidth := windowWidth * 0.035
+    VecX := pos.x - (windowWidth // 2)
+    Gap := Safe - Abs(VecX)
+    DirX := ""
+    if Abs(Gap) > DeadZoneWidth
+        DirX := (Gap > 0 ) ? ((VecX < 0) ? "Right" : "Left") : ((VecX < 0) ? "Left" : "Right")
+    if (DirX) {
+        Send "{" %DirX%Key " down}"
+        Sleep 150
+        Send "{" %DirX%Key " up}"
+    }
+}
+nm_CheckMondoDead() { ; just says if you have the buff, nothing special
+	global LastMondoBuff, MondoBuffCheck
+	GetRobloxClientPos()
+	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY+offsetY+30 "|" windowWidth "|50")
+	if (Gdip_ImageSearch(pBMArea, bitmaps["mondo"], &list, , 20, , 46, 21, , 7) = 1) {
 		LastMondoBuff:=nowUnix()
 		IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
+		return 1
 	}
+	return 0
 }
 nm_GoGather(){
 	global youDied
@@ -16843,6 +17173,13 @@ nm_GoGather(){
 						PMondoGuidComplete:=0
 					break
 				}
+				; boosters
+				for i in ["blue", "red", "mountain"] {
+					if nm_fieldBoosterInterrupt(i) {
+						interruptReason := "Field Booster - " StrTitle(i)
+						break 2
+					}
+				}
 				; temp gather
 				if (TempGather_Interrupt = 1) {
 					interruptReason := "Main Macro Sync - Interrupt"
@@ -16858,7 +17195,11 @@ nm_GoGather(){
 				; use glitter during boost
 				if nm_UseGlitterDuringBoost() {
 					send "{" GlitterKey "}"
-
+					sleep 100
+					if nm_fieldBoostCheck(CurrentField, 1, 1) > 0.8 {
+						TempGather_StartTime := nowUnix()-900
+						nm_sendInstructions({type: "Tad Alt", action: "Update Time", unix: TempGather_StartTime})
+					}
 				}
 
 			}
@@ -17292,6 +17633,10 @@ nm_convert(){
 				GameFrozenCounter++
 				return
 			}
+			if nm_ActionInterrupt("Convert", "Backpack", 1) {
+				nm_setStatus("Interrupted", "Glitter Extend")
+				return
+			}
 			GetRobloxClientPos(hwnd)
 			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY+36 "|" windowWidth//2+200 "|" windowHeight-offsetY-36)
 			if (Gdip_ImageSearch(pBMScreen, bitmaps["makehoney"], , , , 400, 120, 2, , 2) = 1) {
@@ -17352,6 +17697,10 @@ nm_convert(){
 					return
 				}
 				if (disconnectcheck()) {
+					return
+				}
+				if nm_ActionInterrupt("Convert", "Blessing", 1) {
+					nm_setStatus("Interrupted", "Glitter Extend")
 					return
 				}
 				if ((PFieldBoosted = 1) && (nowUnix()-GatherFieldBoostedStart)>780 && (nowUnix()-GatherFieldBoostedStart)<900 && (nowUnix()-LastGlitter)>900 && GlitterKey!="none") {
@@ -18063,7 +18412,7 @@ nm_claimHiveSlot(){
 		return pBMScreen
 	}
 
-	newSystem := 1
+	DetectHiveslots := 1
 	Loop 5
 	{
 		ActivateRoblox()
@@ -18095,25 +18444,25 @@ nm_claimHiveSlot(){
 		}
 
 		; detect unclaimed hive slots.
-		if newSystem {
-			preferred := 0
-			slots := nm_detectHiveSlots()
-			for i, slot in slots {
-				if (HiveSlot = slot.HiveSlot && slot.Claimed = "Empty") {
-					preferred := HiveSlot
-					break
-				}
-			}
-
-			if (!preferred) {
+		if DetectHiveslots {
+			preferred := (ClaimMethod = "Detect") ? 0 : HiveSlot
+			if ClaimMethod = "Detect" {
+				slots := nm_detectHiveSlots()
 				for i, slot in slots {
-					if (slot.Claimed = "Empty") {
-						preferred := slot.HiveSlot
+					if (HiveSlot = slot.HiveSlot && slot.Claimed = "Empty") {
+						preferred := HiveSlot
 						break
 					}
 				}
+				if (!preferred) {
+					for i, slot in slots {
+						if (slot.Claimed = "Empty") {
+							preferred := slot.HiveSlot
+							break
+						}
+					}
+				}
 			}
-
 			if (preferred) {
 				movement := nm_spawnMoveTo(slotMove[preferred])
 				nm_createWalk(movement)
@@ -18131,18 +18480,17 @@ nm_claimHiveSlot(){
 					HiveSlot := preferred
 					MainGui["HiveSlot"].Text := HiveSlot
 					IniWrite HiveSlot, "settings\nm_config.ini", "Settings", "HiveSlot"
-					nm_setStatus("Claimed", "Hive Slot " . HiveSlot)
-					PostSubmacroMessage("background", 0x5554, 2, HiveSlot)
+					nm_setStatus("Claimed", "Hive Slot " HiveSlot)
 					MouseMove windowX+350, windowY+offsetY+100
 					return 1
 				}
 				Gdip_DisposeImage(pBMScreen)
 			}
-			newSystem := 0
+			DetectHiveslots := 0
+			continue
 		}
 
-		; USE OLD SYSTEM IF NEW SYSTEM DIDN'T WORK
-		nm_setStatus("Warning", "Unable to detect hive slot from spawn, attempting with old system.")
+		; old system
 		;go to slot 1
 		Sleep 500
 		GetRobloxClientPos(hwnd)
@@ -18235,8 +18583,7 @@ nm_claimHiveSlot(){
 	;update hive slot
 	MainGui["HiveSlot"].Text := HiveSlot
 	IniWrite HiveSlot, "settings\nm_config.ini", "Settings", "HiveSlot"
-	nm_setStatus("Claimed", "Hive Slot " . HiveSlot)
-	PostSubmacroMessage("background", 0x5554, 2, HiveSlot)
+	nm_setStatus("Claimed", "Hive Slot " HiveSlot)
 	MouseMove windowX+350, windowY+offsetY+100
 
 	return 1
@@ -18348,7 +18695,7 @@ nm_Night(){
 	if CheckNight != 1
 		return
 	nm_NightMemoryMatch()
-	nm_ViciousBee()
+	nm_ActionInterrupt("Kill", "ViciousBee") ? "" : nm_ViciousBee()
 	CheckNight := 0
 }
 nm_confirmNight(){
@@ -18806,29 +19153,29 @@ nm_QuestRotate(){
 	nm_OpenMenu("questlog")
 
 	;polar bear quest
-	nm_PolarQuest()
+	nm_ActionInterrupt("Quests", "PolarBear") ? "" : nm_PolarQuest()
 
 	if (QuestGatherField = "None") {
 		;black bear quest first
-		nm_BlackQuest()
+		nm_ActionInterrupt("Quests", "BlackBear") ? "" : nm_BlackQuest()
 
 		;black bear quest is complete but not yet time to turn in, move onto next quest
 		if(BlackQuestCheck=0 || (BlackQuestComplete && (nowUnix()-LastBlackQuest)<3600)) {
 			;bucko quest
-			nm_BuckoQuest()
+			nm_ActionInterrupt("Quests", "BuckoBee") ? "" : nm_BuckoQuest()
 			if(BuckoQuestCheck=0 || BuckoQuestComplete=2) {
-				nm_RileyQuest()
+				nm_ActionInterrupt("Quests", "RileyBee") ? "" : nm_RileyQuest()
 			}
 		}
 	}
 
 	if (QuestGatherField = "None") {
 		;all previous quests did not set a QuestGatherField, so check brown bear quest
-		nm_BrownQuest()
+		nm_ActionInterrupt("Quests", "BrownBear") ? "" : nm_BrownQuest()
 	}
 
 	;honey bee quest
-	nm_HoneyQuest()
+	nm_ActionInterrupt("Quests", "HoneyBee") ? "" : nm_HoneyQuest()
 }
 nm_HoneyQuest(){
 	global HoneyStart
@@ -20865,6 +21212,12 @@ ba_planter(){
 		Loop 3 {
 			if((PlanterHarvestTime%A_Index% < nowUnix()) && (PlanterName%A_Index%!="None") && (PlanterField%A_Index%!="None")){
 				i := A_Index
+				; skip specifc nectars while boosted (glitter extend)
+				if (skip := nm_ActionInterrupt("Planters", PlanterNectar%i%)) && A_Index = 3
+					return
+				else if skip
+					continue
+
 				Loop 5 {
 					if (ba_harvestPlanter(i) = 1)
 						break
@@ -21903,8 +22256,14 @@ mp_Planter() { ;//todo: merge these manual planter functions as much as possible
 			If (PlanterHarvestTime%A_Index% > 2147483646 ) {
 				mp_PlantPlanter(A_Index)
 			} Else if (!MPlanterHold%A_Index% && (PlanterName%A_Index%!="None") && (PlanterField%A_Index%!="None")) {
-				If (nowUnix() >= PlanterHarvestTime%A_Index%)
+				If (nowUnix() >= PlanterHarvestTime%A_Index%) {
+					; skip specifc nectars while boosted (glitter extend)
+					if (skip := nm_ActionInterrupt("Planters", PlanterNectar%A_Index%)) && A_Index = 3
+						return
+					else if skip
+						continue
 					mp_HarvestPlanter(A_Index)
+				}
 				If (PlanterHarvestFull%A_Index% == "Full" && (nowUnix() - LastGlitter >= 900) && PlanterGlitterC%A_Index% && !PlanterGlitter%A_Index%) {
 					i := A_Index, field := StrReplace(PlanterField%A_Index%, " ")
 					for k,v in %field%Planters {
@@ -22422,7 +22781,7 @@ mp_HarvestPlanter(PlanterIndex) {
 	}
 }
 
-nm_SendTadSyncMessage(instuctions) {
+nm_sendInstructions(instuctions) {
 	if !IsObject(instuctions)
 		return
 	DetectHiddenWindows 1
@@ -22434,9 +22793,9 @@ nm_SendTadSyncMessage(instuctions) {
 	DetectHiddenWindows 0
 }
 
-nm_TempGather(field, time) {
+nm_TempGather(field, time, interrupt:=1) {
 	global
-	TempGather_Interrupt := 1
+	TempGather_Interrupt := interrupt
 	TempGather_Field := field
 	TempGather_Duration := time
 	TempGather_StartTime := nowUnix()
@@ -22462,10 +22821,12 @@ NearGlitter(sec:=60) => (
 	&& delta < 830
 )
 
+nm_ActionInterrupt(category, action, OnlyNearGlitter := 0) => (ActionInterrupts && GlitterEnabled && UseGlitter && (OnlyNearGlitter && (DuringGlitter() || NearGlitter() || nm_MondoGlitterInterrupt())) && (ActionList[category][action] = 1))
+
 nm_UseGlitterDuringBoost() {
 	global
 	if DuringGlitter() || nm_MondoGlitterInterrupt() {
-
+		return 1
 	}
 }
 
@@ -22701,11 +23062,6 @@ start(*){
 	global GatherFieldBoosted:=0
 	global GatherFieldBoostedStart:=nowUnix()-2700
 	global ConvertGatherFlag:=0
-	global TempGather_Interrupt := 0
-	global TempGather_Field := ""
-	global TempGather_Duration := 0
-	global TempGather_StartTime := 0
-	global TempGather := false
 	CurrentField := MainGui["CurrentField"].Text
 	;set ActiveHotkeys[]
 	global ActiveHotkeys:=[]
@@ -22978,8 +23334,11 @@ nm_WM_COPYDATA(wParam, lParam, *){
 		try message := JSON.parse(StringText)
 		catch
 			return 0
-		if (message["type"] = "Tad Alt" && message["action"] = "Go to Field") {
+		if (message.Has("type") && message["type"] = "Tad Alt" && message["action"] = "Go to Field") {
 			nm_TempGather(message["field"], message["time"])
+		}
+		if (message.Has("type") && message["type"] = "Tad Alt" && message["action"] = "Update Time") {
+			global TempGather_StartTime := message["unix"]
 		}
 		return 0
 	} else {
@@ -23198,15 +23557,20 @@ KeyWait "F14", "T120 L" ; will a path really run for 2 minutes ?
 nm_endWalk()
 */
 
+
 F10:: {
-	path := '"' exe_path64 '" /script "' A_WorkingDir '\submacros\Communicator.ahk" '
-	params := [AccountType, discordMode, discordCheck, MainChannelCheck, MainChannelID, ReportChannelCheck, ReportChannelID, WebhookEasterEgg, DiscordUID, CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, PortNumber, CommunicationStyle, CommunicationID, A_TickCount]
-	vars := ""
-	for i, x in params
-		vars .= '"' (x = "" ? "" : x) '" '
-	Run path " " vars
+	msgbox ActionList["collect"]["Dispensers"]
 }
 
+;F10:: {
+;	path := '"' exe_path64 '" /script "' A_WorkingDir '\submacros\Communicator.ahk" '
+;	params := [AccountType, discordMode, discordCheck, MainChannelCheck, MainChannelID, ReportChannelCheck, ReportChannelID, WebhookEasterEgg, DiscordUID, CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, PortNumber, CommunicationStyle, CommunicationID, A_TickCount]
+;	vars := ""
+;	for i, x in params
+;		vars .= '"' (x = "" ? "" : x) '" '
+;	Run path " " vars
+;}
+
 F11:: {
-	nm_SendTadSyncMessage({type: "Tad Alt", action: "Go to Field", field: "Cactus", time: 2})
+	nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: "Blue Flower", time: 60})
 }

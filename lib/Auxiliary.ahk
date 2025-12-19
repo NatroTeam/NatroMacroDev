@@ -27,3 +27,12 @@ ObjIndexOf(obj, val)
 			return k
 	return 0
 }
+ObjStrJoin(delim, arr) {
+	out := ""
+	try {
+		for v in arr
+			out .= (out = "" ? "" : delim) . v
+		return out
+	} catch
+		return 0
+}

@@ -175,6 +175,7 @@ SocketClose(self) {
 		if self.Identifier > 0 && IdentifiedConnections.HasOwnProp(self.Identifier)
 			IdentifiedConnections.DeleteProp(self.Identifier)
 		self.Identifier := 0
+		nm_UpdateConnectionTotal(ObjOwnPropCount(IdentifiedConnections))
 		if (SocketListenerExists() = false) && (CommunicatorIsConnected = true)
 			SocketReconnect()
 	}
@@ -194,6 +195,7 @@ SocketIdentification(self, message) {
 		self.Identifier := identifier
 		IdentifiedConnections.%identifier% := self
 		self.IsIdentified := true
+		nm_UpdateConnectionTotal(ObjOwnPropCount(IdentifiedConnections))
 	}
 }
 
@@ -288,6 +290,14 @@ SelfReload(*) { ; to refresh vals, it has to be ran by natro_macro.ahk
 		vars .= '"' (x = "" ? " " : A_Index = A_Args.Length ? A_TickCount : x) '" '
 	Run path " " vars
 	ExitApp
+}
+
+nm_UpdateConnectionTotal(num) {
+	Critical
+	tooltip num
+	DetectHiddenWindows 1
+	try SendMessage(0x5561,num,,,"natro_macro ahk_class AutoHotkey")
+	DetectHiddenWindows 0
 }
 
 Send_WM_COPYDATA(StringToSend, TargetScriptTitle, wParam:=0)
