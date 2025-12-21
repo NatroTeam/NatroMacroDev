@@ -205,12 +205,12 @@ CreateHaystack()
     return pBitmap
 }
 
-IsolateHaystack(pBMHaystack, CtrlColour := 0xFF2257A8)
+IsolateHaystack(pBMHaystack)
 {
-    pBitmapNeedle := Gdip_CreateBitmap(1, 1), pGraphics := Gdip_GraphicsFromImage(pBitmapNeedle), Gdip_GraphicsClear(pGraphics, CtrlColour)
-    if (!Gdip_ImageSearch(pBMHaystack, pBitmapNeedle))
+    global Stream
+    if (!Gdip_ImageSearch(pBMHaystack, Stream["ItemBanner"]))
         return pBMHaystack
-    Gdip_ImageSearch(pBMHaystack, pBitmapNeedle, &Output, , , , , , , 2), Gdip_ImageSearch(pBMHaystack, pBitmapNeedle, &Output2, , , , , , , 4), CoordDelim := StrSplit(Output, ','), CoordDelim2 := StrSplit(Output2, ',')
+    Gdip_ImageSearch(pBMHaystack, Stream["ItemBanner"], &Output, , , , , , , 2), Gdip_ImageSearch(pBMHaystack, Stream["ItemBanner"], &Output2, , , , , , , 4), CoordDelim := StrSplit(Output, ','), CoordDelim2 := StrSplit(Output2, ',')
     return Gdip_CloneBitmapArea(pBMHaystack, CoordDelim[1], CoordDelim2[2], CoordDelim2[1] - CoordDelim[1], CoordDelim[2] - CoordDelim2[2])
 }
 
