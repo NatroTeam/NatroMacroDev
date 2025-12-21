@@ -20,6 +20,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
+#Include "Auxilliary.ahk"
 
 #Warn VarUnset, Off
 
@@ -1688,30 +1689,6 @@ SendHourlyReport()
 		v.Clear()
 }
 
-/*************************************************************************************************************
-* @description: rounds a number (integer/float) to 4 s.f. and abbreviates it with common large number prefixes
-* @returns: (string) result
-* @author SP
-*************************************************************************************************************/
-FormatNumber(n)
-{
-	static numnames := ["M","B","T","Qa","Qi"]
-	digit := floor(log(abs(n)))+1
-	if (digit > 6)
-	{
-		numname := (digit-4)//3
-		numstring := SubStr((round(n,4-digit)) / 10**(3*numname+3), 1, 5)
-		numformat := (SubStr(numstring, 0) = ".") ? 1.000 : numstring, numname += (SubStr(numstring, 0) = ".") ? 1 : 0
-		num := SubStr((round(n,4-digit)) / 10**(3*numname+3), 1, 5) " " numnames[numname]
-	}
-	else
-	{
-		num := Buffer(32), DllCall("GetNumberFormatEx","str","!x-sys-default-locale","uint",0,"str",n,"ptr",0,"Ptr",num.Ptr,"int",32)
-		num := SubStr(StrGet(num), 1, -3)
-	}
-	return num
-}
-
 /**************************************************************************************************
 * @description: responsible for receiving messages from the main macro script to set current status
 * @param: wParam is the status number, lParam is the second of the hour when status started
@@ -1758,28 +1735,6 @@ SetBackpack(wParam, lParam, *){
 			return 0
 	backpack_values[lParam] := wParam
 	return 0
-}
-
-/***************************************************************************************
-* @description: these functions return the minimum and maximum values in maps and arrays
-* @author modified versions of functions by FanaticGuru
-* @url https://www.autohotkey.com/boards/viewtopic.php?t=40898
-***************************************************************************************/
-minX(List)
-{
-	List.__Enum().Call(, &X)
-	for key, element in List
-		if (IsNumber(element) && (element < X))
-			X := element
-	return X
-}
-maxX(List)
-{
-	List.__Enum().Call(, &X)
-	for key, element in List
-		if (IsNumber(element) && (element > X))
-			X := element
-	return X
 }
 
 /*************************************************************
