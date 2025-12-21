@@ -193,6 +193,30 @@ nm_importPatterns()
 			), "Error", 0x40010 " T60"
 		if !InStr(imported, imported_pattern := '("' (pattern_name := StrReplace(A_LoopFileName, "." A_LoopFileExt)) '")`r`n' pattern '`r`n`r`n')
 		{
+			MsgBox(
+				(
+					'IMPORTANT!! READ THIS WHOLE MESSAGE
+
+					Pattern files can execute any AutoHotkey code, including potentially malicious code.
+					You should only run patterns from sources you trust.
+
+					We provide a few sources for trusted pattern downloads, including:
+					
+					- Our discord server, in the #patterns channel
+					- https://github.com/NatroTeam/Paths-Patterns, a collection of verified patterns
+
+					We review every pattern or path submitted to these sources, so you can be sure that they are 100% safe.
+
+					HOWEVER, you should not download a pattern from a stranger telling you to test out their pattern.
+					If all else fails, just download it from the sources above.
+
+
+					IMPORTANT!! READ THIS WHOLE MESSAGE
+					'
+				), "Pattern Import Warning", 0x40030
+			)
+			if (MsgBox("Do you FULLY trust the pattern " pattern_name " and want to import it?", "Pattern Import Confirmation", 0x40004 " T60") != "Yes")
+				continue
 			script :=
 			(
 			'
