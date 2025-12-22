@@ -13899,7 +13899,7 @@ nm_toBooster(location){
 					if nm_fieldBoostCheck(v, 1) {
 						nm_setStatus("Boosted", v), RecentFBoost := v
 						EnableGlitterBoost(v, (GlitterEnabled && ObjHasValue(StrSplit(GlitterFieldConfig, "|"), StrReplace(v, " ", ""))))
-						if BoostChaserCheck && v != FieldName1 {
+						if BoostChaserCheck && %StrReplace(v, " ", "")%BoosterCheck = 1 && v != FieldName1 {
 							nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: v, time: GatherBoostedFieldTime})
 							nm_TempGather(v, GatherBoostedFieldTime, 0)
 						}
@@ -14042,7 +14042,7 @@ nm_fieldBoostBooster(){
 	AFBuseBooster:=0
 	Sleep 5000
 	;check if gathering field was boosted
-	if(nm_fieldBoostCheck(CurrentField)) {
+	if (nm_fieldBoostCheck(CurrentField, 1, 1) > 0.8) {
 		nm_setStatus(0, "Field was Boosted: Booster")
 		FieldLastBoosted:=nowUnix()
 		FieldLastBoostedBy:=boosterName
@@ -14074,7 +14074,7 @@ nm_fieldBoostDice(){
 	global AFBrollingDice, AFBdiceUsed, AFBDiceLimit, AFBDiceLimitEnable, CurrentField, FieldBooster, boostTimer
 		, FieldLastBoosted, FieldLastBoostedBy, FieldNextBoostedBy, FieldBoostStacks, AutoFieldBoostRefresh
 		, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, AFBDiceHotbar, MainGui, AFBGui
-	if(not nm_fieldBoostCheck(CurrentField)) {
+	if (nm_fieldBoostCheck(CurrentField, 1, 1) < 0.8) {
 		send "{sc00" AFBDiceHotbar+1 "}"
 		AFBdiceUsed:=AFBdiceUsed+1
 		IniWrite AFBdiceUsed, "settings\nm_config.ini", "Boost", "AFBdiceUsed"
@@ -14138,7 +14138,7 @@ nm_fieldBoostGlitter(){
 	send "{sc00" AFBGlitterHotbar+1 "}"
 	Sleep 2000
 	;check if gathering field was boosted
-	if(nm_fieldBoostCheck(CurrentField)) {
+	if (nm_fieldBoostCheck(CurrentField, 1, 1) > 0.8) {
 		nm_setStatus(0, "Field was Boosted: Glitter")
 		AFBglitterUsed:=AFBglitterUsed+1
 		IniWrite AFBglitterUsed, "settings\nm_config.ini", "Boost", "AFBglitterUsed"
@@ -22807,7 +22807,7 @@ EnableGlitterBoost(field := 0, glitter := 0) {
 	LastBoostedFieldTime := nowUnix()
 	LastBoostedField := field
 	CurrentlyBoostedField := 1
-	CanUse := glitter && GlitterKey != "none"
+	CanUse := glitter && GlitterKey != "none" && %StrReplace(field, " ", "")%BoosterCheck = 1
 	UseGlitter := (BoostChaserCheck = 1) ? (CanUse) : (FieldName1 = CurrentField = RecentFBoost) ? (CanUse) : 0
 	GatherBoostedFieldTime := UseGlitter ? 30 : 15
 }
