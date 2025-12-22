@@ -251,9 +251,12 @@ SendMessageToAlts(wParam, lParam, *) {
 		catch
 			return
 	}
-	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && (CommunicatorIsConnected = true ){
+	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && (CommunicatorIsConnected = true) {
 		for identifier, sock in IdentifiedConnections.OwnProps() {
-			sock.SendText(JSON.Stringify(jsonObj))
+			requested_id := jsonObj.Has("identifier") ? jsonObj["identifier"] : identifier
+			if identifier != requested_id
+				continue
+			try sock.SendText(JSON.Stringify(jsonObj))
 		}
 	}
 }
@@ -264,14 +267,15 @@ GetMessages(*) {
 	if CommunicationStyle = "Discord" && AccountType != "Main Acc" {
 		msg := ReadMessages()
 		if !IsObject(msg) || msg.HasOwnProp("error")
-			return 0
+			return 0 
 	} else
 		return 0
 	return msg
 }
 
 Interpreter(msg, *) {
-	if !IsObject(msg) || msg.HasOwnProp("error")
+	discord_wrong_identifier := ((msg.Has("identifier") && discordMode > 0) ? CommunicationID != msg["identifier"] : 0)
+	if !IsObject(msg) || msg.HasOwnProp("error") || discord_wrong_identifier
 		return
 	try Send_WM_COPYDATA(JSON.stringify(msg), "natro_macro ahk_class AutoHotkey", 2)
 }
@@ -294,7 +298,6 @@ SelfReload(*) { ; to refresh vals, it has to be ran by natro_macro.ahk
 
 nm_UpdateConnectionTotal(num) {
 	Critical
-	tooltip num
 	DetectHiddenWindows 1
 	try SendMessage(0x5561,num,,,"natro_macro ahk_class AutoHotkey")
 	DetectHiddenWindows 0

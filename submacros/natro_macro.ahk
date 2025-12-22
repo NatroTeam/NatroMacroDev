@@ -839,14 +839,15 @@ nm_importConfig()
 		, "CommunicationChannelID", 0
 		, "CommunicationIP", "127.0.0.1"
 		, "PortNumber", 4269
-		, "CommunicationID", Random(100000000, 999999999))
+		, "CommunicationID", Random(1, 10000))
 
 	config["TadSync"] := Map("GlitterEnabled", 0
 		, "GlitterFieldConfig", "BlueFlower|Bamboo|PineTree"
 		, "GlitterBefore", 0
 		, "GlitterAfter", 0
 		, "ActionInterrupts", 0
-		, "ActionInterruptConfig", "Booster|WindShrine|Ant|Blender|Clock|Dispensers|Honeystorm|MemoryMatch|RoboPass|StickerPrinter|Backpack|Blessing|Bosses|Bugrun|ViciousBee|Comforting|Invigorating|Motivating|Refreshing|BlackBear|BrownBear|BuckoBee|HoneyBee|PolarBear|RileyBee")
+		, "ActionInterruptConfig", "Booster|WindShrine|Ant|Blender|Clock|Dispensers|Honeystorm|MemoryMatch|RoboPass|StickerPrinter|Backpack|Blessing|Bosses|Bugrun|ViciousBee|Comforting|Invigorating|Motivating|Refreshing|BlackBear|BrownBear|BuckoBee|HoneyBee|PolarBear|RileyBee"
+		, "AltIDList", "N/A")
 
 	local k, v, i, j
 	for k,v in config ; load the default values as globals, will be overwritten if a new value exists when reading
@@ -2051,6 +2052,7 @@ Run
 ; RUN COMMUNICATOR
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 nm_LaunchCommunicator() {
+	global CommunicationID
 	path := '"' exe_path64 '" /script "' A_WorkingDir '\submacros\Communicator.ahk" '
 	params := [AccountType, discordMode, discordCheck, MainChannelCheck, MainChannelID, ReportChannelCheck, ReportChannelID, WebhookEasterEgg
 	, DiscordUID, CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, PortNumber, CommunicationStyle
@@ -2784,15 +2786,27 @@ MainGui.Add("Button", "x125 y150 w10 h15 Disabled vAIHelp " isMain, "?").OnEvent
 MainGui.Add("Button", "x112 y170 w10 h15 Disabled vAICHelp " isMain, "?").OnEvent("Click", nm_ActionInterruptConfigHelp)
 
 ; Control Alts (Main Acc)
-AltAccountList := ["N/A", "Alt 1", "Alt 2", "Alt 3", "Alt 4", "Alt 5"]
+AltAccountList := StrSplit(AltIDList, "|")
 SelectedAlt := "N/A"
 MainGui.Add("GroupBox", "x145 y50 w350 h183 vControlAltsSection " isMain, "Control Alts")
 (GuiCtrl := MainGui.Add("DropDownList", "x150 y70 w110 h100 vControlAlt Disabled " isMain, AltAccountList)).Text := SelectedAlt, GuiCtrl.OnEvent("Change", nm_ControlAltSelect)
+MainGui.Add("Button", "x268 y70 w13 h10 vAddAltToList Disabled " isMain, "+").OnEvent("Click", nm_EditControlAltSection)
+MainGui.Add("Button", "x268 y80 w13 h10 vRemoveAltFromList Disabled " isMain, "-").OnEvent("Click", nm_EditControlAltSection)
+(GuiCtrl := MainGui.Add("Edit", "x281 y70 w60 h20 vSelectAltID Disabled " isMain " Number")).OnEvent("Change", nm_ValidatePositiveNumber)
+SendMessage(0x1501, 0, StrPtr("Identifier"), GuiCtrl.Hwnd)
+
 ; only show if "N/A" isn't selected
 isNA := (SelectedAlt = "N/A" || AccountType != "Main Acc") ? "Hidden" : ""
 CAFieldList := ["BlueFlower", "Bamboo", "PineTree", "Stump", "Mushroom", "Strawberry", "Rose", "Pepper", "Dandelion", "Spider", "Pineapple", "Coconut", "Clover", "Cactus", "Pumpkin", "MountainTop", "Sunflower"]
 for i in CAFieldList
 	hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["field_icons"][i]), MainGui.Add("Picture", "x" 150 + Mod((A_Index-1),4)*29 " y" 95 + Floor((A_Index-1)/4)*27 " w25 h25 vCA" i " +BackgroundTrans " isNA, "HBITMAP:*" hbm).OnEvent("Click", nm_ControlAltField), DllCall("DeleteObject", "ptr", hBM)
+
+;Tad Alt settings
+isNotMain := !isMain ? "Hidden" : ""
+MainGui.Add("GroupBox", "x10 y50 w130 h70 vTadAltSettingsSeciton " isNotMain, "Alt Settings")
+MainGui.Add("Button", "x15 y70 w10 h15 vIDHelp " isNotMain, "?").OnEvent("Click", nm_IDHelp)
+MainGui.Add("Text", "xs+25 yp vIDTxt " isNotMain, "Indentification:")
+(GuiCtrl := MainGui.Add("Edit", "xp-15 y+5 w120 h20 -Wrap Number Disabled vCommunicationID " isNotMain, CommunicationID)).Section := "Alts", GuiCtrl.OnEvent("Change", nm_ValidatePositiveNumber)
 
 ; SETTINGS TAB
 ; ------------------------
@@ -4231,7 +4245,11 @@ nm_TabAltsLock() {
 	MainGui["GAHelp"].Enabled := 0
 	MainGui["AIHelp"].Enabled := 0
 	MainGui["AICHelp"].Enabled := 0
+	MainGui["CommunicationID"].Enabled := 0
 	MainGui["ControlAlt"].Enabled := 0
+	MainGui["AddAltToList"].Enabled := 0
+	MainGui["RemoveAltFromList"].Enabled := 0
+	MainGui["SelectAltID"].Enabled := 0
 }
 nm_TabAltsUnLock() {
 	MainGui["AccountType"].Enabled := 1
@@ -4251,7 +4269,11 @@ nm_TabAltsUnLock() {
 	MainGui["GAHelp"].Enabled := 1
 	MainGui["AIHelp"].Enabled := 1
 	MainGui["AICHelp"].Enabled := 1
+	MainGui["CommunicationID"].Enabled := 1
 	MainGui["ControlAlt"].Enabled := 1
+	MainGui["AddAltToList"].Enabled := 1
+	MainGui["RemoveAltFromList"].Enabled := 1
+	MainGui["SelectAltID"].Enabled := 1
 }
 nm_TabSettingsLock(){
 	global
@@ -8152,8 +8174,15 @@ nm_AccountType(GuiCtrl, *) {
 		MainGui["GAHelp"].Visible := isMain
 		MainGui["AIHelp"].Visible := isMain
 		MainGui["AICHelp"].Visible := isMain
+		MainGui["IDTxt"].Visible := !isMain
+		MainGui["TadAltSettingsSeciton"].Visible := !isMain
+		MainGui["IDHelp"].Visible := !isMain
+		MainGui["CommunicationID"].Visible := !isMain
 		MainGui["ControlAltsSection"].Visible := isMain
 		MainGui["ControlAlt"].Visible := isMain
+		MainGui["AddAltToList"].Visible := isMain
+		MainGui["RemoveAltFromList"].Visible := isMain
+		MainGui["SelectAltID"].Visible := isMain
 	}
 	ToggleGlitter()
 	nm_FieldIconsVisible()
@@ -8183,17 +8212,14 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 	txtChannelID := ConfGui.Add("Text", "xs+10 y+5", "Channel ID:")
 	(edtChannelID := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap Number vCommunicationChannelID", CommunicationChannelID)).OnEvent("Change", ValidateNumberCtrl)
 	; Socket
-	confSocket := ConfGui.Add("GroupBox", "xm ym w300 h" (AccountType = "Main Acc" ? 105 : 150), "Socket Configuration")
+	confSocket := ConfGui.Add("GroupBox", "xm ym w300 h105", "Socket Configuration")
 	(btnPort := ConfGui.Add("Button", "xs+10 ys+15 w10 h15", "?")).OnEvent("Click", PortHelpButton)
     txtPort := ConfGui.Add("Text", "xs+25 yp", "Port Number:")
     (edtPort := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap Number vPortNumber", PortNumber)).OnEvent("Change", ValidateNumberCtrl)
     (btnIP := ConfGui.Add("Button", "xs+10 y+5 w10 h15", "?")).OnEvent("Click", IPHelpButton)
 	txtIP := ConfGui.Add("Text", "xs+25 yp", "IP Address:")
     (edtIP := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap vCommunicationIP", CommunicationIP)).OnEvent("Change", SaveConf)
-	(btnID := ConfGui.Add("Button", "xs+10 y+5 w10 h15", "?")).OnEvent("Click", IDHelpButton)
-	txtID := ConfGui.Add("Text", "xs+25 yp", "Indentification:")
-	(edtID := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap Number vCommunicationID", CommunicationID)).OnEvent("Change", ValidateNumberCtrl)
-	(btnConnectionIP := ConfGui.Add("Button", "xs+10 yp-60 w10 h15", "?")).OnEvent("Click", ConnectIPHelpButton)
+	(btnConnectionIP := ConfGui.Add("Button", "xs+10 yp-20 w10 h15", "?")).OnEvent("Click", ConnectIPHelpButton)
 	txtConnectionIP := ConfGui.Add("Text", "xs+25 yp", "Connection IP:")
 	(edtConnectionIP := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap ReadOnly", SysGetIPAddresses()[1]))
 	ToggleFields(*) {
@@ -8213,15 +8239,12 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 		btnIP.Visible := !isDiscord && !isMain
         txtIP.Visible := !isMain && !isDiscord
         edtIP.Visible := !isMain && !isDiscord
-		btnID.Visible := !isMain && !isDiscord
-		txtID.Visible := !isMain && !isDiscord
-		edtID.Visible := !isMain && !isDiscord
 		txtConnectionIP.Visible := !isDiscord && isMain
 		edtConnectionIP.Visible := !isDiscord && isMain
 		btnConnectionIP.Visible := !isDiscord && isMain
 	}
 	SaveConf(GuiCtrl, *) {
-		global CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, CommunicationID, PortNumber
+		global CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, PortNumber
 		%GuiCtrl.Name% := ConfGui[GuiCtrl.Name].Value
 		IniWrite GuiCtrl.Value, "settings\nm_config.ini", "Alts", GuiCtrl.Name
 	}
@@ -8238,9 +8261,6 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 	}
 	IPHelpButton(*) {
 		MsgBox "The IP address the alt account will connet to.", "IP", 0x40000
-	}
-	IDHelpButton(*) {
-		MsgBox "The unique identifier the main account uses to distinguish the different alt accounts.", "ID", 0x40000
 	}
 	ToggleFields()
 	ConfGui.Show("AutoSize")
@@ -8361,14 +8381,47 @@ nm_ControlAltSelect(GuiCtrl, *) {
 	return 1
 }
 
+nm_EditControlAltSection(GuiCtrl, *) {
+	global SelectedAlt
+	if !((alt_id := MainGui["SelectAltID"].Text) ~= "\d+")
+		return
+
+	MainGui["SelectAltID"].Text := ""
+	if GuiCtrl.Name = "AddAltToList" {
+		if ObjHasValue(AltAccountList, alt_id)
+			return
+		MainGui["ControlAlt"].Add([alt_id])
+		AltAccountList.Push(alt_id)
+	} 
+	else if (i := ObjIndexOf(AltAccountList, alt_id)) > 0  {
+		MainGui["ControlAlt"].Delete(i)
+		AltAccountList.RemoveAt(i)
+		if alt_id = SelectedAlt {
+			MainGui["ControlAlt"].Choose(1)
+			SelectedAlt := "N/A"
+			nm_FieldIconsVisible()
+		}
+	}
+	AltIDList := ObjStrJoin("|", AltAccountList)
+	IniWrite AltIDList, "settings\nm_config.ini", "TadSync", "AltIDList"
+}
+
 nm_FieldIconsVisible(*) {
-	isNA := !(SelectedAlt = "N/A" || AccountType != "Main Acc")
+	isNA := !(SelectedAlt = "N/A" || SelectedAlt = "" || AccountType != "Main Acc")
 	for i in CAFieldList
 		MainGui["CA" i].Visible := isNA
 }
 
-nm_ControlAltField(*) {
-	return 1
+nm_ControlAltField(GuiCtrl, *) {
+	static correct_field_names := Map(
+		"BlueFlower", "Blue Flower", 
+		"PineTree", "Pine Tree",
+		"MountainTop","Mountain Top")
+	
+	field_name := StrReplace(GuiCtrl.Name, "CA")
+	if correct_field_names.Has(field_name)
+		field_name := correct_field_names[field_name]
+	nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: field_name, time: 60, identifier: MainGui["ControlAlt"].Text})
 }
 
 nm_EnableGlitterHelp(*) {
@@ -8428,6 +8481,16 @@ nm_ActionInterruptConfigHelp(*) {
 	DESCRIPTION:
 	This option allows you to configure which actions the macro will interrupt to interrupt for re-glittering.
 	)", "Action Interrupt Configuration", 0x40000
+}
+
+nm_IDHelp(*) {
+	MsgBox "The unique identifier the main account uses to distinguish the different alt accounts.", "ID", 0x40000
+}
+
+nm_ValidatePositiveNumber(GuiCtrl, *) {
+	if InStr(GuiCtrl.Value, "-")
+		StrReplace(GuiCtrl.Value, "-")
+	nm_saveConfig(GuiCtrl)
 }
 
 ; MISC TAB
