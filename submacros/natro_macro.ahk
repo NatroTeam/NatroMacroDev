@@ -16139,37 +16139,61 @@ nm_MondoLoot(isFollow := false) {
 	}
 }
 nm_MondoTimer() {
-	static L, R
-	; timer: 0xff9d7249 0xff533e29
-	; health: 0xff1fe744 0xff6b131a
-	if !(IsSet(L) && IsSet(R)) {
-		L := Gdip_CreateBitmap(1,4), pGraphics := Gdip_GraphicsFromImage(L), Gdip_GraphicsClear(pGraphics, 0xff9d7249), Gdip_DeleteGraphics(pGraphics)
+	static R
+	if !IsSet(R)
 		R := Gdip_CreateBitmap(1,4), pGraphics := Gdip_GraphicsFromImage(R), Gdip_GraphicsClear(pGraphics, 0xff533e29), Gdip_DeleteGraphics(pGraphics)
-	}
 	GetRobloxClientPos()
 	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight) 
-	if (Gdip_ImageSearch(pBMScreen, L, &S) > 0 && Gdip_ImageSearch(pBMScreen, R, &E, , , , , , , 8) > 0) {
+	if (Gdip_ImageSearch(pBMScreen, R, &E, , , , , , , 8) = 1) {
 		Gdip_DisposeImage(pBMScreen)
-		S := StrSplit(S, ","), E := StrSplit(E, ",")
-		return {X: S[1] + ((E[1] - S[1]) // 2), Y: S[2] + ((E[2] - S[2]) // 2)} 
+		E := StrSplit(E, ",")
+		return {X: E[1], Y: E[2]}
 	}
 	Gdip_DisposeImage(pBMScreen)
 	return 0
 }
 nm_MondoMove() {
-    if !(pos := nm_MondoTimer())
-        return
-    Safe := windowHeight * 0.4, DeadZoneWidth := windowWidth * 0.035
-    VecX := pos.x - (windowWidth // 2)
-    Gap := Safe - Abs(VecX)
-    DirX := ""
-    if Abs(Gap) > DeadZoneWidth
-        DirX := (Gap > 0 ) ? ((VecX < 0) ? "Right" : "Left") : ((VecX < 0) ? "Left" : "Right")
-    if (DirX) {
-        Send "{" %DirX%Key " down}"
-        Sleep 150
-        Send "{" %DirX%Key " up}"
-    }
+	if !(pos := nm_MondoTimer())
+		return 0
+	Safe := windowHeight * 0.5, DeadZoneWidth := windowWidth * 0.02
+	VecX := pos.x - (windowWidth // 2), Gap := Safe - Abs(VecX), DirX := ""
+	if Abs(Gap) > DeadZoneWidth {
+		DirX := (Gap > 0) ? ((VecX < 0) ? "Right" : "Left") : ((VecX < 0) ? "Left" : "Right")
+		if DirX {
+			Send "{" %DirX%Key " down}"
+			loop {
+				sleep 10
+				if (A_Index >= 300) {
+					send "{" %DirX%Key " up}"
+					break
+				}
+				pos := nm_MondoTimer()
+				if (!pos) {
+					send "{" %DirX%Key " up}"
+					loop 25 {
+						Sleep 10
+						if (pos := nm_MondoTimer()) {
+							send "{" %DirX%Key " down}"
+							continue 2
+						}
+					}
+					break
+				}
+				VecX := pos.x - (windowWidth // 2)
+				Gap := Safe - Abs(VecX)
+				if Abs(Gap) <= DeadZoneWidth {
+					send "{" %DirX%Key " up}"
+					break
+				}
+				NewDir := (Gap > 0) ? ((VecX < 0) ? "Right" : "Left") : ((VecX < 0) ? "Left" : "Right")
+				if (NewDir != DirX) {
+					send "{" %DirX%Key " up}"
+					break
+				}
+			}
+		}
+	}
+	return 1
 }
 nm_CheckMondoDead() { ; just says if you have the buff, nothing special
 	global LastMondoBuff, MondoBuffCheck
