@@ -1994,6 +1994,8 @@ TempGather_Interrupt := 0
 TempGather_Field := ""
 TempGather_Duration := 0
 TempGather_StartTime := 0
+GlitterAfterTimer := 0
+UseGlitterAfter := 0
 TempGather := false
 UseGlitter := 0
 GatherBoostedFieldTime := 15
@@ -13962,7 +13964,7 @@ nm_toBooster(location){
 					if nm_fieldBoostCheck(v, 1) {
 						nm_setStatus("Boosted", v), RecentFBoost := v
 						EnableGlitterBoost(v, (GlitterEnabled && ObjHasValue(StrSplit(GlitterFieldConfig, "|"), StrReplace(v, " ", ""))))
-						if BoostChaserCheck && v != FieldName1 {
+						if BoostChaserCheck && %StrReplace(v, " ", "")%BoosterCheck = 1 && v != FieldName1 {
 							nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: v, time: GatherBoostedFieldTime})
 							nm_TempGather(v, GatherBoostedFieldTime, 0)
 						}
@@ -14105,7 +14107,7 @@ nm_fieldBoostBooster(){
 	AFBuseBooster:=0
 	Sleep 5000
 	;check if gathering field was boosted
-	if(nm_fieldBoostCheck(CurrentField)) {
+	if (nm_fieldBoostCheck(CurrentField, 1, 1) > 0.8) {
 		nm_setStatus(0, "Field was Boosted: Booster")
 		FieldLastBoosted:=nowUnix()
 		FieldLastBoostedBy:=boosterName
@@ -14137,7 +14139,7 @@ nm_fieldBoostDice(){
 	global AFBrollingDice, AFBdiceUsed, AFBDiceLimit, AFBDiceLimitEnable, CurrentField, FieldBooster, boostTimer
 		, FieldLastBoosted, FieldLastBoostedBy, FieldNextBoostedBy, FieldBoostStacks, AutoFieldBoostRefresh
 		, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, AFBDiceHotbar, MainGui, AFBGui
-	if(not nm_fieldBoostCheck(CurrentField)) {
+	if (nm_fieldBoostCheck(CurrentField, 1, 1) < 0.8) {
 		send "{sc00" AFBDiceHotbar+1 "}"
 		AFBdiceUsed:=AFBdiceUsed+1
 		IniWrite AFBdiceUsed, "settings\nm_config.ini", "Boost", "AFBdiceUsed"
@@ -14201,7 +14203,7 @@ nm_fieldBoostGlitter(){
 	send "{sc00" AFBGlitterHotbar+1 "}"
 	Sleep 2000
 	;check if gathering field was boosted
-	if(nm_fieldBoostCheck(CurrentField)) {
+	if (nm_fieldBoostCheck(CurrentField, 1, 1) > 0.8) {
 		nm_setStatus(0, "Field was Boosted: Glitter")
 		AFBglitterUsed:=AFBglitterUsed+1
 		IniWrite AFBglitterUsed, "settings\nm_config.ini", "Boost", "AFBglitterUsed"
@@ -16790,7 +16792,7 @@ nm_GoGather(){
 		, GameFrozenCounter
 		, BlackQuestCheck, BrownQuestCheck, BuckoQuestCheck, RileyQuestCheck, PolarQuestCheck
 		, BlackQuestComplete, BrownQuestComplete, BuckoQuestComplete, RileyQuestComplete, PolarQuestComplete
-		, TempGather, TempGather_Field, TempGather_Interrupt, TempGather_StartTime, TempGather_Duration
+		, TempGather, TempGather_Field, TempGather_Interrupt, TempGather_StartTime, TempGather_Duration, GlitterAfterTimer
 
 	;VICIOUS BEE
 	if nm_NightInterrupt()
@@ -17253,16 +17255,24 @@ nm_GoGather(){
 				if (TempGather = true && nowUnix() - TempGather_StartTime > TempGather_Duration*60) {
 					TempGather := false
 					interruptReason := "Main Macro Sync - Over"
+					if AccountType = "Main Acc" && GlitterEnabled && GlitterAfter
+						UseGlitterAfter := 1, GlitterAfterTimer := nowUnix()
 					break
 				}
-				; use glitter during boost
-				if nm_UseGlitterDuringBoost() {
+				; use glitter during boost (pre/during/post)
+				if (GlitterAction := nm_UseGlitterDuringBoost()) != 0 {
 					send "{" GlitterKey "}"
 					sleep 100
-					if nm_fieldBoostCheck(CurrentField, 1, 1) > 0.8 {
-						TempGather_StartTime := nowUnix()-900
-						nm_sendInstructions({type: "Tad Alt", action: "Update Time", unix: TempGather_StartTime})
+
+					if GlitterAction = 1 {
+						if nm_fieldBoostCheck(CurrentField, 1, 1) > 0.8 {
+							TempGather_StartTime := nowUnix()-900
+							nm_sendInstructions({type: "Tad Alt", action: "Update Time", unix: TempGather_StartTime})
+						}
 					}
+
+					if GlitterAction = 3
+						UseGlitterAfter := 0
 				}
 
 			}
@@ -22870,12 +22880,14 @@ EnableGlitterBoost(field := 0, glitter := 0) {
 	LastBoostedFieldTime := nowUnix()
 	LastBoostedField := field
 	CurrentlyBoostedField := 1
-	CanUse := glitter && GlitterKey != "none"
+	CanUse := glitter && GlitterKey != "none" && %StrReplace(field, " ", "")%BoosterCheck = 1
 	UseGlitter := (BoostChaserCheck = 1) ? (CanUse) : (FieldName1 = CurrentField = RecentFBoost) ? (CanUse) : 0
 	GatherBoostedFieldTime := UseGlitter ? 30 : 15
 }
 
 DuringGlitter() => ((GlitterEnabled && UseGlitter=1 && (nowUnix()-LastBoostedFieldTime>830) && (nowUnix()-LastBoostedFieldTime<900)))
+GlitterBeforeHQ() => (GlitterEnabled && (nowUnix()-LastBlueBoost) > 2100 && GlitterBefore) ; 10 mins before HQ
+GlitterAfterHQ() => (GlitterEnabled && UseGlitterAfter && GlitterAfter && nowUnix()-GlitterAfterTimer>60)
 
 NearGlitter(sec:=60) => (
 	GlitterEnabled = 1
@@ -22888,9 +22900,18 @@ nm_ActionInterrupt(category, action, OnlyNearGlitter := 0) => (ActionInterrupts 
 
 nm_UseGlitterDuringBoost() {
 	global
+	; during glitter
 	if DuringGlitter() || nm_MondoGlitterInterrupt() {
 		return 1
 	}
+	; before HQ
+	if GlitterBeforeHQ() {
+		return 2
+	}
+	if GlitterAfterHQ() {
+		return 3
+	}
+	return 0
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

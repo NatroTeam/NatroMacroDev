@@ -1,4 +1,4 @@
-﻿/********************************************
+/********************************************
 * @Author Myurius
 * @Description Class for socket communication
 ********************************************
@@ -17,7 +17,6 @@ class Socket {
             throw OSError(err)
         if NumGet(WSAData, 2, "ushort") != 0x0202
             throw Error("Winsock version 2.2 not available", -1)  
-        Socket.initialized := true
     }
 
     __New(EventObject, WM := 0x5566, Sock := -1) {
