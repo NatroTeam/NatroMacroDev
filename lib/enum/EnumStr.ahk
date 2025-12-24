@@ -77,4 +77,6 @@
 	, "PlanterHarvestFull1"
 	, "PlanterHarvestFull2"
 	, "PlanterHarvestFull3"
-  , "DiscordUIDCommands"]
+  	, "DiscordUIDCommands"
+	, "ClaimMethod"
+]

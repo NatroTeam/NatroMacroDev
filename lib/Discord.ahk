@@ -186,7 +186,7 @@ class discord
 			return -1
 
 		try
-			(messages := JSON.parse(text := this.GetMessageAPI(lastmsg.Has(channel) ? ("?after=" lastmsg[channel]) : "?limit=1", channel))).Length
+			(messages := JSON.parse(this.GetMessageAPI(lastmsg.Has(channel) ? ("?after=" lastmsg[channel]) : "?limit=1", channel))).Length
 		catch
 			return []
 
