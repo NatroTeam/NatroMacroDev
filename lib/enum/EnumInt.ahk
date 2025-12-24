@@ -365,4 +365,5 @@
 	, "MGatherPlanterLoot"
 	, "prioritylistnumeric"
 	, "dayOrNight"
-	, "CheckNight"]
+	, "CheckNight"
+]
