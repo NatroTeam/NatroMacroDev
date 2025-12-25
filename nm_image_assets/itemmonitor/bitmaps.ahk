@@ -1,5 +1,6 @@
 (Stream := Map()).CaseSense := 0
-Stream["ItemBanner"] := Gdip_CreateBitmap(1, 1), pGraphics := Gdip_GraphicsFromImage(Stream["ItemBanner"]), Gdip_GraphicsClear(pGraphics, 0xFF2257A8)
+Stream["ItemBanner"] := Gdip_CreateBitmap(1, 1), pGraphics := Gdip_GraphicsFromImage(Stream["ItemBanner"]), Gdip_GraphicsClear(pGraphics, 0xFF2257A8), Gdip_DeleteGraphics(pGraphics)
+Stream["ItemBannerVignette"] := Gdip_CreateBitmap(1, 1), pGraphics := Gdip_GraphicsFromImage(Stream["ItemBannerVignette"]), Gdip_GraphicsClear(pGraphics, 0xFF112B54), Gdip_DeleteGraphics(pGraphics)
 (Stream["Items"] := Map()).CaseSense := 0
 Stream["Items"]["Honey"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAABsAAAANCAYAAABYWxXTAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAB4SURBVDhP7Y1LCsBACEPn/kftBbq0RBSGYNLPug9cmJdx1nFGLIFzn/g/e4p98/YzZDylksljrOzJ0gZn0y47LdVkqeC92XPbURKws4cK21ESsLOHCttRErCzhwrbURJMjrO7vclcSTA5ZDylEt6bzJUEzin0ZxEXkzpFPAqSQdAAAAAASUVORK5CYII=")
 Stream["Items"]["Blueberry"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAACkAAAANCAYAAAA0XUfWAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACwSURBVEhL1Y5ZCgMxDENz/6P2Av2cEmMZx0iJu3xMHwgmWpIZj+d1VY27wX4S8sqC8r9l9+bbj97uJ1n2lz+p9moLuRXkLCtC+2hS+2p/6rEzu8s8hEzeW6h+p9ftsJ55CJm8t1D9Tg/3MXklOn4MzGMBkKOE2md/fit5JTp+DMxjAZCjhNpnf/cGmB3WM293gRw1qL3TbubyPYRM3ltgft1BHhuf5FMytEBwyn/PGC8ChTFu1oWP1AAAAABJRU5ErkJggg==")

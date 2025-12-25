@@ -85,8 +85,8 @@ ObjStrJoin(delim, arr) {
 QuickSort(arr, prop := "", low := 1, high := 0)
 {
     high := high ? high : arr.Length
-    if low < high
-        p := Partition(arr, prop, low, high), QuickSort(arr, prop, low, p - 1), QuickSort(arr, prop, p + 1, high)
+    if (low < high)
+        p := Partition(arr, prop, low, high), (p > low) ? QuickSort(arr, prop, low, p - 1) : 0, (p < high) ? QuickSort(arr, prop, p + 1, high) : 0
     return arr
 }
 Partition(arr, prop, low, high)
@@ -94,6 +94,6 @@ Partition(arr, prop, low, high)
     pivot := prop ? arr[high].%prop% : arr[high], i := low - 1
     Loop high - low
         j := low + A_Index - 1, val := prop ? arr[j].%prop% : arr[j], (val > pivot) ? (i++, temp := arr[i], arr[i] := arr[j], arr[j] := temp) : 0
-    i++, temp := arr[i], arr[i] := arr[high], arr[high] := temp
+    (i + 1 != high) ? (i++, temp := arr[i], arr[i] := arr[high], arr[high] := temp) : i++
     return i
 }
