@@ -278,7 +278,8 @@ settings["PlanterNectar3"] := {enum: 76, type: "str", section: "Planters", regex
 settings["PlanterHarvestFull1"] := {enum: 77, type: "str", section: "Planters", regex: "i)^(Full|Timed)$"}
 settings["PlanterHarvestFull2"] := {enum: 78, type: "str", section: "Planters", regex: "i)^(Full|Timed)$"}
 settings["PlanterHarvestFull3"] := {enum: 79, type: "str", section: "Planters", regex: "i)^(Full|Timed)$"}
-settings["ClaimMethod"] := {enum: 81 , type: "str", section: "Settings", regex: "i)^(Detect|To Slot)$"}
+;settings["discordUIDCommands"] := {enum: 80, type: "str", section: "Status", regex: "i)^(&?\d{17,20}$"} dangerous
+settings["ClaimMethod"] := {enum: 81 , type: "str", section: "Status", regex: "i)^(Detect|To Slot)$"}
 
 ;settings["discordMode"] := {enum: 1, type: "int", section: "Status", regex: "i)^(0|1|2)$"} dangerous
 ;settings["discordCheck"] := {enum: 2, type: "int", section: "Status", regex: "i)^(0|1)$"} dangerous
@@ -814,24 +815,30 @@ nm_command(command)
 	, defaultPriorityList := ["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
 
 	id := command.id, params := [], user_id := command.user_id
-  if (discordUIDCommands != "") {
-    if (!discordUIDCommands_is_role) {
-      if (discordUIDCommands != user_id) {
-        discord.SendEmbed("Only <@" discordUIDCommands "> can use commands", 16711731,,,,id)
-        return command_buffer.RemoveAt(1)
-      }
-    }
-    else {
-      if !ObjHasValue(allowed_list_cache, user_id) {
-        roles := getUserRoles(user_id)
-        if (!ObjHasValue(roles, SubStr(discordUIDCommands, 2))) {
-          discord.SendEmbed("Only <@" discordUIDCommands "> can use commands", 16711731,,,,id)
-          return command_buffer.RemoveAt(1)
-        }
-        allowed_list_cache.Push(user_id)
-      }
-    }
-  }
+
+	if !UserHasPermission() {
+		discord.SendEmbed("Only <@" discordUIDCommands "> can use commands", 16711731,,,,id)
+		return command_buffer.RemoveAt(1)
+	}
+
+
+	UserHasPermission(){
+		; no whitelist enabled
+		if !discordUIDCommands
+			return 1
+
+		; whitelisted is user, user = msg author
+		if (!discordUIDCommands_is_role && discordUIDCommands = user_id) 
+			return 1
+		
+		; Allowed is role
+		if (discordUIDCommands_is_role) {
+			roles := getUserRoles(user_id)
+			if (ObjHasValue(roles, SubStr(discordUIDCommands, 2)))
+				return 1
+		}
+		return 0
+	}
 
 
 	Loop Parse SubStr(command.content, StrLen(commandPrefix)+1), A_Space
@@ -990,20 +997,20 @@ nm_command(command)
 				'
 				{
 					"embeds": [
-					  {
+					{
 						"title": "Priority List",
 						"color": 2829617,
 						"description": "To change the priority list, use the following command:\n``````\n' commandPrefix 'set priorityListNumeric [numbers|default]\n``````\nEach digit represents its slot in the default priority list.\nFor example:\n``````\n' commandPrefix 'set priorityListNumeric 12345678\n``````\n\n**Default Priority List**``````ansi\n1 - Night\n2 - Mondo\n3 - Planter\n4 - Bugrun\n5 - Collect\n6 - Quest Rotate\n7 - Boost\n8 - Go Gather``````"
-					  }
+					}
 					],
 					"allowed_mentions": {
-					  "parse": []
+					"parse": []
 					},
 					"message_reference": {
-					  "message_id": "' id '",
-					  "fail_if_not_exists": false
+					"message_id": "' id '",
+					"fail_if_not_exists": false
 					}
-				  }			  
+				}			  
 				'
 				)
 			default:
@@ -2510,11 +2517,11 @@ nm_command(command)
 }
 
 getUserRoles(user_id) {
-  if (res := discord.GetChannel(MainChannelID)) == -1
-    Return -1
-  channel := JSON.parse(res, false, false)
-  member := JSON.parse(discord.GetMember(channel.guild_id, user_id), false, false)
-  return member.roles
+	if (res := discord.GetChannel(MainChannelID)) = -1
+		return -1
+	channel := JSON.parse(res, false, false)
+	member := JSON.parse(discord.GetMember(channel.guild_id, user_id), false, false)
+	return member.roles
 }
 
 nm_TrimLog(size)
@@ -2591,11 +2598,17 @@ nm_setGlobalStr(wParam, lParam, *)
 	var := arr[wParam], section := sections[lParam]
 	%var% := IniRead(A_ScriptDir "\..\settings\nm_config.ini", section, var)
 
-  if wParam == 80 { ; discordUIDCommands
-    allowed_list_cache := []
-    discordUIDCommands_is_role := StrLen(discordUIDCommands) && SubStr(discordUIDCommands, 1, 1) == "&"
-  }
+	UpdateStrActions(var)
 	return 0
+}
+
+UpdateStrActions(var){
+	global
+	
+	switch {
+		case "discordUIDCommands":
+			discordUIDCommands_is_role := StrLen(discordUIDCommands) && SubStr(discordUIDCommands, 1, 1) == "&"
+	}
 }
 
 nm_sendHeartbeat(*)

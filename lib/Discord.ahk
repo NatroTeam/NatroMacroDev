@@ -63,9 +63,9 @@ class discord
 				}
 			}
 			size := FileGetSize(filepath)
-			if (size > 26214076)
+			if (size > 10485760)
 			{
-				this.SendEmbed('``' StrReplace(StrReplace(filepath, "\", "\\"), '"', '\"') '`` is above the Discord file size limit of 25MiB!', 16711731, , , , replyID)
+				this.SendEmbed('``' StrReplace(StrReplace(filepath, "\", "\\"), '"', '\"') '`` is above the Discord file size limit of 10MiB!', 16711731, , , , replyID)
 				return -1
 			}
 		}
@@ -144,37 +144,37 @@ class discord
 		}
 	}
 
-  static GetChannel(channelid)
-  {
-    global discordMode
-    if (discordMode == 0)
-      return -1
+	static GetChannel(channelid)
+	{
+		global discordMode
+		if (discordMode == 0)
+			return -1
 
-    wr := ComObject("WinHttp.WinHttpRequest.5.1")
-    wr.Option[9] := 2720
-    wr.Open("GET", Discord.baseURL . "channels/" channelid)
-    wr.SetRequestHeader("User-Agent", "DiscordBot (AHK, " A_AhkVersion ")")
-    wr.SetRequestHeader("Authorization", "Bot " . bottoken)
-    wr.Send()
-    wr.WaitForResponse()
-    return wr.ResponseText
-  }
+		wr := ComObject("WinHttp.WinHttpRequest.5.1")
+		wr.Option[9] := 2720
+		wr.Open("GET", Discord.baseURL . "channels/" channelid)
+		wr.SetRequestHeader("User-Agent", "DiscordBot (AHK, " A_AhkVersion ")")
+		wr.SetRequestHeader("Authorization", "Bot " . bottoken)
+		wr.Send()
+		wr.WaitForResponse()
+		return wr.ResponseText
+	}
 
-  static GetMember(guild_id, user_id)
-  {
-    global discordMode
-    if (discordMode == 0)
-      return -1
+	static GetMember(guild_id, user_id)
+	{
+		global discordMode
+		if (discordMode == 0)
+			return -1
 
-    wr := ComObject("WinHttp.WinHttpRequest.5.1")
-    wr.Option[9] := 2720
-    wr.Open("GET", Discord.baseURL . "guilds/" . guild_id . "/members/" . user_id)
-    wr.SetRequestHeader("User-Agent", "DiscordBot (AHK, " A_AhkVersion ")")
-    wr.SetRequestHeader("Authorization", "Bot " . bottoken)
-    wr.Send()
-    wr.WaitForResponse()
-    return wr.ResponseText
-  }
+		wr := ComObject("WinHttp.WinHttpRequest.5.1")
+		wr.Option[9] := 2720
+		wr.Open("GET", Discord.baseURL . "guilds/" . guild_id . "/members/" . user_id)
+		wr.SetRequestHeader("User-Agent", "DiscordBot (AHK, " A_AhkVersion ")")
+		wr.SetRequestHeader("Authorization", "Bot " . bottoken)
+		wr.Send()
+		wr.WaitForResponse()
+		return wr.ResponseText
+	}
 
 
 	static GetRecentMessages(channel)
