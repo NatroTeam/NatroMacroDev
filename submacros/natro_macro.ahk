@@ -22168,15 +22168,6 @@ start(*){
 		priorityList.push(defaultPriorityList[i])
 	
 	if !ForceStart {
-		;Touchscreen WARNING @ start
-		if (DllCall("GetSystemMetrics", "Int", 95) != 0)
-			MsgBox "
-			(
-			It seems like you have Touchscreen enabled. This means the macro will NOT reset your character properly!
-
-			To fix this:
-			Press Win+S and type in 'Device Manager' -> Right-click 'HID-compliant touch screen' -> Under 'Human Interface Devices', select 'Disable Device' -> Restart your PC.
-			)", "WARNING!!", 0x1030 " T60"
 		robloxtype := nm_DetectRobloxType()
 		if RemoteStart && (robloxtype = RobloxTypes.UWP || robloxtype = RobloxTypes.NotFound) {
 			nm_setStatus("Error","Unable to start macro. Invalid Roblox installation detected. Please install Roblox from https://www.roblox.com/download")
@@ -22195,6 +22186,21 @@ start(*){
 		if !RemoteStart && !ForceStart
 			if nm_MsgBoxIncorrectRobloxSettings()
 				return unlockstartbutton()
+
+		;Touchscreen WARNING @ start
+		if (DllCall("GetSystemMetrics", "Int", 95) != 0) {
+			if RemoteStart {
+				nm_setStatus("Error", "Touchscreen enabled, please disable it for the macro to function correctly.")
+			} else {
+				MsgBox "
+				(
+				It seems like you have Touchscreen enabled. This means the macro will NOT reset your character properly!
+
+				To fix this:
+				Press Win+S and type in 'Device Manager' -> Right-click 'HID-compliant touch screen' -> Under 'Human Interface Devices', select 'Disable Device' -> Restart your PC.
+				)", "WARNING!!", 0x1030 " T60"
+			}
+		}
 
 		
 		;Auto Field Boost WARNING @ start
