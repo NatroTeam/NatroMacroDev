@@ -653,7 +653,6 @@ bitmaps["moon"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAMAAA
 #Include "%A_ScriptDir%\..\nm_image_assets\offset\bitmaps.ahk"
 
 discordUIDCommands_is_role := strlen(discordUIDCommands) && SubStr(discordUIDCommands, 1, 1) == "&"
-allowed_list_cache := []
 
 Loop
 {
