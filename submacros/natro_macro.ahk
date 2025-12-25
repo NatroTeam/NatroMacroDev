@@ -1,4 +1,4 @@
-﻿/*
+/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -119,15 +119,6 @@ if (A_ScreenDPI != 96)
 
 	To fix this:
 	Right click on your Desktop -> Click 'Display Settings' -> Under 'Scale & Layout', set Scale to 100% -> Close and Restart Roblox before starting the macro.
-	)", "WARNING!!", 0x1030 " T60"
-
-if (DllCall("GetSystemMetrics", "Int", 95) != 0)
-	MsgBox "
-	(
-	It seems like you have Touchscreen enabled. This means the macro will NOT work correctly!
-
-	To fix this:
-	Press Win+S and type in 'Device Manager' -> Right-click 'HID-compliant touch screen' -> Under 'Human Interface Devices', select 'Disable Device' -> Restart your PC.
 	)", "WARNING!!", 0x1030 " T60"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21624,6 +21615,15 @@ start(*){
 		priorityList.push(defaultPriorityList[i])
 	
 	if !ForceStart {
+		;Touchscreen WARNING @ start
+		if (DllCall("GetSystemMetrics", "Int", 95) != 0)
+			MsgBox "
+			(
+			It seems like you have Touchscreen enabled. This means the macro will NOT reset your character properly!
+
+			To fix this:
+			Press Win+S and type in 'Device Manager' -> Right-click 'HID-compliant touch screen' -> Under 'Human Interface Devices', select 'Disable Device' -> Restart your PC.
+			)", "WARNING!!", 0x1030 " T60"
 		;Auto Field Boost WARNING @ start
 		;nm_SetStatus("Debug", "AFB" AutoFieldBoostActive " RC" RemoteStart " Force" ForceStart) 
 		if AutoFieldBoostActive {
