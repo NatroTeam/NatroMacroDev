@@ -2805,11 +2805,11 @@ for i in CAFieldList
 
 ;Tad Alt settings
 isNotMain := !isMain ? "Hidden" : ""
-MainGui.Add("GroupBox", "x10 y50 w130 h70 vTadAltSettingsSeciton " isNotMain, "Alt Settings")
+MainGui.Add("GroupBox", "x10 y50 w130 h95 vTadAltSettingsSeciton " isNotMain, "Alt Settings")
 MainGui.Add("Button", "x15 y70 w10 h15 vIDHelp " isNotMain, "?").OnEvent("Click", nm_IDHelp)
 MainGui.Add("Text", "xs+25 yp vIDTxt " isNotMain, "Indentification:")
-(GuiCtrl := MainGui.Add("Edit", "xp-15 y+5 w120 h20 -Wrap Number Disabled vCommunicationID " isNotMain, CommunicationID)).Section := "Alts", GuiCtrl.OnEvent("Change", nm_ValidatePositiveNumber)
-
+(GuiCtrl := MainGui.Add("Edit", "xp-15 y+5 w120 h20 -Wrap Number Disabled vCommunicationID " isNotMain, CommunicationID)).Section := "Atls", GuiCtrl.OnEvent("Change", nm_ValidatePositiveNumber)
+MainGui.Add("Button", "xp yp+25 wp hp Disabled vSetIdentifier " isNotMain, "Set Identifier").OnEvent("Click", nm_SetCommunicationID)
 ; SETTINGS TAB
 ; ------------------------
 TabCtrl.UseTab("Settings")
@@ -4248,6 +4248,7 @@ nm_TabAltsLock() {
 	MainGui["AIHelp"].Enabled := 0
 	MainGui["AICHelp"].Enabled := 0
 	MainGui["CommunicationID"].Enabled := 0
+	MainGui["SetIdentifier"].Enabled := 0
 	MainGui["ControlAlt"].Enabled := 0
 	MainGui["AddAltToList"].Enabled := 0
 	MainGui["RemoveAltFromList"].Enabled := 0
@@ -4272,6 +4273,7 @@ nm_TabAltsUnLock() {
 	MainGui["AIHelp"].Enabled := 1
 	MainGui["AICHelp"].Enabled := 1
 	MainGui["CommunicationID"].Enabled := 1
+	MainGui["SetIdentifier"].Enabled := 1
 	MainGui["ControlAlt"].Enabled := 1
 	MainGui["AddAltToList"].Enabled := 1
 	MainGui["RemoveAltFromList"].Enabled := 1
@@ -4402,6 +4404,7 @@ nm_saveConfig(GuiCtrl, *){
 		default: ; "CheckBox", "Edit", "UpDown", "Slider"
 		%GuiCtrl.Name% := GuiCtrl.Value
 	}
+	MsgBox CommunicationID
 	IniWrite %GuiCtrl.Name%, "settings\nm_config.ini", GuiCtrl.Section, GuiCtrl.Name
 }
 
@@ -8180,6 +8183,7 @@ nm_AccountType(GuiCtrl, *) {
 		MainGui["TadAltSettingsSeciton"].Visible := !isMain
 		MainGui["IDHelp"].Visible := !isMain
 		MainGui["CommunicationID"].Visible := !isMain
+		MainGui["SetIdentifier"].Visible := !isMain
 		MainGui["ControlAltsSection"].Visible := isMain
 		MainGui["ControlAlt"].Visible := isMain
 		MainGui["AddAltToList"].Visible := isMain
@@ -8202,7 +8206,7 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 	if (IsSet(close) && close = 1) || MacroState = 2
 		return
 	ConfGui := Gui("+AlwaysOnTop +Border +OwnDialogs", "Communication Style Config - " groupKey)
-	ConfGui.OnEvent("Close", GuiClose)
+	ConfGui.OnEvent("Close", (*) => (nm_LaunchCommunicator(), GuiClose()))
 	ConfGui.Add("Button", "w0 h0", "") ; when GUI is shown, it focuses on the first thing on the GUI, I hate that.
 	ConfGui.SetFont("s8 cDefault Norm", "Tahoma")
 	; DISCORD
@@ -8492,8 +8496,15 @@ nm_IDHelp(*) {
 nm_ValidatePositiveNumber(GuiCtrl, *) {
 	if InStr(GuiCtrl.Value, "-")
 		StrReplace(GuiCtrl.Value, "-")
-	nm_saveConfig(GuiCtrl)
 }
+
+nm_SetCommunicationID(*) {
+	global CommunicationID
+	CommunicationID := MainGui["CommunicationID"].Value
+	nm_saveConfig(MainGui["CommunicationID"])
+	nm_LaunchCommunicator()
+}
+
 
 ; MISC TAB
 ; ------------------------
