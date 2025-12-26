@@ -2808,7 +2808,7 @@ isNotMain := !isMain ? "Hidden" : ""
 MainGui.Add("GroupBox", "x10 y50 w130 h95 vTadAltSettingsSeciton " isNotMain, "Alt Settings")
 MainGui.Add("Button", "x15 y70 w10 h15 vIDHelp " isNotMain, "?").OnEvent("Click", nm_IDHelp)
 MainGui.Add("Text", "xs+25 yp vIDTxt " isNotMain, "Indentification:")
-(GuiCtrl := MainGui.Add("Edit", "xp-15 y+5 w120 h20 -Wrap Number Disabled vCommunicationID " isNotMain, CommunicationID)).Section := "Atls", GuiCtrl.OnEvent("Change", nm_ValidatePositiveNumber)
+(GuiCtrl := MainGui.Add("Edit", "xp-15 y+5 w120 h20 -Wrap Number Disabled vCommunicationID " isNotMain, CommunicationID)).Section := "Alts", GuiCtrl.OnEvent("Change", nm_ValidatePositiveNumber)
 MainGui.Add("Button", "xp yp+25 wp hp Disabled vSetIdentifier " isNotMain, "Set Identifier").OnEvent("Click", nm_SetCommunicationID)
 ; SETTINGS TAB
 ; ------------------------
