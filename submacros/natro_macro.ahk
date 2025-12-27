@@ -4404,7 +4404,6 @@ nm_saveConfig(GuiCtrl, *){
 		default: ; "CheckBox", "Edit", "UpDown", "Slider"
 		%GuiCtrl.Name% := GuiCtrl.Value
 	}
-	MsgBox CommunicationID
 	IniWrite %GuiCtrl.Name%, "settings\nm_config.ini", GuiCtrl.Section, GuiCtrl.Name
 }
 
