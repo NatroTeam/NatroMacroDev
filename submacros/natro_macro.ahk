@@ -847,7 +847,7 @@ nm_importConfig()
 		, "GlitterAfter", 0
 		, "ActionInterrupts", 0
 		, "ActionInterruptConfig", "Booster|WindShrine|Ant|Blender|Clock|Dispensers|Honeystorm|MemoryMatch|RoboPass|StickerPrinter|Backpack|Blessing|Bosses|Bugrun|ViciousBee|Comforting|Invigorating|Motivating|Refreshing|BlackBear|BrownBear|BuckoBee|HoneyBee|PolarBear|RileyBee"
-		, "AltIDList", "N/A")
+		, "AltIDList", "N/A|All")
 
 	local k, v, i, j
 	for k,v in config ; load the default values as globals, will be overwritten if a new value exists when reading
@@ -2757,7 +2757,7 @@ MainGui.Add("Button", "x79 y30 w12 h16 vATRLeft Disabled", "<").OnEvent("Click",
 MainGui.Add("Button", "x149 y30 w12 h16 vATRRight Disabled", ">").OnEvent("Click", nm_AccountType)
 
 MainGui.Add("Text", "x175 y30 +BackgroundTrans +Center", "Communication Style:")
-MainGui.Add("Button", "x297 y30 w65 h16 +Center +BackgroundTrans vCommunicationStyle", CommunicationStyle).OnEvent("Click", (GuiCtrl, *) => nm_CommunicationStyle(CommunicationStyle, CommunicationStyle))
+MainGui.Add("Button", "x297 y30 w65 h16 +Center +BackgroundTrans vCommunicationStyle Disabled", CommunicationStyle).OnEvent("Click", (GuiCtrl, *) => nm_CommunicationStyle(CommunicationStyle, CommunicationStyle))
 MainGui.Add("Button", "x280 y30 w12 h16 vCSLeft Disabled", "<").OnEvent("Click", nm_CommunicationStyleRot)
 MainGui.Add("Button", "x368 y30 w12 h16 vCSRight Disabled", ">").OnEvent("Click", nm_CommunicationStyleRot)
 
@@ -4233,6 +4233,7 @@ nm_TabAltsLock() {
 	MainGui["AccountType"].Enabled := 0
 	MainGui["ATRRight"].Enabled := 0
 	MainGui["ATRLeft"].Enabled := 0
+	MainGui["CommunicationStyle"].Enabled := 0
 	MainGui["CSLeft"].Enabled := 0
 	MainGui["CSRight"].Enabled := 0
 	MainGui["GlitterEnabled"].Enabled := 0
@@ -4258,6 +4259,7 @@ nm_TabAltsUnLock() {
 	MainGui["AccountType"].Enabled := 1
 	MainGui["ATRRight"].Enabled := 1
 	MainGui["ATRLeft"].Enabled := 1
+	MainGui["CommunicationStyle"].Enabled := 1
 	MainGui["CSLeft"].Enabled := 1
 	MainGui["CSRight"].Enabled := 1
 	MainGui["GlitterEnabled"].Enabled := 1
@@ -8426,7 +8428,10 @@ nm_ControlAltField(GuiCtrl, *) {
 	field_name := StrReplace(GuiCtrl.Name, "CA")
 	if correct_field_names.Has(field_name)
 		field_name := correct_field_names[field_name]
-	nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: field_name, time: 60, identifier: MainGui["ControlAlt"].Text})
+	paylod := {type: "Tad Alt", action: "Go to Field", field: field_name, time: 60}
+	if MainGui["ControlAlt"].Text != "All"
+		paylod.identifier := MainGui["ControlAlt"].Text
+	nm_sendInstructions(paylod)
 }
 
 nm_EnableGlitterHelp(*) {
