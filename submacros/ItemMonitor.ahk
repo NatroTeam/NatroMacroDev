@@ -30,15 +30,15 @@ LastDetectedValue := Map()
 ItemTimeline := Map()
 NatroVersionID := "1.0.1"
 
-if (!A_Args.Length > 0)
-{
-    Msgbox "This script is meant to be run by Natro Macro!"
-    ExitApp()
-}
-else
-    NatroVersionID := A_Args[1]
+; if (!A_Args.Length > 0)
+; {
+;     Msgbox "This script is meant to be run by Natro Macro!"
+;     ExitApp()
+; }
+; else
+;     NatroVersionID := A_Args[1]
 
-; obtain os
+; Obtain Operating Systema
 os_version := "cant detect os"
 for objItem in ComObjGet("winmgmts:").ExecQuery("SELECT * FROM Win32_OperatingSystem")
 	os_version := Trim(StrReplace(StrReplace(StrReplace(StrReplace(objItem.Caption, "Microsoft"), "Майкрософт"), "مايكروسوفت"), "微软"))
@@ -78,17 +78,39 @@ const_regions := Map(
 
 graph_regions := Map("Timeline", {x: 150, y: 890, w: 2770, h: 120}) ; i might add smore stuff later so we'll leave this as a map
 
+; =========================================================================
 ; Template Creation
 ; - Draw cards
 ; - Draw graph regions
 ; - Leave as pBM (Will be cloned to draw graphs)
+; =========================================================================
+; To-do
+; =========================================================================
+; - Make the top 3 cards draw on template, 
+; this is because Gdip_FillRoundedRect has a
+; habit of returning mem access violations in
+; the event that the graphics object becomes unstable
+; It's not how I'd like to do it but... I'll do it becaues
+; I won't have to make a change to Gdip_All.ahk
+;
+; - Change IsolateHaystack() to isolate multiple haystacks
+; ^ this would have to use some sort of validation
+; such as static variables which the dimensions of the
+; pBM must match - because we don't want to do strange
+; methods of resizing our pBMNeedle in the event that our pBMHaystack
+; is too small to match accurately.
+; Since Gdip is fast enough we can just discard these bad results and hope
+; they're caught accurately on the next search.
+; =========================================================================
 
 pBM := Gdip_CreateBitmap(w, h)
 G := Gdip_GraphicsFromImage(pBM)
 Gdip_GraphicsClear(G, 0xff121212)
 Gdip_SetSmoothingMode(G, 4)
 Gdip_SetInterpolationMode(G, 7)
-pBrush := Gdip_BrushCreateSolid(0xff121212), Gdip_FillRoundedRectangle(G, pBrush, -1, -1, w+1, h+1, 60), Gdip_DeleteBrush(pBrush)
+pBrush := Gdip_BrushCreateSolid(0xff121212)
+Gdip_FillRoundedRectangle(G, pBrush, -1, -1, w+1, h+1, 60)
+Gdip_DeleteBrush(pBrush)
 
 for k, v in const_regions
 {
@@ -291,7 +313,7 @@ SendItemReport()
     
     yPos += lineHeight
     queriesPerSec := (uptimeSeconds > 0) ? Format("{:.2f}", QueryTotal / uptimeSeconds) : "0"
-    imageSizeText := eggData ? eggData.text : ("Image Size: " w "x" h)
+    imageSizeText := eggData ? eggData.text : (w "x" h)
     lines := [
         "Total Items Detected: " TotalItemsDetected,
         "Queries Per Sec: " queriesPerSec,
@@ -528,6 +550,7 @@ SendItemReport()
     Gdip_DeleteGraphics(GReport)
     Gdip_DisposeImage(pBMReport)
 }
+
 DetectItems()
 {
     global CollectedItems, Stream, Enumeration, LastDetectionTime, LastDetectedValue, QueryTotal, ItemTimeline, StartTime
@@ -564,6 +587,10 @@ CreateHaystack()
     
     return pBitmap
 }
+
+/**
+ * @note duplicate tihs function in v0.2 to increase accur
+ */
 
 IsolateHaystack(pBMHaystack)
 {
