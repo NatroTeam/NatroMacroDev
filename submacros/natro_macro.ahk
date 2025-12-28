@@ -2055,6 +2055,12 @@ Run
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 nm_LaunchCommunicator() {
 	global CommunicationID
+	DetectHiddenWindows 1
+	if WinExist("Communicator.ahk ahk_class AutoHotkey") > 0 {
+		process_id := WinGetPID()
+		ProcessClose(process_id)
+	}
+	DetectHiddenWindows 0
 	path := '"' exe_path64 '" /script "' A_WorkingDir '\submacros\Communicator.ahk" '
 	params := [AccountType, discordMode, discordCheck, MainChannelCheck, MainChannelID, ReportChannelCheck, ReportChannelID, WebhookEasterEgg
 	, DiscordUID, CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, PortNumber, CommunicationStyle
@@ -2062,6 +2068,7 @@ nm_LaunchCommunicator() {
 	vars := ""
 	for i, x in params
 		vars .= '"' (x = "" ? "" : x) '" '
+	nm_UpdateConnectionTotal(0)
 	Run path " " vars
 }
 nm_LaunchCommunicator()
