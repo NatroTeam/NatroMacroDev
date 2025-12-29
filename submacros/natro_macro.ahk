@@ -12955,7 +12955,7 @@ nm_killFieldBugs(){
 		"Pineapple",  [{name: ["RhinoBeetles"], count: 1, respawn_time: 330, condition: (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll), bees: 0, loot_size: [7, 8, 3, 0, 0]}, 
 					   {name: ["Mantis"], count: 1, respawn_time: 1230, condition: (BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll), bees: 10, loot_size: [7, 8, 3, 0, 0]}],		
 		"Pinetree",   [{name: ["Mantis"], count: 2, respawn_time: 1230, condition: (BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll), bees: 15, loot_size: [11, 8, 4, RotLeft, 2]}],
-		"Rose",       [{name: ["Scorpions"], count: 2, respawn_time: 1230, condition: (BugrunScorpionsCheck || QuestScorpions || RileyScorpions || RileyAll), bees: 15, loot_size: [9, 5, 3, RotRight, 1]}],
+		"Rose",       [{name: ["Scorpions"], count: 2, respawn_time: 1230, condition: (BugrunScorpionsCheck || QuestScorpions || RileyScorpions || RileyAll), bees: 15, loot_size: [9, 5, 3, 0, 0]}],
 		"Spider",     [{name: ["Spider"], count: 1, respawn_time: 1830, condition: (BugrunSpiderCheck || QuestSpider || RileyAll), bees: 5, loot_size: [5, 6, 4, RotLeft, 1]}],	
 		"Pumpkin",    [{name: ["Werewolf"], count: 1, respawn_time: 3630, condition: ((BugrunWerewolfCheck || QuestWerewolf || RileyAll)), bees: 15, loot_size: [4, 5, 3, 0, 0]}])
 
