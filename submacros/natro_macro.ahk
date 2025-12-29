@@ -10173,7 +10173,7 @@ nm_KillTimeEstimation(bossName, bossTimer)
 					Est Current Health: " lastHealth "%
 					Est Change of health: " round(abs(dmgDealt), 2) "% Per minute
 					Est Time until dead: " round(sHours) " Hours " round(sMinutes) " Minutes
-					Time Elasped: " elapsedMins " Minutes " elapsedSecs " Seconds"
+					Time elapsed: " elapsedMins " Minutes " elapsedSecs " Seconds"
 					)
 				)
 			}
@@ -10189,7 +10189,7 @@ nm_KillTimeEstimation(bossName, bossTimer)
 					Est Current Health: " lastHealth "%
 					Est Change of health: " round(abs(dmgDealt), 2) "% Per minute
 					Est Time until dead: " round(sMinutes) " Minutes " round(sSeconds) " Seconds
-					Time Elasped: " elapsedMins " Minutes " elapsedSecs " Seconds"
+					Time elapsed: " elapsedMins " Minutes " elapsedSecs " Seconds"
 					)
 				)
 			}
@@ -13410,7 +13410,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 ;Not fully rewritten
 nm_killCommando(){
 	global LastCommando, ChickTime, InputChickHealth, ChickStartTime, 
-			ElaspedChickTime, TotalBossKills, SessionBossKills, VBState
+			elapsedChickTime, TotalBossKills, SessionBossKills, VBState
 	static movement :=
 	(
 	nm_Walk(5, FwdKey) '
@@ -13484,9 +13484,9 @@ nm_killCommando(){
 				}
 				DllCall("GetSystemTimeAsFileTime", "int64p", &currentTime := 0)
 				LastHealthCheck := (currentTime - KillCheck) // 10000
-				ElaspedChickTime := (currentTime - ChickStartTime) // 10000
+				elapsedChickTime := (currentTime - ChickStartTime) // 10000
 				LastUpdate := (currentTime - UpdateTimer) // 10000
-				if (ChickTime != "Kill") && (ElaspedChickTime > (ChickTime * 60000)) {
+				if (ChickTime != "Kill") && (elapsedChickTime > (ChickTime * 60000)) {
 					nm_setStatus("Time Limit", "Commando Chick")
 					LastCommando := nowUnix() - Floor(1800 * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01)) + 1800
 					Break
@@ -13538,7 +13538,7 @@ nm_killCommando(){
 nm_killSnail(){
 	global youDied, VBState, StumpSnailCheck, LastStumpSnail, MonsterRespawnTime, 
 			currentWalk, ShellAmuletMode, TotalBossKills, SessionBossKills, InputSnailHealth,
-			ElaspedSnailTime
+			elapsedSnailTime
 			
 	static movement :=
 	(
@@ -13629,10 +13629,10 @@ nm_killSnail(){
 				}
 				Click "Up"
 				DllCall("GetSystemTimeAsFileTime", "int64p", &currentTime := 0)
-				ElaspedSnailTime := (currentTime - SnailStartTime) // 10000
+				elapsedSnailTime := (currentTime - SnailStartTime) // 10000
 				LastHealthCheck := (currentTime - KillCheck) // 10000
 				LastUpdate := (currentTime - UpdateTimer) // 10000
-				if (SnailTime != "Kill") && ((ElaspedSnailTime > SnailTime) * 60000) {
+				if (SnailTime != "Kill") && ((elapsedSnailTime > SnailTime) * 60000) {
 					nm_setStatus("Time Limit", "Stump Snail")
 					LastStumpSnail := nowUnix() - Floor(345600 * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01)) + 1800
 					break
