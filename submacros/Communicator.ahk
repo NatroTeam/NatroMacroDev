@@ -104,6 +104,14 @@ ReadMessages() {
 SocketSetup() {
 	global CommunicatorSocket, CommunicatorIsConnected
 	static WM := 0x5565
+
+	client_cant_connect := (CommunicatorSocket is Socket.Client) && (SocketListenerExists() = false)
+	listener_cant_bind := (CommunicatorSocket is Socket.Server) && (SocketListenerExists() = true)
+	if client_cant_connect || listener_cant_bind {
+		SocketReconnect()
+		return
+	}
+
 	if AccountType != "Main Acc" {
 		try {
 			CommunicatorSocket := Socket.Client(EventHandler.Alt, ++WM)
@@ -156,7 +164,7 @@ SocketReceive(self) {
 	try message := JSON.parse(self.ReceiveText())
 	catch
 		return
-	if self.IsIdentified = true {
+	if self.IsIdentified {
 		Interpreter(message)	
 		return 
 	}
@@ -176,7 +184,7 @@ SocketClose(self) {
 			IdentifiedConnections.DeleteProp(self.Identifier)
 		self.Identifier := 0
 		nm_UpdateConnectionTotal(ObjOwnPropCount(IdentifiedConnections))
-		if (SocketListenerExists() = false) && (CommunicatorIsConnected = true)
+		if (SocketListenerExists() = false) && CommunicatorIsConnected
 			SocketReconnect()
 	}
 }
@@ -251,7 +259,7 @@ SendMessageToAlts(wParam, lParam, *) {
 		catch
 			return
 	}
-	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && (CommunicatorIsConnected = true) {
+	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && CommunicatorIsConnected {
 		for identifier, sock in IdentifiedConnections.OwnProps() {
 			requested_id := jsonObj.Has("identifier") ? jsonObj["identifier"] : identifier
 			if identifier != requested_id
