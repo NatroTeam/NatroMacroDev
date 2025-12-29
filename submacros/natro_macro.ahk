@@ -241,48 +241,28 @@ nm_importPatterns()
 nm_importPatterns()
 
 ; import paths
-nm_importPaths()
-{
-	static path_names := Map(
-		"gtb", ["blue", "mountain", "red"], ; go to (field) booster
-		"gtc", ["clock", "antpass", "robopass", "honeydis", "treatdis", "blueberrydis", "strawberrydis", "coconutdis", "gluedis", "royaljellydis", "blender", "windshrine", ; go to collect (machine)
-				"stockings", "wreath", "feast", "gingerbread", "snowmachine", "candles", "samovar", "lidart", "gummybeacon", "rbpdelevel", ; beesmas
-				"honeylb", "honeystorm", "stickerstack", "stickerprinter", "normalmm", "megamm", "nightmm", "extrememm", "wintermm"], ; other
-		"gtf", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
-				"rose", "spider", "strawberry", "stump", "sunflower"], ; go to field
-		"gtp", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
-				"rose", "spider", "strawberry", "stump", "sunflower"], ; go to planter
-		"gtq", ["black", "brown", "bucko", "honey", "polar", "riley"], ; go to questgiver
-		"wf",  ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
-				"rose", "spider", "strawberry", "stump", "sunflower"]  ; walk from (field to hive)
-	)
-
+nm_importPaths(){
+	pathtypes := ["gtb", "gtc", "gtf", "gtp", "gtq", "gtk", "wf"]
 	global paths := Map()
 	paths.CaseSense := 0
+	
+	for pathtype in pathtypes {
+		(paths[pathtype] := Map()).CaseSense := 0
 
-	for k, list in path_names
-	{
-		(paths[k] := Map()).CaseSense := 0
-		for v in list
-		{
-			try {
-				file := FileOpen(A_WorkingDir "\paths\" k "-" v ".ahk", "r"), paths[k][v] := file.Read(), file.Close()
-				if regexMatch(paths[k][v], "im)paths\[")
-					MsgBox
-					(
-					"Path '" k '-' v "' seems to be deprecated!
-					This means the macro will NOT work correctly!
-					Check for an updated version of the path or
-					restore the default path"
-					), "Error", 0x40010 " T60"
-			}
-			catch
+		loop files A_WorkingDir "\paths\" pathtype "-*.ahk", "R" {
+			name := StrReplace(StrReplace(A_LoopFileName, pathtype "-"), ".ahk")
+			contents := FileRead(A_LoopFilePath)
+			paths[pathtype][name] := contents
+			if RegexMatch(contents, "im)paths\[") {
 				MsgBox
 				(
-				"Could not find the '" k '-' v "' path!
+				"Path '" pathtype "-" name "' seems to be deprecated!
 				This means the macro will NOT work correctly!
-				Make sure the path exists in the 'paths' folder and redownload if it doesn't!"
+				Check for an updated version of the path or
+				restore the default path"
 				), "Error", 0x40010 " T60"
+				continue
+			}			
 		}
 	}
 }
@@ -12943,2201 +12923,832 @@ nm_fieldBoostGlitter(){
 }
 ;;;;;;;;; END AFB
 
-;//todo: pending rewrite! health detection bugs, generally inefficient
-nm_Bugrun(){
-	global youDied, VBState, MoveMethod, MoveSpeedNum, currentWalk, objective, HiveBees, MonsterRespawnTime, DisableToolUse
+nm_BugRun(){
+	nm_updateAction("Bugrun")
+	nm_killFieldBugs()
+	nm_killBosses()
+	nm_killCommando()
+	nm_killSnail()
+	nm_Mondo() 
+}
+nm_killFieldBugs(){
+	global VBState, HiveBees, MonsterRespawnTime, youDied
 		, QuestLadybugs, QuestRhinoBeetles, QuestSpider, QuestMantis, QuestScorpions, QuestWerewolf
 		, BuckoRhinoBeetles, BuckoMantis, RileyLadybugs, RileyScorpions, RileyAll
-		, GatherFieldBoostedStart, LastGlitter
-		, MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff
 		, BugrunSpiderCheck, BugrunSpiderLoot, LastBugrunSpider
 		, BugrunLadybugsCheck, BugrunLadybugsLoot, LastBugrunLadybugs
 		, BugrunRhinoBeetlesCheck, BugrunRhinoBeetlesLoot, LastBugrunRhinoBeetles
 		, BugrunMantisCheck, BugrunMantisLoot, LastBugrunMantis
 		, BugrunWerewolfCheck, BugrunWerewolfLoot, LastBugrunWerewolf
 		, BugrunScorpionsCheck, BugrunScorpionsLoot, LastBugrunScorpions
-		, intialHealthCheck
-		, CocoCrabCheck, LastCocoCrab
-		, StumpSnailCheck, LastStumpSnail
-		, CommandoCheck, LastCommando
-		, TunnelBearCheck, TunnelBearBabyCheck
-		, KingBeetleCheck, KingBeetleBabyCheck
-		, LastTunnelBear, LastKingBeetle
-		, InputSnailHealth, SnailTime
-		, InputChickHealth, ChickTime
-		, SprinklerType
-		, TotalBossKills, SessionBossKills, TotalBugKills, SessionBugKills
-		, KingBeetleAmuletMode, ShellAmuletMode
+		, TotalBugKills, SessionBugKills
 
-	;interrupts
-	if ((VBState=1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
+	static field_order := ["Bamboo", "Spider", "Strawberry", "Mushroom", "Clover", "Blueflower", "Pineapple", "Pumpkin", "Pinetree", "Rose"]
+	kill_times := {Ladybugs: 0, Rhinobeetles: 0, Mantis: 0, Scorpions: 0, Spider: 0, Werewolf: 0}
+	bug_fields := Map(
+		"Strawberry", [{name: ["Ladybugs"], count: 2, respawn_time: 330, condition: (BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll), bees: 5, loot_size: [5, 5, 3, RotRight, 1]}],
+		"Mushroom",   [{name: ["Ladybugs"], count: 1, respawn_time: 330, condition: (BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll), bees: 0, loot_size: [4, 5, 3, 0, 0]}],
+		"Clover",     [{name: ["Ladybugs"], count: 1, respawn_time: 330, condition: (BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll), bees: 0, loot_size: [7, 6, 3, 0, 0]},
+	 				   {name: ["Rhinobeetles"], count: 1, respawn_time: 330, condition: (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll), bees: 0, loot_size: [6, 4, 3, RotLeft, 1]}],
+		"Bamboo",     [{name: ["Rhinobeetles"], count: 2, respawn_time: 330, condition: (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll), bees: 5, loot_size: [6, 5, 3, RotLeft, 2]}],
+		"Blueflower", [{name: ["Rhinobeetles"], count: 1, respawn_time: 330, condition: (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll), bees: 0, loot_size: [7, 6, 2, RotLeft, 2]}],
+		"Pineapple",  [{name: ["RhinoBeetles"], count: 1, respawn_time: 330, condition: (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll), bees: 0, loot_size: [7, 8, 3, 0, 0]}, 
+					   {name: ["Mantis"], count: 1, respawn_time: 1230, condition: (BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll), bees: 10, loot_size: [7, 8, 3, 0, 0]}],		
+		"Pinetree",   [{name: ["Mantis"], count: 2, respawn_time: 1230, condition: (BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll), bees: 15, loot_size: [11, 8, 4, RotLeft, 2]}],
+		"Rose",       [{name: ["Scorpions"], count: 2, respawn_time: 1230, condition: (BugrunScorpionsCheck || QuestScorpions || RileyScorpions || RileyAll), bees: 15, loot_size: [9, 5, 3, RotRight, 1]}],
+		"Spider",     [{name: ["Spider"], count: 1, respawn_time: 1830, condition: (BugrunSpiderCheck || QuestSpider || RileyAll), bees: 5, loot_size: [5, 6, 4, RotLeft, 1]}],	
+		"Pumpkin",    [{name: ["Werewolf"], count: 1, respawn_time: 3630, condition: ((BugrunWerewolfCheck || QuestWerewolf || RileyAll)), bees: 15, loot_size: [4, 5, 3, 0, 0]}])
+
+	if (VBState = 1 || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
 		return
+	nm_setShiftLock(false)
+	last_field := ""
 
-	nm_setShiftLock(0)
-	bypass:=0
-	MoveSpeedFactor := round(18/MoveSpeedNum, 2)
-	if(((BugrunSpiderCheck || QuestSpider || RileyAll) && (nowUnix()-LastBugrunSpider)>floor(1830*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) && HiveBees>=5){ ;30 minutes
-		nm_updateAction("Bugrun")
-		loop 1 {
-			if(VBState=1)
-				return
-			;spider
-			BugRunField:="Spider"
-			success:=0
-			while (not success){
-				if(A_Index>=3)
-					break
-				wait:=min(20000, (50-HiveBees)*1000)
-				nm_Reset(1, wait)
-				nm_setStatus("Traveling", "Spider")
-				nm_gotoField(BugRunField)
-				found:=0
-				Loop 20
-				{
-					spiderBug:=nm_HealthDetection()
-					if(spiderBug.Length > 0)
-					{
-						found:= 1
-						break
-					}
-					Sleep 150
-				}
-				if (found)
-				{
-					nm_setStatus("Attacking", "Spider")
-					;Send "{" SC_1 "}"
-					SendInput "{" RotUp " 4}"
-					if(!DisableToolUse)
-						Click "Down"
-					r := 0
-					Loop 30
-					{ ;wait to kill
-						if(A_Index=30)
-							success:=1
-						Loop 20
-						{
-							spiderDead:=nm_HealthDetection()
-							if(spiderDead.Length > 0)
-								Break
-							if (A_Index=10)
-							{
-								SendInput "{" RotLeft " 2}"
-								r := 1
-							}
-							SendInput "{" ZoomOut "}"
-							Sleep 100
-							if (A_Index=20)
-							{
-								success:=1
-								break 2
-							}
-						}
-						if(youDied)
-							break
-					}
-					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
-					Sleep 500
-					Click "Up"
-					if(VBState=1)
-						return
+	for current_field in field_order {
+		if VBState = 1
+			break
+	
+		for values in bug_fields[current_field] {
+			status_bug_locaion := values.name[1] " (" current_field ")"
+			bug_is_killable := isKillable(values.name[1], values.respawn_time, values.bees, values.condition)
+			if !bug_is_killable
+				continue
+
+			if bug_fields[current_field].Length = 0 {
+				alternate_values := A_Index = 1 ? bug_fields[current_field][2] : bug_fields[current_field][1]
+				alternate_bug_is_killable := isKillable(alternate_values.name[1], alternate_values.respawn_time, alternate_values.bees, alternate_values.condition)
+				if alternate_bug_is_killable {
+					values.count += alternate_values.count
+					values.name.Push(alternate_values.name[1])
+					status_bug_locaion := values.name[1] " / " values.name[2] " (" current_field ")"
 				}
 			}
-			LastBugrunSpider:=nowUnix()
-			IniWrite LastBugrunSpider, "settings\nm_config.ini", "Collect", "LastBugrunSpider"
-			TotalBugKills:=TotalBugKills+1
-			SessionBugKills:=SessionBugKills+1
-			PostSubmacroMessage("StatMonitor", 0x5555, 3, 1)
-			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
-			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-			if(BugrunSpiderLoot){
-				if(!DisableToolUse)
-					Click "Down"
-				nm_setStatus("Looting", "Spider")
-				movement :=
-				(
-				nm_Walk(3, RightKey) "
-				loop 3 {
-					" nm_Walk(9, FwdKey) "
-					" nm_Walk(1.5, LeftKey) "
-					" nm_Walk(9, BackKey) "
-					" nm_Walk(1.5, LeftKey) "
-				}
-				" nm_Walk(6, BackKey)
-				)
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T60 L"
-				nm_endWalk()
-				Click "Up"
-			}
-			if(VBState=1)
-				return
-			;head to ladybugs?
-			if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) {
-				bypass:=1
-				nm_setStatus("Traveling", "Ladybugs (Strawberry)")
-				movement :=
-				(
-				((BugrunSpiderLoot=0) ? (nm_Walk(4.5, BackKey) "`r`n" nm_Walk(4.5, LeftKey)) : "") "
-				" nm_Walk(30, LeftKey)
-				)
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T60 L"
-				nm_endWalk()
-				SendInput "{" RotLeft " 2}"
-			} else {
-				bypass:=0
+			bug_values := values
+		}
+
+		if !bug_is_killable
+			continue
+
+		if FileExist(A_ScriptDir ".\..\paths\go to field\gtf-" current_field "-from-" last_field ".ahk") = "" {
+			wait := Min(20000, (50 - HiveBees) * 1000)
+			nm_Reset(1, wait)
+			status_destination_field := destination_field := current_field
+		} else {
+			status_destination_field := current_field " from " last_field
+			destination_field := current_field "-from-" last_field
+		}
+		nm_setStatus("Traveling", status_destination_field)
+		nm_gotoField(destination_field)
+
+		loop 3 {
+			killed_bug := nm_killBug(status_bug_locaion, bug_values.name)
+			if !youDied
+				break
+			nm_Reset(0, 2000, 0)
+			nm_gotoField(current_field)
+		}
+		looted := false
+		for name in bug_values.name {
+			kill_times.%name% := nowUnix()
+			if Bugrun%name%Loot && !looted && killed_bug {
+				left_offset := bug_values.loot_size[1]
+				length := bug_values.loot_size[2]
+				right_movements := bug_values.loot_size[3]
+				rot_direction := bug_values.loot_size[4]
+				rot_count := bug_values.loot_size[5]
+				nm_lootBug(status_bug_locaion, left_offset, length, right_movements, rot_direction, rot_count)
 			}
 		}
-	}
-	;Ladybugs
-	if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll)  && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;5 minutes
-		loop 1 {
-			if(VBState=1)
-				return
-			if(HiveBees>=5) {
-				;strawberry
-				BugRunField:="strawberry"
-				success:=0
-				while (not success){
-					if(A_Index>=3)
-						break
-					if(not bypass){
-						wait:=min(5000, (50-HiveBees)*1000)
-						nm_Reset(1,wait)
-						nm_setStatus("Traveling", "Ladybugs (Strawberry)")
-						nm_gotoField(BugRunField)
-						Sleep 1000
-					}
-					bypass:=0
-					;(+) new detection
-					found:=0
-					loop 20
-					{
-						strawBug:=nm_HealthDetection()
-						if(strawBug.Length > 0)
-						{
-							found:= 1
-							break
-						}
-						Sleep 150
-					}
-					if (found)
-					{
-						nm_setStatus("Attacking", "Ladybugs (Strawberry)")
-						SendInput "{" RotUp " 4}"
-						;Send "{" SC_1 "}"
-						if(!DisableToolUse)
-							Click "Down"
-						r := 0
-						loop 10
-						{ ;wait to kill
-							if(A_Index=10)
-								success:=1
-							Loop 10
-							{
-								ladybugDead:=nm_HealthDetection()
-								if(ladybugDead.Length > 0)
-									Break
-								if (A_Index=5)
-								{
-									SendInput "{" RotLeft " 2}"
-									r := 1
-								}
-								Sleep 100
-								SendInput "{" ZoomOut "}"
-								if (A_Index=10)
-								{
-									success:=1
-									break 2
-								}
-							}
-							if(youDied)
-								break
-						}
-						sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
-						Sleep 500
-						Click "Up"
-						if(VBState=1)
-							return
-					}
-				}
-				TotalBugKills:=TotalBugKills+2
-				SessionBugKills:=SessionBugKills+2
-				PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
-				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
-				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-				if(BugrunLadybugsLoot){
-					if(!DisableToolUse)
-						Click "Down"
-					nm_setStatus("Looting", "Ladybugs (Strawberry)")
-					movement :=
-					(
-					nm_Walk(2, BackKey) "
-					" nm_Walk(8, RightKey, BackKey) "
-					loop 2 {
-						" nm_Walk(14, FwdKey) "
-						" nm_Walk(1.5, LeftKey) "
-						" nm_Walk(14, BackKey) "
-						" nm_Walk(1.5, LeftKey) "
-					}
-					" nm_Walk(14, FwdKey)
-					)
-					nm_createWalk(movement)
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T60 L"
-					nm_endWalk()
-					Click "Up"
-				}
-				if(VBState=1)
-					return
-				;mushroom
-				BugRunField:="mushroom"
-				success:=0
-				bypass:=1
-				nm_setStatus("Traveling", "Ladybugs (Mushroom)")
-				movement :=
-				(
-				nm_Walk(12, LeftKey) "
-				" nm_Walk(16, BackKey) "
-				" nm_Walk(16, BackKey, LeftKey)
-				)
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T60 L"
-				nm_endWalk()
-			} else { ;HiveBees<5
-				success:=0
-				bypass:=0
-			}
-			BugRunField:="mushroom"
-			while (not success){
-				if(A_Index>=3)
-					break
-				if(not bypass){
-					wait:=min(5000, (50-HiveBees)*1000)
-					nm_Reset(1, wait)
-					nm_setStatus("Traveling", "Ladybugs (Mushroom)")
-					nm_gotoField(BugRunField)
-					SendInput "{" RotLeft " 2}"
-				}
-				bypass:=0
-				found:=0
-				loop 20
-				{
-					mushBug:=nm_HealthDetection()
-					if(mushBug.Length > 0)
-					{
-						found:= 1
-						break
-					}
-					Sleep 150
-				}
-				if(found)
-				{
-					nm_setStatus("Attacking", "Ladybugs (Mushroom)")
-					;Send "{" SC_1 "}"
-					SendInput "{" RotUp " 4}"
-					if(!DisableToolUse)
-						Click "Down"
-					r := 0
-					loop 10 { ;wait to kill
-						if(A_Index=10)
-							success:=1
-						Loop 20
-						{
-							ladybugDead:=nm_HealthDetection()
-							if(ladybugDead.Length > 0)
-								Break
-							if (A_Index=10)
-							{
-								SendInput "{" RotLeft " 2}"
-								r := 1
-							}
-							Sleep 100
-							SendInput "{" ZoomOut "}"
-							if (A_Index=20)
-							{
-								success:=1
-								break 2
-							}
-						}
-						if(youDied)
-							break
-					}
-					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
-					Sleep 500
-					Click "Up"
-					if(VBState=1)
-					{
-						return
-					}
-				}
-			}
-			TotalBugKills:=TotalBugKills+1
-			SessionBugKills:=SessionBugKills+1
-			PostSubmacroMessage("StatMonitor", 0x5555, 3, 1)
+
+		if killed_bug {
+			TotalBugKills += bug_values.count
+			SessionBugKills += bug_values.count
 			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
 			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-			if(BugrunLadybugsLoot){
-				if(!DisableToolUse)
-					Click "Down"
-				nm_setStatus("Looting", "Ladybugs (Mushroom)")
-				movement :=
-				(
-				nm_Walk(5, RightKey, BackKey) "
-				" nm_Walk(2, RightKey)
-				)
-				nm_createWalk(movement)
+			PostSubmacroMessage("StatMonitor", 0x5555, 3, bug_values.count)
+		}
+		last_field := current_field
+	}
+
+	for name, time in kill_times.OwnProps() {
+		if time = 0 
+			continue
+		LastBugrun%name% := kill_times.%name%
+		IniWrite LastBugrun%name%, "settings\nm_config.ini", "Collect", "LastBugrun" name
+	}
+
+	isKillable(name, respawn_time, bees_req, condition) {
+		off_cooldown := (nowUnix() - LastBugrun%name%) > Floor(respawn_time * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01))
+		return ((condition && off_cooldown) && HiveBees >= bees_req)
+	}
+}
+nm_killBosses(){
+	global youDied, VBState, HiveBees, MonsterRespawnTime, TunnelBearCheck, 
+		TunnelBearBabyCheck, KingBeetleCheck, KingBeetleBabyCheck, LastTunnelBear,
+		LastKingBeetle, TotalBossKills, SessionBossKills, CocoCrabCheck, LastCocoCrab
+	
+	static reattempt_boss := {KingBeetle: false, TunnelBear: false, CocoCrab: false}
+	kill_times := {KingBeetle: 0, TunnelBear: 0, Commando: 0}
+	bosses := Map(
+		"KingBeetle", {condition: KingBeetleCheck, respawn_time: 86400, reattempt_time: 7200, babylove: KingBeetleBabyCheck, bees: 0, bl_collect_size: [1.5, 9]},
+		"TunnelBear", {condition: TunnelBearCheck, respawn_time: 172800, reattempt_time: 7200, babylove: TunnelBearBabyCheck, bees: 10, bl_collect_size: [1.5, 4]},
+		"CocoCrab",   {condition: CocoCrabCheck, respawn_time: 1800, reattempt_time: 7200, babylove: 0, bees: 35})
+
+	if (VBState = 1 || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
+		return
+	nm_setShiftLock(false)
+	
+	for boss_name, boss_values in bosses {
+		if VBState = 1
+			break
+
+		cooldown := reattempt_boss.%boss_name% ? boss_values.reattempt_time : boss_values.respawn_time 
+		boss_is_killable := isKillable(boss_name, cooldown, boss_values.bees, boss_values.condition)
+		if !boss_is_killable
+			continue
+
+		wait_duration := Min(20000, (50 - HiveBees) * 1000)
+		nm_Reset(1, wait_duration)
+		loop 3 {
+			nm_setStatus("Traveling", boss_name)
+			if boss_values.babylove {
+				go_outside := true
+				go_inside := false
+				nm_gotoKill(boss_name, go_outside, go_inside)
+				nm_collectBabyLove(boss_values.bl_collect_size*)
+				nm_gotoKill(boss_name, !go_outside, !go_inside)
+			} else 
+				nm_gotoKill(boss_name)	
+			killed_boss := nm_kill%boss_name%(&path_failed, &found_boss)
+			reattempt_boss.%boss_name% := !found_boss
+			if !(youDied || path_failed)
+				break
+			nm_Reset(0, 2000, 0)
+		}
+		kill_times.%boss_name% := nowUnix()
+
+		if killed_boss {
+			TotalBossKills += 1
+			SessionBossKills += 1
+			PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
+			IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
+		}
+	}
+
+	for boss, time in kill_times.OwnProps() {
+		if time = 0 
+			continue
+		Last%boss% := kill_times.%boss%
+		IniWrite Last%boss%, "settings\nm_config.ini", "Collect", "Last" boss
+	}
+
+	isKillable(name, respawn_time, bees_req, condition) {
+		off_cooldown := (nowUnix() - Last%name%) > Floor(respawn_time * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01))
+		return ((condition && off_cooldown) && HiveBees >= bees_req) 
+	}
+}
+nm_killBug(status_message, bug_names){
+	GetRobloxClientPos()
+	killed_all := false
+	killed_bug := {ladybugs: false, rhinobeetles: false, mantis: false, scorpions: false, spider: false, werewolf: false}
+	Send "{" RotUp " 4}"
+	Sleep(1000)
+
+	loop 15 { 
+		found_bug := nm_findBug() 
+		if (findKillMessages() = true) || found_bug
+			break
+		Sleep(100)
+	}
+	if found_bug {
+		nm_setStatus("Attacking", status_message)
+		loop 300 {
+			if youDied || ((findKillMessages() = true) && (nm_findBug() = false))
+				break
+			Sleep(100)
+		}
+	}
+
+	Send "{" RotDown " 4}"
+	return confirmKillCount()
+
+	findKillMessages() {
+		pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth / 1.25) "|" windowY + (windowHeight / 1.5) "|" windowWidth // 5 "|" windowHeight // 3)
+		for name in bug_names {
+			if Gdip_ImageSearch(pBMScreen, bitmaps[name],,,,,, 25) > 0
+				killed_bug.%name% := true
+		}
+		Gdip_DisposeImage(pBMScreen)
+		return confirmKillCount()
+	}
+	confirmKillCount() {
+		kill_count := 0 
+		for name in bug_names {
+			if killed_bug.%name%
+				kill_count++
+		}
+		return kill_count = bug_names.Length
+	}
+}
+nm_killKingBeetle(&path_failed, &boss_found){
+	global KingBeetleAmuletMode
+
+	GetRobloxClientPos()
+	path_failed := killed_beetle := false
+	pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth // 3) "|" windowY + (windowHeight // 2) "|" windowWidth // 3 "|" windowHeight // 4)
+	path_failed :=  Gdip_ImageSearch(pBMScreen, bitmaps["kingbeetlefloor"],,,,,, 10) < 1 
+	Gdip_DisposeImage(pBMScreen)
+	loop 10 {
+		if boss_found := nm_findBug(true)
+			break
+		Sleep(100)
+	}
+	if !boss_found || path_failed 
+		return false
+
+	nm_setStatus("Attacking", "King Beetle")
+	nm_createWalk("nm_Walk(28, RightKey), nm_Walk(27, FwdKey)")
+	KeyWait("F14", "D T5 L"), KeyWait("F14", "T30 L")
+	nm_endWalk()
+	Send "{" RotLeft " 3}"
+
+	loop 1200 {
+		if youDied || killed_beetle
+			break
+		pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth / 1.25) "|" windowY + (windowHeight / 1.5) "|" windowWidth // 5 "|" windowHeight // 3)
+		killed_beetle := Gdip_ImageSearch(pBMScreen, bitmaps["kingbeetledead"],,,,,, 25) > 0
+		Gdip_DisposeImage(pBMScreen)
+		Sleep(100)
+	}
+
+	if killed_beetle {
+		amulet_mode := KingBeetleAmuletMode = 1 ? 1 : 3
+		if nm_AmuletPrompt(amulet_mode, "King Beetle")
+			return true
+		nm_createWalk("nm_Walk(20, FwdKey)")
+		KeyWait("F14", "D T5 L"), KeyWait("F14", "T60 L")
+		nm_endWalk()	
+		Send "{" RotLeft "}"
+		left_offset := 4, length := 6, right_movements := 3, rot_direction := 0, rot_count := 0
+		nm_lootBug("KingBeetle", left_offset, length, right_movements, rot_direction, rot_count)
+		return true
+	}
+	return false
+}
+nm_killTunnelBear(&path_failed, &boss_found){
+	GetRobloxClientPos()
+	path_failed := killed_bear := boss_found := 0 
+	static movement :=
+	(
+	'
+	GetRobloxClientPos()
+	pBMTunnelBear := Gdip_CreateBitmap(10, 10), pG := Gdip_GraphicsFromImage(pBMTunnelBear), Gdip_GraphicsClear(pG, 0xff000000), Gdip_DeleteGraphics(pG)
+	backsteps := 0
+	while backsteps <= 25 {
+		pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth // 4) "|" windowY "|" windowWidth // 2 "|" windowHeight // 8)
+		tunnelbeartop := Gdip_ImageSearch(pBMScreen, pBMTunnelBear,,,,,, 3) = 1
+		Gdip_DisposeImage(pBMScreen)
+		if tunnelbeartop {
+			nm_Walk(3, BackKey)
+			backsteps++
+			Sleep(500)
+		}
+		Sleep(100)
+	}
+	'
+	)
+
+	Send "{" RotUp " 4}{" ZoomIn " 5}{" ZoomOut " 3}"
+	Sleep(500)
+	pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth // 8) "|" windowY + (windowHeight // 3) "|" windowWidth // 6 "|" windowHeight // 6)
+	path_failed := Gdip_ImageSearch(pBMScreen, bitmaps["tunnelbearwall"],,,,,, 5) = 0
+	Gdip_DisposeImage(pBMScreen)
+	if path_failed
+		return false
+
+	Send "{" RotRight " 2}{" RotDown " 5}"
+	nm_createWalk("nm_Walk(4, RightKey), nm_Walk(30, BackKey)")
+	KeyWait("F14", "D T5 L"), KeyWait("F14", "T20 L")
+	nm_endWalk()
+
+	loop 10 {
+		if boss_found := nm_findBug()
+			break
+		Sleep(100)
+	}
+	if boss_found {
+		Send "{" RotUp " 5}"
+		nm_createWalk(movement)
+		KeyWait("F14", "D T5 L")
+		start := nowUnix()
+		loop {
+			if youDied || killed_bear || (nowUnix() - start > 120) || (GetKeyState("F14") = false) {
+				nm_endWalk()
+				break		
+			}
+			pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth / 1.25) "|" windowY + (windowHeight / 1.5) "|" windowWidth // 5 "|" windowHeight // 3)
+			killed_bear := Gdip_ImageSearch(pBMScreen, bitmaps["tunnelbeardead"],,,,,, 25) = 1
+			Gdip_DisposeImage(pBMScreen)
+		} 
+	}
+
+	if killed_bear {
+		movement := nm_Walk(25, FwdKey) "`r`n" nm_Walk(60, BackKey)
+		nm_createWalk(movement)
+		KeyWait("F14", "D T5 L"), KeyWait("F14", "T60 L")
+		nm_endWalk()
+	}
+	return killed_bear
+}
+nm_killCocoCrab(&path_failed, &boss_found){
+	static dodge_movement :=
+	(
+	'
+	GetRobloxClientPos()
+	pBMCrabHealthbar := Gdip_CreateBitmap(5, 5), pG := Gdip_GraphicsFromImage(pBMCrabHealthbar), Gdip_GraphicsClear(pG, 0xff1fe744), Gdip_DeleteGraphics(pG)
+	pBMFallingCoconut := Gdip_CreateBitmap(5, 5), pG := Gdip_GraphicsFromImage(pBMFallingCoconut), Gdip_GraphicsClear(pG, 0xffff543b), Gdip_DeleteGraphics(pG)
+
+	loop {
+		dodgeClaws()
+		dodgeCoconuts()
+	}
+
+	dodgeClaws() {
+		static horizontal := ["Left", "Right"], vertical := ["Back", "Fwd"]
+		static increment_width := windowWidth // 100, increments := 0
+		static bmp_y := windowY + (windowHeight // 13)
+		static bmp_height := windowHeight // 3
+		bmp_x := windowX + ((windowWidth * 7) // 16) - (increment_width * increments) 
+		bmp_width := windowWidth // 8 + (increment_width * increments) 
+
+		loop 4 {
+			loop {
+				pBMScreen := Gdip_BitmapFromScreen(bmp_x "|" bmp_y "|" bmp_width "|" bmp_height)
+				found_crab := Gdip_ImageSearch(pBMScreen, pBMCrabHealthbar,,,,,, 10)
+				Gdip_DisposeImage(pBMScreen)
+				if found_crab
+					break
+				Sleep(200)
+			}
+			h := horizontal[A_Index & 1 ? 1 : 2]
+			flowers := h = "right" ? 16 : 15
+			nm_Walk(flowers, %h%Key)
+			if A_Index < 4 {
+				v := vertical[A_Index & 1 ? 1 : 2]
+				nm_Walk(2, %v%Key)
+			}
+		}
+		increments += 1
+	}
+	
+	dodgeCoconuts() {
+		static bmp_x := windowX + (windowWidth // 3)
+		static bmp_y := windowY + (windowHeight // 2)
+		static bmp_width := windowWidth // 18
+		static bmp_height := windowHeight // 9
+
+		Send "{' RotUp ' 5}"
+		loop 3 {
+			Send "{' ZoomIn '}"
+			Sleep(50)
+		}
+		Sleep(1000)
+		start := A_TickCount
+		loop {
+			pBMScreenCurrent := Gdip_BitmapFromScreen(bmp_x "|" bmp_y "|" bmp_width "|" bmp_height)
+			found_coconut := Gdip_ImageSearch(pBMScreenCurrent, pBMFallingCoconut,,,,,, 50)
+			Gdip_DisposeImage(pBMScreenCurrent)
+			if found_coconut {
+				' nm_Walk(9, BackKey ) '
+				Sleep(8000 - (A_TickCount - start))
+				' nm_Walk(9, FwdKey) '
+				break
+			}
+			if (A_TickCount - start) >= 9000 
+				break
+		}
+		if found_coconut = 0
+			' nm_Walk(2, FwdKey) '
+		Send "{' RotDown ' 5}"
+		loop 4 {
+			Send "{' ZoomOut '}"
+			Sleep(50)
+		}
+	}
+	'
+	)
+	static align_movement := 
+	(
+	'
+	' nm_Walk(13, BackKey) '
+	Sleep(500)
+	' nm_Walk(10, FwdKey) '
+	Sleep(100)
+	' nm_Walk(2, BackKey) '
+	Sleep(100)
+	Send "{' RotUp ' 5}"
+	Sleep(100)
+	Send "{' RotDown ' 5}"
+	' nm_Walk(10, LeftKey) '
+	' nm_Walk(10, RightKey) '
+	loop 5 {
+		Send "{' ZoomOut '}"
+		Sleep(100)
+	}
+	'
+	)
+
+	; could not find a reliable thing to check for
+	path_failed := killed_crab := false
+	GetRobloxClientPos()
+	boss_found := true
+	pBMScreen := Gdip_BitmapFromScreen(windowX + ((windowWidth * 7) // 16) "|" windowY + (windowHeight // 4) + (windowHeight // 16) "|" windowWidth // 16 "|" windowHeight // 16)
+	Gdip_SetBitmapToClipboard(pBMScreen)
+	for type in bitmaps["crablock"]
+		foundlock_%type% := Gdip_ImageSearch(pBMScreen, bitmaps["crablock"][type],,,,,, 20) > 0
+	if !(foundlock_night || foundlock_honey_storm || foundlock_snow_storm || foundlock_beesmas_day) {
+		boss_found := false
+		return false
+	}
+
+	Send "{" RotRight " 2}"
+	nm_createWalk(align_movement)
+	KeyWait("F14", "D T5 L"), KeyWait("F14", "T60 L")
+	nm_endWalk()
+	nm_createWalk(dodge_movement)
+	KeyWait("F14", "D T5 L"), 
+	start := nowUnix()
+	loop {
+		if youDied || killed_crab || (nowUnix() - start > 1200) || (GetKeyState("F14") = false) {
+			nm_endWalk()
+			break
+		}
+		pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth / 1.25) "|" windowY + (windowHeight / 1.5) "|" windowWidth // 5 "|" windowHeight // 3)
+		killed_crab := Gdip_ImageSearch(pBMScreen, bitmaps["crabdead"],,,,,, 25)
+		Gdip_DisposeImage(pBMScreen)
+	}
+	if killed_crab {
+		movement := 
+		(
+		'
+		' nm_Walk(16, RightKey) '
+		' nm_Walk(17, FwdKey) '
+		' nm_Walk(14, LeftKey) '
+		' nm_Walk(11, BackKey) '
+		'
+		)
+		nm_createWalk(align_movement)
+		KeyWait("F14", "D T5 L"), KeyWait("F14", "T20 L")
+		nm_endWalk()
+		left_offset := 9, length := 8, right_movements := 5, rot_direction := 0, rot_count := 0
+		loop 5
+			nm_lootBug("CocoCrab", left_offset, length, right_movements, rot_direction, rot_count)
+	}
+
+	return killed_crab
+}
+;Not fully rewritten
+nm_killCommando(){
+	global LastCommando, ChickTime, InputChickHealth, ChickStartTime, 
+			ElaspedChickTime, TotalBossKills, SessionBossKills, VBState
+	static movement :=
+	(
+	nm_Walk(5, FwdKey) '
+	HyperSleep(50)
+	' nm_Walk(9, BackKey) '
+	Sleep 4000
+	send "{' SC_Space ' down}"
+	HyperSleep(50)
+	send "{' SC_Space ' up}"
+	' nm_Walk(0.5, BackKey) '
+	HyperSleep(1500)'
+	)
+
+	offcooldown := (nowUnix() - LastCommando) > Floor(1800 * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01))
+	if CommandoCheck && offcooldown {
+		loop 2 {
+			nm_Reset()
+			nm_setStatus("Traveling", "Commando")
+			nm_gotoKill("Commando", 1, 1)
+			if (youDied)
+				continue
+			while nm_imgSearch("ChickFled.png", 50, "lowright")[1] = 0 {
+				if A_Index = 5 {
+					nm_endWalk()
+					continue 2
+				}
+				if (A_Index = 1) || (currentWalk.name != "commando")
+					nm_createWalk(movement, "commando")
+				else
+					Send "{F13}"
 				KeyWait "F14", "D T5 L"
 				KeyWait "F14", "T20 L"
-				nm_endWalk()
-				nm_loot(9, 4, "left", 1)
-				Click "Up"
 			}
-		}
-	}
-	if(VBState=1)
-		return
-	nm_Mondo()
-	;Ladybugs and/or Rhino Beetles
-	if(((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))
-		|| ((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)  && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))){ ;5 minutes
-		loop 1 {
-			if(VBState=1)
+			nm_endWalk()
+			nm_setStatus("Searching", "Commando Chick")
+			loop 4 {
+				Send "{" ZoomIn "}"
+				Sleep(50)
+			}
+			loop 15 { 
+				if found := nm_findBug() 
+					break
+				Sleep(100)
+			}
+			if !found {
+				LastCommando := nowUnix()
+				IniWrite LastCommando, "settings\nm_config.ini", "Collect", "LastCommando"
+				nm_setStatus("Missing", "Commando Chick")
 				return
-			;clover
-			success:=0
-			bypass:=0
-			BugRunField:="clover"
-			while (not success){
-				if(A_Index>=3)
+			}
+			CCdead :=  0
+			nm_setStatus("Attacking", "Commando Chick")
+			DllCall("GetSystemTimeAsFileTime", "int64p", &ChickStartTime := 0)
+			KillCheck := ChickStartTime
+			UpdateTimer := ChickStartTime
+			chickStrikes := 0
+			loop {
+				Click()
+				Sleep 100
+				if nm_imgSearch("ChickDead.png", 50, "lowright")[1] = 0 {
+					CCdead := 1
 					break
-				if(not bypass){
-					wait:=min(10000, (50-HiveBees)*1000)
-					nm_Reset(1, wait)
-					if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && not (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles)){
-						nm_setStatus("Traveling", "Ladybugs (Clover)")
-					}
-					else if(not (BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
-						nm_setStatus("Traveling", "Rhino Beetles (Clover)")
-					}
-					else if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
-						nm_setStatus("Traveling", "Ladybugs / Rhino Beetles (Clover)")
-					}
-					nm_gotoField(BugRunField)
 				}
-				bypass:=0
-				found:=0
-				loop 20
-				{
-					cloverBug:=nm_HealthDetection()
-					if(cloverBug.Length > 0)
-					{
-						found:= 1
+				if youDied
+					break
+				if Mod(A_Index, 20) = 0 {
+					if disconnectCheck()
 						break
-					}
-					Sleep 150
+					if nm_MondoInterrupt()
+						break
 				}
-				if (found)
-				{
-					nm_setStatus("Attacking")
-					;Send "{" SC_1 "}"
-					SendInput "{" RotUp " 4}"
-					if(!DisableToolUse)
-						Click "Down"
-					loop 10 { ;wait to kill
-						if(A_Index=10)
-							success:=1
-						Loop 10
-						{
-							cloverDead:=nm_HealthDetection()
-							if(cloverDead.Length > 0)
-								Break
-							else if (A_Index=10)
-							{
-								success:=1
-								break 2
-							}
-							Sleep 250
+				DllCall("GetSystemTimeAsFileTime", "int64p", &currentTime := 0)
+				LastHealthCheck := (currentTime - KillCheck) // 10000
+				ElaspedChickTime := (currentTime - ChickStartTime) // 10000
+				LastUpdate := (currentTime - UpdateTimer) // 10000
+				if (ChickTime != "Kill") && (ElaspedChickTime > (ChickTime * 60000)) {
+					nm_setStatus("Time Limit", "Commando Chick")
+					LastCommando := nowUnix() - Floor(1800 * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01)) + 1800
+					Break
+				}
+				if LastUpdate > 60000 {
+					if nm_KillTimeEstimation("Chick", LastHealthCheck) != 0 {
+						KillCheck := currentTime
+					}
+					UpdateTimer := currentTime
+				}
+				loop 20 {
+					if nm_findBug()
+						break
+					if A_Index = 20 {
+						if chickStrikes <= 10 {
+							chickStrikes += 1
 						}
-						if(youDied)
-							break
+						else {
+							CCdead := 1
+							break 2
+						}
 					}
-					SendInput "{" RotDown " 4}"
-					click "up"
-					if(VBState=1)
-						return
+					if nm_imgSearch("ChickDead.png", 50, "lowright")[1] = 0 {
+						CCdead := 1
+						break 2
+					}
+					Sleep 250
 				}
+			}
 
-			}
-			;done with ladybugs
-			LastBugrunLadybugs:=nowUnix()
-			IniWrite LastBugrunLadybugs, "settings\nm_config.ini", "Collect", "LastBugrunLadybugs"
-			TotalBugKills:=TotalBugKills+2
-			SessionBugKills:=SessionBugKills+2
-			PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
-			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
-			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-			;loot
-			if(((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && BugrunLadybugsLoot) || ((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll) && BugrunRhinoBeetlesLoot)){
-				if(!DisableToolUse)
-					Click "Down"
-				nm_setStatus("Looting")
-				movement :=
-				(
-				nm_Walk(4, RightKey) "
-				" nm_Walk(8, FwdKey) "
-				" nm_Walk(1.5, LeftKey) "
-				" nm_Walk(8, BackKey) "
-				" nm_Walk(1.5, LeftKey) "
-				" nm_Walk(8, FwdKey) "
-				" nm_Walk(1.5, LeftKey) "
-				" nm_Walk(16, BackKey) "
-				loop 2 {
-					" nm_Walk(1.5, LeftKey) "
-					" nm_Walk(8, FwdKey) "
-					" nm_Walk(1.5, LeftKey) "
-					" nm_Walk(8, BackKey) "
-				}"
-				)
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T60 L"
-				nm_endWalk()
-				Click "Up"
-			}
-		}
-	}
-	if(VBState=1)
-		Return
-	;Rhino Beetles
-	if((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll) && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;5 minutes
-		loop 1 {
-			if(VBState=1)
+			if CCdead {
+				nm_setStatus("Defeated", "Commando Chick")
+				TotalBossKills += 1
+				SessionBossKills += 1
+				PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
+				IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
+				IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
+				LastCommando := nowUnix()
+				IniWrite LastCommando, "settings\nm_config.ini", "Collect", "LastCommando"
+				InputChickHealth := 100.00
+				IniWrite InputChickHealth, "settings\nm_config.ini", "Collect", "InputChickHealth"
+				intialHealthCheck := 0
 				return
-			;blue flower
-			success:=0
-			if (BugRunField="clover") {
-				Sleep 5000
-				BugRunField:="blue flower"
-				nm_setStatus("Traveling", "Rhino Beetles (Blue Flower)")
-				movement :=
-				(
-				nm_Walk(18, BackKey) '
-				send "{' RotLeft ' 2}"
-				' nm_Walk(10, BackKey)
-				)
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T30 L"
-				nm_endWalk()
-			}
-			else {
-				BugRunField:="blue flower"
-				wait:=min(5000, (50-HiveBees)*1000)
-				nm_Reset(1,wait)
-				nm_setStatus("Traveling", "Rhino Beetles (Blue Flower)")
-				nm_gotoField(BugRunField)
-			}
-			while (not success){
-				if(A_Index>=3)
-					break
-				found:=0
-				loop 20
-				{
-					blufBug:=nm_HealthDetection()
-					if(blufBug.Length > 0)
-					{
-						found:= 1
-						break
-					}
-					Sleep 150
-				}
-				if (found)
-				{
-					nm_setStatus("Attacking")
-					;Send "{" SC_1 "}"
-					SendInput "{" RotUp " 4}"
-					if(!DisableToolUse)
-						Click "Down"
-					r := 0
-					loop 12 { ;wait to kill
-						if(A_Index=12)
-							success:=1
-						Loop 20
-						{
-							blufDead:=nm_HealthDetection()
-							if(blufDead.Length > 0)
-								Break
-							if (A_Index=10)
-							{
-								SendInput "{" RotLeft " 2}"
-								r := 1
-							}
-							Sleep 100
-							SendInput "{" ZoomOut "}"
-							if (A_Index=20)
-							{
-								success:=1
-								break 2
-							}
-						}
-						if(youDied)
-							break
-					}
-					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
-					Sleep 500
-					Click "Up"
-					if(VBState=1)
-						return
-				}
-			}
-			;done with Rhino Beetles if Hive has less than 5 bees
-			if(HiveBees<5){
-				LastBugrunRhinoBeetles:=nowUnix()
-				IniWrite LastBugrunRhinoBeetles, "settings\nm_config.ini", "Collect", "LastBugrunRhinoBeetles"
-			}
-			TotalBugKills:=TotalBugKills+1
-			SessionBugKills:=SessionBugKills+1
-			PostSubmacroMessage("StatMonitor", 0x5555, 3, 1)
-			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
-			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-			;loot
-			if(BugrunRhinoBeetlesLoot){
-				if(!DisableToolUse)
-					Click "Down"
-				nm_setStatus("Looting")
-				movement :=
-				(
-				nm_Walk(2, BackKey) "
-				" nm_Walk(5, RightKey, BackKey)
-				)
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T30 L"
-				nm_endWalk()
-				nm_loot(8, 3, "left", 1)
-				Click "Up"
-			}
-			if(HiveBees>=5) {
-				;bamboo
-				BugRunField:="bamboo"
-				success:=0
-				bypass:=0
-				while (not success){
-					if(A_Index>=3)
-						break
-					if(not bypass){
-						wait:=min(10000, (50-HiveBees)*1000)
-						nm_Reset(1, wait)
-						nm_setStatus("Traveling", "Rhino Beetles (Bamboo)")
-						nm_gotoField(BugRunField)
-					}
-					bypass:=0
-					found:=0
-					loop 20
-					{
-						bambBug:=nm_HealthDetection()
-						if(bambBug.Length > 0)
-						{
-							found:= 1
-							break
-						}
-						Sleep 150
-					}
-					if (found)
-					{
-						nm_setStatus("Attacking")
-						;Send "{" SC_1 "}"
-						SendInput "{" RotUp " 4}"
-						if(!DisableToolUse)
-							Click "Down"
-						r := 0
-						loop 15 { ;wait to kill
-							if(A_Index=15)
-								success:=1
-							Loop 20
-							{
-								bambDead:=nm_HealthDetection()
-								if(bambDead.Length > 0)
-									Break
-								if (A_Index=10)
-								{
-									SendInput "{" RotLeft " 2}"
-									r := 1
-								}
-								Sleep 100
-								SendInput "{" ZoomOut "}"
-								if (A_Index=20)
-								{
-									success:=1
-									break 2
-								}
-							}
-							if(youDied)
-								break
-						}
-						sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
-						Sleep 500
-						Click "Up"
-						if(VBState=1)
-							return
-					}
-				}
-				;done with Rhino Beetles if Hive has less than 10 bees
-				if(HiveBees<10){
-					LastBugrunRhinoBeetles:=nowUnix()
-					IniWrite LastBugrunRhinoBeetles, "settings\nm_config.ini", "Collect", "LastBugrunRhinoBeetles"
-				}
-				TotalBugKills:=TotalBugKills+2
-				SessionBugKills:=SessionBugKills+2
-				PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
-				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
-				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-				;loot
-				if(BugrunRhinoBeetlesLoot){
-					if(!DisableToolUse)
-						Click "Down"
-					nm_setStatus("Looting")
-					movement :=
-					(
-					nm_Walk(9, BackKey) "
-					" nm_Walk(1.5, RightKey) "
-					loop 2 {
-						" nm_Walk(18, FwdKey) "
-						" nm_Walk(1.5, LeftKey) "
-						" nm_Walk(18, BackKey) "
-						" nm_Walk(1.5, LeftKey) "
-					}
-					" nm_Walk(18, FwdKey)
-					)
-					nm_createWalk(movement)
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T60 L"
-					nm_endWalk()
-					Click "Up"
-				}
-			}
-		}
-	}
-	if(VBState=1)
-		Return
-	;Rhino Beetles and/or Mantis
-	if(((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))
-		|| ((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)  && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))){ ;5 min Rhino 20min Mantis
-		if(HiveBees>=10) {
-			;pineapple
-			BugRunField:="pineapple"
-			if((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll) && MoveMethod="walk") {
-				success:=0
-				bypass:=1
-				;walk from bamboo to pineapple
-				if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && not (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles)){
-					nm_setStatus("Traveling", "Mantis (Pineapple)")
-				}
-				else if(not (BugrunMantisCheck || QuestMantis || BuckoMantis) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
-					nm_setStatus("Traveling", "Rhino Beetles (Pineapple)")
-				}
-				else if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
-					nm_setStatus("Traveling", "Rhino Beetles / Mantis (Pineapple)")
-				}
-				if(BugrunRhinoBeetlesLoot){
-					nm_Move(1000*MoveSpeedFactor, FwdKey, RightKey)
-					nm_Move(8500*MoveSpeedFactor, FwdKey)
-					nm_Move(2500*MoveSpeedFactor, LeftKey)
-					nm_Move(5500*MoveSpeedFactor, RightKey)
-				} else {
-					nm_Move(8000*MoveSpeedFactor, FwdKey)
-					nm_Move(4000*MoveSpeedFactor, RightKey)
-				}
-				PrevKeyDelay := A_KeyDelay
-				SetKeyDelay 5
-				Send "{" FwdKey " down}"
-				DllCall("Sleep","UInt",200)
-				Send "{" SC_Space " down}"
-				DllCall("Sleep","UInt",100)
-				Send "{" SC_Space " up}"
-				DllCall("Sleep","UInt",800)
-				Send "{" FwdKey " up}"
-				SendInput "{" RotLeft " 2}"
-				SetKeyDelay PrevKeyDelay
-				nm_Move(14000*MoveSpeedFactor, FwdKey)
-			} else {
-				success:=0
-				bypass:=0
-			}
-			;start pineapple
-			while (not success){
-				if(A_Index>=3)
-					break
-				if(not bypass){
-					wait:=min(20000, (50-HiveBees)*1000)
-					nm_Reset(1, wait)
-					if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && not (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles)){
-						nm_setStatus("Traveling", "Mantis (Pineapple)")
-					}
-					else if(not (BugrunMantisCheck || QuestMantis || BuckoMantis) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
-						nm_setStatus("Traveling", "Rhino Beetles (Pineapple)")
-					}
-					else if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
-						nm_setStatus("Traveling", "Rhino Beetles / Mantis (Pineapple)")
-					}
-					nm_gotoField(BugRunField)
-				}
-				bypass:=0
-				found:=0
-				loop 20
-				{
-					pineappleBug:=nm_HealthDetection()
-					if(pineappleBug.Length > 0)
-					{
-						found:= 1
-						break
-					}
-					Sleep 150
-				}
-				if (found)
-				{
-					nm_setStatus("Attacking")
-					;Send "{" SC_1 "}"
-					SendInput "{" RotUp " 4}"
-					if(!DisableToolUse)
-						Click "Down"
-					;disableDayOrNight:=1
-					r := 0
-					loop 20 { ;wait to kill
-						if(A_Index=20)
-							success:=1
-						Loop 20
-						{
-							pineappleDead:=nm_HealthDetection()
-							if(pineappleDead.Length > 0)
-								Break
-							if (A_Index=10)
-							{
-								SendInput "{" RotLeft " 2}"
-								r := 1
-							}
-							Sleep 100
-							SendInput "{" ZoomOut "}"
-							if (A_Index=20)
-							{
-								success:=1
-								break 2
-							}
-						}
-						if(youDied)
-							break
-						Sleep 250
-					}
-					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
-					Sleep 500
-					Click "Up"
-					;disableDayOrNight:=0
-					if(VBState=1)
-						return
-				}
-			}
-			;done with Rhino Beetles
-			LastBugrunRhinoBeetles:=nowUnix()
-			IniWrite LastBugrunRhinoBeetles, "settings\nm_config.ini", "Collect", "LastBugrunRhinoBeetles"
-			;done with Mantis if Hive is smaller than 15 bees
-			if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && HiveBees<15){
-				LastBugrunMantis:=nowUnix()
-				IniWrite LastBugrunMantis, "settings\nm_config.ini", "Collect", "LastBugrunMantis"
-			}
-			TotalBugKills:=TotalBugKills+2
-			SessionBugKills:=SessionBugKills+2
-			PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
-			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
-			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-			;loot
-			if(((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && BugrunMantisLoot) || ((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles) && BugrunRhinoBeetlesLoot || RileyAll)){
-				if(!DisableToolUse)
-					Click "Down"
-				nm_setStatus("Looting")
-				nm_Move(1000*MoveSpeedFactor, BackKey, RightKey)
-				nm_loot(13.5, 5, "left")
-				Click "Up"
-			}
-		}
-	}
-	if(VBState=1)
-		Return
-	if(HiveBees>=15) {
-		nm_Mondo()
-		;werewolf
-		if((BugrunWerewolfCheck || QuestWerewolf || RileyAll)  && (nowUnix()-LastBugrunWerewolf)>floor(3630*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;60 minutes
-			loop 1 {
-				if(VBState=1)
-					return
-				;pumpkin
-				BugRunField:="pumpkin"
-				success:=0
-				bypass:=0
-				i:=0
-				while (not success){
-					if(A_Index>=3)
-						break
-					wait:=min(20000, (50-HiveBees)*1000)
-					nm_Reset(1, wait)
-					nm_setStatus("Traveling", "Werewolf (Pumpkin)")
-					nm_gotoField(BugRunField)
-					found:=0
-					loop 20
-					{
-						wereBug:=nm_HealthDetection()
-						if(wereBug.Length > 0)
-						{
-							found:= 1
-							break
-						}
-						Sleep 150
-					}
-					if (found)
-					{
-						nm_setStatus("Attacking", "Werewolf (Pumpkin)")
-						;Send "{" SC_1 "}"
-						SendInput "{" RotUp " 4}"
-						if(!DisableToolUse)
-							Click "Down"
-						loop 25 { ;wait to kill
-							i:=A_Index
-							if(mod(A_Index,4)=1){
-								nm_Move(1500*MoveSpeedFactor, FwdKey)
-								loop 5
-								{
-									wereDead:=nm_HealthDetection()
-									if(wereDead.Length > 0)
-									{
-										Break
-									}
-									if (A_Index=5)
-									{
-										Success:=1
-										Break 2
-									}
-									SendInput "{" ZoomOut "}"
-									Sleep 250
-								}
-							} else if(mod(A_Index,4)=2){
-								nm_Move(1500*MoveSpeedFactor, LeftKey)
-								loop 5
-								{
-									wereDead:=nm_HealthDetection()
-									if(wereDead.Length > 0)
-									{
-										Break
-									}
-									if (A_Index=5)
-									{
-										Success:=1
-										Break 2
-									}
-									SendInput "{" ZoomOut "}"
-									Sleep 250
-								}
-							} else if(mod(A_Index,4)=3){
-								nm_Move(1500*MoveSpeedFactor, BackKey)
-								loop 5
-								{
-									wereDead:=nm_HealthDetection()
-									if(wereDead.Length > 0)
-									{
-										Break
-									}
-									if (A_Index=5)
-									{
-										Success:=1
-										Break 2
-									}
-									SendInput "{" ZoomOut "}"
-									Sleep 250
-								}
-							} else if(mod(A_Index,4)=0){
-								nm_Move(1500*MoveSpeedFactor, RightKey)
-								loop 5
-								{
-									wereDead:=nm_HealthDetection()
-									if(wereDead.Length > 0)
-									{
-										Break
-									}
-									if (A_Index=5)
-									{
-										Success:=1
-										Break 2
-									}
-									SendInput "{" ZoomOut "}"
-									Sleep 250
-								}
-							}
-							if(A_Index=25)
-								success:=1
-							if(youDied)
-								break
-						}
-						SendInput "{" RotDown " 4}"
-						Sleep 500
-						Click "Up"
-						if(VBState=1)
-							return
-					}
-				}
-				LastBugrunWerewolf:=nowUnix()
-				IniWrite LastBugrunWerewolf, "settings\nm_config.ini", "Collect", "LastBugrunWerewolf"
-				TotalBugKills:=TotalBugKills+1
-				SessionBugKills:=SessionBugKills+1
-				PostSubmacroMessage("StatMonitor", 0x5555, 3, 1)
-				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
-				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-				if(BugrunWerewolfLoot){
-					if(!DisableToolUse)
-						Click "Down"
-					nm_setStatus("Looting", "Werewolf (Pumpkin)")
-					movement :=
-					(
-					(((Mod(i, 4) = 1) || (Mod(i, 4) = 2)) ? nm_Walk(4.5, BackKey) : nm_Walk(4.5, FwdKey)) "
-					" (((Mod(i, 4) = 0) || (Mod(i, 4) = 1)) ? nm_Walk(4.5, LeftKey) : nm_Walk(4.5, RightKey)) "
-					" nm_Walk(4, BackKey) "
-					" nm_Walk(6, BackKey, LeftKey) "
-					loop 4 {
-						" nm_Walk(14, FwdKey) "
-						" nm_Walk(1.5, RightKey) "
-						" nm_Walk(14, BackKey) "
-						" nm_Walk(1.5, RightKey) "
-					}
-					" nm_Walk(14, FwdKey)
-					)
-					nm_createWalk(movement)
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T60 L"
-					nm_endWalk()
-					Click "Up"
-				}
-			}
-		}
-		if(VBState=1)
-			Return
-		;mantis
-		if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;20 minutes
-			loop 1 {
-				if(VBState=1)
-					return
-				;pine tree
-				BugRunField:="pine tree"
-				;walk to pine tree from pumpkin if just killed werewolf
-				if((BugrunWerewolfCheck || QuestWerewolf || RileyAll) && (nowUnix()-LastBugrunWerewolf)>floor(3630*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){
-					success:=0
-					bypass:=1
-					nm_setStatus("Traveling", "Mantis (Pine Tree)")
-					nm_Move(1500*MoveSpeedFactor, FwdKey, LeftKey)
-					nm_Move(6000*MoveSpeedFactor, LeftKey)
-				} else {
-					success:=0
-					bypass:=0
-				}
-				while (not success){
-					if(A_Index>=3)
-						break
-					if(not bypass){
-						wait:=min(20000, (60-HiveBees)*1000)
-						nm_Reset(1, wait)
-						nm_setStatus("Traveling", "Mantis (Pine Tree)")
-						nm_gotoField(BugRunField)
-					}
-					bypass:=0
-					found:=0
-					loop 20
-					{
-						pineBug:=nm_HealthDetection()
-						if(pineBug.Length > 0)
-						{
-							found:= 1
-							break
-						}
-						Sleep 200
-					}
-					if (found)
-					{
-						nm_setStatus("Attacking")
-						;Send "{" SC_1 "}"
-						SendInput "{" RotUp " 4}"
-						if(!DisableToolUse)
-							Click "Down"
-						r := 0
-						loop 20 { ;wait to kill
-							if(A_Index=20)
-								success:=1
-							Loop 10
-							{
-								pineDead:=nm_HealthDetection()
-								if(pineDead.Length > 0)
-									Break
-								if (A_Index=5)
-								{
-									SendInput "{" RotLeft " 2}"
-									r := 1
-								}
-								Sleep 100
-								SendInput "{" ZoomOut "}"
-								if (A_Index=10)
-								{
-									success:=1
-									break 2
-								}
-							}
-							if(youDied)
-								break
-						}
-						sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
-						Sleep 500
-						Click "Up"
-						if(VBState=1)
-							return
-					}
-				}
-				;done with Mantis
-				LastBugrunMantis:=nowUnix()
-				IniWrite LastBugrunMantis, "settings\nm_config.ini", "Collect", "LastBugrunMantis"
-				TotalBugKills:=TotalBugKills+2
-				SessionBugKills:=SessionBugKills+2
-				PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
-				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
-				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-				;loot
-				if(BugrunMantisLoot){
-					if(!DisableToolUse)
-						Click "Down"
-					nm_setStatus("Looting")
-					movement :=
-					(
-					nm_Walk(10, BackKey) "
-					" nm_Walk(1.5, LeftKey) "
-					loop 3 {
-						" nm_Walk(10, FwdKey) "
-						" nm_Walk(1.5, LeftKey) "
-						" nm_Walk(10, BackKey) "
-						" nm_Walk(1.5, LeftKey) "
-					}
-					" nm_Walk(20, FwdKey) "
-					" nm_Walk(1.5, RightKey) "
-					" nm_Walk(10, BackKey) "
-					loop 3 {
-						" nm_Walk(1.5, RightKey) "
-						" nm_Walk(10, FwdKey) "
-						" nm_Walk(1.5, RightKey) "
-						" nm_Walk(10, BackKey) "
-					}"
-					)
-					nm_createWalk(movement)
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T90 L"
-					nm_endWalk()
-					Click "Up"
-				}
-			}
-		}
-		if(VBState=1)
-			return
-		;scorpions
-		if((BugrunScorpionsCheck || QuestScorpions || RileyScorpions || RileyAll)  && (nowUnix()-LastBugrunScorpions)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;20 minutes
-			loop 1 {
-				if(VBState=1)
-					return
-				;rose
-				BugRunField:="rose"
-				;walk to rose from pine tree if just killed mantis
-				if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)) && MoveMethod="walk"){
-					success:=0
-					bypass:=1
-					nm_setStatus("Traveling", "Scorpions (Rose)")
-					loop 4 {
-						Send "{" RotLeft "}"
-					}
-					nm_Move(4000*MoveSpeedFactor, RightKey)
-					nm_Move(2000*MoveSpeedFactor, LeftKey)
-					nm_Move(17500*MoveSpeedFactor, FwdKey)
-					loop 2 {
-						Send "{" RotRight "}"
-					}
-				} else {
-					success:=0
-					bypass:=0
-				}
-				i:=0
-				while (not success){
-					if(A_Index>=3)
-						break
-					if(not bypass){
-						wait:=min(20000, (60-HiveBees)*1000)
-						nm_Reset(1, wait)
-						nm_setStatus("Traveling", "Scorpions (Rose)")
-						nm_gotoField(BugRunField)
-						nm_Move(1000*MoveSpeedFactor, BackKey)
-						nm_Move(1500*MoveSpeedFactor, RightKey)
-					}
-					bypass:=0
-					found:=0
-					loop 20
-					{
-						roseBug:=nm_HealthDetection()
-						if(roseBug.Length > 0)
-						{
-							found:= 1
-							break
-						}
-						Sleep 150
-					}
-					if (found)
-					{
-						nm_setStatus("Attacking")
-						SendInput "{" RotUp " 4}"
-						SendInput "{" RotLeft " 4}"
-						;Send "{" SC_1 "}"
-						if(!DisableToolUse)
-							Click "Down"
-						loop 17 { ;wait to kill
-							i:=A_Index
-							if(mod(A_Index,4)=1){
-								nm_Move(1500*MoveSpeedFactor, BackKey)
-								loop 5
-								{
-									roseDead:=nm_HealthDetection()
-									if(roseDead.Length > 0)
-									{
-										Break
-									}
-									SendInput "{" ZoomOut "}"
-									if (A_Index=5)
-									{
-										Success:=1
-										Break 2
-									}
-									Sleep 250
-								}
-							} else if(mod(A_Index,4)=2){
-								nm_Move(1500*MoveSpeedFactor, RightKey)
-								loop 5
-								{
-									roseDead:=nm_HealthDetection()
-									if(roseDead.Length > 0)
-									{
-										Break
-									}
-									if (A_Index=5)
-									{
-										Success:=1
-										Break 2
-									}
-									Sleep 250
-								}
-							} else if(mod(A_Index,4)=3){
-								nm_Move(1500*MoveSpeedFactor, FwdKey)
-								loop 5
-								{
-									roseDead:=nm_HealthDetection()
-									if(roseDead.Length > 0)
-									{
-										Break
-									}
-									SendInput "{" ZoomOut "}"
-									if (A_Index=5)
-									{
-										Success:=1
-										Break 2
-									}
-									Sleep 250
-								}
-							} else if(mod(A_Index,4)=0){
-								nm_Move(1500*MoveSpeedFactor, LeftKey)
-								loop 5
-								{
-									roseDead:=nm_HealthDetection()
-									if(roseDead.Length > 0)
-									{
-										Break
-									}
-									SendInput "{" ZoomOut "}"
-									if (A_Index=5)
-									{
-										Success:=1
-										Break 2
-									}
-									Sleep 250
-								}
-							}
-							if(A_Index=17)
-								success:=1
-							if(youDied)
-								break
-						}
-						SendInput "{" RotDown " 4}"
-						Sleep 500
-						Click "Up"
-						if(VBState=1)
-							return
-					}
-				}
-				;done with Scorpions
-				LastBugrunScorpions:=nowUnix()
-				IniWrite LastBugrunScorpions, "settings\nm_config.ini", "Collect", "LastBugrunScorpions"
-				TotalBugKills:=TotalBugKills+2
-				SessionBugKills:=SessionBugKills+2
-				PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
-				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
-				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
-				;loot
-				if(BugrunScorpionsLoot){
-					if(!DisableToolUse)
-						Click "Down"
-					nm_setStatus("Looting")
-					movement :=
-					(
-					(((Mod(i, 4) = 1) || (Mod(i, 4) = 2)) ? nm_Walk(4.5, FwdKey) : nm_Walk(4.5, BackKey)) "
-					" (((Mod(i, 4) = 0) || (Mod(i, 4) = 1)) ? nm_Walk(4.5, RightKey) : nm_Walk(4.5, LeftKey)) "
-					" nm_Walk(2, FwdKey) "
-					" nm_Walk(10, FwdKey, LeftKey) "
-					loop 4 {
-						" nm_Walk(16, BackKey) "
-						" nm_Walk(1.5, RightKey) "
-						" nm_Walk(16, FwdKey) "
-						" nm_Walk(1.5, RightKey) "
-					}
-					" nm_Walk(16, BackKey) "
-					" nm_Walk(6, FwdKey, LeftKey)
-					)
-					nm_createWalk(movement)
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T90 L"
-					nm_endWalk()
-					Click "Up"
-				} else {
-					sleep 4000
-				}
-			}
-		}
-		if(VBState=1)
-			return
-		;tunnel bear
-		if((TunnelBearCheck)  && (nowUnix()-LastTunnelBear)>floor(172800*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;48 hours
-			loop 2 {
-				wait:=min(20000, (50-HiveBees)*1000)
-				nm_Reset(1, wait)
-				nm_setStatus("Traveling", "Tunnel Bear")
-				nm_gotoRamp()
-				if (MoveMethod = "walk") {
-					nm_gotoramp()
-	
-					movement := 
-					(
-					nm_Walk(67.5, BackKey, LeftKey) "
-					send '{" RotRight " 4}'
-					" nm_Walk(23.5, FwdKey) "
-					" nm_Walk(31.5, FwdKey, RightKey) "
-					" nm_Walk(10, RightKey) "
-					send '{" RotRight " 2}' 
-					" nm_Walk(28, FwdKey) "
-					" nm_Walk(13, LeftKey) "
-					" nm_Walk(25, RightKey) "
-					send '{" SC_Space " down}{" FwdKey " down}'
-					Walk(12)
-					send '{" SC_Space " up}{" FwdKey " up}{" RotLeft " 2}'
-					" nm_Walk(35, FwdKey) "
-					" nm_Walk(25, RightKey) "
-					" nm_Walk(12, FwdKey) "
-					" nm_Walk(3.5, RightKey) "
-					send '{" RotRight " 4}'
-					" nm_Walk(37, Fwdkey) "
-					" nm_Walk(10, FwdKey, LeftKey) "
-					" nm_Walk(5, Backkey) "
-					" nm_Walk(15, RightKey) "
-					" nm_Walk(10, BackKey) "
-					Sleep(3000) 
-					send '{" RotRight " 4}{" RotUp " 3}' "
-					)
-				} else {
-					nm_gotoramp()
-					nm_gotocannon()
-	
-					movement := 
-					(
-					" send '{" SC_E " down}'
-					sleep 100
-					send '{" SC_E " up}'
-					HyperSleep(1000)
-					send '{" LeftKey " down}'
-					HyperSleep(100)
-					send '{" SC_space " 2}'
-					HyperSleep(900)
-					send '{" LeftKey " up}'
-					HyperSleep(6000)
-					" nm_Walk(10, FwdKey, LeftKey) "
-					" nm_Walk(5, Backkey) "
-					" nm_Walk(15, RightKey) "
-					" nm_Walk(10, BackKey) "
-					Sleep(3000) 
-					send '{" RotRight " 4}{" RotUp " 3}' "
-					)
-				}
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T90 L"
-				nm_endWalk()
-				;confirm tunnel
-				GetRobloxClientPos()
-				pBM := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2)
-				for , value in bitmaps["tunnelbearconfirm"] {
-					if (Gdip_ImageSearch(pBM, value, , , , , , 15) = 1)
-						break
-					if A_Index = bitmaps["tunnelbearconfirm"].Count {
-						Gdip_DisposeImage(pBM)
-						continue 2 ;retry
-					}
-				}
-				Gdip_DisposeImage(pBM)
-				Send "{" RotLeft " 2}{" RotDown " 3}"
-				;wait for baby love
-				DllCall("Sleep","UInt",2000)
-				if (TunnelBearBabyCheck){
-					nm_setStatus("Waiting", "BabyLove Buff")
-					DllCall("Sleep","UInt",1500)
-					loop 30{
-						if (nm_imgSearch("blove.png",25,"buff")[1] = 0){
-							break
-						}
-						DllCall("Sleep","UInt",1000)
-					}
-				}
-				;search for tunnel bear
-				nm_setStatus("Searching", "Tunnel Bear")
-				nm_Move(6000*MoveSpeedFactor, BackKey)
-				nm_Move(550*MoveSpeedFactor, LeftKey)
-				found:=0
-				;(+) new detection here
-				loop 20
-				{
-					tBear:= nm_HealthDetection()
-					if(tBear.Length > 0)
-					{
-						found:=1
-						break
-					}
-					DllCall("Sleep","UInt",250)
-				}
-				;attack tunnel bear
-				TBdead:=0
-				if(found) {
-					SendInput "{" RotUp " 3}"
-					nm_setStatus("Attacking", "Tunnel Bear")
-					loop 120 {
-						loop 15 {
-							if (nm_imgSearch("tunnelbear.png",5,"high")[1] = 0)
-								nm_Move(200*MoveSpeedFactor, BackKey)
-							else
-								break
-						}
-						if(nm_imgSearch("tunnelbeardead.png",25,"lowright")[1] = 0){
-							TBdead:=1
-							SendInput "{" RotDown " 3}"
-							break
-						}
-						if(youDied)
-							break
-						Sleep 1000
-					}
-				} else { ;No TunnelBear here...try again in 2 hours
-					LastTunnelBear:=nowUnix()-floor(172800*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+7200
-					IniWrite LastTunnelBear, "settings\nm_config.ini", "Collect", "LastTunnelBear"
-				}
-				;loot
-				if(TBdead) {
-					TotalBossKills:=TotalBossKills+1
-					SessionBossKills:=SessionBossKills+1
-					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
-					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
-					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
-					nm_setStatus("Looting")
-					nm_Move(12000*MoveSpeedFactor, FwdKey)
-					nm_Move(18000*MoveSpeedFactor, BackKey)
-					LastTunnelBear:=nowUnix()
-					IniWrite LastTunnelBear, "settings\nm_config.ini", "Collect", "LastTunnelBear"
-					break
-				}
-			}
-		}
-		if(VBState=1)
-			return
-		;king beetle
-		if((KingBeetleCheck) && (nowUnix()-LastKingBeetle)>floor(86400*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;24 hours
-			loop 2 {
-				wait:=min(20000, (50-HiveBees)*1000)
-				nm_Reset(1, wait)
-				nm_setStatus("Traveling", "King Beetle")
-				nm_gotoField("Blue Flower")
-				nm_Move(5000*MoveSpeedFactor, RightKey, FwdKey)
-				nm_Move(4000*MoveSpeedFactor, FwdKey)
-				Send "{" RotRight " 2}"
-				;wait for baby love
-				DllCall("Sleep","UInt",1000)
-				if (KingBeetleBabyCheck){
-					nm_setStatus("Waiting", "BabyLove Buff")
-					nm_Move(2000*MoveSpeedFactor, BackKey)
-					DllCall("Sleep","UInt",1500)
-					loop 30{
-						if (nm_imgSearch("blove.png",25,"buff")[1] = 0){
-							break
-						}
-						DllCall("Sleep","UInt",1000)
-					}
-					nm_Move(1500*MoveSpeedFactor, FwdKey)
-					nm_Move(1500*MoveSpeedFactor, LeftKey)
-				}
-				lairConfirmed:=0
-				;Go inside
-				movement :=
-				(
-				nm_Walk(5, RightKey) '
-				Send "{' SC_Space ' down}"
-				Sleep 200
-				Send "{' SC_Space ' up}"
-				' nm_Walk(3, RightKey) '
-				' nm_Walk(5, RightKey, FwdKey)
-				)
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T30 L"
-				nm_endWalk()
-				loop 2 {
-					Send "{" RotLeft "}"
-				}
-				loop 5 {
-					if (nm_imgSearch("kingfloor.png",10,"low")[1] = 0){
-						lairConfirmed:=1
-						break
-					}
-					sleep 200
-				}
-				if(!lairConfirmed)
-					continue
-				;search for king beetle
-				nm_setStatus("Searching", "King Beetle")
-				found:=0
-				;(+) new detection here
-				;(+) Update health detection
-				loop 20
-				{
-					kBeetle:= nm_HealthDetection(1)
-					if(kBeetle.Length > 0)
-					{
-						found:=1
-						break
-					}
-					Sleep 250
-				}
-				if(!found) { ;No King Beetle here...try again in 2 hours
-					if(A_Index=2){
-						LastKingBeetle:=nowUnix()-floor(79200*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+7200
-						IniWrite LastKingBeetle, "settings\nm_config.ini", "Collect", "LastKingBeetle"
-					}
-					continue
-				}
-				nm_setStatus("Attacking", "King Beetle")
-				kingdead:=0
-				Sleep 2000
-				loop 1 {
-					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
-						kingdead:=1
-						nm_Move(1000*MoveSpeedFactor, BackKey, RightKey)
-						nm_Move(2500*MoveSpeedFactor, BackKey)
-						nm_Move(500*MoveSpeedFactor, RightKey)
-						break
-					}
-					nm_Move(2000*MoveSpeedFactor, BackKey)
-					Sleep 1000
-					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
-						kingdead:=1
-						nm_Move(1000*MoveSpeedFactor, BackKey, RightKey)
-						nm_Move(1000*MoveSpeedFactor, BackKey)
-						nm_Move(500*MoveSpeedFactor, RightKey)
-						break
-					}
-					nm_Move(2000*MoveSpeedFactor, RightKey)
-					Sleep 100
-					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
-						kingdead:=1
-						nm_Move(1500*MoveSpeedFactor, BackKey)
-						nm_Move(1000*MoveSpeedFactor, LeftKey)
-						break
-					}
-					nm_Move(2000*MoveSpeedFactor, BackKey)
-					Sleep 1000
-					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
-						kingdead:=1
-						nm_Move(1250*MoveSpeedFactor, FwdKey)
-						nm_Move(1000*MoveSpeedFactor, LeftKey)
-						break
-					}
-					nm_Move(2000*MoveSpeedFactor, RightKey)
-					Sleep 1000
-					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
-						kingdead:=1
-						nm_Move(1250*MoveSpeedFactor, FwdKey)
-						nm_Move(2000*MoveSpeedFactor, LeftKey)
-						break
-					}
-					loop 2 {
-						nm_Move(2000*MoveSpeedFactor, BackKey, RightKey)
-						if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
-							kingdead:=1
-							nm_Move(2500*MoveSpeedFactor, FwdKey, LeftKey)
-							nm_Move(2500*MoveSpeedFactor, LeftKey)
-							break
-						}
-					}
-					if(kingdead)
-						break
-					Sleep 500
-					Send "{" RotLeft "}"
-					loop 300 {
-						if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
-							kingdead:=1
-							Send "{" RotRight "}"
-							nm_Move(3500*MoveSpeedFactor, FwdKey, LeftKey)
-							nm_Move(2500*MoveSpeedFactor, LeftKey)
-							break
-						}
-						sleep 1000
-					}
-				}
-				if(kingdead) {
-					;check for amulet
-					if !nm_AmuletPrompt(((KingBeetleAmuletMode = 1) ? 1 : 3), "King Beetle")
-						nm_setStatus("Looting", "King Beetle"), nm_loot(13.5, 7, "right", 1)							
-					TotalBossKills:=TotalBossKills+1
-					SessionBossKills:=SessionBossKills+1
-					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
-					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
-					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
-					LastKingBeetle:=nowUnix()
-					IniWrite LastKingBeetle, "settings\nm_config.ini", "Collect", "LastKingBeetle"
-					break
-				}
-			}
-		}
-		if(VBState=1)
-			return
-		;Snail
-		if((StumpSnailCheck) && (nowUnix()-LastStumpSnail)>floor(345600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;4 days
-			loop 2 {
-				wait:=min(20000, (50-HiveBees)*1000)
-				nm_Reset(1, wait)
-				nm_setStatus("Traveling", "Stump Snail")
-				nm_gotoField("stump")
-
-				;search for Stump snail
-				nm_setStatus("Searching", "Stump Snail")
-				found:=0
-				loop 20
-				{
-					sSnail:= nm_HealthDetection()
-					if(sSnail.Length > 0)
-					{
-						found:=1
-						break
-					}
-					Sleep 150
-				}
-				;attack Snail
-				movement := nm_Walk(1, FwdKey)
-				nm_createWalk(movement, "snailWalk")
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T60 L"
-				nm_endWalk()
-
-				movement :=
-				(
-				nm_Walk(2.5, RightKey) "
-				" nm_Walk(2.5, FwdKey) "
-				" nm_Walk(2.5, Leftkey) "
-				" nm_Walk(5, BackKey) "
-				" nm_Walk(2.5, Leftkey) "
-				" nm_Walk(2.5, FwdKey) "
-				" nm_Walk(5, RightKey) "
-				" nm_Walk(2.5, BackKey) "
-				" nm_Walk(2.5, Leftkey) "
-				" nm_Walk(5, FwdKey) "
-				" nm_Walk(2.5, Leftkey) "
-				" nm_Walk(2.5, BackKey) "
-				" nm_Walk(2.5, Rightkey)
-				)
-
-				Ssdead:=0
-				if(found) {
-					nm_setStatus("Attacking", "Stump Snail")
-					DllCall("GetSystemTimeAsFileTime", "int64p", &SnailStartTime:=0)
-					KillCheck := SnailStartTime
-					UpdateTimer := SnailStartTime
-					Send "{" SC_1 "}"
-					loop 2
-					{
-						Send "{" RotUp "}"
-					}
-					inactiveHoney:=0
-					loop ;Custom Stump timer to keep blessings, Will rehunt in an hour
-					{
-						if (SprinklerType = "Supreme")
-						{
-							if (currentWalk.name != "snail")
-							{
-								nm_createWalk(movement, "snail") ; create cycled walk script for this snail session
-							}
-							else
-							{
-								Send "{F13}" ; start new cycle
-							}
-							KeyWait "F14", "D T5 L" ; wait for pattern start
-						}
-						Click "Down"
-						Loop 600
-						{
-							Sleep 50
-							If ((nm_AmuletPrompt(((ShellAmuletMode = 1) ? 1 : 3), "Shell")) = 1)
-							{
-								Ssdead := 1
-								Send "{" RotDown " 2}"
-								break 2
-							}
-							if((Mod(A_Index, 10) = 0) && (not nm_activeHoney())){
-								inactiveHoney++
-								if (inactiveHoney>=10)
-									break 2
-							}
-							if(Mod(A_Index, 20) = 0){
-								if (disconnectCheck())
-									break
-								if nm_MondoInterrupt()
-									break
-							}
-							if(youDied)
-								break 2
-							if(VBState=1){
-								nm_endWalk()
-								Click "Up"
-								return
-							}
-							if (SprinklerType = "Supreme")
-							{
-								if (!GetKeyState("F14") || A_Index = 600)
-								{
-									nm_fieldDriftCompensation()
-									Break
-								}
-							}
-						}
-						Click "Up"
-						;(+) New detection system for snail
-						DllCall("GetSystemTimeAsFileTime", "int64p", &currentTime:=0)
-						ElaspedSnailTime :=  (currentTime - SnailStartTime)//10000
-						LastHealthCheck := (currentTime - KillCheck)//10000
-						LastUpdate := (currentTime - UpdateTimer)//10000
-						If(SnailTime != "Kill" && ElaspedSnailTime > SnailTime*60000)
-						{
-							nm_setStatus("Time Limit", "Stump Snail")
-							LastStumpSnail:=nowUnix()-floor(345600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
-							break
-						}
-						if (LastUpdate > 60000)
-						{
-							if (nm_KillTimeEstimation("Snail", LastHealthCheck) != 0)
-							{
-								KillCheck := currentTime
-							}
-							UpdateTimer := currentTime
-						}
-					}
-					nm_endWalk()
-				}
-				else { ;No Stump Snail try again in 2 hours
-					LastStumpSnail:=nowUnix()-floor(345600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+7200
-					IniWrite LastStumpSnail, "settings\nm_config.ini", "Collect", "LastStumpSnail"
-					nm_setStatus("Missing", "Stump Snail")
-				}
-
-				;loot
-				if(SSdead) {
-					TotalBossKills:=TotalBossKills+1
-					SessionBossKills:=SessionBossKills+1
-					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
-					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
-					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
-					LastStumpSnail:=nowUnix()
-					IniWrite LastStumpSnail, "settings\nm_config.ini", "Collect", "LastStumpSnail"
-					InputSnailHealth := 100.00
-					IniWrite InputSnailHealth, "settings\nm_config.ini", "Collect", "InputSnailHealth"
-					intialHealthCheck:=0
-					break
-				}
-				else if (A_Index = 2){ ;stump snail not dead, come again in 30 mins
-					LastStumpSnail:=nowUnix()-floor(345600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
-					IniWrite LastStumpSnail, "settings\nm_config.ini", "Collect", "LastStumpSnail"
-				}
-			}
-		}
-		if(VBState=1)
-			return
-
-		;Commando
-		if((CommandoCheck) && (nowUnix()-LastCommando)>floor(1800*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;30 minutes
-			Loop 2 {
-				nm_Reset()
-				;Go to Commando tunnel
-				nm_setStatus("Traveling", "Commando")
-				nm_gotoRamp()
-				if (MoveMethod = "Walk")
-				{
-					movement :=
-					(
-					nm_Walk(44.75, BackKey, LeftKey) '
-					' nm_Walk(42.5, LeftKey) '
-					' nm_Walk(8.5, BackKey) '
-					' nm_Walk(22.5, LeftKey) '
-					send "{' RotLeft ' 2}"
-					' nm_Walk(27, FwdKey) '
-					' nm_Walk(12, LeftKey, FwdKey) '
-					' nm_Walk(11, FwdKey)
-					)
-				}
-				else
-				{
-					nm_gotoCannon()
-					movement :=
-					(
-					'
-					send "{' SC_E ' down}"
-					HyperSleep(100)
-					send "{' SC_E ' up}"
-					HyperSleep(400)
-					send "{' LeftKey ' down}{' FwdKey ' down}"
-					HyperSleep(1050)
-					send "{' SC_Space ' 2}"
-					HyperSleep(5850)
-					send "{' FwdKey ' up}"
-					HyperSleep(750)
-					send "{' SC_Space '}{' RotLeft ' 2}"
-					HyperSleep(1500)
-					send "{' LeftKey ' up}"
-					' nm_Walk(4, BackKey) '
-					' nm_Walk(4.5, LeftKey)
-					)
-				}
-
-				if (MoveSpeedNum < 34)
-				{
-					movement .=
-					(
-					'
-					' nm_Walk(10, LeftKey) '
-					HyperSleep(50)
-					' nm_Walk(6, RightKey) '
-					HyperSleep(50)
-					' nm_Walk(2, LeftKey) '
-					HyperSleep(50)
-					' nm_Walk(7, FwdKey) '
-					HyperSleep(750)
-					send "{' SC_Space ' down}"
-					HyperSleep(50)
-					send "{' SC_Space ' up}"
-					' nm_Walk(5.5, FwdKey) '
-					HyperSleep(750)
-					Loop 3
-					{
-						send "{' SC_Space ' down}"
-						HyperSleep(50)
-						send "{' SC_Space ' up}"
-						' nm_Walk(6, FwdKey) '
-						HyperSleep(750)
-					}
-					' nm_Walk(1, FwdKey) '
-					send "{' SC_Space ' down}"
-					HyperSleep(50)
-					send "{' SC_Space ' up}"
-					' nm_Walk(6, FwdKey) '
-					HyperSleep(750)
-					' nm_Walk(5, FwdKey) '
-					HyperSleep(50)
-					' nm_Walk(9, BackKey) '
-					Sleep 4000
-					send "{' SC_Space ' down}"
-					HyperSleep(50)
-					send "{' SC_Space ' up}"
-					' nm_Walk(0.5, BackKey) '
-					HyperSleep(1500)'
-					)
-				}
-				else
-				{
-					movement .=
-					(
-					'
-					' nm_Walk(10, LeftKey) '
-					HyperSleep(50)
-					' nm_Walk(6, RightKey) '
-					HyperSleep(50)
-					' nm_Walk(2, LeftKey) '
-					HyperSleep(50)
-					' nm_Walk(7, FwdKey) '
-					HyperSleep(750)
-					send "{' SC_Space ' down}"
-					HyperSleep(50)
-					send "{' SC_Space ' up}"
-					' nm_Walk(4.5, FwdKey) '
-					HyperSleep(750)
-					Loop 3
-					{
-						send "{' SC_Space ' down}"
-						HyperSleep(50)
-						send "{' SC_Space ' up}"
-						' nm_Walk(5, FwdKey) '
-						HyperSleep(750)
-					}
-					' nm_Walk(1, FwdKey) '
-					send "{' SC_Space ' down}"
-					HyperSleep(50)
-					send "{' SC_Space ' up}"
-					' nm_Walk(6, FwdKey) '
-					HyperSleep(750)
-					' nm_Walk(5, FwdKey) '
-					HyperSleep(50)
-					' nm_Walk(9, BackKey) '
-					Sleep 4000
-					send "{' SC_Space ' down}"
-					HyperSleep(50)
-					send "{' SC_Space ' up}"
-					' nm_Walk(0.5, BackKey) '
-					HyperSleep(1500)'
-					)
-				}
-
-				nm_createWalk(movement)
-				KeyWait "F14", "D T5 L"
-				KeyWait "F14", "T90 L"
-				nm_endWalk()
-
-				if (youDied)
-					continue
-
-				while (nm_imgSearch("ChickFled.png",50,"lowright")[1] = 0)
-				{
-					if (A_Index = 5)
-					{
-						nm_endWalk()
-						continue 2
-					}
-					if ((A_Index = 1) || (currentWalk.name != "commando"))
-					{
-						movement :=
-						(
-						nm_Walk(5, FwdKey) '
-						HyperSleep(50)
-						' nm_Walk(9, BackKey) '
-						Sleep 4000
-						send "{' SC_Space ' down}"
-						HyperSleep(50)
-						send "{' SC_Space ' up}"
-						' nm_Walk(0.5, BackKey) '
-						HyperSleep(1500)'
-						)
-						nm_createWalk(movement, "commando")
-					}
-					else
-						Send "{F13}"
-
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T20 L"
-				}
-				nm_endWalk()
-
-				nm_setStatus("Searching", "Commando Chick")
-				found:=0
-				loop 4 {
-					Send "{" ZoomIn "}"
-				}
-				;(+) Update health detection
-				loop 20
-				{
-					cChick:= nm_HealthDetection()
-					if(cChick.Length > 0)
-					{
-						found:=1
-						break
-					}
-					Sleep 250
-				}
-				Global ChickStartTime
-				Global ElaspedChickTime
-				Ccdead:=0
-				if(found) {
-					nm_setStatus("Attacking", "Commando Chick")
-
-					DllCall("GetSystemTimeAsFileTime", "int64p", &ChickStartTime:=0)
-					KillCheck := ChickStartTime
-					UpdateTimer := ChickStartTime
-					chickStrikes := 0
-					loop { ;10 minute chick timer to keep blessings, Will rehunt in an hour
-						click
-						sleep 100
-						;do later
-						if(nm_imgSearch("ChickDead.png",50,"lowright")[1] = 0){
-							CCdead:=1
-							break
-						}
-						if(youDied)
-							break
-						if (Mod(A_Index, 20) = 0){
-							if (disconnectCheck())
-								break
-							if nm_MondoInterrupt()
-								break
-						}
-						;(+) New detection system for Chick
-						DllCall("GetSystemTimeAsFileTime", "int64p", &currentTime:=0)
-						LastHealthCheck := (currentTime - KillCheck)//10000
-						ElaspedChickTime := (currentTime-ChickStartTime)//10000
-						LastUpdate := (currentTime - UpdateTimer)//10000
-						If(ChickTime != "Kill" && ElaspedChickTime > ChickTime*60000)
-						{
-							nm_setStatus("Time Limit", "Commando Chick")
-							LastCommando:=nowUnix()-floor(1800*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
-							Break
-						}
-						if (LastUpdate > 60000)
-						{
-							if (nm_KillTimeEstimation("Chick", LastHealthCheck) != 0)
-							{
-								KillCheck := currentTime
-							}
-							UpdateTimer := currentTime
-						}
-						loop 20
-						{
-							comChick:= nm_HealthDetection()
-							if(comChick.Length > 0)
-								break
-							if(A_Index=20)
-							{
-								if (chickStrikes <= 10)
-								{
-									chickStrikes += 1
-								}
-								else
-								{
-									CCdead:=1
-									break 2
-								}
-							}
-							if(nm_imgSearch("ChickDead.png",50,"lowright")[1] = 0){
-								CCdead:=1
-								break 2
-							}
-							Sleep 250
-						}
-					}
-				}
-				else { ;No Commando chick try again in 30 mins
-					LastCommando:=nowUnix()
-					IniWrite LastCommando, "settings\nm_config.ini", "Collect", "LastCommando"
-					nm_setStatus("Missing", "Commando Chick")
-				}
-
-				;loot
-				if(CCdead) {
-					nm_setStatus("Defeated", "Commando Chick")
-					TotalBossKills:=TotalBossKills+1
-					SessionBossKills:=SessionBossKills+1
-					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
-					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
-					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
-					LastCommando:=nowUnix()
-					IniWrite LastCommando, "settings\nm_config.ini", "Collect", "LastCommando"
-					InputChickHealth:=100.00
-					IniWrite InputChickHealth, "settings\nm_config.ini", "Collect", "InputChickHealth"
-					intialHealthCheck:=0
-					break
-				}
-			}
-		}
-		if(VBState=1)
-			return
-		;crab
-		if((CocoCrabCheck) && (nowUnix()-LastCocoCrab)>floor(129600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;1.5 days
-			loop 6 {
-				wait:=min(20000, (50-HiveBees)*1000)
-				nm_Reset(1, wait)
-				nm_setStatus("Traveling", "Coco Crab")
-				nm_gotoField("coconut")
-				Send "{" SC_1 "}"
-				nm_Move(1400, RightKey)
-				nm_Move(1000, BackKey)
-
-				;search for Crab
-				nm_setStatus("Searching", "Coco Crab")
-				found:=0
-
-				;(+) new detection here
-				loop 20
-				{
-					cCrab:= nm_HealthDetection()
-					if(cCrab.Length > 0)
-					{
-						found:=1
-						break
-					}
-					Sleep 250
-				}
-				;attack Crab
-
-				Global CrabStartTime
-				Global ElaspedCrabTime
-
-				;CRAB TIMERS
-				;timers in ms
-				leftright_start := 500
-				leftright_end := 19000
-				cycle_end := 24000
-
-				;left-right movement
-				moves := 14
-				move_delay := 310
-
-				movement :=
-				(
-				'
-				DllCall("GetSystemTimeAsFileTime", "int64p", &start_time:=0)
-				' nm_Walk(4, FwdKey) '
-				DllCall("GetSystemTimeAsFileTime", "int64p", &time:=0)
-				Sleep ' leftright_start ' -(time-start_time)//10000
-				loop 2 {
-					i := A_Index
-					' nm_Walk(1, FwdKey) '
-					Loop ' moves ' {
-						' nm_Walk(2, LeftKey) '
-						DllCall("GetSystemTimeAsFileTime", "int64p", &time)
-						Sleep i*' 2*move_delay*moves '-' 2*move_delay*moves-leftright_start '+A_Index*' move_delay '-(time-start_time)//10000
-					}
-					' nm_Walk(1, BackKey) '
-					Loop ' moves ' {
-						' nm_Walk(2, RightKey) '
-						DllCall("GetSystemTimeAsFileTime", "int64p", &time)
-						Sleep i*' 2*move_delay*moves '-' move_delay*moves-leftright_start '+A_Index*' move_delay '-(time-start_time)//10000
-					}
-				}
-				DllCall("GetSystemTimeAsFileTime", "int64p", &time)
-				Sleep ' leftright_end '-(time-start_time)//10000
-				' nm_Walk(6.5, BackKey) '
-				DllCall("GetSystemTimeAsFileTime", "int64p", &time)
-				Sleep ' cycle_end '-(time-start_time)//10000
-				'
-				)
-
-				Crdead:=0
-				if(found) {
-
-					nm_setStatus("Attacking", "Coco Crab")
-					DllCall("GetSystemTimeAsFileTime", "int64p", &CrabStartTime:=0)
-					inactiveHoney:=0
-					loop { ;30 minute crab timer to keep blessings, Will rehunt in an hour
-						DllCall("GetSystemTimeAsFileTime", "int64p", &PatternStartTime:=0)
-						if (currentWalk.name != "crab")
-							nm_createWalk(movement, "crab") ; create cycled walk script for this gather session
-						else
-							Send "{F13}" ; start new cycle
-
-						KeyWait "F14", "D T5 L" ; wait for pattern start
-
-						Loop 600
-						{
-							if(!DisableToolUse) {
-								sendinput "{click down}"
-								sleep 50
-								sendinput "{click up}"
-							}
-							if(nm_imgSearch("crab.png",70,"lowright")[1] = 0){
-								Crdead:=1
-								Send "{" RotUp " 2}"
-								break 2
-							}
-							if((Mod(A_Index, 10) = 0) && (not nm_activeHoney())){
-								inactiveHoney++
-								if (inactiveHoney>=10)
-									break 2
-							}
-							if(youDied)
-								break 2
-							if((A_Index = 600) || !GetKeyState("F14"))
-								break
-							Sleep 50
-						}
-						DllCall("GetSystemTimeAsFileTime", "int64p", &time:=0)
-						ElaspedCrabTime := (time-CrabStartTime)//10000
-						If (ElaspedCrabTime > 900000){
-							nm_setStatus("Time Limit", "Coco Crab")
-							LastCocoCrab:=nowUnix()-floor(129600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
-							IniWrite LastCocoCrab, "settings\nm_config.ini", "Collect", "LastCocoCrab"
-							nm_endWalk()
-							Return
-						}
-					}
-					nm_endWalk()
-				}
-				else { ;No Crab try again in 2 hours
-					LastCocoCrab:=nowUnix()-floor(129600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+7200
-					IniWrite LastCocoCrab, "settings\nm_config.ini", "Collect", "LastCocoCrab"
-					nm_setStatus("Missing", "Coco Crab")
-				}
-
-				;loot
-				if(Crdead) {
-					DllCall("GetSystemTimeAsFileTime", "int64p", &time:=0)
-					duration := DurationFromSeconds((time-CrabStartTime)//10000000, "mm:ss")
-					nm_setStatus("Defeated", "Coco Crab`nTime: " duration)
-					ElapsedPatternTime := (time-PatternStartTime)//10000
-					movement :=
-					(
-					nm_Walk(((ElapsedPatternTime > leftright_start) && (ElapsedPatternTime < leftright_start+4*moves*move_delay)) ? Abs(Abs(Mod((ElapsedPatternTime-moves*move_delay-leftright_start)*2/move_delay, moves*4)-moves*2)-moves*3/2) : moves*3/2, (((ElapsedPatternTime > leftright_start+moves/2*move_delay) && (ElapsedPatternTime < leftright_start+3*moves/2*move_delay)) || ((ElapsedPatternTime > leftright_start+5*moves/2*move_delay) && (ElapsedPatternTime < leftright_start+7*moves/2*move_delay))) ? RightKey : LeftKey) "
-					" (((ElapsedPatternTime < leftright_start) || (ElapsedPatternTime > leftright_end)) ? nm_Walk(4, FwdKey) : "")
-					)
-					nm_createWalk(movement)
-					KeyWait "F14", "D T5 L"
-					KeyWait "F14", "T20 L"
-					nm_endWalk()
-					TotalBossKills:=TotalBossKills+1
-					SessionBossKills:=SessionBossKills+1
-					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
-					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
-					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
-					nm_setStatus("Looting", "Coco Crab")
-					nm_loot(9, 4, "right")
-					nm_loot(9, 4, "left")
-					nm_loot(9, 4, "right")
-					nm_loot(9, 4, "left")
-					nm_loot(9, 4, "right")
-					nm_loot(9, 4, "left")
-					LastCocoCrab:=nowUnix()
-					IniWrite LastCocoCrab, "settings\nm_config.ini", "Collect", "LastCocoCrab"
-					break
-				}
-				else if (A_Index = 2) { ;crab kill failed, try again in 30 mins
-					LastCocoCrab:=nowUnix()-floor(129600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
-					IniWrite LastCocoCrab, "settings\nm_config.ini", "Collect", "LastCocoCrab"
-					nm_setStatus("Failed", "Coco Crab")
-				}
 			}
 		}
 	}
 }
+;Not fullt rewritten
+nm_killSnail(){
+	global youDied, VBState, StumpSnailCheck, LastStumpSnail, MonsterRespawnTime, 
+			currentWalk, ShellAmuletMode, TotalBossKills, SessionBossKills, InputSnailHealth,
+			ElaspedSnailTime
+			
+	static movement :=
+	(
+	nm_Walk(2.5, RightKey) "
+	" nm_Walk(2.5, FwdKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(5, BackKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(2.5, FwdKey) "
+	" nm_Walk(5, RightKey) "
+	" nm_Walk(2.5, BackKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(5, FwdKey) "
+	" nm_Walk(2.5, Leftkey) "
+	" nm_Walk(2.5, BackKey) "
+	" nm_Walk(2.5, Rightkey)
+	)
+
+	offcooldown := nowUnix() - LastStumpSnail > Floor(345600 * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01))
+	if StumpSnailCheck && offcooldown { 
+		loop 2 {
+			wait := Min(20000, (50 - HiveBees) * 1000)
+			nm_Reset(1, wait)
+			nm_setStatus("Traveling", "Stump Snail")
+			nm_gotoField("stump")
+			nm_setStatus("Searching", "Stump Snail")
+			loop 15 { 
+				if found := nm_findBug() 
+					break
+				Sleep(100)
+			}
+			nm_createWalk(nm_Walk(1, FwdKey), "snailWalk")
+			KeyWait "F14", "D T5 L"
+			KeyWait "F14", "T60 L"
+			nm_endWalk()
+			if !found { 
+				LastStumpSnail := nowUnix() - Floor(345600 * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01)) + 7200
+				IniWrite LastStumpSnail, "settings\nm_config.ini", "Collect", "LastStumpSnail"
+				nm_setStatus("Missing", "Stump Snail")
+				return
+			}
+			SSdead := 0
+			nm_setStatus("Attacking", "Stump Snail")
+			DllCall("GetSystemTimeAsFileTime", "int64p", &SnailStartTime := 0)
+			KillCheck := UpdateTimer := SnailStartTime
+			Send "{" RotUp " 2}{" SC_1 "}"
+			inactiveHoney := 0
+			loop {
+				if SprinklerType = "Supreme" {
+					if currentWalk.name != "snail" 
+						nm_createWalk(movement, "snail") 
+					else
+						Send "{F13}" 
+					KeyWait "F14", "D T5 L" 
+				}
+				Click "Down"
+				loop 600 {
+					Sleep(50)
+					if nm_AmuletPrompt((ShellAmuletMode = 1 ? 1 : 3), "Shell") = 1 {
+						SSdead := 1
+						Send "{" RotDown " 2}"
+						break 2
+					}
+					if (Mod(A_Index, 10) = 0) && (!nm_activeHoney()) {
+						inactiveHoney++
+						if inactiveHoney >= 10
+							break 2
+					}
+					if Mod(A_Index, 20) = 0 {
+						if disconnectCheck()
+							break
+						if nm_MondoInterrupt()
+							break
+					}
+					if youDied
+						break 2
+					if VBState {
+						nm_endWalk()
+						Click "Up"
+						return
+					}
+					if SprinklerType = "Supreme" {
+						if !GetKeyState("F14") || A_Index = 600 {
+							nm_fieldDriftCompensation()
+							Break
+						}
+					}
+				}
+				Click "Up"
+				DllCall("GetSystemTimeAsFileTime", "int64p", &currentTime := 0)
+				ElaspedSnailTime := (currentTime - SnailStartTime) // 10000
+				LastHealthCheck := (currentTime - KillCheck) // 10000
+				LastUpdate := (currentTime - UpdateTimer) // 10000
+				if (SnailTime != "Kill") && ((ElaspedSnailTime > SnailTime) * 60000) {
+					nm_setStatus("Time Limit", "Stump Snail")
+					LastStumpSnail := nowUnix() - Floor(345600 * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01)) + 1800
+					break
+				}
+				if LastUpdate > 60000 {
+					if nm_KillTimeEstimation("Snail", LastHealthCheck) != 0 {
+						KillCheck := currentTime
+					}
+					UpdateTimer := currentTime
+				}
+			}
+			nm_endWalk()
+
+			if SSdead {
+				TotalBossKills += 1
+				SessionBossKills += 1
+				PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
+				IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
+				IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
+				LastStumpSnail := nowUnix()
+				IniWrite LastStumpSnail, "settings\nm_config.ini", "Collect", "LastStumpSnail"
+				InputSnailHealth := 100.00
+				IniWrite InputSnailHealth, "settings\nm_config.ini", "Collect", "InputSnailHealth"
+				intialHealthCheck := 0
+				break
+			}
+			else if (A_Index = 2){ ;stump snail not dead, come again in 30 mins
+				LastStumpSnail := nowUnix() - Floor(345600 * (1 - (MonsterRespawnTime ? MonsterRespawnTime : 0) * 0.01)) + 1800
+				IniWrite LastStumpSnail, "settings\nm_config.ini", "Collect", "LastStumpSnail"
+			}
+		}
+	}
+}
+nm_lootBug(status_message, left_offset, length, right_movements, rot_direction, rot_count){
+	movement := ; by Lorddrak 
+	(
+	'
+	nm_walk(' left_offset ', "' LeftKey '")
+	movement_keys := [["' FwdKey '", "' RightKey '", "' BackKey '"], ["' BackKey '", "' LeftKey '", "' FwdKey '"]]
+	for keys in movement_keys {
+		loop ' right_movements ' {
+			nm_Walk(' length ', keys[1])
+			nm_Walk(2, keys[2])
+			nm_Walk(' length ', keys[3])
+			nm_Walk(2, keys[2])
+		}
+	}
+	nm_walk((' right_movements ' ** 2) - (' left_offset ' / 2), "' RightKey '")
+	'
+	)
+	if DisableToolUse = false
+		Click "Down"
+	nm_setShiftLock(0)
+	nm_setStatus("Looting", status_message)
+	loop rot_count
+		Send "{" rot_direction "}"
+	nm_createWalk(movement)
+	KeyWait("F14", "D T5 L"), KeyWait("F14", "T60 L")
+	nm_endWalk()
+	Send "{" rot_direction " " 8 - rot_count "}"
+	Click "Up"
+}
+nm_collectBabyLove(width, length){
+	hWnd := GetRobloxHWND()
+	offsetY := GetYOffset(hWnd)
+	GetRobloxClientPos(hWnd)
+	static movement :=
+	(
+	'
+	loop 4 {
+		Sleep(10000)	
+		' nm_Walk(length / 2, LeftKey) '
+		' nm_Walk(width, BackKey) '
+		' nm_Walk(length, RightKey) '
+		' nm_Walk(width, BackKey) '
+		' nm_Walk(length, LeftKey) '
+		' nm_Walk(width, BackKey) '
+		' nm_Walk(length, RightKey) '
+		' nm_Walk(width, FwdKey) '
+		' nm_Walk(length, LeftKey) '
+		' nm_Walk(width, FwdKey) '
+		' nm_Walk(length, RightKey) '
+		' nm_Walk(width, FwdKey) '
+		' nm_Walk(length, LeftKey) '
+		' nm_Walk(width, FwdKey) '
+		' nm_Walk(length, RightKey) '
+		' nm_Walk(width, FwdKey) '
+		' nm_Walk(length, LeftKey) '
+		' nm_Walk(width, FwdKey) '
+		' nm_Walk(length, RightKey) '
+		' nm_Walk(width, BackKey) '
+		' nm_Walk(length, LeftKey) '
+		' nm_Walk(width, BackKey) '
+		' nm_Walk(length, RightKey) '
+		' nm_Walk(width, BackKey) '
+		' nm_Walk(length / 2, LeftKey) '
+	}
+	'
+	)
+
+	nm_setStatus("Waiting", "BabyLove Buff")
+	Sleep(25000)
+	nm_createWalk(movement)
+	KeyWait "F14", "D T5 L"
+	loop {
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + offsetY "|" windowWidth "|" windowHeight // 13)
+		babylove_found := Gdip_ImageSearch(pBMScreen, bitmaps["buffbabylove"],,,,,, 15) = 1
+		Gdip_DisposeImage(pBMScreen)
+		if babylove_found || GetKeyState("F14") = false {
+			nm_endWalk()
+			return
+		}
+		Sleep(100)
+	}
+}
+nm_findBug(kingbeetle := false) => (nm_HealthDetection(kingbeetle).Length > 0)
 nm_Mondo(){
 	global youDied
 	global VBState
@@ -18407,7 +17018,7 @@ nm_PolarQuest(){
 	;do quest stuff
 	if(PolarQuestComplete != 1) {
 		if ((QuestLadybugs && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestRhinoBeetles && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestSpider && (nowUnix()-LastBugrunSpider)>floor(1830*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestMantis && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestScorpions && (nowUnix()-LastBugrunScorpions)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (QuestWerewolf && (nowUnix()-LastBugrunWerewolf)>floor(3600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))){
-			nm_Bugrun()
+			nm_killFieldBugs()
 		}
 		if(VBState=1)
 			return
@@ -18684,7 +17295,7 @@ nm_RileyQuest(){
 		if(QuestRedBoost)
 			nm_ToAnyBooster()
 		if((RileyLadybugs && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (RileyScorpions && (nowUnix()-LastBugrunScorpions)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) {
-			nm_Bugrun()
+			nm_killFieldBugs()
 		}
 		if(VBState=1)
 			return
@@ -18960,7 +17571,7 @@ nm_BuckoQuest(){
 		if(QuestBlueBoost)
 			nm_ToAnyBooster()
 		if((BuckoRhinoBeetles && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (BuckoMantis && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) {
-			nm_Bugrun()
+			nm_killFieldBugs()
 		}
 		if(VBState=1)
 			return
@@ -19707,7 +18318,13 @@ nm_bugDeathCheck(){
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; PATH FUNCTIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-nm_createPath(path) => nm_createWalk(path, , nm_PathVars())
+nm_createPath(type, location, vars := ""){
+	if paths[type].Has(location) {
+		nm_createWalk(paths[type][location], , nm_PathVars() "`r`n" vars)
+		return
+	}
+	nm_setStatus("Error", "Path " type "-" location " not found!")
+}
 nm_PathVars(){
 	return
 	(
@@ -19865,21 +18482,16 @@ nm_PathVars(){
 }
 nm_gotoField(location){
 	global HiveConfirmed:=0
-	path := paths["gtf"][StrReplace(location, " ")]
 
 	nm_setShiftLock(0)
-
-	nm_createPath(path)
+	nm_createPath("gtf", StrReplace(location, " "))
 	KeyWait "F14", "D T5 L"
 	KeyWait "F14", "T120 L"
 	nm_endWalk()
 }
 nm_walkFrom(field){
-	path := paths["wf"][StrReplace(field, " ")]
-
 	nm_setShiftLock(0)
-
-	nm_createPath(path)
+	nm_createPath("wf", StrReplace(field, " "))
 	KeyWait "F14", "D T5 L"
 	nm_setStatus("Traveling", "Hive")
 	KeyWait "F14", "T120 L"
@@ -19887,11 +18499,9 @@ nm_walkFrom(field){
 }
 nm_gotoPlanter(location, waitEnd := 1){
 	global HiveConfirmed:=0
-	path := paths["gtp"][StrReplace(location, " ")]
 
 	nm_setShiftLock(0)
-
-	nm_createPath(path)
+	nm_createPath("gtp", StrReplace(location, " ") )
 	KeyWait "F14", "D T5 L"
 	if WaitEnd
 	{
@@ -19901,11 +18511,9 @@ nm_gotoPlanter(location, waitEnd := 1){
 }
 nm_gotoCollect(location, waitEnd := 1){
 	global HiveConfirmed:=0
-	path := paths["gtc"][StrReplace(location, " ")]
 
 	nm_setShiftLock(0)
-
-	nm_createPath(path)
+	nm_createPath("gtc", StrReplace(location, " "))
 	KeyWait "F14", "D T5 L"
 	if waitEnd
 	{
@@ -19915,17 +18523,14 @@ nm_gotoCollect(location, waitEnd := 1){
 }
 nm_gotoBooster(booster){
 	global HiveConfirmed:=0
-	path := paths["gtb"][booster]
 
 	nm_setShiftLock(0)
-
-	nm_createPath(path)
+	nm_createPath("gtb", booster)
 	KeyWait "F14", "D T5 L"
 	KeyWait "F14", "T120 L"
 	nm_endWalk()
 }
 nm_gotoQuestgiver(giver){
-	path := paths["gtq"][giver]
 	nm_setShiftLock(0)
 	success:=0
 	Loop 2
@@ -19936,7 +18541,7 @@ nm_gotoQuestgiver(giver){
 
 		nm_setStatus("Traveling", "Questgiver: " giver)
 
-		nm_createPath(path)
+		nm_createPath("gtq", giver)
 		KeyWait "F14", "D T5 L"
 		KeyWait "F14", "T120 L"
 		nm_endWalk()
@@ -19975,6 +18580,17 @@ nm_gotoQuestgiver(giver){
 			return
 	}
 }
+nm_gotoKill(boss, goOutside := true, goInside := true){
+	global HiveConfirmed := 0
+
+	nm_setShiftLock(false)
+	nm_createPath("gtk", boss, "goOutside := " goOutside ", goInside := " goInside)
+	KeyWait "F14", "D T5 L"
+	KeyWait "F14", "T120 L"
+	nm_endWalk()
+}
+
+
 ba_planter(){
 	global planternames
 	global nectarnames
