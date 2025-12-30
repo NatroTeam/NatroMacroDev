@@ -13000,8 +13000,9 @@ nm_killFieldBugs(){
 		nm_setStatus("Traveling", status_destination_field)
 		nm_gotoField(destination_field)
 
+		require_healthbar := ((bug_values.count = 2) && (bug_values.name.Length = 1)) 
 		loop 3 {
-			killed_bug := nm_killBug(status_bug_locaion, bug_values.name)
+			killed_bug := nm_killBug(status_bug_locaion, bug_values.name, require_healthbar)
 			if !youDied
 				break
 			nm_Reset(0, 2000, 0)
@@ -13107,7 +13108,7 @@ nm_killBosses(){
 		return ((condition && off_cooldown) && HiveBees >= bees_req) 
 	}
 }
-nm_killBug(status_message, bug_names){
+nm_killBug(status_message, bug_names, require_healthbar){
 	GetRobloxClientPos()
 	killed_all := false
 	killed_bug := {ladybugs: false, rhinobeetles: false, mantis: false, scorpions: false, spider: false, werewolf: false}
@@ -13123,7 +13124,7 @@ nm_killBug(status_message, bug_names){
 	if found_bug {
 		nm_setStatus("Attacking", status_message)
 		loop 300 {
-			if youDied || ((findKillMessages() = true) && (nm_findBug() = false))
+			if youDied || (killRequirements() = true)
 				break
 			Sleep(100)
 		}
@@ -13140,6 +13141,10 @@ nm_killBug(status_message, bug_names){
 		}
 		Gdip_DisposeImage(pBMScreen)
 		return confirmKillCount()
+	}
+	killRequirements() {
+		found_healthbar := (require_healthbar ? (nm_findBug() = false) : true)
+		return ((findKillMessages() = true) && found_healthbar)
 	}
 	confirmKillCount() {
 		kill_count := 0 
@@ -13185,7 +13190,7 @@ nm_killKingBeetle(&path_failed, &boss_found){
 		amulet_mode := KingBeetleAmuletMode = 1 ? 1 : 3
 		if nm_AmuletPrompt(amulet_mode, "King Beetle")
 			return true
-		nm_createWalk("nm_Walk(20, FwdKey)")
+		nm_createWalk(nm_Walk(20, FwdKey) "`r`n" nm_Walk(3, FwdKey, RightKey))
 		KeyWait("F14", "D T5 L"), KeyWait("F14", "T60 L")
 		nm_endWalk()	
 		Send "{" RotLeft "}"
@@ -13206,9 +13211,9 @@ nm_killTunnelBear(&path_failed, &boss_found){
 	backsteps := 0
 	while backsteps <= 25 {
 		pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth // 4) "|" windowY "|" windowWidth // 2 "|" windowHeight // 8)
-		tunnelbeartop := Gdip_ImageSearch(pBMScreen, pBMTunnelBear,,,,,, 3) = 1
+		tunnelbear_top := Gdip_ImageSearch(pBMScreen, pBMTunnelBear,,,,,, 3) = 1
 		Gdip_DisposeImage(pBMScreen)
-		if tunnelbeartop {
+		if tunnelbear_top {
 			nm_Walk(3, BackKey)
 			backsteps++
 			Sleep(500)
