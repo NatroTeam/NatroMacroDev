@@ -12955,8 +12955,8 @@ nm_killFieldBugs(){
 		"Pineapple",  [{name: ["RhinoBeetles"], count: 1, respawn_time: 330, condition: (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll), bees: 0, loot_size: [7, 8, 3, 0, 0]}, 
 					   {name: ["Mantis"], count: 1, respawn_time: 1230, condition: (BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll), bees: 10, loot_size: [7, 8, 3, 0, 0]}],		
 		"Pinetree",   [{name: ["Mantis"], count: 2, respawn_time: 1230, condition: (BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll), bees: 15, loot_size: [11, 8, 4, RotLeft, 2]}],
-		"Rose",       [{name: ["Scorpions"], count: 2, respawn_time: 1230, condition: (BugrunScorpionsCheck || QuestScorpions || RileyScorpions || RileyAll), bees: 15, loot_size: [9, 5, 3, 0, 0]}],
-		"Spider",     [{name: ["Spider"], count: 1, respawn_time: 1830, condition: (BugrunSpiderCheck || QuestSpider || RileyAll), bees: 5, loot_size: [5, 6, 4, RotLeft, 1]}],	
+		"Rose",       [{name: ["Scorpions"], count: 2, respawn_time: 1230, condition: (BugrunScorpionsCheck || QuestScorpions || RileyScorpions || RileyAll), bees: 15, loot_size: [9, 5, 3, RotLeft, 1]}],
+		"Spider",     [{name: ["Spider"], count: 1, respawn_time: 1830, condition: (BugrunSpiderCheck || QuestSpider || RileyAll), bees: 5, loot_size: [5, 6, 4, RotLeft, 4]}],	
 		"Pumpkin",    [{name: ["Werewolf"], count: 1, respawn_time: 3630, condition: ((BugrunWerewolfCheck || QuestWerewolf || RileyAll)), bees: 15, loot_size: [4, 5, 3, 0, 0]}])
 
 	if (VBState = 1 || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
@@ -13052,7 +13052,7 @@ nm_killBosses(){
 	kill_times := {KingBeetle: 0, TunnelBear: 0, Commando: 0}
 	bosses := Map(
 		"KingBeetle", {condition: KingBeetleCheck, respawn_time: 86400, reattempt_time: 7200, babylove: KingBeetleBabyCheck, bees: 0, bl_collect_size: [1.5, 9]},
-		"TunnelBear", {condition: TunnelBearCheck, respawn_time: 172800, reattempt_time: 7200, babylove: TunnelBearBabyCheck, bees: 10, bl_collect_size: [1.5, 4]},
+		"TunnelBear", {condition: TunnelBearCheck, respawn_time: 172800, reattempt_time: 7200, babylove: TunnelBearBabyCheck, bees: 10, bl_collect_size: [1.5, 3]},
 		"CocoCrab",   {condition: CocoCrabCheck, respawn_time: 1800, reattempt_time: 7200, babylove: 0, bees: 35})
 
 	if (VBState = 1 || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
@@ -13161,7 +13161,7 @@ nm_killKingBeetle(&path_failed, &boss_found){
 	GetRobloxClientPos()
 	path_failed := killed_beetle := false
 	pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth // 3) "|" windowY + (windowHeight // 2) "|" windowWidth // 3 "|" windowHeight // 4)
-	path_failed :=  Gdip_ImageSearch(pBMScreen, bitmaps["kingbeetlefloor"],,,,,, 10) < 1 
+	path_failed :=  Gdip_ImageSearch(pBMScreen, bitmaps["kingbeetlefloor"],,,,,, 30) < 1 
 	Gdip_DisposeImage(pBMScreen)
 	loop 10 {
 		if boss_found := nm_findBug(true)
@@ -13226,7 +13226,7 @@ nm_killTunnelBear(&path_failed, &boss_found){
 	Send "{" RotUp " 4}{" ZoomIn " 5}{" ZoomOut " 3}"
 	Sleep(500)
 	pBMScreen := Gdip_BitmapFromScreen(windowX + (windowWidth // 8) "|" windowY + (windowHeight // 3) "|" windowWidth // 6 "|" windowHeight // 6)
-	path_failed := Gdip_ImageSearch(pBMScreen, bitmaps["tunnelbearwall"],,,,,, 5) = 0
+	path_failed := Gdip_ImageSearch(pBMScreen, bitmaps["tunnelbearwall"],,,,,, 30) = 0
 	Gdip_DisposeImage(pBMScreen)
 	if path_failed
 		return false
@@ -13270,8 +13270,21 @@ nm_killCocoCrab(&path_failed, &boss_found){
 	(
 	'
 	GetRobloxClientPos()
-	pBMCrabHealthbar := Gdip_CreateBitmap(5, 5), pG := Gdip_GraphicsFromImage(pBMCrabHealthbar), Gdip_GraphicsClear(pG, 0xff1fe744), Gdip_DeleteGraphics(pG)
+	pBMCrabHealthbar := Gdip_CreateBitmap(3, 3), pG := Gdip_GraphicsFromImage(pBMCrabHealthbar), Gdip_GraphicsClear(pG, 0xff1fe744), Gdip_DeleteGraphics(pG)
 	pBMFallingCoconut := Gdip_CreateBitmap(5, 5), pG := Gdip_GraphicsFromImage(pBMFallingCoconut), Gdip_GraphicsClear(pG, 0xffff543b), Gdip_DeleteGraphics(pG)
+	player_cant_fall := true
+
+	start := A_TickCount
+	loop {
+		pBMScreen := Gdip_BitmapFromScreen(windowX + ((windowWidth * 7) // 16) "|" windowY + (windowHeight // 13) "|" windowWidth // 8 "|" windowHeight // 3)
+		found_healthbar := Gdip_ImageSearch(pBMScreen, pBMCrabHealthbar,,,,,, 15)
+		Gdip_DisposeImage(pBMScreen)
+		Gdip_DisposeImage(pBMScreen)
+		if found_healthbar
+			break
+		if (A_TickCount - start) > 60000
+			ExitApp()
+	}
 
 	loop {
 		dodgeClaws()
@@ -13279,7 +13292,8 @@ nm_killCocoCrab(&path_failed, &boss_found){
 	}
 
 	dodgeClaws() {
-		static horizontal := ["Left", "Right"], vertical := ["Back", "Fwd"]
+		global player_cant_fall
+		static horizontal := [LeftKey, RightKey], vertical := [BackKey, FwdKey]
 		static increment_width := windowWidth // 100, increments := 0
 		static bmp_y := windowY + (windowHeight // 13)
 		static bmp_height := windowHeight // 3
@@ -13289,24 +13303,26 @@ nm_killCocoCrab(&path_failed, &boss_found){
 		loop 4 {
 			loop {
 				pBMScreen := Gdip_BitmapFromScreen(bmp_x "|" bmp_y "|" bmp_width "|" bmp_height)
-				found_crab := Gdip_ImageSearch(pBMScreen, pBMCrabHealthbar,,,,,, 10)
+				found_crab := Gdip_ImageSearch(pBMScreen, pBMCrabHealthbar,,,,,, 15) > 0
 				Gdip_DisposeImage(pBMScreen)
 				if found_crab
 					break
 				Sleep(200)
 			}
 			h := horizontal[A_Index & 1 ? 1 : 2]
-			flowers := h = "right" ? 16 : 15
-			nm_Walk(flowers, %h%Key)
+			player_cant_fall := (h = RightKey) 
+			flowers := (h = RightKey ? 16 : 15)
+			nm_Walk(flowers, h)
 			if A_Index < 4 {
 				v := vertical[A_Index & 1 ? 1 : 2]
-				nm_Walk(2, %v%Key)
+				nm_Walk(2, v)
 			}
 		}
 		increments += 1
 	}
 	
 	dodgeCoconuts() {
+		global player_cant_fall
 		static bmp_x := windowX + (windowWidth // 3)
 		static bmp_y := windowY + (windowHeight // 2)
 		static bmp_width := windowWidth // 18
@@ -13323,8 +13339,8 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			pBMScreenCurrent := Gdip_BitmapFromScreen(bmp_x "|" bmp_y "|" bmp_width "|" bmp_height)
 			found_coconut := Gdip_ImageSearch(pBMScreenCurrent, pBMFallingCoconut,,,,,, 50)
 			Gdip_DisposeImage(pBMScreenCurrent)
-			if found_coconut {
-				' nm_Walk(9, BackKey ) '
+			if found_coconut && player_cant_fall {
+				' nm_Walk(9, BackKey) '
 				Sleep(8000 - (A_TickCount - start))
 				' nm_Walk(9, FwdKey) '
 				break
@@ -13332,8 +13348,9 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			if (A_TickCount - start) >= 9000 
 				break
 		}
-		if found_coconut = 0
+		if found_coconut = 0 {
 			' nm_Walk(2, FwdKey) '
+		}
 		Send "{' RotDown ' 5}"
 		loop 4 {
 			Send "{' ZoomOut '}"
@@ -13365,15 +13382,17 @@ nm_killCocoCrab(&path_failed, &boss_found){
 
 	; could not find a reliable thing to check for
 	path_failed := killed_crab := false
-	GetRobloxClientPos()
 	boss_found := true
+	GetRobloxClientPos()
+	Sleep(500)
 	pBMScreen := Gdip_BitmapFromScreen(windowX + ((windowWidth * 7) // 16) "|" windowY + (windowHeight // 4) + (windowHeight // 16) "|" windowWidth // 16 "|" windowHeight // 16)
-	Gdip_SetBitmapToClipboard(pBMScreen)
 	for type in bitmaps["crablock"]
-		foundlock_%type% := Gdip_ImageSearch(pBMScreen, bitmaps["crablock"][type],,,,,, 20) > 0
+		foundlock_%type% := Gdip_ImageSearch(pBMScreen, bitmaps["crablock"][type],,,,,, 35) > 0
+	Gdip_DisposeImage(pBMScreen)
 	if !(foundlock_night || foundlock_honey_storm || foundlock_snow_storm || foundlock_beesmas_day) {
 		boss_found := false
-		return false
+		path_failed := true
+		return killed_crab
 	}
 
 	Send "{" RotRight " 2}"
@@ -13384,7 +13403,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 	KeyWait("F14", "D T5 L"), 
 	start := nowUnix()
 	loop {
-		if youDied || killed_crab || (nowUnix() - start > 1200) || (GetKeyState("F14") = false) {
+		if youDied || killed_crab || (nowUnix() - start > 1100) || (GetKeyState("F14") = false) {
 			nm_endWalk()
 			break
 		}
@@ -13405,7 +13424,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 		nm_createWalk(align_movement)
 		KeyWait("F14", "D T5 L"), KeyWait("F14", "T20 L")
 		nm_endWalk()
-		left_offset := 9, length := 8, right_movements := 5, rot_direction := 0, rot_count := 0
+		left_offset := 11, length := 7, right_movements := 5, rot_direction := 0, rot_count := 0
 		loop 5
 			nm_lootBug("CocoCrab", left_offset, length, right_movements, rot_direction, rot_count)
 	}
@@ -13675,7 +13694,7 @@ nm_lootBug(status_message, left_offset, length, right_movements, rot_direction, 
 	movement := ; by Lorddrak 
 	(
 	'
-	nm_walk(' left_offset ', "' LeftKey '")
+	' nm_walk(left_offset, LeftKey) '
 	movement_keys := [["' FwdKey '", "' RightKey '", "' BackKey '"], ["' BackKey '", "' LeftKey '", "' FwdKey '"]]
 	for keys in movement_keys {
 		loop ' right_movements ' {
@@ -13685,7 +13704,7 @@ nm_lootBug(status_message, left_offset, length, right_movements, rot_direction, 
 			nm_Walk(2, keys[2])
 		}
 	}
-	nm_walk((' right_movements ' ** 2) - (' left_offset ' / 2), "' RightKey '")
+	' nm_walk((right_movements ** 2) - (left_offset / 2), RightKey) '
 	'
 	)
 	if DisableToolUse = false
