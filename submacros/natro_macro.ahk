@@ -18094,12 +18094,12 @@ nm_confirmNight()
 	ActivateRoblox()
 	GetRobloxClientPos()
 	CamMove(0)
-	
+
 	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight) ;No limiting, itd be worse here.
 
 	for k, v in bitmaps["day"]
 	{
-		if Gdip_ImageSearch(pBMArea, v)
+		if Gdip_ImageSearch(pBMArea, v) > 0
 		{
 			CamMove(1)
 			Gdip_DisposeImage(pBMArea)
@@ -18108,7 +18108,7 @@ nm_confirmNight()
 	}
 
 	for k, v in bitmaps["night"]
-		if Gdip_ImageSearch(pBMArea, v)
+		if Gdip_ImageSearch(pBMArea, v) > 0
 			break
 
 	CamMove(1)
