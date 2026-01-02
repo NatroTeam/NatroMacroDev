@@ -2101,6 +2101,7 @@ hBitmapsSBT := Map(), hBitmapsSBT.CaseSense := 0
 #Include "stickerprinter\bitmaps.ahk"
 #Include "memorymatch\bitmaps.ahk"
 #include "reset\bitmaps.ahk"
+#include "night\bitmaps.ahk"
 
 (hBitmapsSB := Map()).CaseSense := 0
 for x,y in hBitmapsSBT
@@ -18083,29 +18084,47 @@ nm_Night(){
 	nm_ViciousBee()
 	CheckNight := 0
 }
-nm_confirmNight(){
-	global CheckNight
+
+nm_confirmNight()
+{
+	global CheckNight, bitmaps
+
 	nm_setStatus("Confirming", "Night")
 	nm_Reset(0, 2000, 0)
-	sendinput "{" RotDown "}"
-	loop 10 {
-		SendInput "{" ZoomOut "}"
-		Sleep 100
-		if ((findImg := nm_imgSearch("nightsky.png", 50, "abovebuff"))[1] = 0)
-			break
-		sendinput "{" RotLeft " 4}"
-		findImg := nm_imgSearch("nightsky.png", 50, "abovebuff")
-		sendinput "{" RotRight " 4}"
-		if findImg[1] = 0		
+	ActivateRoblox()
+	GetRobloxClientPos()
+	CamMove(0)
+	
+	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight) ;No limiting, itd be worse here.
+
+	for k, v in bitmaps["day"]
+	{
+		if Gdip_ImageSearch(pBMArea, v)
+		{
+			CamMove(1)
+			Gdip_DisposeImage(pBMArea)
+			return 0
+		}
+	}
+
+	for k, v in bitmaps["night"]
+		if Gdip_ImageSearch(pBMArea, v)
 			break
 
+	CamMove(1)
+
+	CamMove(Revert := 0)
+	{
+		loop 4
+			(Revert ? (SendInput("{" RotDown "}"), SendInput("{" ZoomIn "}")) : (SendInput("{" RotUp "}"), SendInput("{" ZoomOut "}")))
+		Sleep(200)
 	}
-	sendinput "{" RotUp " 1}"
-	send "{" ZoomOut " 8}"
-	if findImg[1]=0
-		CheckNight := 0
-	return (findImg[1]=0)
+
+	Gdip_DisposeImage(pBMArea)
+
+	return 1
 }
+
 nm_NightMemoryMatch(){
 	; night (general) + no amulet + nightmm ready + night confirmed (last b/c reset)
 	if (!nm_NightInterrupt() || nm_AmuletPrompt(3) || !(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || !nm_confirmNight())
