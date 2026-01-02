@@ -13310,9 +13310,9 @@ nm_killCocoCrab(&path_failed, &boss_found){
 				Sleep(200)
 			}
 			h := horizontal[A_Index & 1 ? 1 : 2]
-			player_cant_fall := (h = RightKey) 
 			flowers := (h = RightKey ? 16 : 15)
 			nm_Walk(flowers, h)
+			player_cant_fall := (h = RightKey) 
 			if A_Index < 4 {
 				v := vertical[A_Index & 1 ? 1 : 2]
 				nm_Walk(2, v)
@@ -13421,7 +13421,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 		' nm_Walk(11, BackKey) '
 		'
 		)
-		nm_createWalk(align_movement)
+		nm_createWalk(movement)
 		KeyWait("F14", "D T5 L"), KeyWait("F14", "T20 L")
 		nm_endWalk()
 		left_offset := 11, length := 7, right_movements := 5, rot_direction := 0, rot_count := 0
@@ -13430,6 +13430,10 @@ nm_killCocoCrab(&path_failed, &boss_found){
 	}
 
 	return killed_crab
+}
+#HotIf WinActive("ahk_exe RobloxPlayerBeta.exe")
+~g:: {
+	nm_lootBug("buh", 10, 4, 4, 0, 0)
 }
 ;Not fully rewritten
 nm_killCommando(){
@@ -13704,7 +13708,7 @@ nm_lootBug(status_message, left_offset, length, right_movements, rot_direction, 
 			nm_Walk(2, keys[2])
 		}
 	}
-	' nm_walk((right_movements ** 2) - (left_offset / 2), RightKey) '
+	' nm_walk(left_offset + 1, RightKey) '
 	'
 	)
 	if DisableToolUse = false
