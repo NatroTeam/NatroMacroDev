@@ -18087,7 +18087,7 @@ nm_Night(){
 
 nm_confirmNight()
 {
-	global CheckNight, bitmaps
+	global CheckNight
 
 	nm_setStatus("Confirming", "Night")
 	nm_Reset(0, 2000, 0)
