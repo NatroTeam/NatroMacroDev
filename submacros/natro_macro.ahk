@@ -11365,8 +11365,8 @@ nm_imgSearch(fileName,v,aim := "full", trans:="none"){
 	if DirExist(A_WorkingDir "\nm_image_assets")
 	{
 		try result := ImageSearch(&FoundX, &FoundY, windowX + xi, windowY + yi, windowX + ww, windowY + wh, "*" v ((trans != "none") ? (" *Trans" trans) : "") " " A_WorkingDir "\nm_image_assets\" fileName)
-		catch {
-			nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
+		catch as err {
+			nm_setStatus("Error", err.Message)
 			Sleep 5000
 			ProcessClose DllCall("GetCurrentProcessId")
 		}
