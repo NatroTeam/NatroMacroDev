@@ -18095,11 +18095,11 @@ nm_confirmNight()
 	GetRobloxClientPos()
 	CamMove(0)
 
-	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight) ;No limiting, itd be worse here.
+	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
 
-	for k, v in bitmaps["day"]
+	for , bitmap in bitmaps["day"]
 	{
-		if Gdip_ImageSearch(pBMArea, v) > 0
+		if Gdip_ImageSearch(pBMArea, bitmap) > 0
 		{
 			CamMove(1)
 			Gdip_DisposeImage(pBMArea)
@@ -18107,22 +18107,33 @@ nm_confirmNight()
 		}
 	}
 
-	for k, v in bitmaps["night"]
-		if Gdip_ImageSearch(pBMArea, v) > 0
+	for , bitmap in bitmaps["night"]
+		if Gdip_ImageSearch(pBMArea, bitmap) > 0
 			break
 
 	CamMove(1)
 
-	CamMove(Revert := 0)
-	{
-		loop 4
-			(Revert ? (SendInput("{" RotDown "}"), SendInput("{" ZoomIn "}")) : (SendInput("{" RotUp "}"), SendInput("{" ZoomOut "}")))
-		Sleep(200)
-	}
-
 	Gdip_DisposeImage(pBMArea)
 
 	return 1
+
+	CamMove(Revert)
+	{
+		loop 4
+		{
+			if (Revert)
+			{
+				SendInput("{" RotDown "}")
+				SendInput("{" ZoomIn "}")
+			}
+			else
+			{
+				SendInput("{" RotUp "}")
+				SendInput("{" ZoomOut "}")
+			}
+		}
+		Sleep(200)
+	}
 }
 
 nm_NightMemoryMatch(){

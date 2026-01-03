@@ -11,5 +11,3 @@ bitmaps["day"]["ant"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAI
 bitmaps["night"] := Map()
 bitmaps["night"]["snow"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["night"]["snow"]), Gdip_GraphicsClear(G, 0xFF56646B), Gdip_DeleteGraphics(G)
 bitmaps["night"]["grass"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["night"]["grass"]), Gdip_GraphicsClear(G, 0xFF1C4005), Gdip_DeleteGraphics(G)
-
-; todo: all of these bitmaps to graphics clear because its overall more consistent
