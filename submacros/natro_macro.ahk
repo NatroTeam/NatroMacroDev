@@ -13425,7 +13425,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 		KeyWait("F14", "D T5 L"), KeyWait("F14", "T20 L")
 		nm_endWalk()
 		left_offset := 11, length := 7, right_movements := 5, rot_direction := 0, rot_count := 0
-		loop 5
+		loop 2
 			nm_lootBug("CocoCrab", left_offset, length, right_movements, rot_direction, rot_count)
 	}
 
