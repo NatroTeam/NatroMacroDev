@@ -2708,7 +2708,7 @@ MainGui.SetFont("s9 cDefault Norm", "Tahoma")
 ;hive tools
 MainGui.Add("Button", "x10 y40 w150 h40 vBasicEggHatcherButton Disabled", "Gifted Basic Bee`nAuto-Hatcher").OnEvent("Click", nm_BasicEggHatcher)
 MainGui.Add("Button", "x10 y82 w150 h40 vBitterberryFeederButton Disabled", "Bitterberry`nAuto-Feeder").OnEvent("Click", nm_BitterberryFeeder)
-MainGui.Add("Button", "x10 y124 w150 h40 vAutoMutatorButton Disabled", "Auto-Jelly").OnEvent("Click", blc_mutations)
+MainGui.Add("Button", "x10 y124 w150 h40 vAutoMutatorButton Disabled", "Auto Jelly / SSA Roller").OnEvent("Click", blc_mutations)
 ;other tools
 MainGui.Add("Button", "x10 y184 w150 h42 vGenerateBeeListButton Disabled", "Export Hive Bee List`n(for Hive Builder)").OnEvent("Click", nm_GenerateBeeList)
 ;calculators
@@ -9033,6 +9033,26 @@ blc_mutations(*) {
 				Vector: 0,
 				selectAll: 0
 			},
+			ssa: {
+				mainPassive: "Pop Star",
+				PopStarCheck: 0,
+				ScorchStarCheck: 0,
+				GummyStarCheck: 0,
+				GuidingStarCheck: 0,
+				StarSawCheck: 0,
+				StarShowerCheck: 0,
+				PollenCheck: 0,
+				WhitePollenCheck: 0,
+				RedPollenCheck: 0,
+				BluePollenCheck: 0,
+				ConvertRateCheck: 0,
+				CriticalChanceCheck: 0,
+				InstantConversionCheck: 0,
+				BeeAbilityRateCheck: 0,
+				BeeGatherPollenCheck: 0,
+				DoublePassiveCheck: 0,
+				HoneyLimit: "0"
+			},
 			GUI : {
 				xPos: A_ScreenWidth//2-w//2,
 				yPos: A_ScreenHeight//2-h//2
@@ -9085,11 +9105,101 @@ blc_mutations(*) {
 		{name:"mythicStop", text: "Stop on mythics"},
 		{name:"giftedStop", text: "Stop on gifteds"}
 	]
+	ssaStartY := 60, ssaRowH := 28
+	ssaMainX := 10, ssaSideX := 160, ssaStatsX := 310
+	ssaToggleW := 40, ssaToggleH := 18, ssaIconSize := 18, ssaIconOffset := 42
+	ssaLabelOffset := 60, ssaLabelWidth := 90, ssaStatsLabelWidth := 130
+	ssaMainPassives := [
+		{name:"ssaMainPopStar", text:"Pop Star"},
+		{name:"ssaMainScorchStar", text:"Scorch Star"},
+		{name:"ssaMainGummyStar", text:"Gummy Star"},
+		{name:"ssaMainStarShower", text:"Star Shower"},
+		{name:"ssaMainGuidingStar", text:"Guiding Star"},
+		{name:"ssaMainStarSaw", text:"Star Saw"}
+	]
+	ssaSidePassives := [
+		{name:"PopStarCheck", text:"Pop Star"},
+		{name:"ScorchStarCheck", text:"Scorch Star"},
+		{name:"GummyStarCheck", text:"Gummy Star"},
+		{name:"StarShowerCheck", text:"Star Shower"},
+		{name:"GuidingStarCheck", text:"Guiding Star"},
+		{name:"StarSawCheck", text:"Star Saw"}
+	]
+	ssaStats := [
+		{name:"WhitePollenCheck", text:"White Pollen"},
+		{name:"RedPollenCheck", text:"Red Pollen"},
+		{name:"BluePollenCheck", text:"Blue Pollen"},
+		{name:"PollenCheck", text:"Pollen"},
+		{name:"ConvertRateCheck", text:"Convert Rate"},
+		{name:"CriticalChanceCheck", text:"Critical Chance"},
+		{name:"InstantConversionCheck", text:"Instant Conversion"},
+		{name:"BeeAbilityRateCheck", text:"Bee Ability Rate"},
+		{name:"BeeGatherPollenCheck", text:"Bee Gather Pollen"}
+	]
+	ssaExtras := [
+		{name:"DoublePassiveCheck", text:"Double Passive (500b)"}
+	]
+	ssaHoneyLabel := "Honey Limit (T)"
+	ssaHoneyEditW := 60
+	ssaHoneyEditH := 20
+	ssaExtrasY := ssaStartY + (ssaRowH * ssaMainPassives.Length) + 12
+	ssaHoneyY := ssaExtrasY + (ssaRowH * ssaExtras.Length)
+	ssaHoneyEditX := ssaMainX
+	ssaHoneyEditY := ssaHoneyY - 2
+	ssaHoneyLabelX := ssaHoneyEditX + ssaHoneyEditW + 12
+	ssaHoneyLabelY := ssaHoneyEditY
+	ssaHoneyLabelWidth := 150
+	HoneyLimitRemainingB := 0
+	HoneyLimitBase := ""
+	ssaMainLookup := Map(
+		"ssaMainPopStar", "Pop Star",
+		"ssaMainScorchStar", "Scorch Star",
+		"ssaMainGummyStar", "Gummy Star",
+		"ssaMainStarShower", "Star Shower",
+		"ssaMainGuidingStar", "Guiding Star",
+		"ssaMainStarSaw", "Star Saw")
+	ssaIconMap := Map(
+		"Pop Star", "ssa_popstar",
+		"Scorch Star", "ssa_scorchstar",
+		"Gummy Star", "ssa_gummystar",
+		"Star Shower", "ssa_starshower",
+		"Guiding Star", "ssa_guidingstar",
+		"Star Saw", "ssa_starsaw",
+		"Pollen", "ssa_pollen",
+		"White Pollen", "ssa_whitepollen",
+		"Red Pollen", "ssa_redpollen",
+		"Blue Pollen", "ssa_bluepollen",
+		"Convert Rate", "ssa_convertrate",
+		"Critical Chance", "ssa_criticalchance",
+		"Instant Conversion", "ssa_instantconversion",
+		"Bee Ability Rate", "ssa_beeabilityrate",
+		"Bee Gather Pollen", "ssa_beepollen")
 	getConfig()
+	if !RegExMatch(HoneyLimit, "^\d+$")
+		HoneyLimit := "0"
 	(bitmaps := Map()).CaseSense:=0
 	#Include .\nm_image_assets\mutator\bitmaps.ahk
 	#include .\nm_image_assets\mutatorgui\bitmaps.ahk
 	#include .\nm_image_assets\offset\bitmaps.ahk
+	try bitmaps["birb"] := Gdip_CreateBitmapFromFile(".\nm_image_assets\birb.ico")
+	ssaIconFiles := Map(
+		"ssa_popstar", ".\nm_image_assets\ssa_gui\PopStar.png",
+		"ssa_scorchstar", ".\nm_image_assets\ssa_gui\ScorchStar.png",
+		"ssa_gummystar", ".\nm_image_assets\ssa_gui\GummyStar.png",
+		"ssa_starshower", ".\nm_image_assets\ssa_gui\StarShower.png",
+		"ssa_guidingstar", ".\nm_image_assets\ssa_gui\GuidingStar.png",
+		"ssa_starsaw", ".\nm_image_assets\ssa_gui\StarSaw.png",
+		"ssa_whitepollen", ".\nm_image_assets\ssa_gui\WhitePollen.png",
+		"ssa_redpollen", ".\nm_image_assets\ssa_gui\RedPollen.png",
+		"ssa_bluepollen", ".\nm_image_assets\ssa_gui\BluePollen.png",
+		"ssa_convertrate", ".\nm_image_assets\ssa_gui\ConvertRate.png",
+		"ssa_criticalchance", ".\nm_image_assets\ssa_gui\CriticalChance.png",
+		"ssa_instantconversion", ".\nm_image_assets\ssa_gui\InstantConversion.png",
+		"ssa_beeabilityrate", ".\nm_image_assets\ssa_gui\BeeAbilityRate.png",
+		"ssa_beepollen", ".\nm_image_assets\ssa_gui\BeePollen.png",
+		"ssa_pollen", ".\nm_image_assets\ssa_gui\Pollen.png")
+	for name, path in ssaIconFiles
+		try bitmaps[name] := Gdip_CreateBitmapFromFile(path)
 	startGui() {
 		global
 		local i,j,y,hBM,x
@@ -9100,6 +9210,7 @@ blc_mutations(*) {
 			{name:"selectall", options:"x" w-330 " y220 w40 h18"},
 			{name:"mutations", options:"x" w-170 " y220 w40 h18"},
 			{name:"close", options:"x" w-40 " y5 w28 h28"},
+			{name:"mode", options:"x" w-72 " y7 w24 h24"},
 			{name:"roll", options:"x10 y" h-42 " w" w-56 " h30"},
 			{name:"help", options:"x" w-40 " y" h-42 " w28 h28"}
 		]
@@ -9116,6 +9227,30 @@ blc_mutations(*) {
 			x := 10 + (w-12)/extrasettings.length * (i-1), y:=(316+h-42)//2-10
 			mgui.AddText("v" j.name " x" x " y" y " w40 h18")
 		}
+		for i, j in ssaMainPassives {
+			y := ssaStartY + (A_Index-1) * ssaRowH
+			mgui.AddText("v" j.name " x" ssaMainX " y" y " w140 h24")
+		}
+		for i, j in ssaSidePassives {
+			y := ssaStartY + (A_Index-1) * ssaRowH
+			mgui.AddText("v" j.name " x" ssaSideX " y" y " w140 h24")
+		}
+		for i, j in ssaStats {
+			y := ssaStartY + (A_Index-1) * ssaRowH
+			mgui.AddText("v" j.name " x" ssaStatsX " y" y " w170 h24")
+		}
+		for i, j in ssaExtras {
+			y := ssaExtrasY + (A_Index-1) * ssaRowH
+			mgui.AddText("v" j.name " x" ssaMainX " y" y " w260 h24")
+		}
+		honeyGui := Gui("-Caption +ToolWindow +Owner" mgui.hwnd)
+		honeyGui.BackColor := "262832"
+		honeyGui.SetFont("s11", "Comic Sans MS")
+		honeyEdit := honeyGui.AddEdit("vHoneyLimitInput x0 y0 w" ssaHoneyEditW " h" ssaHoneyEditH " -Border -E0x200 Number Center")
+		honeyEdit.Opt("Background262832 cFEC6DF")
+		honeyEdit.Value := HoneyLimit
+		honeyEdit.OnEvent("Change", HoneyLimitChanged)
+		honeyGui.SetFont()
 		hBM := CreateDIBSection(w, h)
 		hDC := CreateCompatibleDC()
 		SelectObject(hDC, hBM)
@@ -9127,9 +9262,33 @@ blc_mutations(*) {
 		hovercontrol := ""
 		DrawGUI()
 	}
+	SetModeVisibility() {
+		global
+		showJelly := (guiMode = "jelly")
+		mgui["selectall"].Visible := showJelly
+		mgui["mutations"].Visible := showJelly
+		for i, j in beeArr
+			mgui[j].Visible := showJelly
+		for i, j in mutationsArr
+			mgui[j.name].Visible := showJelly
+		for i, j in extrasettings
+			mgui[j.name].Visible := showJelly
+		for i, j in ssaMainPassives
+			mgui[j.name].Visible := !showJelly
+		for i, j in ssaSidePassives
+			mgui[j.name].Visible := !showJelly
+		for i, j in ssaStats
+			mgui[j.name].Visible := !showJelly
+		for i, j in ssaExtras
+			mgui[j.name].Visible := !showJelly
+		UpdateHoneyGui()
+	}
+	guiMode := "jelly"
 	startGUI()
+	SetModeVisibility()
 	OnMessage(0x201, WM_LBUTTONDOWN)
 	OnMessage(0x200, WM_MOUSEMOVE)
+	OnMessage(0x0003, WM_MOVE)
 	DrawGUI() {
 		Gdip_GraphicsClear(G)
 		Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid(0xFF131416), 2, 2, w-4, h-4, 20), Gdip_DeleteBrush(brush)
@@ -9139,8 +9298,18 @@ blc_mutations(*) {
 		Gdip_SetClipRegion(G, region)
 		Gdip_FillRectangle(G, brush, 2, 20, w-4, 14)
 		Gdip_DeleteBrush(brush), Gdip_DeleteRegion(region)
-		Gdip_TextToGraphics(G, "Auto-Jelly", "s20 x20 y5 w460 Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFF131416")), "Comic Sans MS", 460, 30), Gdip_DeleteBrush(brush)
+		Gdip_TextToGraphics(G, (guiMode = "jelly") ? "Auto Jelly" : "SSA Roller", "s20 x20 y5 w460 Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFF131416")), "Comic Sans MS", 460, 30), Gdip_DeleteBrush(brush)
 		Gdip_DrawImage(G, bitmaps["close"], w-40, 5, 28, 28)
+		if bitmaps.Has("birb")
+		{
+			if (hovercontrol = "mode" || guiMode = "ssa")
+				Gdip_FillRoundedRectanglePath(G, brush := Gdip_BrushCreateSolid("0x30FEC6DF"), w-72, 5, 28, 28, 6), Gdip_DeleteBrush(brush)
+			Gdip_DrawImage(G, bitmaps["birb"], w-70, 7, 24, 24)
+			Gdip_TextToGraphics(G, "Click logo to switch", "s9 x" w-180 " y12 Right vCenter c" (brush := Gdip_BrushCreateSolid("0xFF131416")), "Comic Sans MS", 110, 12), Gdip_DeleteBrush(brush)
+		}
+		else
+			Gdip_TextToGraphics(G, "SSA", "s10 x" w-74 " y10 Center vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 28, 20), Gdip_DeleteBrush(brush)
+		if (guiMode = "jelly") {
 		for i, j in beeArr {
 			;bitmaps are w45 h36
 			y := (A_Index-1)//8
@@ -9198,6 +9367,75 @@ blc_mutations(*) {
 			else
 				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[x+25, y+9], [x+28, y+12], [x+33, y+5]]), Gdip_DeletePen(Pen)
 		}
+		} else {
+			Gdip_TextToGraphics(G, "Main Passive", "s12 x" ssaMainX " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
+			Gdip_TextToGraphics(G, "Side Passives", "s12 x" ssaSideX " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
+			Gdip_TextToGraphics(G, "Stats", "s12 x" ssaStatsX " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
+			for i, j in ssaMainPassives {
+				y := ssaStartY + (A_Index-1) * ssaRowH
+				on := (mainPassive = j.text)
+				Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaMainX, y, ssaToggleW, ssaToggleH, 9), Gdip_DeleteBrush(brush)
+				Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), on ? ssaMainX+18 : ssaMainX-2, y-2, 22, 22), Gdip_DeleteBrush(brush)
+				if !on {
+					Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaMainX, y, 18, 18), Gdip_deleteBrush(brush)
+					Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[ssaMainX+5, y+5 ], [ssaMainX+13, y+13]])
+					Gdip_DrawLines(G, Pen								  , [[ssaMainX+5, y+13], [ssaMainX+13, y+5 ]]), Gdip_DeletePen(Pen)
+				}
+				else
+					Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaMainX+25, y+9], [ssaMainX+28, y+12], [ssaMainX+33, y+5]]), Gdip_DeletePen(Pen)
+				if (ssaIconMap.Has(j.text) && bitmaps.Has(ssaIconMap[j.text]))
+					Gdip_DrawImage(G, bitmaps[ssaIconMap[j.text]], ssaMainX + ssaIconOffset, y+1, ssaIconSize, ssaIconSize)
+				Gdip_TextToGraphics(G, j.text, "s13 x" ssaMainX+ssaLabelOffset " y" y " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", ssaLabelWidth, 20), Gdip_DeleteBrush(brush)
+			}
+			for i, j in ssaSidePassives {
+				y := ssaStartY + (A_Index-1) * ssaRowH
+				on := %j.name%
+				Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaSideX, y, ssaToggleW, ssaToggleH, 9), Gdip_DeleteBrush(brush)
+				Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), on ? ssaSideX+18 : ssaSideX-2, y-2, 22, 22), Gdip_DeleteBrush(brush)
+				if !on {
+					Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaSideX, y, 18, 18), Gdip_deleteBrush(brush)
+					Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[ssaSideX+5, y+5 ], [ssaSideX+13, y+13]])
+					Gdip_DrawLines(G, Pen								  , [[ssaSideX+5, y+13], [ssaSideX+13, y+5 ]]), Gdip_DeletePen(Pen)
+				}
+				else
+					Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaSideX+25, y+9], [ssaSideX+28, y+12], [ssaSideX+33, y+5]]), Gdip_DeletePen(Pen)
+				if (ssaIconMap.Has(j.text) && bitmaps.Has(ssaIconMap[j.text]))
+					Gdip_DrawImage(G, bitmaps[ssaIconMap[j.text]], ssaSideX + ssaIconOffset, y+1, ssaIconSize, ssaIconSize)
+				Gdip_TextToGraphics(G, j.text, "s13 x" ssaSideX+ssaLabelOffset " y" y " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", ssaLabelWidth, 20), Gdip_DeleteBrush(brush)
+			}
+			for i, j in ssaStats {
+				y := ssaStartY + (A_Index-1) * ssaRowH
+				on := %j.name%
+				Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaStatsX, y, ssaToggleW, ssaToggleH, 9), Gdip_DeleteBrush(brush)
+				Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), on ? ssaStatsX+18 : ssaStatsX-2, y-2, 22, 22), Gdip_DeleteBrush(brush)
+				if !on {
+					Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaStatsX, y, 18, 18), Gdip_deleteBrush(brush)
+					Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[ssaStatsX+5, y+5 ], [ssaStatsX+13, y+13]])
+					Gdip_DrawLines(G, Pen								  , [[ssaStatsX+5, y+13], [ssaStatsX+13, y+5 ]]), Gdip_DeletePen(Pen)
+				}
+				else
+					Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaStatsX+25, y+9], [ssaStatsX+28, y+12], [ssaStatsX+33, y+5]]), Gdip_DeletePen(Pen)
+				if (ssaIconMap.Has(j.text) && bitmaps.Has(ssaIconMap[j.text]))
+					Gdip_DrawImage(G, bitmaps[ssaIconMap[j.text]], ssaStatsX + ssaIconOffset, y+1, ssaIconSize, ssaIconSize)
+				Gdip_TextToGraphics(G, j.text, "s13 x" ssaStatsX+ssaLabelOffset " y" y " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", ssaStatsLabelWidth, 20), Gdip_DeleteBrush(brush)
+			}
+		for i, j in ssaExtras {
+			y := ssaExtrasY + (A_Index-1) * ssaRowH
+			on := %j.name%
+			Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaMainX, y, ssaToggleW, ssaToggleH, 9), Gdip_DeleteBrush(brush)
+			Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), on ? ssaMainX+18 : ssaMainX-2, y-2, 22, 22), Gdip_DeleteBrush(brush)
+			if !on {
+				Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaMainX, y, 18, 18), Gdip_deleteBrush(brush)
+				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[ssaMainX+5, y+5 ], [ssaMainX+13, y+13]])
+				Gdip_DrawLines(G, Pen								  , [[ssaMainX+5, y+13], [ssaMainX+13, y+5 ]]), Gdip_DeletePen(Pen)
+			}
+			else
+				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaMainX+25, y+9], [ssaMainX+28, y+12], [ssaMainX+33, y+5]]), Gdip_DeletePen(Pen)
+			Gdip_TextToGraphics(G, j.text, "s13 x" ssaMainX+ssaLabelOffset " y" y " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 220, 20), Gdip_DeleteBrush(brush)
+		}
+		Gdip_DrawRoundedRectanglePath(G, pen:=Gdip_CreatePen("0xFFFEC6DF", 1), ssaHoneyEditX-1, ssaHoneyEditY-1, ssaHoneyEditW+2, ssaHoneyEditH+2, 4), Gdip_DeletePen(pen)
+		Gdip_TextToGraphics(G, ssaHoneyLabel, "s13 x" ssaHoneyLabelX " y" ssaHoneyLabelY " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", ssaHoneyLabelWidth, 20), Gdip_DeleteBrush(brush)
+		}
 		if hovercontrol = "roll"
 			Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0x30FEC6DF"), 10, h-42, w-56, 30, 10), Gdip_DeleteBrush(brush)
 		if hovercontrol = "help"
@@ -9208,12 +9446,48 @@ blc_mutations(*) {
 		Gdip_DrawRoundedRectanglePath(G, pen, w-40, h-42, 30, 30, 10), Gdip_DeletePen(pen)
 		update()
 	}
+	HoneyLimitChanged(ctrl, *) {
+		global HoneyLimit, HoneyLimitRemainingB, HoneyLimitBase
+		static updating := false
+		if updating
+			return
+		updating := true
+		value := RegExReplace(ctrl.Value, "\\D+")
+		if (value != ctrl.Value)
+			ctrl.Value := value
+		HoneyLimit := (value = "") ? "0" : value
+		HoneyLimitBase := HoneyLimit
+		HoneyLimitRemainingB := (HoneyLimit = "0") ? 0 : Integer(HoneyLimit) * 1000
+		IniWrite(HoneyLimit, ".\\settings\\mutations.ini", "ssa", "HoneyLimit")
+		updating := false
+	}
+	UpdateHoneyGui() {
+		global mgui, honeyGui, guiMode, ssaHoneyEditX, ssaHoneyEditY, ssaHoneyEditW, ssaHoneyEditH
+		if !IsSet(honeyGui)
+			return
+		if (guiMode != "ssa") {
+			try honeyGui.Hide()
+			return
+		}
+		mgui.GetPos(&gx, &gy)
+		honeyGui.Show("NA x" gx + ssaHoneyEditX " y" gy + ssaHoneyEditY " w" ssaHoneyEditW " h" ssaHoneyEditH)
+	}
+	WM_MOVE(wParam, lParam, msg, hwnd) {
+		global mgui
+		if (hwnd != mgui.hwnd)
+			return
+		UpdateHoneyGui()
+	}
 	WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 		global hovercontrol, mutations, Bomber, Brave, Bumble, Cool, Hasty, Looker, Rad, Rascal
 		, Stubborn, Bubble, Bucko, Commander, Demo, Exhausted, Fire, Frosty, Honey, Rage
 		, Riley, Shocked, Baby, Carpenter, Demon, Diamond, Lion, Music, Ninja, Shy, Buoyant
 		, Fuzzy, Precise, Spicy, Tadpole, Vector, SelectAll, Ability, Gather, Convert, Energy
-		, Movespeed, Crit, Instant, Attack, mythicStop, giftedStop
+		, Movespeed, Crit, Instant, Attack, mythicStop, giftedStop, guiMode, mainPassive
+		, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
+		, StarShowerCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
+		, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
+		, DoublePassiveCheck, PollenCheck, ssaMainLookup
 		MouseGetPos(,,,&ctrl,2)
 		if !ctrl
 			return
@@ -9228,24 +9502,52 @@ blc_mutations(*) {
 					PostMessage(0x0112,0xF060)
 			case "roll":
 				ReplaceSystemCursors()
-				blc_start()
+				if (guiMode = "ssa")
+					blc_ssa_start()
+				else
+					blc_start()
 			case "help":
-				ReplaceSystemCursors()	
-				Msgbox("This feature allows you to roll royal jellies until you obtain your specified bees and/or mutations!``n``nTo use:``n- Select the bees and mutations you want``n- Make sure your in-game Auto-Jelly settings are right``n- Put a neonberry on the bee you want to change (if trying ``n  to obtain a mutated bee) ``n- Use one royal jelly on the bee and click Yes``n- Click on Roll.``n``nTo stop: ``n- Press the escape key``n``nAdditional options:``n- Stop on Gifteds stops on any gifted bee, ``n  ignoring the mutation and your bee selection``n- Stop on Mythics stops on any mythic bee, ``n  ignoring the mutation and your bee selection", "Auto-Jelly Help", "0x40040")
+				ReplaceSystemCursors()
+				if (guiMode = "ssa")
+					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Open the SSA roll menu in-game``n- Select your main passive, side passives, and desired stats``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
+				else
+					Msgbox("This feature allows you to roll royal jellies until you obtain your specified bees and/or mutations!``n``nTo use:``n- Select the bees and mutations you want``n- Make sure your in-game Auto-Jelly settings are right``n- Put a neonberry on the bee you want to change (if trying ``n  to obtain a mutated bee) ``n- Use one royal jelly on the bee and click Yes``n- Click on Roll.``n``nTo stop: ``n- Press the escape key``n``nAdditional options:``n- Stop on Gifteds stops on any gifted bee, ``n  ignoring the mutation and your bee selection``n- Stop on Mythics stops on any mythic bee, ``n  ignoring the mutation and your bee selection", "Auto-Jelly Help", "0x40040")
+			case "mode":
+				guiMode := (guiMode = "jelly") ? "ssa" : "jelly"
+				hovercontrol := ""
+				SetModeVisibility()
+				DrawGUI()
 			case "selectAll":
+				if (guiMode != "jelly")
+					return
 				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
 			case "Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley":
-				if !selectAll
+				if (guiMode = "jelly") && !selectAll
 					IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
 			case "Shocked", "Baby", "Carpenter", "Demon", "Diamond", "Lion", "Music", "Ninja", "Shy", "Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector":
-				if !selectAll
+				if (guiMode = "jelly") && !selectAll
 					IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "bees", mgui[ctrl].name)
 			case "giftedStop", "mythicStop":
+				if (guiMode != "jelly")
+					return
 				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "extrasettings", mgui[ctrl].name)
 			case "mutations":
+				if (guiMode != "jelly")
+					return
 				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "mutations", mgui[ctrl].name)
+			case "ssaMainPopStar", "ssaMainScorchStar", "ssaMainGummyStar", "ssaMainStarShower", "ssaMainGuidingStar", "ssaMainStarSaw":
+				if (guiMode != "ssa")
+					return
+				mainPassive := ssaMainLookup[mgui[ctrl].name]
+				IniWrite(mainPassive, ".\settings\mutations.ini", "ssa", "mainPassive")
+			case "PopStarCheck", "ScorchStarCheck", "GummyStarCheck", "GuidingStarCheck", "StarSawCheck", "StarShowerCheck"
+				, "PollenCheck", "WhitePollenCheck", "RedPollenCheck", "BluePollenCheck", "ConvertRateCheck", "CriticalChanceCheck"
+				, "InstantConversionCheck", "BeeAbilityRateCheck", "BeeGatherPollenCheck", "DoublePassiveCheck":
+				if (guiMode != "ssa")
+					return
+				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "ssa", mgui[ctrl].name)
 			default:
-				if mutations
+				if (guiMode = "jelly") && mutations
 					IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "mutations", mgui[ctrl].name)
 		}
 		DrawGUI()
@@ -9262,7 +9564,7 @@ blc_mutations(*) {
 		DrawGUI()
 		while ctrl = hover_ctrl {
 			sleep(20),MouseGetPos(,,,&ctrl,2)
-			if A_Index > 120 && beeArr.includes(hovercontrol) && !tt
+			if (guiMode = "jelly") && A_Index > 120 && beeArr.includes(hovercontrol) && !tt
 				tt:=1,ToolTip(hovercontrol . " Bee")
 		}
 		hovercontrol := ""
@@ -9345,8 +9647,10 @@ blc_mutations(*) {
 		yOffset := GetYOffset(hwndRoblox, &fail)
 		if fail	
 			MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
-		if mgui is Gui
+		if mgui is Gui {
 			mgui.hide()
+			try honeyGui.Hide()
+		}
 		While !stopping {
 			ActivateRoblox()
 			click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
@@ -9405,6 +9709,252 @@ blc_mutations(*) {
 		}
 		hotkey "~*esc", stopToggle, "Off"
 		mgui.show()
+		UpdateHoneyGui()
+	}
+	blc_ssa_start() {
+		global stopping, ocr_enabled, ocr_language
+		stopping := false
+		hotkey "~*esc", stopToggle, "On"
+		ocr_enabled := 1
+		ocr_language := ""
+		for k,v in Map("Windows.Globalization.Language","{9B0252AC-0C27-44F8-B792-9793FB66C63E}", "Windows.Graphics.Imaging.BitmapDecoder","{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", "Windows.Media.Ocr.OcrEngine","{5BFFA85A-3384-3540-9940-699120D428A8}") {
+			CreateHString(k, &hString)
+			GUID := Buffer(16), DllCall("ole32\CLSIDFromString", "WStr", v, "Ptr", GUID)
+			result := DllCall("Combase.dll\RoGetActivationFactory", "Ptr", hString, "Ptr", GUID, "PtrP", &pClass:=0)
+			DeleteHString(hString)
+			if (result != 0)
+			{
+				ocr_enabled := 0
+				break
+			}
+		}
+		if !(ocr_enabled) {
+			SSA_Log("OCR disabled (SSA).")
+			return msgbox("OCR is disabled. This means the macro will not be able to detect SSA stats.",, 0x40010)
+		}
+		list := ocr("ShowAvailableLanguages")
+		lang:="en-"
+		Loop Parse list, "``n", "``r" {
+			if (InStr(A_LoopField, lang) = 1) {
+				ocr_language := A_LoopField
+				break
+			}
+		}
+		if (ocr_language = "")
+			if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
+				return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
+		SSA_Log("OCR enabled (SSA). Language: " ocr_language)
+		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
+			return msgbox("You must have Bee Swarm Simulator open to use this!", "SSA Roller", 0x40030)
+		yOffset := GetYOffset(hwndRoblox, &fail)
+		if fail	
+			MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
+		if mgui is Gui {
+			mgui.hide()
+			try honeyGui.Hide()
+		}
+		While !stopping {
+			result := SSA()
+			if (result = 1) {
+				msgbox "Found a match!``nChoose Keep/Replace in-game.", "SSA Roller", 0x40040
+				break
+			} else if (result = -2) {
+				msgbox "Honey limit reached. SSA roller stopped.", "SSA Roller", 0x40040
+				break
+			} else if (result < 0) {
+				msgbox "Unable to read SSA roll. Make sure the SSA roll menu is open and unobstructed.", "SSA Roller", 0x40030
+				break
+			}
+		}
+		hotkey "~*esc", stopToggle, "Off"
+		mgui.show()
+		UpdateHoneyGui()
+	}
+	SSA() {
+		global mainPassive, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
+			, StarShowerCheck, PollenCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
+			, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
+			, DoublePassiveCheck, HoneyLimit
+		static fuzzyStats := Map(
+			"convert", "convert rate",
+			"critical", "critical chance",
+			"instant", "instant conversion",
+			"ability", "bee ability rate",
+			"gath", "bee gather pollen")
+
+		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
+			return -1
+		yOffset := GetYOffset(hwndRoblox, &fail)
+		if fail
+			return -1
+		if (ssa_subHoney(DoublePassiveCheck ? 500 : 10) < 0)
+			return -2
+		ActivateRoblox()
+		SendEvent "e"
+		Sleep 250
+		Click windowX + windowWidth//2 + (DoublePassiveCheck ? -100 : 100), windowY + yOffset + windowHeight//2 + 30
+		MouseMove windowX + windowWidth//2, windowY + windowHeight//2 + 150
+		Sleep 300
+		pBitmap := Gdip_BitmapFromScreen(windowX + windowWidth//2 + 20 "|" windowY + yOffset + Round(0.4 * windowHeight + 20) "|188|160")
+		pBitmapResize := Gdip_ResizeBitmap(pBitmap, 376, 320), Gdip_DisposeImage(pBitmap)
+		hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmapResize)
+		Gdip_DisposeImage pBitmapResize
+		pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
+		DeleteObject(hBitmap)
+		text := StrSplit(ocr(pIRandomAccessStream), "``n")
+
+		stats := Map(
+			"red", RedPollenCheck,
+			"blue", BluePollenCheck,
+			"white", WhitePollenCheck,
+			"pollen", PollenCheck,
+			"gath", BeeGatherPollenCheck,
+			"convert", ConvertRateCheck,
+			"ability", BeeAbilityRateCheck,
+			"critical", CriticalChanceCheck,
+			"instant", InstantConversionCheck)
+		sidePassives := Map(
+			"pop", PopStarCheck,
+			"scorch", ScorchStarCheck,
+			"gummy", GummyStarCheck,
+			"guiding", GuidingStarCheck,
+			"saw", StarSawCheck,
+			"shower", StarShowerCheck)
+		mainPassiveKey := StrReplace(StrReplace(StrLower(mainPassive), "star", ""), " ", "")
+		requiredStats := 0
+		for k, v in stats
+			requiredStats += v
+		requiredSide := 0
+		for k, v in sidePassives
+			requiredSide += v
+		foundStats := Map(), foundSide := Map()
+		mainPassiveFound := 0
+		for k, v in text {
+			line := StrLower(v)
+			for i, j in stats
+				if j && !foundStats.Has(i) && InStr(line, i)
+					if (i = "pollen" && (InStr(line, "red") || InStr(line, "blue") || InStr(line, "white") || InStr(line, "bee") || InStr(line, "gath") || InStr(line, "gather") || InStr(line, "cather")))
+						continue
+					else
+						foundStats[i] := 1
+			normLine := NormalizeOCRLine(line)
+			if (normLine != "") {
+				for key, phrase in fuzzyStats {
+					if (stats[key] && !foundStats.Has(key) && FuzzyMatch(normLine, phrase))
+						foundStats[key] := 1
+				}
+			}
+			if (!mainPassiveFound && InStr(line, mainPassiveKey))
+				mainPassiveFound := 1
+			for i, j in sidePassives
+				if j && !foundSide.Has(i) && InStr(line, i)
+					foundSide[i] := 1
+		}
+		if (ShouldLogSSA(requiredStats, foundStats.Count, requiredSide, foundSide.Count, mainPassiveFound)) {
+			debugLines := ""
+			for k, v in text
+				if (v != "")
+					debugLines .= v " | "
+			debugLines := RTrim(debugLines, " |")
+			SSA_Log("OCR: " debugLines)
+			SSA_Log("Need stats=" requiredStats " got=" foundStats.Count " main=" mainPassiveFound " side=" requiredSide "/" foundSide.Count " mainPassive=" mainPassive)
+		}
+		if (foundStats.Count = requiredStats && mainPassiveFound && foundSide.Count = requiredSide)
+			return 1
+		return 0
+	}
+	ShouldLogSSA(requiredStats, foundStats, requiredSide, foundSide, mainFound) {
+		requiredTotal := requiredStats + requiredSide + 1
+		foundTotal := foundStats + foundSide + (mainFound ? 1 : 0)
+		if (foundTotal = 0)
+			return false
+		return (foundTotal >= Max(1, requiredTotal - 1))
+	}
+	SSA_Log(message) {
+		static logCount := 0
+		logCount += 1
+		logPath := ".\\settings\\ssa_debug.txt"
+		if (logCount = 1 || Mod(logCount, 50) = 0)
+			SSA_TrimLog(logPath)
+		FileAppend("[" A_Hour ":" A_Min ":" A_Sec "] " message "``r``n", logPath)
+	}
+	SSA_TrimLog(logPath) {
+		maxBytes := 262144
+		maxLines := 400
+		if !FileExist(logPath)
+			return
+		size := FileGetSize(logPath)
+		if (size <= maxBytes)
+			return
+		f := FileOpen(logPath, "r")
+		if !f
+			return
+		readBytes := Min(size, 65536)
+		f.Seek(-readBytes, 2)
+		tail := f.Read()
+		f.Close()
+		tail := RTrim(tail, "`r`n")
+		if (tail = "")
+			return
+		lines := StrSplit(tail, "`n", "`r")
+		start := Max(1, lines.Length - (maxLines - 1))
+		newText := ""
+		for idx, line in lines {
+			if (idx < start)
+				continue
+			newText .= line "``r``n"
+		}
+		f := FileOpen(logPath, "w")
+		if !f
+			return
+		f.Write(newText)
+		f.Close()
+	}
+	NormalizeOCRLine(line) {
+		norm := RegExReplace(StrLower(line), "[^a-z]+", " ")
+		return Trim(RegExReplace(norm, "\\s+", " "))
+	}
+	FuzzyMatch(normLine, target, maxDist := 0) {
+		if (maxDist = 0)
+			maxDist := Max(2, Floor(StrLen(target) * 0.2))
+		if (Abs(StrLen(normLine) - StrLen(target)) > maxDist)
+			return false
+		return (LevenshteinDistance(normLine, target) <= maxDist)
+	}
+	LevenshteinDistance(s1, s2) {
+		len1 := StrLen(s1), len2 := StrLen(s2)
+		s1 := StrSplit(s1), s2 := StrSplit(s2)
+		d := {}, d.0 := { 0: 0 }
+		Loop len1
+			d.%A_Index% := { 0: A_Index }
+		Loop len2
+			d.0.%A_Index% := A_Index
+		Loop len1 {
+			i := A_Index
+			Loop len2 {
+				j := A_Index
+				cost := s1[i] != s2[j]
+				d.%i%.%j% := Min(d.%i - 1%.%j% + 1, d.%i%.%j - 1% + 1, d.%i - 1%.%j - 1% + cost)
+			}
+		}
+		return d.%len1%.%len2%
+	}
+	ssa_subHoney(amount) {
+		global HoneyLimit, HoneyLimitRemainingB, HoneyLimitBase
+		if (!HoneyLimit || HoneyLimit = "0")
+			return 1
+		if (HoneyLimitBase != HoneyLimit) {
+			if !RegExMatch(HoneyLimit, "^\\d+$", &out)
+				return 1
+			HoneyLimitBase := HoneyLimit
+			HoneyLimitRemainingB := Integer(out[0]) * 1000
+		}
+		if (HoneyLimitRemainingB <= 0)
+			return -2
+		if (HoneyLimitRemainingB < amount)
+			return -2
+		HoneyLimitRemainingB -= amount
+		return 1
 	}
 	closeFunction(*) {
 		global xPos, yPos
