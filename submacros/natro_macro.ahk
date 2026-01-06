@@ -9778,10 +9778,8 @@ blc_mutations(*) {
 				break
 			}
 		}
-		if !(ocr_enabled) {
-			SSA_Log("OCR disabled (SSA).")
+		if !(ocr_enabled)
 			return msgbox("OCR is disabled. This means the macro will not be able to detect SSA stats.",, 0x40010)
-		}
 		list := ocr("ShowAvailableLanguages")
 		lang:="en-"
 		Loop Parse list, "``n", "``r" {
@@ -9793,7 +9791,6 @@ blc_mutations(*) {
 		if (ocr_language = "")
 			if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
 				return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
-		SSA_Log("OCR enabled (SSA). Language: " ocr_language)
 		selectedStats := SSA_CountSelectedStats()
 		if (selectedStats > 5)
 			return msgbox("Select up to 5 stats in the Stats column to use the SSA roller.", "SSA Roller", 0x40030)
@@ -9828,13 +9825,6 @@ blc_mutations(*) {
 			, StarShowerCheck, PollenCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
 			, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
 			, DoublePassiveCheck, HoneyLimit, ssaStats
-		static fuzzyStats := Map(
-			"convert", "convert rate",
-			"critical", "critical chance",
-			"instant", "instant conversion",
-			"ability", "bee ability rate",
-			"gath", "bee gather pollen")
-
 		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
 			return -1
 		yOffset := GetYOffset(hwndRoblox, &fail)
@@ -9885,89 +9875,65 @@ blc_mutations(*) {
 		mainPassiveFound := 0
 		for k, v in text {
 			line := StrLower(v)
-			for i, j in stats
-				if (j > 0) && !presentStats.Has(i) && InStr(line, i)
-					if (i = "pollen" && (InStr(line, "red") || InStr(line, "blue") || InStr(line, "white") || InStr(line, "bee") || InStr(line, "gath") || InStr(line, "gather") || InStr(line, "cather")))
-						continue
-					else
-						presentStats[i] := 1
 			normLine := NormalizeOCRLine(line)
-			if (normLine != "") {
-				for key, phrase in fuzzyStats {
-					if (stats[key] > 0) && !presentStats.Has(key) && FuzzyMatch(normLine, phrase)
-						presentStats[key] := 1
-				}
-			}
+			tokens := (normLine = "") ? [] : StrSplit(normLine, " ")
+			for i, j in stats
+				if (j > 0) && !presentStats.Has(i) && SSA_StatLineMatch(i, normLine, tokens)
+					presentStats[i] := 1
 			if (!mainPassiveFound && InStr(line, mainPassiveKey))
 				mainPassiveFound := 1
 			for i, j in sidePassives
 				if j && !foundSide.Has(i) && InStr(line, i)
 					foundSide[i] := 1
+			if (presentStats.Count >= requiredStats && mainPassiveFound && (selectedSide = 0 || foundSide.Count > 0))
+				break
 		}
 		sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
-		if (ShouldLogSSA(requiredStats, presentStats.Count, selectedSide, sideMatch, mainPassiveFound)) {
-			debugLines := ""
-			for k, v in text
-				if (v != "")
-					debugLines .= v " | "
-			debugLines := RTrim(debugLines, " |")
-			SSA_Log("OCR: " debugLines)
-			SSA_Log("Need stats=" requiredStats "/" selectedCount " present=" presentStats.Count " main=" mainPassiveFound " side=" selectedSide "/" foundSide.Count " mainPassive=" mainPassive)
-		}
 		if (presentStats.Count >= requiredStats && mainPassiveFound && sideMatch)
 			return 1
 		return 0
 	}
-	ShouldLogSSA(requiredStats, presentCount, selectedSide, sideMatch, mainFound) {
-		if !mainFound
-			return false
-		if (selectedSide > 0 && !sideMatch)
-			return false
-		return (presentCount >= requiredStats)
-	}
-	SSA_Log(message) {
-		static logCount := 0
-		logCount += 1
-		logPath := ".\\settings\\ssa_debug.txt"
-		if (logCount = 1 || Mod(logCount, 50) = 0)
-			SSA_TrimLog(logPath)
-		FileAppend("[" A_Hour ":" A_Min ":" A_Sec "] " message "``r``n", logPath)
-	}
-	SSA_TrimLog(logPath) {
-		maxBytes := 262144
-		maxLines := 400
-		if !FileExist(logPath)
-			return
-		size := FileGetSize(logPath)
-		if (size <= maxBytes)
-			return
-		f := FileOpen(logPath, "r")
-		if !f
-			return
-		readBytes := Min(size, 65536)
-		f.Seek(-readBytes, 2)
-		tail := f.Read()
-		f.Close()
-		tail := RTrim(tail, "``r``n")
-		if (tail = "")
-			return
-		lines := StrSplit(tail, "``n", "``r")
-		start := Max(1, lines.Length - (maxLines - 1))
-		newText := ""
-		for idx, line in lines {
-			if (idx < start)
-				continue
-			newText .= line "``r``n"
-		}
-		f := FileOpen(logPath, "w")
-		if !f
-			return
-		f.Write(newText)
-		f.Close()
-	}
 	NormalizeOCRLine(line) {
 		norm := RegExReplace(StrLower(line), "[^a-z]+", " ")
 		return Trim(RegExReplace(norm, "\\s+", " "))
+	}
+	SSA_StatLineMatch(key, normLine, tokens) {
+		static phrases := Map(
+			"red", "red",
+			"blue", "blue",
+			"white", "white",
+			"pollen", "pollen",
+			"convert", "convert rate",
+			"critical", "critical chance",
+			"instant", "instant conversion",
+			"ability", "bee ability rate",
+			"gath", "bee gather pollen")
+		if (!phrases.Has(key) || normLine = "")
+			return false
+		if (key = "pollen") {
+			if !SSA_TokenMatch(tokens, "pollen")
+				return false
+			for _, forbid in ["red", "blue", "white", "bee", "gath", "gather", "cather"]
+				if SSA_TokenMatch(tokens, forbid)
+					return false
+			return true
+		}
+		if (key = "red" || key = "blue" || key = "white")
+			return SSA_TokenMatch(tokens, phrases[key])
+		if (key = "convert" && !SSA_TokenMatch(tokens, "rate"))
+			return false
+		return FuzzyMatch(normLine, phrases[key])
+	}
+	SSA_TokenMatch(tokens, word, maxDist := "") {
+		if (maxDist = "")
+			maxDist := (StrLen(word) >= 6) ? 2 : 1
+		for _, token in tokens {
+			if (token = word)
+				return true
+			if (Abs(StrLen(token) - StrLen(word)) <= maxDist && LevenshteinDistance(token, word) <= maxDist)
+				return true
+		}
+		return false
 	}
 	FuzzyMatch(normLine, target, maxDist := 0) {
 		if (maxDist = 0)
