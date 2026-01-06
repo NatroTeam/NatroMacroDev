@@ -9126,15 +9126,15 @@ blc_mutations(*) {
 		{name:"StarSawCheck", text:"Star Saw"}
 	]
 	ssaStats := [
-		{name:"WhitePollenCheck", text:"White Pollen"},
-		{name:"RedPollenCheck", text:"Red Pollen"},
-		{name:"BluePollenCheck", text:"Blue Pollen"},
-		{name:"PollenCheck", text:"Pollen"},
-		{name:"ConvertRateCheck", text:"Convert Rate"},
-		{name:"CriticalChanceCheck", text:"Critical Chance"},
-		{name:"InstantConversionCheck", text:"Instant Conversion"},
-		{name:"BeeAbilityRateCheck", text:"Bee Ability Rate"},
-		{name:"BeeGatherPollenCheck", text:"Bee Gather Pollen"}
+		{select:"WhitePollenCheck", key:"white", text:"White Pollen"},
+		{select:"RedPollenCheck", key:"red", text:"Red Pollen"},
+		{select:"BluePollenCheck", key:"blue", text:"Blue Pollen"},
+		{select:"PollenCheck", key:"pollen", text:"Pollen"},
+		{select:"ConvertRateCheck", key:"convert", text:"Convert Rate"},
+		{select:"CriticalChanceCheck", key:"critical", text:"Critical Chance"},
+		{select:"InstantConversionCheck", key:"instant", text:"Instant Conversion"},
+		{select:"BeeAbilityRateCheck", key:"ability", text:"Bee Ability Rate"},
+		{select:"BeeGatherPollenCheck", key:"gath", text:"Bee Gather Pollen"}
 	]
 	ssaExtras := [
 		{name:"DoublePassiveCheck", text:"Double Passive (500b)"}
@@ -9175,6 +9175,8 @@ blc_mutations(*) {
 		"Bee Ability Rate", "ssa_beeabilityrate",
 		"Bee Gather Pollen", "ssa_beepollen")
 	getConfig()
+	SSA_NormalizeStatChecks()
+	SSA_EnforceStatMax()
 	if !RegExMatch(HoneyLimit, "^\d+$")
 		HoneyLimit := "0"
 	(bitmaps := Map()).CaseSense:=0
@@ -9237,7 +9239,7 @@ blc_mutations(*) {
 		}
 		for i, j in ssaStats {
 			y := ssaStartY + (A_Index-1) * ssaRowH
-			mgui.AddText("v" j.name " x" ssaStatsX " y" y " w170 h24")
+			mgui.AddText("v" j.select " x" ssaStatsX " y" y " w170 h24")
 		}
 		for i, j in ssaExtras {
 			y := ssaExtrasY + (A_Index-1) * ssaRowH
@@ -9275,14 +9277,14 @@ blc_mutations(*) {
 			mgui[j.name].Visible := showJelly
 		for i, j in ssaMainPassives
 			mgui[j.name].Visible := !showJelly
-		for i, j in ssaSidePassives
-			mgui[j.name].Visible := !showJelly
-		for i, j in ssaStats
-			mgui[j.name].Visible := !showJelly
-		for i, j in ssaExtras
-			mgui[j.name].Visible := !showJelly
-		UpdateHoneyGui()
-	}
+	for i, j in ssaSidePassives
+		mgui[j.name].Visible := !showJelly
+	for i, j in ssaStats
+		mgui[j.select].Visible := !showJelly
+	for i, j in ssaExtras
+		mgui[j.name].Visible := !showJelly
+	UpdateHoneyGui()
+}
 	guiMode := "jelly"
 	startGUI()
 	SetModeVisibility()
@@ -9370,7 +9372,7 @@ blc_mutations(*) {
 		} else {
 			Gdip_TextToGraphics(G, "Main Passive", "s12 x" ssaMainX " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
 			Gdip_TextToGraphics(G, "Side Passives", "s12 x" ssaSideX " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
-			Gdip_TextToGraphics(G, "Stats", "s12 x" ssaStatsX " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
+			Gdip_TextToGraphics(G, "Stats", "s12 x" ssaStatsX+ssaLabelOffset " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
 			for i, j in ssaMainPassives {
 				y := ssaStartY + (A_Index-1) * ssaRowH
 				on := (mainPassive = j.text)
@@ -9405,15 +9407,14 @@ blc_mutations(*) {
 			}
 			for i, j in ssaStats {
 				y := ssaStartY + (A_Index-1) * ssaRowH
-				on := %j.name%
+				on := %j.select%
 				Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaStatsX, y, ssaToggleW, ssaToggleH, 9), Gdip_DeleteBrush(brush)
 				Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), on ? ssaStatsX+18 : ssaStatsX-2, y-2, 22, 22), Gdip_DeleteBrush(brush)
 				if !on {
 					Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaStatsX, y, 18, 18), Gdip_deleteBrush(brush)
 					Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[ssaStatsX+5, y+5 ], [ssaStatsX+13, y+13]])
 					Gdip_DrawLines(G, Pen								  , [[ssaStatsX+5, y+13], [ssaStatsX+13, y+5 ]]), Gdip_DeletePen(Pen)
-				}
-				else
+				} else
 					Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaStatsX+25, y+9], [ssaStatsX+28, y+12], [ssaStatsX+33, y+5]]), Gdip_DeletePen(Pen)
 				if (ssaIconMap.Has(j.text) && bitmaps.Has(ssaIconMap[j.text]))
 					Gdip_DrawImage(G, bitmaps[ssaIconMap[j.text]], ssaStatsX + ssaIconOffset, y+1, ssaIconSize, ssaIconSize)
@@ -9472,6 +9473,45 @@ blc_mutations(*) {
 		mgui.GetPos(&gx, &gy)
 		honeyGui.Show("NA x" gx + ssaHoneyEditX " y" gy + ssaHoneyEditY " w" ssaHoneyEditW " h" ssaHoneyEditH)
 	}
+	SSA_CountSelectedStats() {
+		global ssaStats, PollenCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck
+		, ConvertRateCheck, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck
+		, BeeGatherPollenCheck
+		count := 0
+		for i, j in ssaStats
+			if (%j.select%)
+				count += 1
+		return count
+	}
+	SSA_NormalizeStatChecks() {
+		global ssaStats
+		for i, j in ssaStats {
+			if (%j.select% != 0) {
+				%j.select% := 1
+				IniWrite(1, ".\\settings\\mutations.ini", "ssa", j.select)
+			}
+		}
+	}
+	SSA_EnforceStatMax() {
+		global ssaStats
+		count := 0
+		for i, j in ssaStats {
+			if (%j.select%) {
+				count += 1
+				if (count > 5) {
+					%j.select% := 0
+					IniWrite(0, ".\\settings\\mutations.ini", "ssa", j.select)
+				}
+			}
+		}
+	}
+	SSA_ShowStatLimitTip(message := "Max 5 stats allowed.") {
+		ToolTip(message)
+		SetTimer(SSA_ClearStatLimitTip, -1500)
+	}
+	SSA_ClearStatLimitTip() {
+		ToolTip()
+	}
 	WM_MOVE(wParam, lParam, msg, hwnd) {
 		global mgui
 		if (hwnd != mgui.hwnd)
@@ -9509,7 +9549,7 @@ blc_mutations(*) {
 			case "help":
 				ReplaceSystemCursors()
 				if (guiMode = "ssa")
-					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Open the SSA roll menu in-game``n- Select your main passive, side passives, and desired stats``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
+					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Open the SSA roll menu in-game``n- Select your main passive and side passives``n- Select up to 5 stats in the Stats column``n``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
 				else
 					Msgbox("This feature allows you to roll royal jellies until you obtain your specified bees and/or mutations!``n``nTo use:``n- Select the bees and mutations you want``n- Make sure your in-game Auto-Jelly settings are right``n- Put a neonberry on the bee you want to change (if trying ``n  to obtain a mutated bee) ``n- Use one royal jelly on the bee and click Yes``n- Click on Roll.``n``nTo stop: ``n- Press the escape key``n``nAdditional options:``n- Stop on Gifteds stops on any gifted bee, ``n  ignoring the mutation and your bee selection``n- Stop on Mythics stops on any mythic bee, ``n  ignoring the mutation and your bee selection", "Auto-Jelly Help", "0x40040")
 			case "mode":
@@ -9541,11 +9581,21 @@ blc_mutations(*) {
 				mainPassive := ssaMainLookup[mgui[ctrl].name]
 				IniWrite(mainPassive, ".\settings\mutations.ini", "ssa", "mainPassive")
 			case "PopStarCheck", "ScorchStarCheck", "GummyStarCheck", "GuidingStarCheck", "StarSawCheck", "StarShowerCheck"
-				, "PollenCheck", "WhitePollenCheck", "RedPollenCheck", "BluePollenCheck", "ConvertRateCheck", "CriticalChanceCheck"
-				, "InstantConversionCheck", "BeeAbilityRateCheck", "BeeGatherPollenCheck", "DoublePassiveCheck":
+				, "DoublePassiveCheck":
 				if (guiMode != "ssa")
 					return
 				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "ssa", mgui[ctrl].name)
+			case "PollenCheck", "WhitePollenCheck", "RedPollenCheck", "BluePollenCheck", "ConvertRateCheck", "CriticalChanceCheck"
+				, "InstantConversionCheck", "BeeAbilityRateCheck", "BeeGatherPollenCheck":
+				if (guiMode != "ssa")
+					return
+				current := %mgui[ctrl].name% ? 1 : 0
+				if (!current && SSA_CountSelectedStats() >= 5) {
+					SSA_ShowStatLimitTip()
+				} else {
+					%mgui[ctrl].name% := current ^ 1
+					IniWrite(%mgui[ctrl].name%, ".\settings\mutations.ini", "ssa", mgui[ctrl].name)
+				}
 			default:
 				if (guiMode = "jelly") && mutations
 					IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "mutations", mgui[ctrl].name)
@@ -9744,6 +9794,9 @@ blc_mutations(*) {
 			if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
 				return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
 		SSA_Log("OCR enabled (SSA). Language: " ocr_language)
+		selectedStats := SSA_CountSelectedStats()
+		if (selectedStats > 5)
+			return msgbox("Select up to 5 stats in the Stats column to use the SSA roller.", "SSA Roller", 0x40030)
 		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
 			return msgbox("You must have Bee Swarm Simulator open to use this!", "SSA Roller", 0x40030)
 		yOffset := GetYOffset(hwndRoblox, &fail)
@@ -9774,7 +9827,7 @@ blc_mutations(*) {
 		global mainPassive, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
 			, StarShowerCheck, PollenCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
 			, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
-			, DoublePassiveCheck, HoneyLimit
+			, DoublePassiveCheck, HoneyLimit, ssaStats
 		static fuzzyStats := Map(
 			"convert", "convert rate",
 			"critical", "critical chance",
@@ -9813,6 +9866,9 @@ blc_mutations(*) {
 			"ability", BeeAbilityRateCheck,
 			"critical", CriticalChanceCheck,
 			"instant", InstantConversionCheck)
+		selectedCount := 0
+		for k, v in stats
+			selectedCount += (v > 0)
 		sidePassives := Map(
 			"pop", PopStarCheck,
 			"scorch", ScorchStarCheck,
@@ -9821,27 +9877,25 @@ blc_mutations(*) {
 			"saw", StarSawCheck,
 			"shower", StarShowerCheck)
 		mainPassiveKey := StrReplace(StrReplace(StrLower(mainPassive), "star", ""), " ", "")
-		requiredStats := 0
-		for k, v in stats
-			requiredStats += v
-		requiredSide := 0
+		requiredStats := (selectedCount > 5) ? 5 : selectedCount
+		selectedSide := 0
 		for k, v in sidePassives
-			requiredSide += v
-		foundStats := Map(), foundSide := Map()
+			selectedSide += v
+		presentStats := Map(), foundSide := Map()
 		mainPassiveFound := 0
 		for k, v in text {
 			line := StrLower(v)
 			for i, j in stats
-				if j && !foundStats.Has(i) && InStr(line, i)
+				if (j > 0) && !presentStats.Has(i) && InStr(line, i)
 					if (i = "pollen" && (InStr(line, "red") || InStr(line, "blue") || InStr(line, "white") || InStr(line, "bee") || InStr(line, "gath") || InStr(line, "gather") || InStr(line, "cather")))
 						continue
 					else
-						foundStats[i] := 1
+						presentStats[i] := 1
 			normLine := NormalizeOCRLine(line)
 			if (normLine != "") {
 				for key, phrase in fuzzyStats {
-					if (stats[key] && !foundStats.Has(key) && FuzzyMatch(normLine, phrase))
-						foundStats[key] := 1
+					if (stats[key] > 0) && !presentStats.Has(key) && FuzzyMatch(normLine, phrase)
+						presentStats[key] := 1
 				}
 			}
 			if (!mainPassiveFound && InStr(line, mainPassiveKey))
@@ -9850,25 +9904,26 @@ blc_mutations(*) {
 				if j && !foundSide.Has(i) && InStr(line, i)
 					foundSide[i] := 1
 		}
-		if (ShouldLogSSA(requiredStats, foundStats.Count, requiredSide, foundSide.Count, mainPassiveFound)) {
+		sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
+		if (ShouldLogSSA(requiredStats, presentStats.Count, selectedSide, sideMatch, mainPassiveFound)) {
 			debugLines := ""
 			for k, v in text
 				if (v != "")
 					debugLines .= v " | "
 			debugLines := RTrim(debugLines, " |")
 			SSA_Log("OCR: " debugLines)
-			SSA_Log("Need stats=" requiredStats " got=" foundStats.Count " main=" mainPassiveFound " side=" requiredSide "/" foundSide.Count " mainPassive=" mainPassive)
+			SSA_Log("Need stats=" requiredStats "/" selectedCount " present=" presentStats.Count " main=" mainPassiveFound " side=" selectedSide "/" foundSide.Count " mainPassive=" mainPassive)
 		}
-		if (foundStats.Count = requiredStats && mainPassiveFound && foundSide.Count = requiredSide)
+		if (presentStats.Count >= requiredStats && mainPassiveFound && sideMatch)
 			return 1
 		return 0
 	}
-	ShouldLogSSA(requiredStats, foundStats, requiredSide, foundSide, mainFound) {
-		requiredTotal := requiredStats + requiredSide + 1
-		foundTotal := foundStats + foundSide + (mainFound ? 1 : 0)
-		if (foundTotal = 0)
+	ShouldLogSSA(requiredStats, presentCount, selectedSide, sideMatch, mainFound) {
+		if !mainFound
 			return false
-		return (foundTotal >= Max(1, requiredTotal - 1))
+		if (selectedSide > 0 && !sideMatch)
+			return false
+		return (presentCount >= requiredStats)
 	}
 	SSA_Log(message) {
 		static logCount := 0
@@ -9893,10 +9948,10 @@ blc_mutations(*) {
 		f.Seek(-readBytes, 2)
 		tail := f.Read()
 		f.Close()
-		tail := RTrim(tail, "`r`n")
+		tail := RTrim(tail, "``r``n")
 		if (tail = "")
 			return
-		lines := StrSplit(tail, "`n", "`r")
+		lines := StrSplit(tail, "``n", "``r")
 		start := Max(1, lines.Length - (maxLines - 1))
 		newText := ""
 		for idx, line in lines {
