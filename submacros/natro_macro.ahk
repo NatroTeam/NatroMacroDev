@@ -11366,6 +11366,8 @@ nm_imgSearch(fileName,v,aim := "full", trans:="none"){
 	{
 		try result := ImageSearch(&FoundX, &FoundY, windowX + xi, windowY + yi, windowX + ww, windowY + wh, "*" v ((trans != "none") ? (" *Trans" trans) : "") " " A_WorkingDir "\nm_image_assets\" fileName)
 		catch as err {
+            ; Log of the error
+            FileAppend("Error: " err.message "`nWith Stack:`n" JSON.stringify(err.Stack), "nm_imgSearch-stack.log")
 			nm_setStatus("Error", err.Message)
 			Sleep 5000
 			ProcessClose DllCall("GetCurrentProcessId")
