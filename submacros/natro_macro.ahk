@@ -12974,7 +12974,7 @@ nm_killFieldBugs(){
 			if !bug_is_killable
 				continue
 
-			if bug_fields[current_field].Length = 0 {
+			if bug_fields[current_field].Length = 1 {
 				alternate_values := A_Index = 1 ? bug_fields[current_field][2] : bug_fields[current_field][1]
 				alternate_bug_is_killable := isKillable(alternate_values.name[1], alternate_values.respawn_time, alternate_values.bees, alternate_values.condition)
 				if alternate_bug_is_killable {
@@ -13194,7 +13194,7 @@ nm_killKingBeetle(&path_failed, &boss_found){
 		KeyWait("F14", "D T5 L"), KeyWait("F14", "T60 L")
 		nm_endWalk()	
 		Send "{" RotLeft "}"
-		left_offset := 4, length := 6, right_movements := 3, rot_direction := 0, rot_count := 0
+		left_offset := 4, length := 7, right_movements := 3, rot_direction := 0, rot_count := 0
 		nm_lootBug("KingBeetle", left_offset, length, right_movements, rot_direction, rot_count)
 		return true
 	}
@@ -13430,10 +13430,6 @@ nm_killCocoCrab(&path_failed, &boss_found){
 	}
 
 	return killed_crab
-}
-#HotIf WinActive("ahk_exe RobloxPlayerBeta.exe")
-~g:: {
-	nm_lootBug("buh", 10, 4, 4, 0, 0)
 }
 ;Not fully rewritten
 nm_killCommando(){
