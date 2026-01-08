@@ -18108,30 +18108,28 @@ nm_confirmNight()
 	}
 
 	for , bitmap in bitmaps["night"]
+	{
 		if Gdip_ImageSearch(pBMArea, bitmap) > 0
-			break
+		{
+			CamMove(1)
+			Gdip_DisposeImage(pBMArea)
+			return 1
+		}
+	}
 
 	CamMove(1)
-
 	Gdip_DisposeImage(pBMArea)
 
-	return 1
+	return 0
 
 	CamMove(Revert)
 	{
-		loop 4
-		{
-			if (Revert)
-			{
-				SendInput("{" RotDown "}")
-				SendInput("{" ZoomIn "}")
-			}
-			else
-			{
-				SendInput("{" RotUp "}")
-				SendInput("{" ZoomOut "}")
-			}
-		}
+		if Revert
+			loop 4
+				SendInput("{" RotDown "}"), SendInput("{" ZoomIn "}")
+		else
+			loop 4
+				SendInput("{" RotUp "}"), SendInput("{" ZoomOut "}")
 		Sleep(200)
 	}
 }
