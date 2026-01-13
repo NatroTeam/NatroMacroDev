@@ -4,6 +4,7 @@ HideErrors := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", "Hid
 debugDir := A_WorkingDir "\debug"
 if !DirExist(debugDir) {
     DirCreate(debugDir)
+    DllCall("SetFileAttributesW", "wstr", debugDir, "uint", 0x2) ; FILE_ATTRIBUTE_HIDDEN
 }
 OnError ErrorFunction
 throw Error("Hello")
