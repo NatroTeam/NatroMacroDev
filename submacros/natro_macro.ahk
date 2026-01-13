@@ -8598,7 +8598,8 @@ nm_DebugLogGUI(*){
 	DebugLogGui.Add("CheckBox", "x10 y6 vDebugLogEnabled Checked" DebugLogEnabled, "Enable Debug Logging").OnEvent("Click", nm_DebugLogCheck)
 	DebugLogGui.Add("Button", "xp+140 y5 h16", "Go To File").OnEvent("Click", (*) => Run('explorer.exe /e, /n, /select,"' A_WorkingDir '\settings\debug_log.txt"'))
 	DebugLogGui.Add("Button", "x10 yp+20 hp w200", "Copy Logs (" DebugHotkey ")").OnEvent("Click", nm_copyDebugLog)
-	DebugLogGui.Show("w210 h36")
+    DebugLogGui.Add("Button", "xp yp+20 hp w200", "Open Debug Folder").OnEvent("Click", (*) => Run(A_WorkingDir . "\debug"))
+	DebugLogGui.Show("w210 h56")
 }
 nm_DebugLogCheck(*){
 	global
