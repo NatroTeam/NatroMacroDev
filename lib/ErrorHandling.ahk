@@ -5,7 +5,6 @@ if !DirExist(debugDir) {
     DllCall("SetFileAttributesW", "wstr", debugDir, "uint", 0x2) ; FILE_ATTRIBUTE_HIDDEN
 }
 OnError ErrorFunction
-throw Error("Hello")
 
 
 ; mode = "Return" => -1

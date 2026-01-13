@@ -22,18 +22,20 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
+
+SetWorkingDir A_ScriptDir "\.."
+
 #Include "%A_ScriptDir%\..\lib"
+#Include "ErrorHandling.ahk"
 #Include "Gdip_All.ahk"
 #Include "Gdip_ImageSearch.ahk"
 #Include "JSON.ahk"
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
-#include "ErrorHandling.ahk"
 
 #Warn VarUnset, Off
 
-SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Screen"
 CoordMode "Pixel", "Screen"
 SendMode "Event"
