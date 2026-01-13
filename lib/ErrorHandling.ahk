@@ -9,7 +9,7 @@ OnError ErrorFunction
 
 ; mode = "Return" => -1
 ErrorFunction(e, mode) {
-    time := A_NowUTC
+    time := A_NowUTC . A_MSec
 
     text :=
     (
