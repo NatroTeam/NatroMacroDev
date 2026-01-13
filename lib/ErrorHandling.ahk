@@ -1,5 +1,3 @@
-if A_LineFile = A_ScriptFullPath
-    SetWorkingDir("..")
 HideErrors := IniRead(A_WorkingDir . "\settings\nm_config.ini", "Settings", "HideErrors", 1)
 debugDir := A_WorkingDir "\debug"
 if !DirExist(debugDir) {
