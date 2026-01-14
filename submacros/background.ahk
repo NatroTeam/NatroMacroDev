@@ -227,123 +227,59 @@ nm_CheckNight() {
 	}
 }
 
-nm_backpackPercent(){
-	static LastBackpackPercent:=""
-	;WinGetPos , windowX, windowY, windowWidth, windowHeight, Roblox
-	;UpperLeft X1 = windowWidth/2+59
-	;UpperLeft Y1 = 3
-	;LowerRight X2 = windowWidth/2+59+220
-	;LowerRight Y2 = 3+5
-	;Bar = 220 pixels wide = 11 pixels per 5%
-	backpackColor := PixelGetColor(windowX+windowWidth//2+59+3, windowY+offsetY+6)
-	BackpackPercent:=0
+nm_backpackPercent() {
+    static LastBackpackPercent := ""
 
-	if((backpackColor & 0xFF0000 <= 0x690000)) { ;less or equal to 50%
-		if(backpackColor & 0xFF0000 <= 0x4B0000) { ;less or equal to 25%
-			if(backpackColor & 0xFF0000 <= 0x420000) { ;less or equal to 10%
-				if((backpackColor & 0xFF0000 <= 0x410000) && (backpackColor & 0x00FFFF <= 0x00FF80) && (backpackColor & 0x00FFFF > 0x00FF86)) { ;less or equal to 5%
-					BackpackPercent:=0
-				} else if((backpackColor & 0xFF0000 > 0x410000) && (backpackColor & 0x00FFFF <= 0x00FF80) && (backpackColor & 0x00FFFF > 0x00FC85)) { ;greater than 5%
-					BackpackPercent:=5
-				} else {
-					BackpackPercent:=0
-				}
-			} else { ;greater than 10%
-				if((backpackColor & 0xFF0000 <= 0x470000)) { ;less or equal to 20%
-					if((backpackColor & 0xFF0000 <= 0x440000) && (backpackColor & 0x00FFFF <= 0x00FE85) && (backpackColor & 0x00FFFF > 0x00F984)) { ;less or equal to 15%
-						BackpackPercent:=10
-					} else if((backpackColor & 0xFF0000 > 0x440000) && (backpackColor & 0x00FFFF <= 0x00FB84) && (backpackColor & 0x00FFFF > 0x00F582)) { ;greater than 15%
-						BackpackPercent:=15
-					} else {
-						BackpackPercent:=0
-					}
-				} else if((backpackColor & 0xFF0000 > 0x470000) && (backpackColor & 0x00FFFF <= 0x00F782) && (backpackColor & 0x00FFFF > 0x00F080)) { ;greater than 20%
-					BackpackPercent:=20
-				} else {
-					BackpackPercent:=0
-				}
-			}
-		} else { ;greater than 25%
-			if(backpackColor & 0xFF0000 <= 0x5B0000) { ;less or equal to 40%
-				if((backpackColor & 0xFF0000 <= 0x4F0000) && (backpackColor & 0x00FFFF <= 0x00F280) && (backpackColor & 0x00FFFF > 0x00EA7D)) { ;less or equal to 30%
-					BackpackPercent:=25
-				} else { ;greater than 30%
-					if((backpackColor & 0xFF0000 <= 0x550000) && (backpackColor & 0x00FFFF <= 0x00EC7D) && (backpackColor & 0x00FFFF > 0x00E37A)) { ;less or equal to 35%
-						BackpackPercent:=30
-					} else if((backpackColor & 0xFF0000 > 0x550000) && (backpackColor & 0x00FFFF <= 0x00E57A) && (backpackColor & 0x00FFFF > 0x00DA76)) { ;greater than 35%
-						BackpackPercent:=35
-					} else {
-						BackpackPercent:=0
-					}
-				}
-			} else { ;greater than 40%
-				if((backpackColor & 0xFF0000 <= 0x620000) && (backpackColor & 0x00FFFF <= 0x00DC76) && (backpackColor & 0x00FFFF > 0x00D072)) { ;less or equal to 45%
-					BackpackPercent:=40
-				} else if((backpackColor & 0xFF0000 > 0x620000) && (backpackColor & 0x00FFFF <= 0x00D272) && (backpackColor & 0x00FFFF > 0x00C66D)) { ;greater than 45%
-					BackpackPercent:=45
-				} else {
-					BackpackPercent:=0
-				}
-			}
-		}
-	} else { ;greater than 50%
-		if(backpackColor & 0xFF0000 <= 0x9C0000) { ;less or equal to 75%
-			if(backpackColor & 0xFF0000 <= 0x850000) { ;less or equal to 65%
-				if(backpackColor & 0xFF0000 <= 0x7B0000) { ;less or equal to 60%
-					if((backpackColor & 0xFF0000 <= 0x720000) && (backpackColor & 0x00FFFF <= 0x00C86D) && (backpackColor & 0x00FFFF > 0x00BA68)) { ;less or equal to 55%
-						BackpackPercent:=50
-					} else if((backpackColor & 0xFF0000 > 0x720000) && (backpackColor & 0x00FFFF <= 0x00BC68) && (backpackColor & 0x00FFFF > 0x00AD62)) { ;greater than 55%
-						BackpackPercent:=55
-					} else {
-						BackpackPercent:=0
-					}
-				} else if((backpackColor & 0xFF0000 > 0x7B0000) && (backpackColor & 0x00FFFF <= 0x00AF62) && (backpackColor & 0x00FFFF > 0x009E5C)) { ;greater than 60%
-					BackpackPercent:=60
-				} else {
-					BackpackPercent:=0
-				}
-			} else { ;greater than 65%
-				if((backpackColor & 0xFF0000 <= 0x900000) && (backpackColor & 0x00FFFF <= 0x00A05C) && (backpackColor & 0x00FFFF > 0x008F55)) { ;less or equal to 70%
-					BackpackPercent:=65
-				} else if((backpackColor & 0xFF0000 > 0x900000) && (backpackColor & 0x00FFFF <= 0x009155) && (backpackColor & 0x00FFFF > 0x007E4E)) { ;greater than 70%
-					BackpackPercent:=70
-				} else {
-					BackpackPercent:=0
-				}
-			}
-		} else { ;greater than 75%
-			if((backpackColor & 0xFF0000 <= 0xC40000)) { ;less or equal to 90%
-				if((backpackColor & 0xFF0000 <= 0xA90000) && (backpackColor & 0x00FFFF <= 0x00804E) && (backpackColor & 0x00FFFF > 0x006C46)) { ;less or equal to 80%
-					BackpackPercent:=75
-				} else { ;greater than 80%
-					if((backpackColor & 0xFF0000 <= 0xB60000) && (backpackColor & 0x00FFFF <= 0x006E46) && (backpackColor & 0x00FFFF > 0x005A3F)) { ;less or equal to 85%
-						BackpackPercent:=80
-					} else if((backpackColor & 0xFF0000 > 0xB60000) && (backpackColor & 0x00FFFF <= 0x005D3F) && (backpackColor & 0x00FFFF > 0x004637)){ ;greater than 85%
-						BackpackPercent:=85
-					} else {
-						BackpackPercent:=0
-					}
-				}
-			} else { ;greater than 90%
-				if((backpackColor & 0xFF0000 <= 0xD30000) && (backpackColor & 0x00FFFF <= 0x004A37) && (backpackColor & 0x00FFFF > 0x00322E)) { ;less or equal to 95%
-					BackpackPercent:=90
-				} else { ;greater than 95%
-					if((backpackColor = 0xF70017) || ((backpackColor & 0xFF0000 >= 0xE00000) && (backpackColor & 0x00FFFF <= 0x002427) && (backpackColor & 0x00FFFF > 0x001000))) { ;is equal to 100%
-						BackpackPercent:=100
-					} else if((backpackColor & 0x00FFFF <= 0x00342E)){
-						BackpackPercent:=95
-					} else {
-						BackpackPercent:=0
-					}
-				}
-			}
-		}
-	}
-	if ((BackpackPercent != LastBackpackPercent) && WinExist("natro_macro ahk_class AutoHotkey")) {
-		PostMessage 0x5555, 4, BackpackPercent
-		LastBackpackPercent := BackpackPercent
-	}
-	Return BackpackPercent
+    ; structure=[red_min, red_max, cyan_min, cyan_max, percent]
+    ; Using CYAN (green+blue) because it's translucent over different backgrounds
+    static colors := [
+        [0x00, 0x41, 0xFF86, 0xFFFF, 0],
+        [0x41, 0x42, 0xFC85, 0xFF80, 5],
+        [0x42, 0x44, 0xF984, 0xFE85, 10],
+        [0x44, 0x47, 0xF582, 0xFB84, 15],
+        [0x47, 0x4B, 0xF080, 0xF782, 20],
+        [0x4B, 0x4F, 0xEA7D, 0xF280, 25],
+        [0x4F, 0x55, 0xE37A, 0xEC7D, 30],
+        [0x55, 0x5B, 0xDA76, 0xE57A, 35],
+        [0x5B, 0x62, 0xD072, 0xDC76, 40],
+        [0x62, 0x69, 0xC66D, 0xD272, 45],
+        [0x69, 0x72, 0xBA68, 0xC86D, 50],
+        [0x72, 0x7B, 0xAD62, 0xBC68, 55],
+        [0x7B, 0x85, 0x9E5C, 0xAF62, 60],
+        [0x85, 0x90, 0x8F55, 0xA05C, 65],
+        [0x90, 0x9C, 0x7E4E, 0x9155, 70],
+        [0x9C, 0xA9, 0x6C46, 0x804E, 75],
+        [0xA9, 0xB6, 0x5A3F, 0x6E46, 80],
+        [0xB6, 0xC4, 0x4637, 0x5D3F, 85],
+        [0xC4, 0xD3, 0x322E, 0x4A37, 90],
+        [0xD3, 0xE0, 0x0000, 0x342E, 95],
+        [0xE0, 0xFF, 0x1000, 0x2427, 100]
+    ]
+    
+    pColor := PixelGetColor(windowX + windowWidth//2 + 62, windowY + offsetY + 6)
+	
+    if pColor = 0xF70017
+        BackpackPercent := 100
+
+    else {
+        r := (pColor >> 16) & 0xFF
+        cyan := pColor & 0xFFFF
+        
+        BackpackPercent := 0
+        for range in colors {
+            if (r >= range[1] && r <= range[2] && cyan >= range[3] && cyan <= range[4]) {
+                BackpackPercent := range[5]
+                break
+            }
+        }
+    }
+    
+    if (BackpackPercent != LastBackpackPercent && WinExist("natro_macro ahk_class AutoHotkey")) {
+        PostMessage 0x5555, 4, BackpackPercent
+        LastBackpackPercent := BackpackPercent
+    }
+
+    return BackpackPercent
 }
 
 nm_backpackPercentFilter(){
