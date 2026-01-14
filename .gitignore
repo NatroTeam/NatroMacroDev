@@ -3,6 +3,8 @@
 
 # Settings
 settings/*
+# Debug
+debug/*
 
 # Miscellaneous
 *~
