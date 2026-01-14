@@ -9211,7 +9211,7 @@ blc_mutations(*) {
 	SSA_NormalizeStatChecks()
 	SSA_EnforceStatMax()
 	if !RegExMatch(HoneyLimit, "^\d+$")
-		HoneyLimit := "0"
+		HoneyLimit := "5"
 	(bitmaps := Map()).CaseSense:=0
 	#Include .\nm_image_assets\mutator\bitmaps.ahk
 	#include .\nm_image_assets\mutatorgui\bitmaps.ahk
@@ -10146,10 +10146,14 @@ UpdateHoneyGui() {
 			selectedSide += v
 		presentStats := Map(), foundStats := Map(), foundSide := Map()
 		mainPassiveFound := 0
+		if ssaDebug
+			corrections := Map()
 		for k, v in text {
 			line := StrLower(v)
 			normLine := NormalizeOCRLine(line)
 			tokens := (normLine = "") ? [] : StrSplit(normLine, " ")
+			if ssaDebug
+				SSA_DebugCollectCorrections(tokens, corrections)
 			for i, j in stats
 				if (j > 0) && !presentStats.Has(i) && SSA_StatLineMatch(i, normLine, tokens) {
 					presentStats[i] := 1
@@ -10158,7 +10162,7 @@ UpdateHoneyGui() {
 					else if (SSA_ParseStatValue(line, i) >= j)
 						foundStats[i] := 1
 				}
-			if (!mainPassiveFound && InStr(line, mainPassiveKey))
+			if (!mainPassiveFound && (InStr(line, mainPassiveKey) || SSA_SidePassiveMatch(mainPassiveKey, tokens)))
 				mainPassiveFound := 1
 			for i, j in sidePassives
 				if j && !foundSide.Has(i) && (InStr(line, i) || SSA_SidePassiveMatch(i, tokens))
@@ -10177,6 +10181,8 @@ UpdateHoneyGui() {
 					debugLines .= v " | "
 			debugLines := RTrim(debugLines, " |")
 			SSA_Log("OCR: " debugLines)
+			if (corrections.Count)
+				SSA_Log("OCR fixes: " SSA_JoinMapKeys(corrections))
 			SSA_Log("Need stats=" requiredStats "/" selectedCount " present=" presentStats.Count " pass=" statCount " main=" mainPassiveFound " side=" selectedSide "/" foundSide.Count " mainPassive=" mainPassive)
 		}
 		if (statCount >= requiredStats && mainPassiveFound && sideMatch)
@@ -10263,10 +10269,18 @@ UpdateHoneyGui() {
 					return false
 			return true
 		}
+		if (key = "critical")
+			return SSA_TokenMatch(tokens, "critical") && SSA_TokenMatch(tokens, "chance")
+		if (key = "instant")
+			return SSA_TokenMatch(tokens, "instant") && SSA_TokenMatch(tokens, "conversion")
+		if (key = "ability")
+			return SSA_TokenMatch(tokens, "ability") && SSA_TokenMatch(tokens, "rate")
+		if (key = "gath")
+			return SSA_TokenMatch(tokens, "gather") && SSA_TokenMatch(tokens, "pollen")
+		if (key = "convert")
+			return SSA_TokenMatch(tokens, "convert") && SSA_TokenMatch(tokens, "rate")
 		if (key = "red" || key = "blue" || key = "white")
 			return SSA_TokenMatch(tokens, phrases[key])
-		if (key = "convert" && !SSA_TokenMatch(tokens, "rate"))
-			return false
 		return FuzzyMatch(normLine, phrases[key])
 	}
 	SSA_TokenMatch(tokens, word, maxDist := "") {
@@ -10280,20 +10294,61 @@ UpdateHoneyGui() {
 		}
 		return false
 	}
+	SSA_JoinMapKeys(map, sep := ", ") {
+		out := ""
+		for k in map
+			out .= k sep
+		if (out != "")
+			out := SubStr(out, 1, StrLen(out) - StrLen(sep))
+		return out
+	}
+	SSA_DebugCollectCorrections(tokens, corrections) {
+		static aliases := Map(
+			"cummy", "gummy",
+			"gurnrny", "gummy",
+			"gurnmy", "gummy",
+			"gurnny", "gummy")
+		static targets := [
+			"gather", "ability", "critical", "chance", "instant", "conversion",
+			"convert", "rate", "pollen", "red", "blue", "white",
+			"scorching", "guiding", "shower", "saw", "pop", "gummy"
+		]
+		for _, token in tokens {
+			if aliases.Has(token) {
+				corrections[token "->" aliases[token]] := 1
+				continue
+			}
+			for _, target in targets {
+				if (token = target)
+					continue
+				maxDist := (StrLen(target) >= 6) ? 2 : 1
+				if (Abs(StrLen(token) - StrLen(target)) <= maxDist && LevenshteinDistance(token, target) <= maxDist) {
+					corrections[token "->" target] := 1
+					break
+				}
+			}
+		}
+	}
 	SSA_SidePassiveMatch(key, tokens) {
 		static passiveTokens := Map(
-			"pop", ["pop", "star"],
-			"scorch", ["scorch", "star"],
-			"gummy", ["gummy", "star"],
-			"guiding", ["guiding", "star"],
-			"saw", ["saw", "star"],
-			"shower", ["shower", "star"])
+			"pop", [["pop"], ["star"]],
+			"scorch", [["scorch"], ["star"]],
+			"gummy", [["gummy", "cummy", "gurnrny", "gurnmy", "gurnny"], ["star"]],
+			"guiding", [["guiding"], ["star"]],
+			"saw", [["saw"], ["star"]],
+			"shower", [["shower"], ["star"]])
 		if (!passiveTokens.Has(key) || tokens.Length = 0)
 			return false
-		for _, token in passiveTokens[key]
-			if !SSA_TokenMatch(tokens, token)
+		for _, group in passiveTokens[key]
+			if !SSA_TokenMatchAny(tokens, group)
 				return false
 		return true
+	}
+	SSA_TokenMatchAny(tokens, candidates) {
+		for _, cand in candidates
+			if SSA_TokenMatch(tokens, cand)
+				return true
+		return false
 	}
 	FuzzyMatch(normLine, target, maxDist := 0) {
 		if (maxDist = 0)
