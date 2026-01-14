@@ -10896,7 +10896,6 @@ PostSubmacroMessage(submacro, args*){
 }
 nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	global resetTime, youDied, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, bitmaps
-	static hivedown := 0
 	;check for game frozen conditions
 	if (GameFrozenCounter>=3) { ;3 strikes
 		nm_setStatus("Detected", "Roblox Game Frozen, Restarting")
@@ -11060,26 +11059,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			if atHive()
 				HiveConfirmed := 1
 		} else {
-			if hivedown
-				sendinput "{" RotDown "}"
-			region := windowX "|" windowY+3*windowHeight//4 "|" windowWidth "|" windowHeight//4
-			sconf := windowWidth**2//3200
-			loop 4 {
-				sleep 250+KeyDelay
-				pBMScreen := Gdip_BitmapFromScreen(region), s := 0
-				for i, k in bitmaps["hive"] {
-					s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 4, , , sconf))
-					if (s >= sconf) {
-						Gdip_DisposeImage(pBMScreen)
-						HiveConfirmed := 1
-						sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
-						Send "{" ZoomOut " 5}"
-						break 2
-					}
-				}
-				Gdip_DisposeImage(pBMScreen)
-				sendinput "{" RotRight " 4}" ((A_Index = 2) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
-			}
+			nm_SetHiveCameraDirection(2)
 		}
 	}
 	;convert
@@ -18200,6 +18180,8 @@ nm_locateVB(){
 		if (nowUnix() - vicStart) > 300
 			return vicEnd('Timeout - 5 minute limit')
 
+		fieldsChecked++
+		
 		fieldloop:
 		Loop 3 ; attempt each field a maximum of 3 times
 		{
@@ -18215,8 +18197,6 @@ nm_locateVB(){
 				Click "Down"
 
 			alignment := nm_Walk(data.initRight, RightKey) "`n" nm_Walk(data.initFwd, FwdKey)
-
-			fieldsChecked++
 
 			if (vic := SearchforVB(alignment, data.field)).result = vicResults.retry
 				continue fieldloop
