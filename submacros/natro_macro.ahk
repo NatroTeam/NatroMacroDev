@@ -2413,7 +2413,8 @@ nm_UpdateButton(*)
 		{
 			wr := ComObject("WinHttp.WinHttpRequest.5.1")
 			wr.Open("GET", "https://api.github.com/repos/NatroTeam/NatroMacro/tags?per_page=100", 1)
-			wr.SetRequestHeader("accept", "application/vnd.github+json", "X-GitHub-Api-Version", "2022-11-28")
+			wr.SetRequestHeader("accept", "application/vnd.github+json")
+			wr.SetRequestHeader("X-GitHub-Api-Version", "2022-11-28")
 			wr.Send()
 			wr.WaitForResponse()
 			for k,v in (tags := JSON.parse(wr.ResponseText))
@@ -2424,7 +2425,8 @@ nm_UpdateButton(*)
 
 			wr := ComObject("WinHttp.WinHttpRequest.5.1")
 			wr.Open("GET", "https://api.github.com/repos/NatroTeam/NatroMacro/compare/" base "..." latest_release["tag_name"] , 1)
-			wr.SetRequestHeader("accept", "application/vnd.github+json", "X-GitHub-Api-Version", "2022-11-28")
+			wr.SetRequestHeader("accept", "application/vnd.github+json")
+			wr.SetRequestHeader("X-GitHub-Api-Version", "2022-11-28")
 			wr.Send()
 			wr.WaitForResponse()
 			for k,v in (files := JSON.parse(wr.ResponseText)["files"])
@@ -2678,7 +2680,8 @@ MainGui.Add("Text", "x264 y43 w180 +wrap +backgroundtrans cWhite", "Thank you fo
 MainGui.Add("Button", "x440 y46 w18 h18 vContributorsLeft Disabled", "<").OnEvent("Click", nm_ContributorsPageButton)
 MainGui.Add("Button", "x464 y46 w18 h18 vContributorsRight Disabled", ">").OnEvent("Click", nm_ContributorsPageButton)
 
-try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/contributors.txt", nm_ContributorsHandler, Map("accept", "application/vnd.github.v3.raw"))
+try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/contributors.txt", nm_ContributorsHandler
+, Map("accept", "application/vnd.github.v3.raw", "X-GitHub-Api-Version", "2022-11-28"))
 SetLoadingProgress(27)
 
 ; MISC TAB
@@ -2932,7 +2935,8 @@ MainGui.Add("Picture", "+BackgroundTrans x247 yp-3 w20 h20 vBeesmasImage")
 if (EnableBeesmasTime > nowUnix())
 	nm_EnableBeesmas(1)
 else
-	try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler, Map("accept", "application/vnd.github.v3.raw"))
+	try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler
+, Map("accept", "application/vnd.github.v3.raw", "X-GitHub-Api-Version", "2022-11-28"))
 ;Blender
 MainGui.SetFont("w700")
 MainGui.Add("GroupBox", "x305 y42 w190 h105 vBlenderGroupBox", "Blender")
