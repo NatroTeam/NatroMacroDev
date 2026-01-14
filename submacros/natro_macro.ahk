@@ -173,6 +173,9 @@ nm_importPatterns()
 	global patterns := Map()
 	patterns.CaseSense := 0
 	global patternlist := []
+	defaultpatterns := [
+		"Auryn", "CornerXSnake", "Diamonds", "e_lol", "Fork", "Lines", "Slimline", "Snake", "Squares", "Stationary", "SuperCat", "XSnake"
+	]
 
 	if FileExist("settings\imported\patterns.ahk")
 		file := FileOpen("settings\imported\patterns.ahk", "r"), imported := file.Read(), file.Close()
@@ -182,6 +185,7 @@ nm_importPatterns()
 	import := ""
 	Loop Files A_WorkingDir "\patterns\*.ahk"
 	{
+		bypassWarning := 0
 		file := FileOpen(A_LoopFilePath, "r"), pattern := file.Read(), file.Close()
 		if RegexMatch(pattern, "im)patterns\[")
 			MsgBox
@@ -191,32 +195,39 @@ nm_importPatterns()
 			Check for an updated version of the pattern
 			or ask the creator to update it"
 			), "Error", 0x40010 " T60"
-		if !InStr(imported, imported_pattern := '("' (pattern_name := StrReplace(A_LoopFileName, "." A_LoopFileExt)) '")`r`n' pattern '`r`n`r`n')
+		if !InStr(imported, imported_pattern := '("' (pattern_name := StrReplace(A_LoopFileName, "." A_LoopFileExt)) '")`r`n' pattern '`r`n`r`n') 
 		{
-			MsgBox(
-				(
-					'IMPORTANT!! READ THIS WHOLE MESSAGE
+			for name in defaultpatterns {
+				if pattern_name = name {
+					bypassWarning := 1
+				}
+			}
+			if !bypassWarning {
+				MsgBox(
+					(
+						'IMPORTANT!! READ THIS WHOLE MESSAGE
 
-					Pattern files can execute any AutoHotkey code, including potentially malicious code.
-					You should only run patterns from sources you trust.
+						Pattern files can execute any AutoHotkey code, including potentially malicious code.
+						You should only run patterns from sources you trust.
 
-					We provide a few sources for trusted pattern downloads, including:
-					
-					- Our discord server, in the #patterns channel
-					- https://github.com/NatroTeam/Paths-Patterns, a collection of verified patterns
+						We provide a few sources for trusted pattern downloads, including:
+						
+						- Our discord server, in the #patterns channel
+						- https://github.com/NatroTeam/Paths-Patterns, a collection of verified patterns
 
-					We review every pattern or path submitted to these sources, so you can be sure that they are 100% safe.
+						We review every pattern or path submitted to these sources, so you can be sure that they are 100% safe.
 
-					HOWEVER, you should not download a pattern from a stranger telling you to test out their pattern.
-					If all else fails, just download it from the sources above.
+						HOWEVER, you should not download a pattern from a stranger telling you to test out their pattern.
+						If all else fails, just download it from the sources above.
 
 
-					IMPORTANT!! READ THIS WHOLE MESSAGE
-					'
-				), "Pattern Import Warning", 0x40030
-			)
-			if (MsgBox("Do you FULLY trust the pattern " pattern_name " and want to import it?", "Pattern Import Confirmation", 0x40004 " T60") != "Yes")
-				continue
+						IMPORTANT!! READ THIS WHOLE MESSAGE
+						'
+					), "Pattern Import Warning", 0x40030
+				)
+				if (MsgBox("Do you FULLY trust the pattern " pattern_name " and want to import it?", "Pattern Import Confirmation", 0x40004 " T60") != "Yes")
+					continue
+			}
 			script :=
 			(
 			'
