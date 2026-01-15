@@ -10093,6 +10093,13 @@ UpdateHoneyGui() {
 			, DoublePassiveCheck, HoneyLimit, ssaStats, ssaAdvanced
 			, PollenMin, WhitePollenMin, RedPollenMin, BluePollenMin, ConvertRateMin
 			, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin, ssaDebug
+		static lastRollTick := 0
+		rollCooldown := 900
+		if (lastRollTick) {
+			elapsed := A_TickCount - lastRollTick
+			if (elapsed < rollCooldown)
+				Sleep(rollCooldown - elapsed)
+		}
 		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
 			return -1
 		yOffset := GetYOffset(hwndRoblox, &fail)
@@ -10104,6 +10111,7 @@ UpdateHoneyGui() {
 		SendEvent "e"
 		Sleep 250
 		Click windowX + windowWidth//2 + (DoublePassiveCheck ? -100 : 100), windowY + yOffset + windowHeight//2 + 30
+		lastRollTick := A_TickCount
 		MouseMove windowX + windowWidth//2, windowY + windowHeight//2 + 150
 		Sleep 300
 		pBitmap := Gdip_BitmapFromScreen(windowX + windowWidth//2 + 20 "|" windowY + yOffset + Round(0.4 * windowHeight + 20) "|188|160")
@@ -10146,30 +10154,44 @@ UpdateHoneyGui() {
 			selectedSide += v
 		presentStats := Map(), foundStats := Map(), foundSide := Map()
 		mainPassiveFound := 0
-		if ssaDebug
-			corrections := Map()
+		matched := false
+		correctedLines := ""
 		for k, v in text {
 			line := StrLower(v)
-			normLine := NormalizeOCRLine(line)
-			tokens := (normLine = "") ? [] : StrSplit(normLine, " ")
-			if ssaDebug
-				SSA_DebugCollectCorrections(tokens, corrections)
-			for i, j in stats
-				if (j > 0) && !presentStats.Has(i) && SSA_StatLineMatch(i, normLine, tokens) {
-					presentStats[i] := 1
-					if !ssaAdvanced
-						foundStats[i] := 1
-					else if (SSA_ParseStatValue(line, i) >= j)
-						foundStats[i] := 1
+			for _, seg in StrSplit(line, "|") {
+				seg := Trim(seg)
+				if (seg = "")
+					continue
+				normSeg := NormalizeOCRLine(seg)
+				tokens := (normSeg = "") ? [] : StrSplit(normSeg, " ")
+				corrections := Map()
+				SSA_CorrectTokens(tokens, corrections)
+				if ssaDebug {
+					if (correctedLines != "")
+						correctedLines .= " | "
+					correctedLines .= SSA_CorrectDebugSegment(seg, corrections)
 				}
-			if (!mainPassiveFound && (InStr(line, mainPassiveKey) || SSA_SidePassiveMatch(mainPassiveKey, tokens)))
-				mainPassiveFound := 1
-			for i, j in sidePassives
-				if j && !foundSide.Has(i) && (InStr(line, i) || SSA_SidePassiveMatch(i, tokens))
-					foundSide[i] := 1
-			sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
-			statCount := ssaAdvanced ? foundStats.Count : presentStats.Count
-			if (statCount >= requiredStats && mainPassiveFound && sideMatch)
+				for i, j in stats
+					if (j > 0) && !presentStats.Has(i) && SSA_StatLineMatch(i, tokens) {
+						presentStats[i] := 1
+						if !ssaAdvanced
+							foundStats[i] := 1
+						else if (SSA_ParseStatValue(seg, i) >= j)
+							foundStats[i] := 1
+					}
+				if (!mainPassiveFound && SSA_SidePassiveMatch(mainPassiveKey, tokens))
+					mainPassiveFound := 1
+				for i, j in sidePassives
+					if j && !foundSide.Has(i) && SSA_SidePassiveMatch(i, tokens)
+						foundSide[i] := 1
+				sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
+				statCount := ssaAdvanced ? foundStats.Count : presentStats.Count
+				if (statCount >= requiredStats && mainPassiveFound && sideMatch) {
+					matched := true
+					break
+				}
+			}
+			if matched
 				break
 		}
 		sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
@@ -10181,8 +10203,8 @@ UpdateHoneyGui() {
 					debugLines .= v " | "
 			debugLines := RTrim(debugLines, " |")
 			SSA_Log("OCR: " debugLines)
-			if (corrections.Count)
-				SSA_Log("OCR fixes: " SSA_JoinMapKeys(corrections))
+			if (correctedLines != "")
+				SSA_Log("OCR fuzzy: " correctedLines)
 			SSA_Log("Need stats=" requiredStats "/" selectedCount " present=" presentStats.Count " pass=" statCount " main=" mainPassiveFound " side=" selectedSide "/" foundSide.Count " mainPassive=" mainPassive)
 		}
 		if (statCount >= requiredStats && mainPassiveFound && sideMatch)
@@ -10233,38 +10255,36 @@ UpdateHoneyGui() {
 		f.Close()
 	}
 	SSA_ParseStatValue(line, key) {
+		cleaned := RegExReplace(line, "i)x\\s*[li]", "x1")
 		if (key = "convert") {
-			if RegExMatch(line, "i)x\\s*([0-9]+(?:\\.[0-9]+)?)", &m)
-				return Round((m[1] + 0) * 100)
-			if RegExMatch(line, "i)([0-9]+)\\s*%", &m2)
-				return Integer(m2[1])
+			if RegExMatch(cleaned, "i)x?\\s*([0-9lIsS]+(?:\\.[0-9lIsS]+)?)\\s*convert\\s*rate", &m) {
+				raw := SSA_NormalizeNumberToken(m[1])
+				if RegExMatch(raw, "^[0-9]+(?:\\.[0-9]+)?$") {
+					val := raw + 0
+					if (val >= 1.0 && val <= 2.0)
+						return Round(val * 100)
+				}
+			}
 			return 0
 		}
-		if RegExMatch(line, "i)([0-9]+)\\s*%", &m)
-			return Integer(m[1])
+		if RegExMatch(cleaned, "i)([0-9lIsS]+)\\s*%", &m) {
+			raw := SSA_NormalizeNumberToken(m[1])
+			if RegExMatch(raw, "^[0-9]+$")
+				return Integer(raw)
+		}
 		return 0
 	}
 	NormalizeOCRLine(line) {
 		norm := RegExReplace(StrLower(line), "[^a-z]+", " ")
 		return Trim(RegExReplace(norm, "\\s+", " "))
 	}
-	SSA_StatLineMatch(key, normLine, tokens) {
-		static phrases := Map(
-			"red", "red",
-			"blue", "blue",
-			"white", "white",
-			"pollen", "pollen",
-			"convert", "convert rate",
-			"critical", "critical chance",
-			"instant", "instant conversion",
-			"ability", "bee ability rate",
-			"gath", "bee gather pollen")
-		if (!phrases.Has(key) || normLine = "")
+	SSA_StatLineMatch(key, tokens) {
+		if (tokens.Length = 0)
 			return false
 		if (key = "pollen") {
 			if !SSA_TokenMatch(tokens, "pollen")
 				return false
-			for _, forbid in ["red", "blue", "white", "bee", "gath", "gather", "cather"]
+			for _, forbid in ["red", "blue", "white", "bee", "gath", "gather"]
 				if SSA_TokenMatch(tokens, forbid)
 					return false
 			return true
@@ -10280,8 +10300,8 @@ UpdateHoneyGui() {
 		if (key = "convert")
 			return SSA_TokenMatch(tokens, "convert") && SSA_TokenMatch(tokens, "rate")
 		if (key = "red" || key = "blue" || key = "white")
-			return SSA_TokenMatch(tokens, phrases[key])
-		return FuzzyMatch(normLine, phrases[key])
+			return SSA_TokenMatch(tokens, key)
+		return false
 	}
 	SSA_TokenMatch(tokens, word, maxDist := "") {
 		if (maxDist = "")
@@ -10294,45 +10314,67 @@ UpdateHoneyGui() {
 		}
 		return false
 	}
-	SSA_JoinMapKeys(map, sep := ", ") {
-		out := ""
-		for k in map
-			out .= k sep
-		if (out != "")
-			out := SubStr(out, 1, StrLen(out) - StrLen(sep))
-		return out
-	}
-	SSA_DebugCollectCorrections(tokens, corrections) {
+	SSA_CorrectToken(token) {
+		lower := StrLower(token)
 		static aliases := Map(
+			"cather", "gather",
+			"ather", "gather",
+			"abitity", "ability",
 			"cummy", "gummy",
 			"gurnrny", "gummy",
 			"gurnmy", "gummy",
-			"gurnny", "gummy")
+			"gurnny", "gummy",
+			"xl", "x1")
+		if aliases.Has(lower)
+			return aliases[lower]
 		static targets := [
 			"gather", "ability", "critical", "chance", "instant", "conversion",
-			"convert", "rate", "pollen", "red", "blue", "white",
-			"scorching", "guiding", "shower", "saw", "pop", "gummy"
+			"convert", "rate", "pollen", "red", "blue", "white", "bee",
+			"scorching", "guiding", "shower", "saw", "pop", "gummy",
+			"passive", "star", "replace"
 		]
-		for _, token in tokens {
-			if aliases.Has(token) {
-				corrections[token "->" aliases[token]] := 1
-				continue
-			}
-			for _, target in targets {
-				if (token = target)
-					continue
-				maxDist := (StrLen(target) >= 6) ? 2 : 1
-				if (Abs(StrLen(token) - StrLen(target)) <= maxDist && LevenshteinDistance(token, target) <= maxDist) {
-					corrections[token "->" target] := 1
-					break
-				}
-			}
+		for _, target in targets {
+			if (lower = target)
+				return lower
+			maxDist := (StrLen(target) >= 6) ? 2 : 1
+			if (Abs(StrLen(lower) - StrLen(target)) <= maxDist && LevenshteinDistance(lower, target) <= maxDist)
+				return target
 		}
+		return lower
+	}
+	SSA_NormalizeNumberToken(token) {
+		cleaned := RegExReplace(token, "[lI]", "1")
+		return RegExReplace(cleaned, "[sS]", "5")
+	}
+	SSA_CorrectTokens(tokens, corrections := "") {
+		for idx, token in tokens {
+			corrected := SSA_CorrectToken(token)
+			tokens[idx] := corrected
+			if IsObject(corrections)
+				corrections[token] := corrected
+		}
+	}
+	SSA_CorrectDebugSegment(seg, corrections) {
+		out := ""
+		pos := 1
+		while RegExMatch(seg, "[A-Za-z0-9.]+", &m, pos) {
+			out .= SubStr(seg, pos, m.Pos[0] - pos)
+			token := m[0]
+			if RegExMatch(token, "\\d")
+				out .= SSA_NormalizeNumberToken(token)
+			else {
+				lower := StrLower(token)
+				out .= corrections.Has(lower) ? corrections[lower] : lower
+			}
+			pos := m.Pos[0] + m.Len[0]
+		}
+		out .= SubStr(seg, pos)
+		return out
 	}
 	SSA_SidePassiveMatch(key, tokens) {
 		static passiveTokens := Map(
 			"pop", [["pop"], ["star"]],
-			"scorch", [["scorch"], ["star"]],
+			"scorch", [["scorch", "scorching"], ["star"]],
 			"gummy", [["gummy", "cummy", "gurnrny", "gurnmy", "gurnny"], ["star"]],
 			"guiding", [["guiding"], ["star"]],
 			"saw", [["saw"], ["star"]],
@@ -10349,13 +10391,6 @@ UpdateHoneyGui() {
 			if SSA_TokenMatch(tokens, cand)
 				return true
 		return false
-	}
-	FuzzyMatch(normLine, target, maxDist := 0) {
-		if (maxDist = 0)
-			maxDist := Max(2, Floor(StrLen(target) * 0.2))
-		if (Abs(StrLen(normLine) - StrLen(target)) > maxDist)
-			return false
-		return (LevenshteinDistance(normLine, target) <= maxDist)
 	}
 	LevenshteinDistance(s1, s2) {
 		len1 := StrLen(s1), len2 := StrLen(s2)
