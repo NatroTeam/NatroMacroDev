@@ -9618,7 +9618,7 @@ UpdateHoneyGui() {
 			info := ssaStatPending[statName]
 			value := info.value
 			if (value > 0) {
-				value := SSA_ClampStatMax(statName, value)
+				value := SSA_ClampStatMin(statName, value)
 				if (%statName% <= 0 && SSA_CountSelectedStats(true) >= 5) {
 					value := 0
 					SSA_ShowStatLimitTip()
@@ -10093,9 +10093,11 @@ UpdateHoneyGui() {
 			, DoublePassiveCheck, HoneyLimit, ssaStats, ssaAdvanced
 			, PollenMin, WhitePollenMin, RedPollenMin, BluePollenMin, ConvertRateMin
 			, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin, ssaDebug
-		static lastRollTick := 0
+		static lastRollTick := 0, pendingRoll := false, pendingSince := 0
+		doublePassive := (DoublePassiveCheck = 1)
 		rollCooldown := 900
-		if (lastRollTick) {
+		pendingTimeout := 5000
+		if (!pendingRoll && lastRollTick) {
 			elapsed := A_TickCount - lastRollTick
 			if (elapsed < rollCooldown)
 				Sleep(rollCooldown - elapsed)
@@ -10105,22 +10107,55 @@ UpdateHoneyGui() {
 		yOffset := GetYOffset(hwndRoblox, &fail)
 		if fail
 			return -1
-		if (ssa_subHoney(DoublePassiveCheck ? 500 : 250) < 0)
-			return -2
-		ActivateRoblox()
-		SendEvent "e"
-		Sleep 250
-		Click windowX + windowWidth//2 + (DoublePassiveCheck ? -100 : 100), windowY + yOffset + windowHeight//2 + 30
-		lastRollTick := A_TickCount
-		MouseMove windowX + windowWidth//2, windowY + windowHeight//2 + 150
-		Sleep 300
-		pBitmap := Gdip_BitmapFromScreen(windowX + windowWidth//2 + 20 "|" windowY + yOffset + Round(0.4 * windowHeight + 20) "|188|160")
-		pBitmapResize := Gdip_ResizeBitmap(pBitmap, 376, 320), Gdip_DisposeImage(pBitmap)
-		hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmapResize)
-		Gdip_DisposeImage pBitmapResize
-		pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
-		DeleteObject(hBitmap)
-		text := StrSplit(ocr(pIRandomAccessStream), "``n")
+		if !pendingRoll {
+			rollCost := doublePassive ? 500 : 250
+			if (ssa_subHoney(rollCost) < 0)
+				return -2
+			ActivateRoblox()
+			SendEvent "e"
+			Sleep 250
+			rollOffset := Round(windowWidth * 0.055)
+			if (rollOffset < 70)
+				rollOffset := 70
+			else if (rollOffset > 110)
+				rollOffset := 110
+			Click windowX + windowWidth//2 + (doublePassive ? -rollOffset : rollOffset), windowY + yOffset + windowHeight//2 + 30
+			lastRollTick := A_TickCount
+			pendingRoll := true
+			pendingSince := lastRollTick
+			MouseMove windowX + windowWidth//2, windowY + windowHeight//2 + 150
+			Sleep 300
+		} else {
+			elapsed := A_TickCount - pendingSince
+			if (elapsed > pendingTimeout) {
+				pendingRoll := false
+				pendingSince := 0
+				if ssaDebug
+					SSA_Log("OCR pending timeout; rerolling.")
+				return 0
+			}
+			if (elapsed < 200)
+				Sleep(200 - elapsed)
+		}
+		ocrX := windowX + windowWidth//2 + 20
+		ocrY := windowY + yOffset + Round(0.4 * windowHeight + 20)
+		ocrW := 188
+		ocrH := 160
+		validOcr := false
+		Loop 5 {
+			text := SSA_ReadOcrText(ocrX, ocrY, ocrW, ocrH)
+			validOcr := SSA_OcrLooksValid(text)
+			if validOcr
+				break
+			Sleep 250
+		}
+		if !validOcr {
+			if ssaDebug
+				SSA_Log("OCR invalid/empty after roll; retrying.")
+			return 0
+		}
+		pendingRoll := false
+		pendingSince := 0
 
 		stats := Map()
 		selectedCount := 0
@@ -10211,6 +10246,31 @@ UpdateHoneyGui() {
 			return 1
 		return 0
 	}
+	SSA_ReadOcrText(x, y, w, h) {
+		pBitmap := Gdip_BitmapFromScreen(x "|" y "|" w "|" h)
+		pBitmapResize := Gdip_ResizeBitmap(pBitmap, w * 2, h * 2), Gdip_DisposeImage(pBitmap)
+		hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmapResize)
+		Gdip_DisposeImage pBitmapResize
+		pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
+		DeleteObject(hBitmap)
+		return StrSplit(ocr(pIRandomAccessStream), "``n")
+	}
+	SSA_OcrLooksValid(lines) {
+		for _, line in lines {
+			if (line = "")
+				continue
+			lower := StrLower(line)
+			if InStr(lower, "%")
+				return true
+			if InStr(lower, "passive") || InStr(lower, "pollen") || InStr(lower, "convert")
+				return true
+			if InStr(lower, "critical") || InStr(lower, "ability") || InStr(lower, "instant")
+				return true
+			if InStr(lower, "capacity") || InStr(lower, "star")
+				return true
+		}
+		return false
+	}
 	SSA_Log(message) {
 		global ssaDebug
 		static logCount := 0
@@ -10255,10 +10315,15 @@ UpdateHoneyGui() {
 		f.Close()
 	}
 	SSA_ParseStatValue(line, key) {
-		cleaned := RegExReplace(line, "i)x\\s*[li]", "x1")
+		cleaned := StrLower(line)
+		cleaned := RegExReplace(cleaned, "i)x\\s*[li]", "x1")
+		cleaned := RegExReplace(cleaned, "(\\d)\\s+(?=\\d)", "$1")
+		cleaned := RegExReplace(cleaned, "(\\.)\\s+(?=\\d)", "$1")
 		if (key = "convert") {
-			if RegExMatch(cleaned, "i)x?\\s*([0-9lIsS]+(?:\\.[0-9lIsS]+)?)\\s*convert\\s*rate", &m) {
-				raw := SSA_NormalizeNumberToken(m[1])
+			if RegExMatch(cleaned, "i)x?\\s*([0-9lIsS.\\s]+)\\s*convert\\s*rate", &m) {
+				raw := RegExReplace(m[1], "\\s+", "")
+				raw := SSA_NormalizeNumberToken(raw)
+				raw := RegExReplace(raw, "[^0-9.]", "")
 				if RegExMatch(raw, "^[0-9]+(?:\\.[0-9]+)?$") {
 					val := raw + 0
 					if (val >= 1.0 && val <= 2.0)
@@ -10267,15 +10332,20 @@ UpdateHoneyGui() {
 			}
 			return 0
 		}
-		if RegExMatch(cleaned, "i)([0-9lIsS]+)\\s*%", &m) {
-			raw := SSA_NormalizeNumberToken(m[1])
+		if RegExMatch(cleaned, "i)([0-9lIsS]+(?:\\s*[0-9lIsS]+)*)\\s*%", &m) {
+			raw := RegExReplace(m[1], "\\s+", "")
+			raw := SSA_NormalizeNumberToken(raw)
 			if RegExMatch(raw, "^[0-9]+$")
 				return Integer(raw)
 		}
 		return 0
 	}
 	NormalizeOCRLine(line) {
-		norm := RegExReplace(StrLower(line), "[^a-z]+", " ")
+		line := StrLower(line)
+		line := StrReplace(line, "0", "o")
+		line := StrReplace(line, "1", "l")
+		line := StrReplace(line, "5", "s")
+		norm := RegExReplace(line, "[^a-z]+", " ")
 		return Trim(RegExReplace(norm, "\\s+", " "))
 	}
 	SSA_StatLineMatch(key, tokens) {
@@ -10360,7 +10430,7 @@ UpdateHoneyGui() {
 		while RegExMatch(seg, "[A-Za-z0-9.]+", &m, pos) {
 			out .= SubStr(seg, pos, m.Pos[0] - pos)
 			token := m[0]
-			if RegExMatch(token, "\\d")
+			if RegExMatch(token, "\\d") || RegExMatch(token, "i)^x[lisS]+(?:\\.[lisS]+)?$")
 				out .= SSA_NormalizeNumberToken(token)
 			else {
 				lower := StrLower(token)
