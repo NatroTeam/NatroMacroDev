@@ -18138,23 +18138,21 @@ nm_confirmNight()
 
 	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
 
-	for , bitmap in bitmaps["day"]
-	{
-		if Gdip_ImageSearch(pBMArea, bitmap) > 0
-		{
-			CamMove(1)
-			Gdip_DisposeImage(pBMArea)
-			return 0
-		}
-	}
+	; AHK loops through maps alphanumerically.
+	; bitmaps["confirm"]["day"] comes first because d is before n.
+	; so the return value is set to 0 when the loop is on day
+	; and then the return value is set to 1 when the loop is on night.
 
-	for , bitmap in bitmaps["night"]
+	for DayTime in bitmaps["confirm"]
 	{
-		if Gdip_ImageSearch(pBMArea, bitmap) > 0
+		ReturnValue := A_Index - 1
+		for spot in bitmaps["confirm"][DayTime]
 		{
-			CamMove(1)
-			Gdip_DisposeImage(pBMArea)
-			return 1
+			if Gdip_ImageSearch(pBMArea, bitmaps["confirm"][DayTime][spot])
+			{
+				Gdip_DisposeImage(pBMArea)
+				return ReturnValue
+			}	
 		}
 	}
 
@@ -18171,7 +18169,7 @@ nm_confirmNight()
 		else
 			loop 4
 				SendInput("{" RotUp "}"), SendInput("{" ZoomOut "}")
-		Sleep(200)
+		Sleep(50)
 	}
 }
 
@@ -18340,34 +18338,34 @@ vicEnd(reason:=vicResults.success){
  * @returns {{result: String} or false}
  */
 WalkwithVBCheck(movement, ignoreHoney?, ignoreStatus?){
-	local inactiveHoney := 0
-	nm_OpenChat() ; just to ensure that chat is open :sob:
-	start := nowUnix()
-	nm_createWalk(movement)
-	KeyWait "F14", "D T5 L"
-	while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
-	{
-		vic := nm_ViciousCheck()
-		if vic.result {
-			if IsSet(ignoreStatus)
-				KeyWait "F14", "T120 L"
-			nm_endWalk()
-			return vic
-		}
-		if !nm_activeHoney(){
-			if (!IsSet(ignoreHoney) && inactiveHoney++ >= 10) {
-				nm_endWalk()
-				return {result: vicResults.inactivehoney}
-			}
-		}
-		if youDied {
-			nm_endWalk()
-			return {result: vicResults.retry}
-		}
-	}
-	KeyWait "F14", "T120 L"
-	nm_endWalk()
-	return {result: 0}
+    local inactiveHoney := 0
+    nm_OpenChat() ; just to ensure that chat is open 😭
+    start := nowUnix()
+    nm_createWalk(movement)
+    KeyWait "F14", "D T5 L"
+    while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
+    {
+        vic := nm_ViciousCheck()
+        if vic.result {
+            if IsSet(ignoreStatus)
+                KeyWait "F14", "T120 L"
+            nm_endWalk()
+            return vic
+        }
+        if !nm_activeHoney(){
+            if (!IsSet(ignoreHoney) && inactiveHoney++ >= 10) {
+                nm_endWalk()
+                return {result: 'inactivehoney'}
+            }
+        }
+        if youDied {
+            nm_endWalk()
+            return {result: 'youDied'}
+        }
+    }
+    KeyWait "F14", "T120 L"
+    nm_endWalk()
+    return {result: 0}
 }
 /**
  * Search for vicious bee using WalkwithVBCheck()

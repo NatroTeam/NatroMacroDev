@@ -1,13 +1,21 @@
 ﻿bitmaps["day"] := Map()
-bitmaps["day"]["grass"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["night"]["grass"]), Gdip_GraphicsClear(G, 0xFF3F9A4A), Gdip_DeleteGraphics(G)
-bitmaps["day"]["snow"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["day"]["snow"]), Gdip_GraphicsClear(G, 0xFFBEDDEE), Gdip_DeleteGraphics(G)
-
+bitmaps["day"]["ground"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYSURBVBhXY9QvtfzPgAUwQWkMQHsJBgYAFVEB6G8VVi4AAAAASUVORK5CYII=")
 bitmaps["day"]["dande"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAA9SURBVBhXY9QrtfrPyPCfAQ4YIRQTiPgP5KFjsAQcQFWDABMjmAfESIIgwAQThxBQWaCVTEjWQgFIkoEBAArdCfHDfRoXAAAAAElFTkSuQmCC")
 bitmaps["day"]["stump"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAABASURBVChTY7SZ6/WfgQBggtJ4AUFF//4Ra9I/JiaG/4yMUC4mAEoDTQI6m/E/frczMYJUEQBMhEwBASIczsAAAKP1DDQ9bA0AAAAAAElFTkSuQmCC")
 bitmaps["day"]["pa"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAABKSURBVChTY1QtMvnPyPCfAYRwASawAhBghFDYABOUhgCQQiyKURXBAJpC7IpAAEkhUBEOO0AAKoxkEg7FQCEs1mEqxu0muGIGBgAPyATqH7zI/gAAAABJRU5ErkJggg==")
 bitmaps["day"]["clovb"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAHCAYAAAA1WQxeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAABKSURBVBhXfY7RDYAwCEShdTwHcD/nLOch5UPS+pILBF4Iet4XpHX5ADCsxtU7sBFJVJloQ0iqdLQiOOUaFZqriE3hF6Pg3+4A5AF50BZQygGgRAAAAABJRU5ErkJggg==")
+bitmaps["day"]["beesmas"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAABmSURBVChTdZDREcAgCEMT9p+pm3SFrkADsafXU/14gAm5k9f9JEGkLimmqUIT6IUI0YISlmBQynoqFaJdo+mqOTcW4+82LbRHcSd3zVQ04+ReNztuEe4MiptNcx833f0xOp/BcYkXlkJIpPkKE18AAAAASUVORK5CYII=")
 bitmaps["day"]["ant"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAAA1SURBVChTY1S4KPafAStgBJNMDIxABlYMUcMEVoYHMEEV4sSETcBuPxQDzcBvAlANASsYGAAwDgI9KuYaygAAAABJRU5ErkJggg==")
 
 bitmaps["night"] := Map()
-bitmaps["night"]["snow"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["night"]["snow"]), Gdip_GraphicsClear(G, 0xFF56646B), Gdip_DeleteGraphics(G)
-bitmaps["night"]["grass"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["night"]["grass"]), Gdip_GraphicsClear(G, 0xFF1C4005), Gdip_DeleteGraphics(G)
+bitmaps["night"]["a"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYSURBVBhXYxT3kP/PgAUwQWkMQHsJBgYA3lgBiezzPlsAAAAASUVORK5CYII=")
+bitmaps["night"]["b"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAkSURBVBhXYxR0l/nPgAUwQWkMgCTBiIKJ0YEKkCRAboDh/wwA+bkFfyoGEywAAAAASUVORK5CYII=")
+
+(bitmaps["confirm"] := Map()).CaseSense := 0
+(bitmaps["confirm"]["night"] := Map()).CaseSense := 0
+bitmaps["confirm"]["night"]["snow"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["night"]["snow"]), Gdip_GraphicsClear(G, 0xFF56646B), Gdip_DeleteGraphics(G)
+bitmaps["confirm"]["night"]["grass"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["night"]["grass"]), Gdip_GraphicsClear(G, 0xFF1C4005), Gdip_DeleteGraphics(G)
+
+(bitmaps["confirm"]["day"] := Map()).CaseSense := 0
+bitmaps["confirm"]["day"]["grass"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["night"]["grass"]), Gdip_GraphicsClear(G, 0xFF3F9A4A), Gdip_DeleteGraphics(G)
+bitmaps["confirm"]["day"]["snow"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["day"]["snow"]), Gdip_GraphicsClear(G, 0xFFBEDDEE), Gdip_DeleteGraphics(G)
