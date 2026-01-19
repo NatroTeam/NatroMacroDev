@@ -17385,7 +17385,7 @@ nm_fieldDriftCompensation(){
 				Loop 25 {
 					Sleep 20
 					if (nm_LocateSprinkler(&x, &y) = 1) {
-						sendinput (hmove ? "{" hmove " down} " : "") (vmove ? "{" vmove " down} " : "")
+						sendinput (hmove ? "{" hmove " down}" : "") (vmove ? "{" vmove " down}" : "")
 						continue 2
 					}
 				}
