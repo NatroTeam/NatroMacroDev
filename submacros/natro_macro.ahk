@@ -1,4 +1,4 @@
-﻿/*
+/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -23678,7 +23678,3 @@ F10:: {
 ;		vars .= '"' (x = "" ? "" : x) '" '
 ;	Run path " " vars
 ;}
-
-F11:: {
-	nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: "Blue Flower", time: 60})
-}
