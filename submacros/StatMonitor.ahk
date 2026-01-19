@@ -14,7 +14,10 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #SingleInstance Force
 #Requires AutoHotkey v2.0
 
+SetWorkingDir A_ScriptDir "\.."
+
 #Include "%A_ScriptDir%\..\lib"
+#include "ErrorHandling.ahk"
 #Include "Gdip_All.ahk"
 #Include "Gdip_ImageSearch.ahk"
 #Include "Roblox.ahk"
@@ -23,7 +26,6 @@ You should have received a copy of the license along with Natro Macro. If not, p
 
 #Warn VarUnset, Off
 
-SetWorkingDir A_ScriptDir "\.."
 
 
 ; set version number

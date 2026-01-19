@@ -14,14 +14,15 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #SingleInstance Force
 #NoTrayIcon
 
+SetWorkingDir A_ScriptDir "\.."
+
 #Include "%A_ScriptDir%\..\lib"
+#Include "ErrorHandling.ahk"
 #Include "Gdip_All.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
-#Include "ErrorHandling.ahk"
 
 DetectHiddenWindows 1
-SetWorkingDir A_ScriptDir "\.."
 
 ; check for the correct AHK version before starting
 if (A_PtrSize != 4)
