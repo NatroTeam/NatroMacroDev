@@ -2113,6 +2113,7 @@ hBitmapsSBT := Map(), hBitmapsSBT.CaseSense := 0
 #Include "stickerprinter\bitmaps.ahk"
 #Include "memorymatch\bitmaps.ahk"
 #include "reset\bitmaps.ahk"
+#include "night\bitmaps.ahk"
 
 (hBitmapsSB := Map()).CaseSense := 0
 for x,y in hBitmapsSBT
@@ -18135,6 +18136,54 @@ nm_Night(){
 	nm_ViciousBee()
 	CheckNight := 0
 }
+
+nm_confirmNight()
+{
+	global CheckNight
+
+	nm_setStatus("Confirming", "Night")
+	nm_Reset(0, 2000, 0)
+	ActivateRoblox()
+	GetRobloxClientPos()
+	CamMove(0)
+
+	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
+
+	; AHK loops through maps alphanumerically.
+	; bitmaps["confirm"]["day"] comes first because d is before n.
+	; so the return value is set to 0 when the loop is on day
+	; and then the return value is set to 1 when the loop is on night.
+
+	for DayTime in bitmaps["confirm"]
+	{
+		ReturnValue := A_Index - 1
+		for spot in bitmaps["confirm"][DayTime]
+		{
+			if Gdip_ImageSearch(pBMArea, bitmaps["confirm"][DayTime][spot])
+			{
+				Gdip_DisposeImage(pBMArea)
+				return ReturnValue
+			}	
+		}
+	}
+
+	CamMove(1)
+	Gdip_DisposeImage(pBMArea)
+
+	return 0
+
+	CamMove(Revert)
+	{
+		if Revert
+			loop 4
+				SendInput("{" RotDown "}"), SendInput("{" ZoomIn "}")
+		else
+			loop 4
+				SendInput("{" RotUp "}"), SendInput("{" ZoomOut "}")
+		Sleep(50)
+	}
+}
+
 nm_NightMemoryMatch(){
 	; night (general) + no amulet + nightmm ready + night confirmed (last b/c reset)
 	if (!nm_NightInterrupt() || nm_AmuletPrompt() || !(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800))
@@ -18296,34 +18345,34 @@ vicEnd(reason:=vicResults.success){
  * @returns {{result: String} or false}
  */
 WalkwithVBCheck(movement, ignoreHoney?, ignoreStatus?){
-	local inactiveHoney := 0
-	nm_OpenChat() ; just to ensure that chat is open :sob:
-	start := nowUnix()
-	nm_createWalk(movement)
-	KeyWait "F14", "D T5 L"
-	while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
-	{
-		vic := nm_ViciousCheck()
-		if vic.result {
-			if IsSet(ignoreStatus)
-				KeyWait "F14", "T120 L"
-			nm_endWalk()
-			return vic
-		}
-		if !nm_activeHoney(){
-			if (!IsSet(ignoreHoney) && inactiveHoney++ >= 10) {
-				nm_endWalk()
-				return {result: vicResults.inactivehoney}
-			}
-		}
-		if youDied {
-			nm_endWalk()
-			return {result: vicResults.retry}
-		}
-	}
-	KeyWait "F14", "T120 L"
-	nm_endWalk()
-	return {result: 0}
+    local inactiveHoney := 0
+    nm_OpenChat() ; just to ensure that chat is open 😭
+    start := nowUnix()
+    nm_createWalk(movement)
+    KeyWait "F14", "D T5 L"
+    while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
+    {
+        vic := nm_ViciousCheck()
+        if vic.result {
+            if IsSet(ignoreStatus)
+                KeyWait "F14", "T120 L"
+            nm_endWalk()
+            return vic
+        }
+        if !nm_activeHoney(){
+            if (!IsSet(ignoreHoney) && inactiveHoney++ >= 10) {
+                nm_endWalk()
+                return {result: 'inactivehoney'}
+            }
+        }
+        if youDied {
+            nm_endWalk()
+            return {result: 'youDied'}
+        }
+    }
+    KeyWait "F14", "T120 L"
+    nm_endWalk()
+    return {result: 0}
 }
 /**
  * Search for vicious bee using WalkwithVBCheck()
