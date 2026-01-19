@@ -12925,9 +12925,8 @@ nm_fieldBoostGlitter(){
 
 nm_BugRun(){
 	static field_order := [
-		"Bamboo", "Spider", "Strawberry", "Mushroom", 
+		"Pineapple", "Bamboo", "Spider", "Strawberry", "Mushroom", 
 		"Clover", "Blueflower", 
-		"Pineapple", 
 		"Pumpkin", "Pinetree", "Rose"]
 	nm_updateAction("Bugrun")
 	nm_killFieldBugs(field_order*)
@@ -12951,14 +12950,14 @@ nm_killFieldBugs(field_order*){
 	static bug_fields := Map(
 		"Mushroom",   [{name: ["Ladybugs"], count: 1, respawn_time: 330, bees: 0, loot_size: [4, 5, 3, 0, 0]}],
 		"Strawberry", [{name: ["Ladybugs"], count: 2, respawn_time: 330, bees: 5, loot_size: [5, 5, 3, RotRight, 1]}],
-		"Clover",     [{name: ["Ladybugs"], count: 1, respawn_time: 330, bees: 0, loot_size: [7, 6, 3, 0, 0]},
+		"Clover",     [{name: ["Ladybugs"], count: 1, respawn_time: 330, bees: 0, loot_size: [6, 4, 3, RotLeft, 1]},
 	 				   {name: ["Rhinobeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [6, 4, 3, RotLeft, 1]}],
 		"Bamboo",     [{name: ["Rhinobeetles"], count: 2, respawn_time: 330, bees: 5, loot_size: [6, 5, 3, RotLeft, 2]}],
 		"Blueflower", [{name: ["Rhinobeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [7, 6, 2, RotLeft, 2]}],
-		"Pineapple",  [{name: ["RhinoBeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [7, 8, 3, 0, 0]}, 
+		"Pineapple",  [{name: ["Rhinobeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [7, 8, 3, 0, 0]}, 
 					   {name: ["Mantis"], count: 1, respawn_time: 1230, bees: 10, loot_size: [7, 8, 3, 0, 0]}],		
 		"Pinetree",   [{name: ["Mantis"], count: 2, respawn_time: 1230, bees: 15, loot_size: [11, 8, 4, RotLeft, 2]}],
-		"Rose",       [{name: ["Scorpions"], count: 2, respawn_time: 1230, bees: 15, loot_size: [9, 5, 3, RotLeft, 1]}],
+		"Rose",       [{name: ["Scorpions"], count: 2, respawn_time: 1230, bees: 15, loot_size: [9, 5, 3, RotRight, 1]}],
 		"Spider",     [{name: ["Spider"], count: 1, respawn_time: 1830, bees: 5, loot_size: [5, 6, 4, 0, 0]}],	
 		"Pumpkin",    [{name: ["Werewolf"], count: 1, respawn_time: 3630, bees: 15, loot_size: [4, 5, 3, 0, 0]}])
 	conditions := Map(
@@ -12969,7 +12968,6 @@ nm_killFieldBugs(field_order*){
 		"Spider",       (BugrunSpiderCheck || QuestSpider || RileyAll),
 		"Werewolf",     (BugrunWerewolfCheck || QuestWerewolf || RileyAll))
 	kill_times := {Ladybugs: 0, Rhinobeetles: 0, Mantis: 0, Scorpions: 0, Spider: 0, Werewolf: 0}
-
 
 	if (VBState = 1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt()
 		return
@@ -12990,18 +12988,16 @@ nm_killFieldBugs(field_order*){
 			if (A_Index = 1) && (bug_fields[current_field].Length = 2) {
 				alt_values := bug_fields[current_field][2]
 				condition := conditions[alt_values.name[1]]
-				alt_bug_is_killable := isKillable(alt_values.name[1], alt_values.respawn_time, alt_values.bees, condition)
-				if alt_bug_is_killable {
+				bug_is_killable := isKillable(alt_values.name[1], alt_values.respawn_time, alt_values.bees, condition)
+				if bug_is_killable {
 					values.count += alt_values.count
 					values.name.Push(alt_values.name[1])
 					status_bug_locaion := values.name[1] " / " values.name[2] " (" current_field ")"
 				}
 			}
 			bug_values := values
+			break
 		}
-
-		if !bug_is_killable
-			continue
 
 		if paths["gtf"].Has(current_field "-from-" last_field) {
 			status_destination_field := current_field " from " last_field
@@ -13165,7 +13161,7 @@ nm_killBug(status_message, bug_names, require_healthbar){
 	findKillMessages(){
 		pBMScreen := Gdip_BitmapFromScreen(bmp_x "|" bmp_y "|" bmp_width "|" bmp_height)
 		for name in bug_names {
-			if Gdip_ImageSearch(pBMScreen, bitmaps[name],,,,,, 25) > 0
+			if Gdip_ImageSearch(pBMScreen, bitmaps[StrLower(name)],,,,,, 25) > 0
 				killed_bug.%name% := true
 		}
 		Gdip_DisposeImage(pBMScreen)
@@ -13479,7 +13475,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 
 	return killed_crab
 }
-;Not fully rewritten
+; Not fully rewritten
 nm_killCommando(){
 	global LastCommando, ChickTime, InputChickHealth, ChickStartTime, 
 			elapsedChickTime, TotalBossKills, SessionBossKills, VBState
@@ -13606,7 +13602,7 @@ nm_killCommando(){
 		}
 	}
 }
-;Not fullt rewritten
+; Not fully rewritten
 nm_killSnail(){
 	global youDied, VBState, StumpSnailCheck, LastStumpSnail, MonsterRespawnTime, 
 			currentWalk, ShellAmuletMode, TotalBossKills, SessionBossKills, InputSnailHealth,

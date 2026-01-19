@@ -1,0 +1,11 @@
+﻿nm_Walk(22, LeftKey)
+nm_Walk(17, BackKey)
+nm_Walk(6, FwdKey)
+nm_Walk(10, RightKey)
+nm_Walk(16, BackKey)
+nm_Walk(27, LeftKey)
+nm_Walk(6, BackKey)
+nm_Walk(7, RightKey)
+nm_Walk(18, BackKey)
+nm_Walk(4, LeftKey)
+Send "{" RotRight " 2}"
