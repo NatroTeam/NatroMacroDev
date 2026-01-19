@@ -1255,8 +1255,20 @@ PolarBear := Map("Aromatic Pie",
 
 	, "Trail Mix",
 		[[1,"Collect","Sunflower"]
-		,[2,"Collect","Pineapple"]])
+		,[2,"Collect","Pineapple"]]
 
+	; TODO: PETALDETECT
+	, "Petal Tabbouleh",
+		[[1, "Collect", "Pineapple"]
+		, [2, "Collect", "Strawberry"]
+		, [3, "Kill", "RhinoBeetles"]]
+
+	, "Mashed Blooms",
+		[[1, "Collect", "Pumpkin"]
+		,[2, "Collect", "Sunflower"]
+		,[3, "Collect", "Bamboo"]
+		,[4, "Kill", "Spider"]]
+)
 
 BlackBear := Map("Just White",
 		[[1,"Collect","White"]]
