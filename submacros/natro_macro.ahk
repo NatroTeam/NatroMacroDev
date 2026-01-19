@@ -111,7 +111,7 @@ OnMessage(0x5560, nm_copyDebugLog)
 OnMessage(0x0020, nm_WM_SETCURSOR)
 
 ; set version identifier
-VersionID := "1.0.1"
+VersionID := "1.1.0-B"
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
@@ -173,6 +173,9 @@ nm_importPatterns()
 	global patterns := Map()
 	patterns.CaseSense := 0
 	global patternlist := []
+	defaultpatterns := [
+		"Auryn", "CornerXSnake", "Diamonds", "e_lol", "Fork", "Lines", "Slimline", "Snake", "Squares", "Stationary", "SuperCat", "XSnake"
+	]
 
 	if FileExist("settings\imported\patterns.ahk")
 		file := FileOpen("settings\imported\patterns.ahk", "r"), imported := file.Read(), file.Close()
@@ -182,6 +185,7 @@ nm_importPatterns()
 	import := ""
 	Loop Files A_WorkingDir "\patterns\*.ahk"
 	{
+		bypassWarning := 0
 		file := FileOpen(A_LoopFilePath, "r"), pattern := file.Read(), file.Close()
 		if RegexMatch(pattern, "im)patterns\[")
 			MsgBox
@@ -191,32 +195,39 @@ nm_importPatterns()
 			Check for an updated version of the pattern
 			or ask the creator to update it"
 			), "Error", 0x40010 " T60"
-		if !InStr(imported, imported_pattern := '("' (pattern_name := StrReplace(A_LoopFileName, "." A_LoopFileExt)) '")`r`n' pattern '`r`n`r`n')
+		if !InStr(imported, imported_pattern := '("' (pattern_name := StrReplace(A_LoopFileName, "." A_LoopFileExt)) '")`r`n' pattern '`r`n`r`n') 
 		{
-			MsgBox(
-				(
-					'IMPORTANT!! READ THIS WHOLE MESSAGE
+			for name in defaultpatterns {
+				if pattern_name = name {
+					bypassWarning := 1
+				}
+			}
+			if !bypassWarning {
+				MsgBox(
+					(
+						'IMPORTANT!! READ THIS WHOLE MESSAGE
 
-					Pattern files can execute any AutoHotkey code, including potentially malicious code.
-					You should only run patterns from sources you trust.
+						Pattern files can execute any AutoHotkey code, including potentially malicious code.
+						You should only run patterns from sources you trust.
 
-					We provide a few sources for trusted pattern downloads, including:
-					
-					- Our discord server, in the #patterns channel
-					- https://github.com/NatroTeam/Paths-Patterns, a collection of verified patterns
+						We provide a few sources for trusted pattern downloads, including:
+						
+						- Our discord server, in the #patterns channel
+						- https://github.com/NatroTeam/Paths-Patterns, a collection of verified patterns
 
-					We review every pattern or path submitted to these sources, so you can be sure that they are 100% safe.
+						We review every pattern or path submitted to these sources, so you can be sure that they are 100% safe.
 
-					HOWEVER, you should not download a pattern from a stranger telling you to test out their pattern.
-					If all else fails, just download it from the sources above.
+						HOWEVER, you should not download a pattern from a stranger telling you to test out their pattern.
+						If all else fails, just download it from the sources above.
 
 
-					IMPORTANT!! READ THIS WHOLE MESSAGE
-					'
-				), "Pattern Import Warning", 0x40030
-			)
-			if (MsgBox("Do you FULLY trust the pattern " pattern_name " and want to import it?", "Pattern Import Confirmation", 0x40004 " T60") != "Yes")
-				continue
+						IMPORTANT!! READ THIS WHOLE MESSAGE
+						'
+					), "Pattern Import Warning", 0x40030
+				)
+				if (MsgBox("Do you FULLY trust the pattern " pattern_name " and want to import it?", "Pattern Import Confirmation", 0x40004 " T60") != "Yes")
+					continue
+			}
 			script :=
 			(
 			'
@@ -2886,7 +2897,7 @@ MainGui.Add("Text", "x456 y152", "Mins")
 
 ;update settings
 MainGui.Add("Text", "x340 y210 w110 +BackgroundTrans", "Release Channel:")
-MainGui.Add("Text", "x443 yp w35 +BackgroundTrans +Center" , ReleaseChannel)
+MainGui.Add("Text", "x443 yp w35 vReleaseChannel +BackgroundTrans +Center" , ReleaseChannel)
 MainGui.Add("Button", "xp-16 yp w12 h16 vRCLeft Disabled", "<").OnEvent("Click", nm_ReleaseChannel)
 MainGui.Add("Button", "xp+52 yp wp hp vRCRight Disabled", ">").OnEvent("Click", nm_ReleaseChannel)
 SetLoadingProgress(30)
@@ -10977,7 +10988,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	nm_AutoFieldBoost(currentField) ; start rolling dice in background() if needed
 
 	; High priority interrupts. Will interrupt any reset not marked with the checkAll flag. Added to avoid infinite recursion
-	if(checkAll=1) {
+	if checkAll {
 		nm_fieldBoostBooster()
 		nm_Night()
 	}
@@ -12712,7 +12723,7 @@ nm_MemoryMatch(MemoryMatchGame) {
 
 	success := deaths := 0
 	loop 2 {
-		nm_reset(MemoryMatchGame = "Night" ? 1 : 0, 0, 0)
+		nm_reset(MemoryMatchGame = "Night" ? 0 : 1, 0, 0)
 		nm_SetStatus("Traveling", MemoryMatchGame " Memory Match" ((A_Index > 1) ? " (Attempt 2)" : "" ))
 		nm_GoToCollect(MemoryMatchGame "mm", 0)
 		loop 720 { ; 3 min timeout
@@ -18175,7 +18186,7 @@ nm_confirmNight()
 
 nm_NightMemoryMatch(){
 	; night (general) + no amulet + nightmm ready + night confirmed (last b/c reset)
-	if (!nm_NightInterrupt() || nm_AmuletPrompt() || !(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || !nm_confirmNight())
+	if (!nm_NightInterrupt() || nm_AmuletPrompt() || !(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800))
 			return
 	nm_MemoryMatch("Night")
 }
@@ -18251,12 +18262,8 @@ nm_locateVB(){
 			return
 	}
 
-	if(nm_confirmNight()){
-		nm_setStatus("Starting", "Vicious Bee Cycle")
-	} else {
-		nm_setStatus("Aborting", "Vicious Bee - Not Night")
-		return
-	}
+	
+	nm_setStatus("Starting", "Vicious Bee Cycle")
 	nm_updateAction("Stingers")
 
 	for data in VicData
@@ -18272,7 +18279,7 @@ nm_locateVB(){
 		fieldloop:
 		Loop 3 ; attempt each field a maximum of 3 times
 		{
-			nm_Reset(1, 2000, 0)
+			nm_Reset(0, 2000, 0)
 			nm_setStatus("Traveling", "Vicious Bee (" data.field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
 			nm_gotoField(data.field)
 			nm_setStatus("Searching", "Vicious Bee (" data.field ")")
