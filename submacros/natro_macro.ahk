@@ -12947,19 +12947,19 @@ nm_killFieldBugs(field_order*){
 		, BugrunScorpionsCheck, BugrunScorpionsLoot, LastBugrunScorpions
 		, TotalBugKills, SessionBugKills
 	static total_bug_kills_index := 3
-	static bug_fields := Map(
-		"Mushroom",   [{name: ["Ladybugs"], count: 1, respawn_time: 330, bees: 0, loot_size: [4, 5, 3, 0, 0]}],
-		"Strawberry", [{name: ["Ladybugs"], count: 2, respawn_time: 330, bees: 5, loot_size: [5, 5, 3, RotRight, 1]}],
-		"Clover",     [{name: ["Ladybugs"], count: 1, respawn_time: 330, bees: 0, loot_size: [6, 4, 3, RotLeft, 1]},
-	 				   {name: ["Rhinobeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [6, 4, 3, RotLeft, 1]}],
-		"Bamboo",     [{name: ["Rhinobeetles"], count: 2, respawn_time: 330, bees: 5, loot_size: [6, 5, 3, RotLeft, 2]}],
-		"Blueflower", [{name: ["Rhinobeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [7, 6, 2, RotLeft, 2]}],
-		"Pineapple",  [{name: ["Rhinobeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [7, 8, 3, 0, 0]}, 
-					   {name: ["Mantis"], count: 1, respawn_time: 1230, bees: 10, loot_size: [7, 8, 3, 0, 0]}],		
-		"Pinetree",   [{name: ["Mantis"], count: 2, respawn_time: 1230, bees: 15, loot_size: [11, 8, 4, RotLeft, 2]}],
-		"Rose",       [{name: ["Scorpions"], count: 2, respawn_time: 1230, bees: 15, loot_size: [9, 5, 3, RotRight, 1]}],
-		"Spider",     [{name: ["Spider"], count: 1, respawn_time: 1830, bees: 5, loot_size: [5, 6, 4, 0, 0]}],	
-		"Pumpkin",    [{name: ["Werewolf"], count: 1, respawn_time: 3630, bees: 15, loot_size: [4, 5, 3, 0, 0]}])
+	bug_fields := Map(
+		"Mushroom",   [{names: ["Ladybugs"], count: 1, respawn_time: 330, bees: 0, loot_size: [4, 5, 3, 0, 0]}],
+		"Strawberry", [{names: ["Ladybugs"], count: 2, respawn_time: 330, bees: 5, loot_size: [5, 5, 3, RotRight, 1]}],
+		"Clover",     [{names: ["Ladybugs"], count: 1, respawn_time: 330, bees: 0, loot_size: [6, 4, 3, RotLeft, 1]},
+	 				   {names: ["Rhinobeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [6, 4, 3, RotLeft, 1]}],
+		"Bamboo",     [{names: ["Rhinobeetles"], count: 2, respawn_time: 330, bees: 5, loot_size: [6, 5, 3, RotLeft, 2]}],
+		"Blueflower", [{names: ["Rhinobeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [7, 6, 2, RotLeft, 2]}],
+		"Pineapple",  [{names: ["Rhinobeetles"], count: 1, respawn_time: 330, bees: 0, loot_size: [7, 8, 3, 0, 0]}, 
+					   {names: ["Mantis"], count: 1, respawn_time: 1230, bees: 10, loot_size: [7, 8, 3, 0, 0]}],		
+		"Pinetree",   [{names: ["Mantis"], count: 2, respawn_time: 1230, bees: 15, loot_size: [11, 8, 4, RotLeft, 2]}],
+		"Rose",       [{names: ["Scorpions"], count: 2, respawn_time: 1230, bees: 15, loot_size: [9, 5, 3, RotRight, 1]}],
+		"Spider",     [{names: ["Spider"], count: 1, respawn_time: 1830, bees: 5, loot_size: [5, 6, 4, 0, 0]}],	
+		"Pumpkin",    [{names: ["Werewolf"], count: 1, respawn_time: 3630, bees: 15, loot_size: [4, 5, 3, 0, 0]}])
 	conditions := Map(
 		"Ladybugs",     (BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll),
 		"Rhinobeetles", (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll),
@@ -12967,7 +12967,7 @@ nm_killFieldBugs(field_order*){
 		"Scorpions",    (BugrunScorpionsCheck || QuestScorpions || RileyScorpions || RileyAll),
 		"Spider",       (BugrunSpiderCheck || QuestSpider || RileyAll),
 		"Werewolf",     (BugrunWerewolfCheck || QuestWerewolf || RileyAll))
-	kill_times := {Ladybugs: 0, Rhinobeetles: 0, Mantis: 0, Scorpions: 0, Spider: 0, Werewolf: 0}
+	kill_times := {}
 
 	if (VBState = 1) || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt()
 		return
@@ -12979,20 +12979,20 @@ nm_killFieldBugs(field_order*){
 			break
 
 		for values in bug_fields[current_field] {
-			condition := conditions[values.name[1]]
-			bug_is_killable := isKillable(values.name[1], values.respawn_time, values.bees, condition)
+			condition := conditions[values.names[1]]
+			bug_is_killable := isKillable(values.names[1], values.respawn_time, values.bees, condition)
 			if !bug_is_killable
 				continue
 
-			status_bug_locaion := values.name[1] " (" current_field ")"
+			status_bug_location := values.names[1] " (" current_field ")"
 			if (A_Index = 1) && (bug_fields[current_field].Length = 2) {
 				alt_values := bug_fields[current_field][2]
-				condition := conditions[alt_values.name[1]]
-				bug_is_killable := isKillable(alt_values.name[1], alt_values.respawn_time, alt_values.bees, condition)
+				condition := conditions[alt_values.names[1]]
+				bug_is_killable := isKillable(alt_values.names[1], alt_values.respawn_time, alt_values.bees, condition)
 				if bug_is_killable {
 					values.count += alt_values.count
-					values.name.Push(alt_values.name[1])
-					status_bug_locaion := values.name[1] " / " values.name[2] " (" current_field ")"
+					values.names.Push(alt_values.names[1])
+					status_bug_location := values.names[1] " / " values.names[2] " (" current_field ")"
 				}
 			}
 			bug_values := values
@@ -13011,9 +13011,9 @@ nm_killFieldBugs(field_order*){
 		nm_setStatus("Traveling", status_destination_field)
 		nm_gotoField(destination_field)
 
-		require_healthbar := (bug_values.count = 2) && (bug_values.name.Length = 1)
+		require_healthbar := (bug_values.count = 2) && (bug_values.names.Length = 1)
 		loop 3 {
-			killed_bug := nm_killBug(status_bug_locaion, bug_values.name, require_healthbar)
+			killed_bug := nm_killBug(status_bug_location, bug_values.names, require_healthbar)
 			if !youDied
 				break
 			checkAll := convert := false
@@ -13022,7 +13022,7 @@ nm_killFieldBugs(field_order*){
 			nm_gotoField(current_field)
 		}
 		can_loot := false 
-		for name in bug_values.name {
+		for name in bug_values.names {
 			kill_times.%name% := nowUnix()
 			can_loot := can_loot || Bugrun%name%Loot
 		}
@@ -13032,7 +13032,7 @@ nm_killFieldBugs(field_order*){
 			right_movements := bug_values.loot_size[3]
 			rot_direction := bug_values.loot_size[4]
 			rot_count := bug_values.loot_size[5] 
-			nm_lootBug(status_bug_locaion, left_offset, length, right_movements, rot_direction, rot_count)
+			nm_lootBug(status_bug_location, left_offset, length, right_movements, rot_direction, rot_count)
 		}
 
 		if killed_bug {
@@ -13046,8 +13046,6 @@ nm_killFieldBugs(field_order*){
 	}
 
 	for name, time in kill_times.OwnProps() {
-		if time = 0 
-			continue
 		LastBugrun%name% := kill_times.%name%
 		IniWrite LastBugrun%name%, "settings\nm_config.ini", "Collect", "LastBugrun" name
 	}
@@ -13135,7 +13133,7 @@ nm_killBug(status_message, bug_names, require_healthbar){
 	bmp_height := windowHeight // 3
 
 	killed_all := false
-	killed_bug := {ladybugs: false, rhinobeetles: false, mantis: false, scorpions: false, spider: false, werewolf: false}
+	killed_bug := {}
 	Send "{" RotUp " 4}"
 	Sleep(1000)
 
@@ -13177,10 +13175,8 @@ nm_killBug(status_message, bug_names, require_healthbar){
 	}
 	confirmKillCount(){
 		kill_count := 0 
-		for name in bug_names {
-			if killed_bug.%name%
-				kill_count++
-		}
+		loop ObjOwnPropCount(killed_bug)
+			kill_count++
 		return kill_count = bug_names.Length
 	}
 }
