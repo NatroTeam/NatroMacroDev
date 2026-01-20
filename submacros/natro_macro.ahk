@@ -1265,7 +1265,7 @@ PolarBear := Map("Aromatic Pie",
 
 	, "Mashed Blooms",
 		[[1, "Collect", "Pumpkin"]
-		,[2, "Collect", "Sunflower"]
+		,[2, "Collect", "Spider"]
 		,[3, "Collect", "Bamboo"]
 		,[4, "Kill", "Spider"]]
 )
