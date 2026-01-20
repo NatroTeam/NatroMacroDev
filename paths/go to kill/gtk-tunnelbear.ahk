@@ -41,7 +41,7 @@ if goInside {
         nm_Walk(4, FwdKey)
         nm_Walk(3, BackKey)
         nm_Walk(15, RightKey)
-        nm_Walk(6.5, BackKey)
+        nm_Walk(6.8, BackKey)
     }
     Sleep(1000)
     nm_Walk(4, FwdKey, RightKey)

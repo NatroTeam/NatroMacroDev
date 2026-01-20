@@ -12998,6 +12998,8 @@ nm_killFieldBugs(field_order*){
 			bug_values := values
 			break
 		}
+		if !bug_is_killable
+			continue
 
 		if paths["gtf"].Has(current_field "-from-" last_field) {
 			status_destination_field := current_field " from " last_field
@@ -13201,7 +13203,7 @@ nm_killKingBeetle(&path_failed, &boss_found){
 	killed_beetle := false
 	if boss_found && !path_failed {
 		nm_setStatus("Attacking", "King Beetle")
-		movment := nm_Walk(28, RightKey) "`r`n" nm_Walk(27, FwdKey)
+		movement := nm_Walk(28, RightKey) "`r`n" nm_Walk(27, FwdKey)
 		nm_createWalk(movement)
 		KeyWait("F14", "D T5 L"), KeyWait("F14", "T30 L")
 		nm_endWalk()
