@@ -8122,6 +8122,7 @@ nm_ShowStatusTitleBarHelp(*){ ; show status in title bar information
 	IMPORTANT:
 	This feature doesn't work on UWP (Microsoft) Roblox due to how the title bar in UWP apps work!
 	)", "Show Status in Title Bar", 0x40000
+}
 nm_ReleaseChannel(GuiCtrl, *){
 	global ReleaseChannel
 	static val := ["Stable", "Beta"], l := val.Length
@@ -22246,7 +22247,6 @@ Background(){
 		nm_bugDeathCheck()
 	;stats
 	nm_setStats()
-	;title
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
