@@ -13212,9 +13212,9 @@ nm_StickerStack(){
 	global StickerStackCheck, LastStickerStack, StickerStackItem, StickerStackMode, StickerStackTimer, StickerStackHive, StickerStackCub, StickerStackVoucher, SC_E, bitmaps
 
 	if (StickerStackCheck && (nowUnix()-LastStickerStack)>StickerStackTimer) {
-		loop 2 {
+		loop 6 { ; 4-8 Attempts necessary due to inherent volatility of sticker stack timer on laggy servers
 			nm_Reset()
-			nm_setStatus("Traveling", "Sticker Stack" ((A_Index > 1) ? " (Attempt 2)" : ""))
+			nm_setStatus("Traveling", "Sticker Stack (Attempt " . A_Index . ")")
 
 			nm_gotoCollect("stickerstack")
 			GetRobloxClientPos()
