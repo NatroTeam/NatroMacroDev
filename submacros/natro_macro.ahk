@@ -380,6 +380,7 @@ nm_importConfig()
 		, "HideErrors", 1
 		, "DebugHotkey", "F6"
 		, "ReleaseChannel", "Stable"
+		, "CustomBitmap", ""
 	)
 
 	config["Status"] := Map("StatusLogReverse", 0
@@ -9895,7 +9896,7 @@ nm_showAdvancedSettings(*){
 		i := 1, t1 := t2
 }
 nm_AdvancedGUI(init:=0){
-	global
+	global CustomBitmap
 	local hBM, GuiCtrl
 	TabCtrl.UseTab("Advanced")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -9904,6 +9905,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("GroupBox", "x5 y114 w240 h76", "Danger Zone")
 	MainGui.Add("GroupBox", "x255 y24 w240 h38", "Debugging")
 	MainGui.Add("GroupBox", "x255 y62 w240 h168", "Test Paths/Patterns")
+	MainGui.Add("GroupBox", "x5 y114 w240 h116", "Hourly Image Rendering")
 	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 	;reconnect
 	MainGui.Add("Text", "x15 y44", "Backup 1:")
@@ -9913,9 +9915,15 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("Text", "x15 y88", "Backup 3:")
 	MainGui.Add("Edit", "x65 y86 w170 h18 vFallbackServer3", FallbackServer3).OnEvent("Change", nm_ServerLink)
 	;danger
-	MainGui.Add("Button", "x90 y114 w12 h14","?").OnEvent("Click", DangerInfo)
-	MainGui.Add("CheckBox", "x10 yp+15 vAnnounceGuidingStar Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
-	MainGui.Add("CheckBox", "xp yp+15 vHideErrors Checked" HideErrors, "Hide Errors").OnEvent("Click", nm_HideErrorsWarn)
+	MainGui.Add("Button", "x145 y155 w12 h14","?").OnEvent("Click", DangerInfo)
+	MainGui.Add("CheckBox", "x10 y155 vAnnounceGuidingStar Checked" AnnounceGuidingStar, "Announce Guiding Star").OnEvent("Click", nm_AnnounceGuidWarn)
+	MainGui.Add("CheckBox", "x10 yp+15 vHideErrors Checked" HideErrors, "Hide Errors").OnEvent("Click", nm_HideErrorsWarn)
+		; --- Bitmap GUI Controls ---
+	MainGui.Add("Text", "x15 y134", "Bitmap:")
+	MainGui.Add("Edit", "x55 y132 w70 h18 vCustomBitmap", CustomBitmap).OnEvent("Change", nm_saveCustomBitmap)
+	BitmapTestBtn := MainGui.Add("Button", "x130 y130 w50 h20 vBitmapTestingGUI", "Display")
+	BitmapTestBtn.OnEvent("Click", nm_BitmapTestingGUI)
+	BitmapTestBtn.Move(130, 132)
 	;debugging
 	(GuiCtrl := MainGui.Add("CheckBox", "x265 y42 vssDebugging Checked" ssDebugging, "Enable Discord Debugging Screenshots")).Section := "Status", GuiCtrl.OnEvent("Click", nm_saveConfig)
 	;test
@@ -9935,7 +9943,7 @@ nm_AdvancedGUI(init:=0){
 	MainGui.Add("CheckBox", "x362 y174 vTestReset Checked", "Reset")
 	MainGui.Add("CheckBox", "x413 y174 vTestMsgBox", "MsgBox")
 	MainGui.Add("Button", "x325 y197 w100 h24", "Start Test").OnEvent("Click", nm_testButton)
-	MainGui.Add("Button", "x15 y164 w220 h22 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
+	MainGui.Add("Button", "x15 y200 w220 h22 vMainLoopPriorityButton", "Main Loop Priority List").OnEvent("Click", nm_priorityListGui)
 	if (init = 1)
 	{
 		TabCtrl.Choose("Advanced")
@@ -18434,6 +18442,42 @@ nm_IncrementStat(stat, amount:=1){ ; //todo: add to Quests/Bugrun when they are 
 	IniWrite (++Total%stat%), "settings\nm_config.ini", "Status", "Total" stat
 	IniWrite (++Session%stat%), "settings\nm_config.ini", "Status", "Session" stat
 	PostSubmacroMessage("StatMonitor", 0x5555, StatEnum[stat], amount)
+}
+nm_saveCustomBitmap(GuiCtrl, *) {
+	global CustomBitmap
+	p := EditGetCurrentCol(GuiCtrl)
+	CustomBitmap := GuiCtrl.Value
+	IniWrite CustomBitmap, "settings\nm_config.ini", "Settings", "CustomBitmap"
+}
+nm_BitmapTestingGUI(*){
+	global CustomBitmap, bitmaps
+	GuiClose(*){
+		if (IsSet(BitmapTestingGUI) && IsObject(BitmapTestingGUI)) 
+			BitmapTestingGUI.Destroy(), BitmapTestingGUI := ""
+	}
+	GuiClose()
+	BitmapTestingGUI := Gui("+AlwaysOnTop +Border", "Bitmap Testing")
+	BitmapTestingGUI.OnEvent("Close", GuiClose)
+	BitmapTestingGUI.SetFont("s8 cDefault Bold", "Tahoma")
+	BitmapTestingGUI.Add("Picture", "x50 y50 w300 h300 vMyPic")
+	; --- Image Rendering ---
+	try {
+		if (CustomBitmap == "") {
+			BitmapTestingGUI["MyPic"].Value := ""
+			BitmapTestingGUI.Add("Text", "x50 y180 w300 h40 Center vErrorText", "Empty Bitmap")
+			BitmapTestingGUI["ErrorText"].SetFont("s16 cRed Bold", "Segoe UI")
+		} else {
+			pCustomBitmap := Gdip_BitmapFromBase64(CustomBitmap)
+			hBitmap := Gdip_CreateHBITMAPFromBitmap(pCustomBitmap)
+			BitmapTestingGUI["MyPic"].Value := "HBITMAP:*" hBitmap
+			Gdip_DisposeImage(pCustomBitmap)
+		}
+	} catch {
+		BitmapTestingGUI["MyPic"].Value := ""
+		BitmapTestingGUI.Add("Text", "x50 y180 w300 h40 Center vErrorText", "Invalid Bitmap")
+		BitmapTestingGUI["ErrorText"].SetFont("s16 cRed Bold", "Segoe UI")
+	}
+	BitmapTestingGUI.Show("w400 h400")
 }
 nm_hotbar(boost:=0){
 	global state, fieldOverrideReason, GatherStartTime, ActiveHotkeys, bitmaps
