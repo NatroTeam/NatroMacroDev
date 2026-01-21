@@ -1620,7 +1620,7 @@ SendHourlyReport()
 		; Render default image in center (900x900) if bitmap loading fails
 		DefaultBitmap := bitmaps["pBMNatroLogo"], defaultWidth := 900, defaultHeight := 900
 		targetX := stat_regions["info"][1]+stat_regions["info"][3]//2 - defaultWidth//2
-		targetY := y+200 + (880 - defaultHeight) // 2
+		targetY := y+200 + (880 - defaultHeight) // 2 - 40
 		Gdip_DrawImage(G, DefaultBitmap, targetX, targetY, defaultWidth, defaultHeight)
 	} else {
 		try {
@@ -1628,13 +1628,13 @@ SendHourlyReport()
 			bitmapWidth := Gdip_GetImageWidth(CustomBitmap)
 			bitmapHeight := Gdip_GetImageHeight(CustomBitmap)
 			targetX := stat_regions["info"][1]+stat_regions["info"][3]//2-650 + (1300 - bitmapWidth) // 2
-			targetY := y+200 + (880 - bitmapHeight) // 2
+			targetY := y+200 + (880 - bitmapHeight) // 2 - 40
 			Gdip_DrawImage(G, CustomBitmap, targetX, targetY, bitmapWidth, bitmapHeight)
 		} catch {
 			; Render default image in center (900x900) if bitmap loading fails
 			DefaultBitmap := bitmaps["pBMNatroLogo"], defaultWidth := 900, defaultHeight := 900
 			targetX := stat_regions["info"][1]+stat_regions["info"][3]//2 - defaultWidth//2
-			targetY := y+200 + (880 - defaultHeight) // 2
+			targetY := y+200 + (880 - defaultHeight) // 2 - 40
 			Gdip_DrawImage(G, DefaultBitmap, targetX, targetY, defaultWidth, defaultHeight)
 		}
 	}
