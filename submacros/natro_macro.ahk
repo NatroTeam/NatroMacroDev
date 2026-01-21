@@ -10379,7 +10379,7 @@ nm_copyDebugLog(param:="", *) {
 			checkProblem((offsetfail ?? 0), 'Recent y-offset fail')
 			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro Macro version')
 			checkProblem((InStr(EnvGet("SESSIONNAME"), "RDP") && remoteDesktopMinimize != 2), 'Minimizing remote desktop connection will cause Natro Macro to break')
-			checkProblem((DllCall("GetSystemMetrics", "Int", 95) != 0), 'Touchscreen is enabled')
+			checkProblem(((DllCall("GetSystemMetrics", "int", 94)) & 0x40 && DllCall("GetSystemMetrics", "int", 95) >= 2), 'Touchscreen is enabled')
 			checkProblem((robloxtype = RobloxTypes.UWP), 'Using UWP Roblox, it is currently unsupported for this Natro Macro version')
 			checkProblem((HideErrors = 0), 'Error hiding is disabled')
 
@@ -22262,7 +22262,7 @@ start(*){
 				(MainGui["StartButton"].Enabled := 1, Hotkey(StartHotkey, "On"), nm_LockTabs(0))
 
 		;Touchscreen WARNING @ start
-		if (DllCall("GetSystemMetrics", "Int", 95) != 0) {
+		if ((DllCall("GetSystemMetrics", "int", 94)) & 0x40 && DllCall("GetSystemMetrics", "int", 95) >= 2) {
 			if RemoteStart {
 				nm_setStatus("Error", "Touchscreen enabled, please disable it for the macro to function correctly.")
 			} else {
