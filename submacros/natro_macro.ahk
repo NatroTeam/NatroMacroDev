@@ -11122,6 +11122,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 
 		resetTime:=nowUnix()
 		PostSubmacroMessage("background", 0x5554, 1, resetTime)
+
 		;reset
 		ActivateRoblox()
 		GetRobloxClientPos()
@@ -11133,8 +11134,11 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			n += ((Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) || nm_HealthBar()) = (n = 0))
 			Gdip_DisposeImage(pBMScreen)
 		}
-		Sleep 1000
+
 		SetKeyDelay PrevKeyDelay
+
+		; Nate's quick fix for laggy pcs - Will be removed soon
+		Sleep 2000 + 1000 * A_Index
 
 		; hive check
 		if !atHive() && nm_DetectSpawn() {
