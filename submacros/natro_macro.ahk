@@ -13404,9 +13404,9 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			if (A_TickCount - start) >= 9000 
 				break
 		}
-		;if !found_coconut {
-		;	' nm_Walk(2, FwdKey) '
-		;}
+		if !found_coconut {
+			' nm_Walk(2, FwdKey) '
+		}
 		Send "{' RotDown ' 5}"
 		loop 4 {
 			Send "{' ZoomOut '}"
