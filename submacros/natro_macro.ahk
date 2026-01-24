@@ -13360,7 +13360,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			}
 			key_index := !(A_Index & 1) + 1
 			horizontal := horizontal_keys[key_index]
-			flowers := (horizontal = RightKey ? 18 : 15)
+			flowers := (horizontal = RightKey ? 16 : 15)
 			nm_Walk(flowers, horizontal)
 			if remaining_dodges > 1 {
 				vertical := vertical_keys[key_index]
