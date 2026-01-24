@@ -13362,10 +13362,8 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			horizontal := horizontal_keys[key_index]
 			flowers := (horizontal = RightKey ? 16 : 15)
 			nm_Walk(flowers, horizontal)
-			if remaining_dodges > 1 {
-				vertical := vertical_keys[key_index]
-				nm_Walk(2, vertical)
-			}
+			vertical := vertical_keys[key_index]
+			nm_Walk(2, vertical)
 			--remaining_dodges
 		}
 	}
@@ -13396,7 +13394,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			found_coconut := Gdip_ImageSearch(pBMScreen, pBMFallingCoconut,,,,,, 50) > 0
 			Gdip_DisposeImage(pBMScreen)
 			if found_coconut {
-				' nm_Walk(9, BackKey) '
+				' nm_Walk(11, BackKey) '
 				Sleep(8000 - (A_TickCount - start))
 				' nm_Walk(7, FwdKey) '
 				break
