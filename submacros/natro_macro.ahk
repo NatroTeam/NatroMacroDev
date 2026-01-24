@@ -13321,7 +13321,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 	pBMCrabHealthbar := Gdip_CreateBitmap(3, 3), pG := Gdip_GraphicsFromImage(pBMCrabHealthbar), Gdip_GraphicsClear(pG, "0xff1fe744"), Gdip_DeleteGraphics(pG)
 	pBMCrabMissingHealth := Gdip_CreateBitmap(3, 3), pG := Gdip_GraphicsFromImage(pBMCrabMissingHealth), Gdip_GraphicsClear(pG, "0xff6b131a"), Gdip_DeleteGraphics(pG)
 	pBMMindHack := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAIAAAAW4yFwAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwwAADsMBx2+oZAAAABBJREFUGFdjeM/AwDCfgQEACG4Bj7+9NWkAAAAASUVORK5CYII=")
-	pBMFallingCoconut := Gdip_CreateBitmap(5, 5), pG := Gdip_GraphicsFromImage(pBMFallingCoconut), Gdip_GraphicsClear(pG, "0xffff543b"), Gdip_DeleteGraphics(pG)
+	pBMFallingCoconut := Gdip_CreateBitmap(10, 10), pG := Gdip_GraphicsFromImage(pBMFallingCoconut), Gdip_GraphicsClear(pG, "0xffcf592b"), Gdip_DeleteGraphics(pG)
 
 	start := A_TickCount
 	loop {
@@ -13360,7 +13360,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			}
 			key_index := !(A_Index & 1) + 1
 			horizontal := horizontal_keys[key_index]
-			flowers := (horizontal = RightKey ? 16 : 15)
+			flowers := (horizontal = RightKey ? 18 : 15)
 			nm_Walk(flowers, horizontal)
 			if remaining_dodges > 1 {
 				vertical := vertical_keys[key_index]
@@ -13404,9 +13404,9 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			if (A_TickCount - start) >= 9000 
 				break
 		}
-		if !found_coconut {
-			' nm_Walk(2, FwdKey) '
-		}
+		;if !found_coconut {
+		;	' nm_Walk(2, FwdKey) '
+		;}
 		Send "{' RotDown ' 5}"
 		loop 4 {
 			Send "{' ZoomOut '}"
