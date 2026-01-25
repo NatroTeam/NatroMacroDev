@@ -343,6 +343,7 @@ nm_importConfig()
 		, "ConvertMins", 30
 		, "LastConvertBalloon", 1
 		, "DisableToolUse", 0
+		, "ShowStatusTitleBar", 0
 		, "AnnounceGuidingStar", 0
 		, "NewWalk", 1
 		, "HiveSlot", 6
@@ -2820,8 +2821,8 @@ MainGui.Add("GroupBox", "x5 y95 w160 h65", "Hive")
 MainGui.Add("GroupBox", "x5 y165 w160 h70", "Reset")
 MainGui.Add("GroupBox", "x170 y25 w160 h35", "Input")
 MainGui.Add("GroupBox", "x170 y65 w160 h170", "Reconnect")
-MainGui.Add("GroupBox", "x335 y25 w160 h165", "Character")
-MainGui.Add("GroupBox", "x335 y190 w160 h45", "Updates")
+MainGui.Add("GroupBox", "x335 y25 w160 h170", "Character")
+MainGui.Add("GroupBox", "x335 y200 w160 h35", "Roblox")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
 ;gui settings
@@ -2915,13 +2916,11 @@ MainGui.Add("Button", "x480 y131 w12 h16 vCBRight Disabled", ">").OnEvent("Click
 MainGui.Add("Text", "x370 y147 w110 +BackgroundTrans", "\____\___")
 (GuiCtrl := MainGui.Add("Edit", "x422 y150 w30 h18 number Limit3 vConvertMins Disabled", ValidateInt(&ConvertMins, 30))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
 MainGui.Add("Text", "x456 y152", "Mins")
-(GuiCtrl := MainGui.Add("CheckBox", "x345 y171 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x345 y170 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 
-;update settings
-MainGui.Add("Text", "x340 y210 w110 +BackgroundTrans", "Release Channel:")
-MainGui.Add("Text", "x443 yp w35 vReleaseChannel +BackgroundTrans +Center" , ReleaseChannel)
-MainGui.Add("Button", "xp-16 yp w12 h16 vRCLeft Disabled", "<").OnEvent("Click", nm_ReleaseChannel)
-MainGui.Add("Button", "xp+52 yp wp hp vRCRight Disabled", ">").OnEvent("Click", nm_ReleaseChannel)
+;roblox settings
+(GuiCtrl := MainGui.Add("CheckBox", "x345 y216 vShowStatusTitleBar Disabled Checked" ShowStatusTitleBar, "Show Status in Title Bar")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_ShowStatusTitleBar)
+MainGui.Add("Button", "x480 y216 w10 h15 vShowStatusTitleBarHelp Disabled", "?").OnEvent("Click", nm_ShowStatusTitleBarHelp)
 SetLoadingProgress(30)
 
 ;COLLECT/Kill TAB
@@ -4250,6 +4249,8 @@ nm_TabSettingsLock(){
 	MainGui["CMRight"].Enabled := 0
 	MainGui["ConvertMins"].Enabled := 0
 	MainGui["DisableToolUse"].Enabled := 0
+	MainGui["ShowStatusTitleBar"].Enabled := 0
+	MainGui["ShowStatusTitleBarHelp"].Enabled := 0
 	MainGui["AnnounceGuidingStar"].Enabled := 0
 	MainGui["HideErrors"].Enabled := 0
 	MainGui["NewWalk"].Enabled := 0
@@ -4294,6 +4295,8 @@ nm_TabSettingsUnLock(){
 	if (ConvertBalloon="every")
 		MainGui["ConvertMins"].Enabled := 1
 	MainGui["DisableToolUse"].Enabled := 1
+	MainGui["ShowStatusTitleBar"].Enabled := 1
+	MainGui["ShowStatusTitleBarHelp"].Enabled := 1
 	MainGui["AnnounceGuidingStar"].Enabled := 1
 	MainGui["HideErrors"].Enabled := 1
 	MainGui["NewWalk"].Enabled := 1
@@ -8123,6 +8126,26 @@ nm_ConvertBalloon(GuiCtrl, *){
 	MainGui["ConvertMins"].Enabled := (ConvertBalloon = "Every")
 	IniWrite ConvertBalloon, "settings\nm_config.ini", "Settings", "ConvertBalloon"
 }
+nm_ShowStatusTitleBar(GuiCtrl, *){
+	global ShowStatusTitleBar
+	ShowStatusTitleBar := !ShowStatusTitleBar
+	IniWrite ShowStatusTitleBar, "settings\nm_config.ini", "Settings", "ShowStatusTitleBar"
+	if ShowStatusTitleBar
+		nm_setTitle()
+	else if hwnd := GetRobloxHWND()
+		WinSetTitle("Roblox", hwnd)
+}
+nm_ShowStatusTitleBarHelp(*){ ; show status in title bar information
+	MsgBox "
+	(
+	DESCRIPTION:
+	When this option is enabled, Roblox title bar will show the macro status in real-time.
+	The macro is able to do this by using AutoHotkey's WinSetTitle function to change the title of the Roblox window.
+
+	IMPORTANT:
+	This feature doesn't work on UWP (Microsoft) Roblox due to how the title bar in UWP apps work!
+	)", "Show Status in Title Bar", 0x40000
+}
 nm_ReleaseChannel(GuiCtrl, *){
 	global ReleaseChannel
 	static val := ["Stable", "Beta"], l := val.Length
@@ -10593,7 +10616,7 @@ nm_MemoryMatchInterrupt() {
 	)
 }
 
-;stats/status
+;stats/status/setTitle
 nm_setStats(){
 	global
 	local rundelta:=0, gatherdelta:=0, convertdelta:=0, TotalStatsString, SessionStatsString
@@ -10682,7 +10705,14 @@ nm_setStatus(newState:=0, newObjective:=0){
 	if WinExist("Status.ahk ahk_class AutoHotkey")
 		try SendMessage 0xC2, 0, StrPtr("[" A_MM "/" A_DD "][" A_Hour ":" A_Min ":" A_Sec "] " stateString)
 	DetectHiddenWindows 0
+	if ShowStatusTitleBar
+		nm_setTitle(stateString)
 }
+nm_setTitle(title?) {
+	if MacroState == 2 && hwnd := GetRobloxHWND()
+		WinSetTitle("Roblox - Natro Macro (" title ")", hwnd)
+}
+
 nm_updateAction(action){
 	global CurrentAction, PreviousAction
 	if(CurrentAction!=action){
@@ -22222,6 +22252,7 @@ getout(*){
 	CloseScripts()
 	try Gdip_Shutdown(pToken)
 	DllCall(A_WorkingDir "\nm_image_assets\Styles\USkin.dll\USkinExit")
+	WinSetTitle("Roblox", GetRobloxHWND())
 }
 
 Background(){
