@@ -15,9 +15,11 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #SingleInstance Force
 #MaxThreads 255
 
-#Include "%A_ScriptDir%\..\lib\nowUnix.ahk"
-
 SetWorkingDir A_ScriptDir
+
+#Include "%A_ScriptDir%\..\lib\nowUnix.ahk"
+#Include "%A_ScriptDir%\..\lib\ErrorHandling.ahk"
+
 OnMessage(0x5552, nm_SetGlobalInt)
 OnMessage(0x5556, nm_SetHeartbeat)
 

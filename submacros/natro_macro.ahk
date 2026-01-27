@@ -22,18 +22,20 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
+
+SetWorkingDir A_ScriptDir "\.."
+
 #Include "%A_ScriptDir%\..\lib"
+#Include "ErrorHandling.ahk"
 #Include "Gdip_All.ahk"
 #Include "Gdip_ImageSearch.ahk"
 #Include "JSON.ahk"
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
-#include "ErrorHandling.ahk"
 
 #Warn VarUnset, Off
 
-SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Screen"
 CoordMode "Pixel", "Screen"
 SendMode "Event"
@@ -8788,7 +8790,8 @@ nm_DebugLogGUI(*){
 	DebugLogGui.Add("CheckBox", "x10 y6 vDebugLogEnabled Checked" DebugLogEnabled, "Enable Debug Logging").OnEvent("Click", nm_DebugLogCheck)
 	DebugLogGui.Add("Button", "xp+140 y5 h16", "Go To File").OnEvent("Click", (*) => Run('explorer.exe /e, /n, /select,"' A_WorkingDir '\settings\debug_log.txt"'))
 	DebugLogGui.Add("Button", "x10 yp+20 hp w200", "Copy Logs (" DebugHotkey ")").OnEvent("Click", nm_copyDebugLog)
-	DebugLogGui.Show("w210 h36")
+    DebugLogGui.Add("Button", "xp yp+20 hp w200", "Open Debug Folder").OnEvent("Click", (*) => Run(A_WorkingDir . "\debug"))
+	DebugLogGui.Show("w210 h56")
 }
 nm_DebugLogCheck(*){
 	global
@@ -17435,8 +17438,8 @@ nm_LocateSprinkler(&X:="", &Y:=""){ ; find client coordinates of approximately c
 	hWidth := NumGet(hBitmapData, 0, "UInt"), hHeight := NumGet(hBitmapData, 4, "UInt")
 
 	local n1width, n1height, n1Stride, n1Scan, n1BitmapData
-		, n1width, n1height, n2Stride, n2Scan, n2BitmapData
-		, n1width, n1height, n3Stride, n3Scan, n3BitmapData
+		, n2width, n2height, n2Stride, n2Scan, n2BitmapData
+		, n3width, n3height, n3Stride, n3Scan, n3BitmapData
 	for i,k in sprinklerImages
 	{
 		Gdip_GetImageDimensions(bitmaps[k], &n%i%Width, &n%i%Height)
