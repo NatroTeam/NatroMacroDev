@@ -17266,8 +17266,8 @@ nm_LocateSprinkler(&X:="", &Y:=""){ ; find client coordinates of approximately c
 	hWidth := NumGet(hBitmapData, 0, "UInt"), hHeight := NumGet(hBitmapData, 4, "UInt")
 
 	local n1width, n1height, n1Stride, n1Scan, n1BitmapData
-		, n1width, n1height, n2Stride, n2Scan, n2BitmapData
-		, n1width, n1height, n3Stride, n3Scan, n3BitmapData
+		, n2width, n2height, n2Stride, n2Scan, n2BitmapData
+		, n3width, n3height, n3Stride, n3Scan, n3BitmapData
 	for i,k in sprinklerImages
 	{
 		Gdip_GetImageDimensions(bitmaps[k], &n%i%Width, &n%i%Height)
