@@ -34,11 +34,9 @@ ErrorFunction(e, mode) {
         f.pos := 0
         f.Write(text . content)
         f.pos := Min(f.Length, MAX_LOG_SIZE)
-        msgbox f.pos
         if (f.length > MAX_LOG_SIZE) {
             DllCall("kernel32\SetEndOfFile", "ptr", f.Handle)
         }
-        msgbox f.Length
         f.Close()
         
     }
