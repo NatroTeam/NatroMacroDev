@@ -16059,7 +16059,8 @@ nm_MondoAction_Kill(timeLimit, isFollow := false) {
 	while (nowUnix() - start < timeLimit) {
 		if (isFollow) {
 			loop 10
-				nm_MondoMove()
+				; what the old mondo follow used basically
+				nm_FollowColor(0xFF533E29, 1, 4, 40, 3.5, 1, 0)
 		}
 
 		mondoDead := nm_HealthDetection()
@@ -16138,61 +16139,77 @@ nm_MondoLoot(isFollow := false) {
 		DllCall("GetSystemTimeAsFileTime", "int64p", &n)
 	}
 }
-nm_MondoTimer() {
-	static R
-	if !IsSet(R)
-		R := Gdip_CreateBitmap(1,4), pGraphics := Gdip_GraphicsFromImage(R), Gdip_GraphicsClear(pGraphics, 0xff533e29), Gdip_DeleteGraphics(pGraphics)
+nm_LocateColor(pixel, x, y, variation) { ; in general can be used for whatever you want to follow now
+	static prev := 0, R := unset
+	if !IsSet(R) || prev != pixel
+		R := Gdip_CreateBitmap(x,y), pGraphics := Gdip_GraphicsFromImage(R), Gdip_GraphicsClear(pGraphics, pixel), Gdip_DeleteGraphics(pGraphics)
 	GetRobloxClientPos()
 	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight) 
-	if (Gdip_ImageSearch(pBMScreen, R, &E, , , , , , , 8) = 1) {
-		Gdip_DisposeImage(pBMScreen)
+	if (Gdip_ImageSearch(pBMScreen, R, &E, , , , ,variation) = 1) {
 		E := StrSplit(E, ",")
-		return {X: E[1], Y: E[2]}
+		Gdip_DisposeImage(pBMScreen)
+		return {x: E[1], y: E[2]}
+
 	}
 	Gdip_DisposeImage(pBMScreen)
+	prev := pixel
 	return 0
 }
-nm_MondoMove() {
-	if !(pos := nm_MondoTimer())
+nm_FollowColor(pixel, sizeX:=1, sizeY:=4, dist:=50, deadzone:=2, xMove:=1, yMove:=0, variation := 0) {
+	if !(pos := nm_LocateColor(pixel, sizeX, sizeY, variation))
 		return 0
-	Safe := windowHeight * 0.5, DeadZoneWidth := windowWidth * 0.02
-	VecX := pos.x - (windowWidth // 2), Gap := Safe - Abs(VecX), DirX := ""
-	if Abs(Gap) > DeadZoneWidth {
-		DirX := (Gap > 0) ? ((VecX < 0) ? "Right" : "Left") : ((VecX < 0) ? "Left" : "Right")
-		if DirX {
-			Send "{" %DirX%Key " down}"
-			loop {
-				sleep 10
-				if (A_Index >= 300) {
-					send "{" %DirX%Key " up}"
-					break
-				}
-				pos := nm_MondoTimer()
-				if (!pos) {
-					send "{" %DirX%Key " up}"
-					loop 25 {
-						Sleep 10
-						if (pos := nm_MondoTimer()) {
-							send "{" %DirX%Key " down}"
-							continue 2
-						}
-					}
-					break
-				}
-				VecX := pos.x - (windowWidth // 2)
-				Gap := Safe - Abs(VecX)
-				if Abs(Gap) <= DeadZoneWidth {
-					send "{" %DirX%Key " up}"
-					break
-				}
-				NewDir := (Gap > 0) ? ((VecX < 0) ? "Right" : "Left") : ((VecX < 0) ? "Left" : "Right")
-				if (NewDir != DirX) {
-					send "{" %DirX%Key " up}"
-					break
-				}
+	SafeX := windowHeight * (dist/100), DeadX := windowWidth * (deadzone/100)
+	SafeY := windowHeight * (dist/100), DeadY := windowHeight * (deadzone/100)
+	if xMove {
+		VecX := pos.x - (windowWidth // 2)
+		GapX := SafeX - Abs(VecX)
+		if Abs(GapX) > DeadX {
+			DirX := (GapX > 0) ? ((VecX < 0) ? "Right" : "Left") : ((VecX < 0) ? "Left" : "Right")
+			if DirX {
+				Send "{" %DirX%Key " down}"
 			}
 		}
 	}
+	if yMove {
+		VecY := pos.y - (windowHeight // 2)
+		GapY := SafeY - Abs(VecY)
+		if Abs(GapY) > DeadY {
+			DirY := (GapY > 0) ? ((VecY < 0) ? "Back" : "Fwd") : ((VecY < 0) ? "Fwd" : "Back")
+			if DirY {
+				Send "{" %DirY%Key " down}"
+			}
+		}
+	}
+	loop 300 {
+		sleep 10
+		pos := nm_LocateColor(pixel, sizeX, sizeY, variation)
+		if !pos
+			break
+		if xMove {
+			VecX := pos.x - (windowWidth // 2)
+			if Abs(SafeX - Abs(VecX)) <= DeadX {
+				if IsSet(DirX) {
+					Send "{" %DirX%Key " up}"
+					DirX := ""
+				}
+			}
+		}
+		if yMove {
+			VecY := pos.y - (windowHeight // 2)
+			if Abs(SafeY - Abs(VecY)) <= DeadY {
+				if IsSet(DirY) {
+					Send "{" %DirY%Key " up}"
+					DirY := ""
+				}
+			}
+		}
+		if (!IsSet(DirX) or DirX == "") && (!IsSet(DirY) or DirY == "")
+			break
+	}
+	if IsSet(DirX) && DirX != ""
+		Send "{" %DirX%Key " up}"
+	if IsSet(DirY) && DirY != ""
+		Send "{" %DirY%Key " up}"
 	return 1
 }
 nm_CheckMondoDead() { ; just says if you have the buff, nothing special
