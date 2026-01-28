@@ -2063,15 +2063,23 @@ QuestBlueBoost := 0
 QuestRedBoost := 0
 HiveConfirmed := 0
 ShiftLockEnabled := 0
-vicStart := 0
-vicResults := {
+VBStart := 0
+VBResults := {
+	; status states
 	success: "Killed",
-	;(Killed before detected)
-	otherplayer: "Killed by another player",
+	failed: "Failed",
 	retry: "Retrying field",
-	inactivehoney: "Inactive Honey",
+	notfound: "Not Found",
+	; detection states
 	found: "Found",
 	dead: "Dead"
+}
+VBReasons := {
+	inactiveHoney: "Inactive honey",
+	youDied: "You Died",
+	otherPlayer: "Killed by other player",
+	timeout: "Timeout",
+	killed: "Killed"
 }
 CUSTOM_CURSOR := 1
 nm_WM_SETCURSOR(*) => CUSTOM_CURSOR
@@ -2136,6 +2144,7 @@ hBitmapsSBT := Map(), hBitmapsSBT.CaseSense := 0
 #Include "stickerprinter\bitmaps.ahk"
 #Include "memorymatch\bitmaps.ahk"
 #include "reset\bitmaps.ahk"
+#include "night\bitmaps.ahk"
 
 (hBitmapsSB := Map()).CaseSense := 0
 for x,y in hBitmapsSBT
@@ -18162,28 +18171,76 @@ nm_Night(){
 	nm_ViciousBee()
 	CheckNight := 0
 }
+
+nm_confirmNight()
+{
+	global CheckNight
+
+	nm_setStatus("Confirming", "Night")
+	nm_Reset(0, 2000, 0)
+	ActivateRoblox()
+	GetRobloxClientPos()
+	CamMove(0)
+
+	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
+
+	; AHK loops through maps alphanumerically.
+	; bitmaps["confirm"]["day"] comes first because d is before n.
+	; so the return value is set to 0 when the loop is on day
+	; and then the return value is set to 1 when the loop is on night.
+
+	for DayTime in bitmaps["confirm"]
+	{
+		ReturnValue := A_Index - 1
+		for spot in bitmaps["confirm"][DayTime]
+		{
+			if Gdip_ImageSearch(pBMArea, bitmaps["confirm"][DayTime][spot])
+			{
+				Gdip_DisposeImage(pBMArea)
+				return ReturnValue
+			}	
+		}
+	}
+
+	CamMove(1)
+	Gdip_DisposeImage(pBMArea)
+
+	return 0
+
+	CamMove(Revert)
+	{
+		if Revert
+			loop 4
+				SendInput("{" RotDown "}"), SendInput("{" ZoomIn "}")
+		else
+			loop 4
+				SendInput("{" RotUp "}"), SendInput("{" ZoomOut "}")
+		Sleep(50)
+	}
+}
+
 nm_NightMemoryMatch(){
 	; night (general) + no amulet + nightmm ready + night confirmed (last b/c reset)
 	if (!nm_NightInterrupt() || nm_AmuletPrompt() || !(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800))
 			return
 	nm_MemoryMatch("Night")
 }
-nm_NightInterrupt() => CheckNight=1 && ((NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || !(StingerCheck=0 || (StingerDailyBonusCheck=1 && (vicStart-VBLastKilled)<79200)))
+nm_NightInterrupt() => CheckNight=1 && ((NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || !(StingerCheck=0 || (StingerDailyBonusCheck=1 && (VBStart-VBLastKilled)<79200)))
 nm_ViciousBee(){
-	if !nm_locateVB()
-		vicEnd('All fields checked')
+	if nm_locateVB() = 0
+		VBEnd({ result: VBResults.notfound, reason: "All fields checked" })
 }
 /**
  * Check each enabled field for vicious
  */
 nm_locateVB(){ 
-	global vicStart := nowUnix(), fieldsChecked := 0
+	global VBfieldStart, VBStart := nowUnix(), fieldsChecked := 0, attackingVB := 0
 	; don't run if disabled or only daily bonus
-	if (StingerCheck=0) || (StingerDailyBonusCheck=1 && (vicStart-VBLastKilled)<79200) {
-		return
+	if (StingerCheck=0) || (StingerDailyBonusCheck=1 && (VBStart-VBLastKilled)<79200) {
+		return -1 
 	}
 
-	static VicData := [
+	static VBData := [
 		{ field: "Pepper", enabled: StingerPepperCheck
 		, bees: 35
 		, reps: 1
@@ -18233,155 +18290,158 @@ nm_locateVB(){
 		, initFwd: 10 }
 	]
 
-	for data in VicData { ; if no fields enabled, return
+	for data in VBData { ; if no fields enabled, return
 		if data.enabled
 			break
-		if A_Index = VicData.Length
-			return
+		if A_Index = VBData.Length
+			return -2
 	}
 
 	
 	nm_setStatus("Starting", "Vicious Bee Cycle")
 	nm_updateAction("Stingers")
 
-	for data in VicData
+	for data in VBData
 	{
 		if !data.enabled || data.bees >= HiveBees
 			continue
 		; This is built into the game
-		if (nowUnix() - vicStart) > 300
-			return vicEnd('Timeout - 5 minute limit')
+		if (nowUnix() - VBStart) > 300
+			return VBEnd('Timeout - 5 minute limit')
 
 		fieldsChecked++
+		global VBfieldStart := nowUnix()
 		
 		fieldloop:
-		Loop 3 ; attempt each field a maximum of 3 times
+		while (A_Index < 4) || attackingVB ; keep going to field if attacking vb
 		{
 			nm_Reset(0, 2000, 0)
 			nm_setStatus("Traveling", "Vicious Bee (" data.field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
 			nm_gotoField(data.field)
+			
+			if attackingVB {
+				switch vic := nm_killVB(data.field) {
+					case VBResults.success, VBResults.failed: ; death message or timeout
+						return VBEnd(vic)
+					case VBResults.retry: ; return to field
+						continue fieldloop
+				}
+			}
 			nm_setStatus("Searching", "Vicious Bee (" data.field ")")
-
-			LRDist := data.lrdist
-			FBDist := data.fbdist
 
 			if !DisableToolUse
 				Click "Down"
 
-			alignment := nm_Walk(data.initRight, RightKey) "`n" nm_Walk(data.initFwd, FwdKey)
-
-			if (vic := SearchforVB(alignment, data.field)).result = vicResults.retry
-				continue fieldloop
-			else if vic.result = vicResults.otherplayer
-				return vicEnd("Killed by another player")
-
 			patterns := [
-				nm_Walk(LRDist, LeftKey) "`n" nm_Walk(FBDist, BackKey) "`n" nm_Walk(LRDist, RightKey) "`n" nm_Walk(FBDist, BackKey),
-				nm_Walk(LRDist, LeftKey)
+				nm_Walk(data.initRight, RightKey) "`n" nm_Walk(data.initFwd, FwdKey),
+				nm_Walk(data.lrdist, LeftKey) "`n" nm_Walk(data.fbdist, BackKey) "`n" nm_Walk(data.lrdist, RightKey) "`n" nm_Walk(data.fbdist, BackKey),
+				nm_Walk(data.lrdist, LeftKey)
 			]
 
-			Loop data.reps {
-				if (vic := SearchforVB(patterns[1], data.field)).result = vicResults.success 
-					return vicEnd()
-				else if vic.result = vicResults.otherplayer
-					return vicEnd("Killed by another player")
-				else if vic.result = vicResults.retry
-					continue fieldloop
+			Loop 3 { ; 1 alignment, 2 search
+				i := A_Index
+				Loop (i = 2 ? data.reps : 1) { ; only repeat for search pattern
+					switch vic := SearchforVB(patterns[i], data.field) {
+						case VBResults.success, VBResults.failed, VBResults.dead: ; end loop
+							return VBEnd(vic)
+						case VBResults.retry: ; return to field
+							continue fieldloop
+					}
+				}
 			}
-			
-			if (vic := SearchforVB(patterns[2], data.field)).result = vicResults.success
-				return vicEnd()
-			else if vic.result = vicResults.otherplayer
-				return vicEnd("Killed by another player")
-			else if vic.result = vicResults.retry
-				continue fieldloop
 
 			Click "Up"
-			break fieldLoop
+			break fieldloop
 		}
 	}
+	return 0
 }
 /**
  * End cycle and send status message
  */
-vicEnd(reason:=vicResults.success){
+VBEnd(vic){
 	global VBLastKilled
 	Click "Up"
-	duration := DurationFromSeconds(nowUnix() - vicStart, "mm:ss")
 
-	nm_setStatus("Completed", "Vicious Bee - " reason "`nTime: " duration "`nFields Checked: " fieldsChecked)
-	if reason = vicResults.success {
+	nm_setStatus("Completed"
+	, "Vicious Bee — " vic.result  "—" vic.reason
+	. "`nTime: " DurationFromSeconds(nowUnix() - VBStart, "mm:ss") 
+	. "`nFields Checked: " fieldsChecked)
+
+	if vic.result = VBResults.success {
 		nm_IncrementStat("ViciousKills")
 
 		IniWrite((VBLastKilled:=nowUnix()), "settings\nm_config.ini", "Collect", "VBLastKilled")
+		return 1
 	}
-
-	return true
 }
 /** 
  * Create a movement with vicious bee detection. Used in both find and attack VB
- * @returns {{result: String} or false}
+ * @returns {{result: found/dead/retry/0, reason?: youDied/inactivehoney}}
  */
-WalkwithVBCheck(movement, ignoreHoney?, ignoreStatus?){
-	local inactiveHoney := 0
-	nm_OpenChat() ; just to ensure that chat is open :sob:
-	start := nowUnix()
-	nm_createWalk(movement)
-	KeyWait "F14", "D T5 L"
-	while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
-	{
-		vic := nm_ViciousCheck()
-		if vic.result {
-			if IsSet(ignoreStatus)
-				KeyWait "F14", "T120 L"
-			nm_endWalk()
-			return vic
-		}
-		if !nm_activeHoney(){
-			if (!IsSet(ignoreHoney) && inactiveHoney++ >= 10) {
+WalkwithVBCheck(movement, search:=true){
+    local inactiveHoney := 0
+    nm_OpenChat() ; just to ensure that chat is open 😭
+    start := nowUnix()
+    nm_createWalk(movement)
+    KeyWait "F14", "D T5 L"
+    while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
+    {
+        vic := nm_VBCheck()
+		switch {
+			case vic.result:
+				if (!search && vic.result = VBResults.found) ; we dont care if VB is detected during atk phase
+					continue
+
 				nm_endWalk()
-				return {result: vicResults.inactivehoney}
-			}
+				return vic
+			case !nm_activeHoney():
+				if (inactiveHoney++ >= 10) { ; just increase inactive honey counter, break on 10
+					nm_endWalk()
+					return {result: VBResults.retry, reason: VBReasons.inactivehoney}
+            	}
+			case youDied: ; retry field
+				nm_endWalk()
+            	return {result: VBResults.retry, reason: VBReasons.youDied}
 		}
-		if youDied {
-			nm_endWalk()
-			return {result: vicResults.retry}
-		}
-	}
-	KeyWait "F14", "T120 L"
-	nm_endWalk()
-	return {result: 0}
+    }
+    nm_endWalk()
+    return { result: 0 }
 }
 /**
- * Search for vicious bee using WalkwithVBCheck()
- *  @returns {{result: String or false}}
+ * Search for vicious bee
+ *  @returns {{result: found | dead | retry | 0 , reason?: otherplayer | inactivehoney | youDied}}
+ *  @returns {{result: success | failed | retry , reason?: killed | timeout}} VB found
  */
 SearchforVB(movement, field){
 	static inactiveHoney := 0
 	vic := WalkwithVBCheck(movement)
-	if vic.result = vicResults.found {
-		return nm_killVB(field)
-	} else if vic.result = vicResults.dead {
-		nm_setStatus("Detected", "Vicious Bee - Killed")
-		return {result: vicResults.otherplayer}
-	} else if vic.result = vicResults.inactivehoney {
-		if (inactiveHoney++ < 5) {
-			inactiveHoney := 0
-			nm_setStatus("Warning", "Vicious Bee - Inactive Honey - Retrying")
-			return {result: vicResults.retry}
-		}
-		return {result: 0} ; since we can't be sure that it's out of the field yet
-	} else if vic.result = 0 || vic.result = vicResults.retry {
-		return vic
+	switch vic.result {
+		case VBResults.found: ; VB found bitmap found
+			return nm_killVB(field)
+		case VBResults.dead: ; VB dead bitmap found BEFORE VB found bitmap
+			nm_setStatus("Detected", "Vicious Bee - Killed")
+			vic.reason := VBReasons.otherPlayer
+		case VBResults.retry: ; retry field: inactive honey/died
+			if (vic.reason = VBReasons.inactivehoney) {
+				if (++inactiveHoney < 5) {
+					inactiveHoney := 0
+					nm_setStatus("Warning", "Vicious Bee - Inactive Honey - Retrying")
+				} else {
+					; don't retry yet: not enough inactive honey triggers
+					vic.result := 0
+				}
+			}
 	}
+
+	return vic
 }
 /**
- * Kill vicious bee using battle pattern after it is detected from SearchforVB()
- * @returns {{result: String or false}}
+ * Kill vicious bee using battle pattern
+ * @returns {{result: retry | success | failed}}
  */
 nm_killVB(field) {
-	global state:="Attacking"
-	start := nowUnix()
+	global state:="Attacking", attackingVB := 1
 	nm_setStatus("Attacking", "Vicious Bee (" field ")")
 
 	battlepattern :=
@@ -18395,22 +18455,26 @@ nm_killVB(field) {
 		" nm_Walk(4, LeftKey)
 	)
 
-	while nowUnix()-start <= 300 { ; 5 minute timeout
-		vic := WalkwithVBCheck(battlepattern, 1, 1)
-		if vic.result = vicResults.dead {
-			nm_setStatus("Killed", "Vicious Bee (" field ")")
-			return {result: vicResults.success}
+	while nowUnix()-VBfieldStart <= 300 { ; 5 minute timeout
+		switch (vic := WalkwithVBCheck(battlepattern, false)).result {
+			case VBResults.retry:
+				nm_setStatus("Retrying", "Vicious Bee (" field ")")
+				return vic
+			case VBResults.dead:
+				nm_setStatus("Killed", "Vicious Bee (" field ")")
+				attackingVB := 0
+				return {result: VBResults.success, reason: VBReasons.killed}
 		}
-		sleep 1000
 	}
 	nm_setStatus("Aborting", "Vicious Bee - Timeout")
-	return {result: 0}
+	attackingVB := 0
+	return {result: VBResults.failed, reason: VBReasons.timeout}
 }
 /**
  * Vicious bee detection using chat
- * @returns {{result: String or false}}
+ * @returns {{result: found/dead/0}}
  */
-nm_ViciousCheck() {
+nm_VBCheck() {
 	static LastRan := 0
 	GetRobloxClientPos(hwnd := GetRobloxHWND())
 	offsetY := GetYOffset()
@@ -18422,22 +18486,26 @@ nm_ViciousCheck() {
 		sleep 50
 		LastRan := nowUnix()
 	}
+
 	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth - 8 - (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" windowY+offsetY+40 "|" (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" (windowHeight>=1156 ? 334 : windowHeight/3.464))
-    for , x in bitmaps["viciousbee"]["dead"] {
-        if Gdip_ImageSearch(pBMScreen, x,,,,,, 5) {
+    
+	for , bitmap in bitmaps["viciousbee"]["dead"] {
+        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
             Gdip_DisposeImage(pBMScreen)
-            return { result: vicResults.dead }
+            return { result: VBResults.dead }
         }
     }
-    for , x in bitmaps["viciousbee"]["found"] {
-        if Gdip_ImageSearch(pBMScreen, x,,,,,, 5) {
+    for , bitmap in bitmaps["viciousbee"]["found"] {
+        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
             Gdip_DisposeImage(pBMScreen)
-            return { result: vicResults.found }
+            return { result: VBResults.found }
         }
     }
     Gdip_DisposeImage(pBMScreen)
     return { result: 0 }
 }
+;//todo: make it work if someone has chat disabled
+; open roblox chat
 nm_OpenChat(msg:="") {
     PrevKeyDelay := A_KeyDelay
     SetKeyDelay 50
