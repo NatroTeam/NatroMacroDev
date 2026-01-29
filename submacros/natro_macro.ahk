@@ -13090,9 +13090,9 @@ nm_killBosses(){
 			if boss_values.babylove {
 				go_outside := true, go_inside := false
 				nm_gotoKill(boss_name, go_outside, go_inside)
-				width := boss_values.babylove_collect[1], heigt := boss_values.babylove_collect[2]
+				width := boss_values.babylove_collect[1], height := boss_values.babylove_collect[2]
 				initial_wait := boss_values.babylove_collect[3]
-				nm_collectBabyLove(width, heigt, initial_wait)
+				nm_collectBabyLove(width, height, initial_wait)
 				nm_gotoKill(boss_name, !go_outside, !go_inside)
 			} else 
 				nm_gotoKill(boss_name)	
@@ -13320,8 +13320,11 @@ nm_killCocoCrab(&path_failed, &boss_found){
 	GetRobloxClientPos()
 	pBMCrabHealthbar := Gdip_CreateBitmap(3, 3), pG := Gdip_GraphicsFromImage(pBMCrabHealthbar), Gdip_GraphicsClear(pG, "0xff1fe744"), Gdip_DeleteGraphics(pG)
 	pBMCrabMissingHealth := Gdip_CreateBitmap(3, 3), pG := Gdip_GraphicsFromImage(pBMCrabMissingHealth), Gdip_GraphicsClear(pG, "0xff6b131a"), Gdip_DeleteGraphics(pG)
-	pBMMindHack := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAIAAAAW4yFwAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwwAADsMBx2+oZAAAABBJREFUGFdjeM/AwDCfgQEACG4Bj7+9NWkAAAAASUVORK5CYII=")
 	pBMFallingCoconut := Gdip_CreateBitmap(10, 10), pG := Gdip_GraphicsFromImage(pBMFallingCoconut), Gdip_GraphicsClear(pG, "0xffcf592b"), Gdip_DeleteGraphics(pG)
+	pBMArrayMindHack := [
+		Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAIAAAAW4yFwAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwwAADsMBx2+oZAAAABBJREFUGFdjqOJgZ5jCygoABXwBKDLU2NIAAAAASUVORK5CYII="),
+		Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAIAAAAW4yFwAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwwAADsMBx2+oZAAAABBJREFUGFdjeM/AwDCfgQEACG4Bj7+9NWkAAAAASUVORK5CYII=")
+	]
 
 	start := A_TickCount
 	loop {
@@ -13335,9 +13338,9 @@ nm_killCocoCrab(&path_failed, &boss_found){
 	}
 
 	findHealthbar(&detected_damage?){
-		static bmp_x := windowX + ((windowWidth * 71) // 160)
+		static bmp_x := windowX + ((windowWidth * 7) // 16)
 		static bmp_y := windowY + (windowHeight // 13)
-		static bmp_width := windowWidth // 10
+		static bmp_width := windowWidth // 8
 		static bmp_height := windowHeight // 3
 		pBMScreen := Gdip_BitmapFromScreen(bmp_x "|" bmp_y "|" bmp_width "|" bmp_height)
 		detected_health := Gdip_ImageSearch(pBMScreen, pBMCrabHealthbar) > 0
@@ -13352,7 +13355,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			index := A_Index
 			loop {
 				if detectMindHack()
-					remaining_dodges := (index & 1 ? 4 : 3)
+					remaining_dodges := (index & 1) + 3
 				detected_health := findHealthbar(&detected_damage?)
 				if detected_health || detected_damage
 					break
@@ -13360,7 +13363,7 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			}
 			key_index := !(A_Index & 1) + 1
 			horizontal := horizontal_keys[key_index]
-			flowers := (horizontal = RightKey ? 16 : 15)
+			flowers := (horizontal = RightKey ? 17 : 15)
 			nm_Walk(flowers, horizontal)
 			vertical := vertical_keys[key_index]
 			nm_Walk(2, vertical)
@@ -13373,7 +13376,9 @@ nm_killCocoCrab(&path_failed, &boss_found){
 		static bmp_height := windowHeight // 3
 		static bmp_width := windowWidth 
 		pBMScreen := Gdip_BitmapFromScreen(bmp_x "|" bmp_y "|" bmp_width "|" bmp_height)
-		detected_mindhack := Gdip_ImageSearch(pBMScreen, pBMMindHack,,,,,, 5) > 0
+		for bitmap in pBMArrayMindHack
+			if (detected_mindhack := Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 6) > 0)
+				break
 		Gdip_DisposeImage(pBMScreen)
 		return detected_mindhack
 	}
@@ -13401,9 +13406,6 @@ nm_killCocoCrab(&path_failed, &boss_found){
 			}
 			if (A_TickCount - start) >= 9000 
 				break
-		}
-		if !found_coconut {
-			' nm_Walk(2, FwdKey) '
 		}
 		Send "{' RotDown ' 5}"
 		loop 4 {
