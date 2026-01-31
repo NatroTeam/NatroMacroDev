@@ -13194,14 +13194,16 @@ nm_killKingBeetle(&path_failed, &boss_found){
 	pBMScreen := Gdip_BitmapFromScreen(bmp_x "|" bmp_y "|" bmp_width "|" bmp_height)
 	path_failed := Gdip_ImageSearch(pBMScreen, bitmaps["kingbeetle_floor"],,,,,, 30) <= 0 
 	Gdip_DisposeImage(pBMScreen)
-	loop 10 {
-		if boss_found := nm_findBug()
-			break
-		Sleep(100)
-	}
 	
-	killed_beetle := false
-	if boss_found && !path_failed {
+	boss_found := killed_beetle := false
+	if !path_failed { 
+		loop 10 {
+			if boss_found := nm_findBug()
+				break
+			Sleep(100)
+		}
+	}
+	if boss_found {
 		nm_setStatus("Attacking", "King Beetle")
 		movement := nm_Walk(28, RightKey) "`r`n" nm_Walk(27, FwdKey)
 		nm_createWalk(movement)
@@ -13271,7 +13273,7 @@ nm_killTunnelBear(&path_failed, &boss_found){
 	path_failed := Gdip_ImageSearch(pBMScreen, bitmaps["tunnelbear_wall"],,,,,, 30) <= 0
 	Gdip_DisposeImage(pBMScreen)
 	
-	boss_found := false
+	boss_found := killed_bear := false
 	if !path_failed {
 		Send "{" RotRight " 2}{" RotDown " 5}"
 		movement := nm_Walk(4, RightKey) "`r`n" nm_Walk(30, BackKey)
@@ -13439,16 +13441,17 @@ nm_killCocoCrab(&path_failed, &boss_found){
 	static rot_direction := 0, rot_count := 0, loot_repetitions := 1
 
 	GetRobloxClientPos()
-	Sleep(500)
 	bmp_x := windowX + ((windowWidth * 7) // 16)
 	bmp_y := windowY + (windowHeight // 4) + (windowHeight // 16)
 	bmp_width := windowWidth // 16
-	bmp_height := windowHeight // 16
+	bmp_height := windowHeight // 14
 	pBMScreen := Gdip_BitmapFromScreen(bmp_x "|" bmp_y "|" bmp_width "|" bmp_height)
-	for type in bitmaps["crab_lock"]
-		foundlock_%type% := Gdip_ImageSearch(pBMScreen, bitmaps["crab_lock"][type],,,,,, 15) > 0
+	for type in bitmaps["crab_lock"] {
+		path_failed := Gdip_ImageSearch(pBMScreen, bitmaps["crab_lock"][type],,,,,, 15) <= 0
+		if !path_failed
+			break
+	}
 	Gdip_DisposeImage(pBMScreen)
-	path_failed := !(foundlock_night || foundlock_honey_storm || foundlock_snow_storm || foundlock_beesmas_day)
 
 	; no reliable way of confirming if the boss was found, handled by the dodge_movement script instead
 	boss_found := killed_crab := false
