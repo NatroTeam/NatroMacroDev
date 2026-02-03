@@ -10187,10 +10187,9 @@ UpdateHoneyGui() {
 		selectedSide := 0
 		for k, v in sidePassives
 			selectedSide += v
-		presentStats := Map(), foundStats := Map(), foundSide := Map()
+		presentStats := Map(), foundStats := Map(), foundSide := Map(), parsedStats := Map()
 		mainPassiveFound := 0
 		matched := false
-		correctedLines := ""
 		for k, v in text {
 			line := StrLower(v)
 			for _, seg in StrSplit(line, "|") {
@@ -10199,20 +10198,18 @@ UpdateHoneyGui() {
 					continue
 				normSeg := NormalizeOCRLine(seg)
 				tokens := (normSeg = "") ? [] : StrSplit(normSeg, " ")
-				corrections := Map()
-				SSA_CorrectTokens(tokens, corrections)
-				if ssaDebug {
-					if (correctedLines != "")
-						correctedLines .= " | "
-					correctedLines .= SSA_CorrectDebugSegment(seg, corrections)
-				}
+				SSA_CorrectTokens(tokens)
 				for i, j in stats
 					if (j > 0) && !presentStats.Has(i) && SSA_StatLineMatch(i, tokens) {
 						presentStats[i] := 1
-						if !ssaAdvanced
+						if ssaAdvanced {
+							val := SSA_ParseStatValue(seg, i)
+							parsedStats[i] := val
+							if (val >= j)
+								foundStats[i] := 1
+						} else {
 							foundStats[i] := 1
-						else if (SSA_ParseStatValue(seg, i) >= j)
-							foundStats[i] := 1
+						}
 					}
 				if (!mainPassiveFound && SSA_SidePassiveMatch(mainPassiveKey, tokens))
 					mainPassiveFound := 1
@@ -10232,15 +10229,51 @@ UpdateHoneyGui() {
 		sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
 		statCount := ssaAdvanced ? foundStats.Count : presentStats.Count
 		if ssaDebug {
-			debugLines := ""
-			for k, v in text
-				if (v != "")
-					debugLines .= v " | "
-			debugLines := RTrim(debugLines, " |")
-			SSA_Log("OCR: " debugLines)
-			if (correctedLines != "")
-				SSA_Log("OCR fuzzy: " correctedLines)
-			SSA_Log("Need stats=" requiredStats "/" selectedCount " present=" presentStats.Count " pass=" statCount " main=" mainPassiveFound " side=" selectedSide "/" foundSide.Count " mainPassive=" mainPassive)
+			modeLabel := ssaAdvanced ? "ADV" : "BASIC"
+			SSA_Log("SSA " modeLabel ": main=" (mainPassiveFound ? 1 : 0) "/1 side=" foundSide.Count "/" selectedSide " stats=" statCount "/" requiredStats)
+			missing := []
+			if !mainPassiveFound
+				missing.Push("main passive")
+			if (selectedSide > 0 && foundSide.Count = 0)
+				missing.Push("side passive")
+			if (requiredStats > statCount) {
+				statLabels := Map()
+				for _, j in ssaStats
+					statLabels[j.key] := j.text
+				missingStats := []
+				for i, j in stats {
+					if (j <= 0)
+						continue
+					if ssaAdvanced {
+						if !foundStats.Has(i) {
+							val := parsedStats.Has(i) ? parsedStats[i] : 0
+							label := statLabels.Has(i) ? statLabels[i] : i
+							missingStats.Push(label " " val "/" j)
+						}
+					} else if !presentStats.Has(i) {
+						label := statLabels.Has(i) ? statLabels[i] : i
+						missingStats.Push(label)
+					}
+				}
+				if (missingStats.Length > 0) {
+					missingStatsText := ""
+					for _, item in missingStats {
+						if (missingStatsText != "")
+							missingStatsText .= ", "
+						missingStatsText .= item
+					}
+					missing.Push("stats: " missingStatsText)
+				}
+			}
+			if (missing.Length > 0) {
+				missingText := ""
+				for _, item in missing {
+					if (missingText != "")
+						missingText .= "; "
+					missingText .= item
+				}
+				SSA_Log("Missing: " missingText)
+			}
 		}
 		if (statCount >= requiredStats && mainPassiveFound && sideMatch)
 			return 1
