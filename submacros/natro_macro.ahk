@@ -9061,7 +9061,7 @@ blc_mutations(*) {
 				BeeAbilityRateMin: 0,
 				BeeGatherPollenMin: 0,
 				ssaAdvanced: 0,
-				ssaDebug: 0,
+				ssaSafety: 0,
 				HoneyLimit: "5"
 			},
 			GUI : {
@@ -9169,8 +9169,8 @@ blc_mutations(*) {
 	ssaAdvToggleH := 14
 	ssaAdvX := ssaHoneyEditX
 	ssaAdvY := ssaHoneyEditY + ssaHoneyEditH + 10
-	ssaDebugX := ssaAdvX
-	ssaDebugY := ssaAdvY + ssaAdvToggleH + 8
+	ssaSafetyX := ssaAdvX
+	ssaSafetyY := ssaAdvY + ssaAdvToggleH + 8
 	HoneyLimitRemainingB := 0
 	HoneyLimitBase := ""
 	ssaMainLookup := Map(
@@ -9275,7 +9275,7 @@ blc_mutations(*) {
 			mgui.AddText("v" j.select " x" ssaStatsX " y" y " w170 h24")
 		}
 		mgui.AddText("vssaAdvanced x" ssaAdvX " y" ssaAdvY " w120 h16")
-		mgui.AddText("vssaDebug x" ssaDebugX " y" ssaDebugY " w120 h16")
+		mgui.AddText("vssaSafety x" ssaSafetyX " y" ssaSafetyY " w120 h16")
 		for i, j in ssaExtras {
 			y := ssaExtrasY + (A_Index-1) * ssaRowH
 			mgui.AddText("v" j.name " x" ssaMainX " y" y " w260 h24")
@@ -9331,7 +9331,7 @@ blc_mutations(*) {
 	for i, j in ssaExtras
 		mgui[j.name].Visible := !showJelly
 	mgui["ssaAdvanced"].Visible := !showJelly
-	mgui["ssaDebug"].Visible := !showJelly
+	mgui["ssaSafety"].Visible := !showJelly
 	UpdateHoneyGui()
 }
 	guiMode := "jelly"
@@ -9433,15 +9433,15 @@ blc_mutations(*) {
 			} else
 				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaAdvX+20, ssaAdvY+7], [ssaAdvX+22, ssaAdvY+9], [ssaAdvX+26, ssaAdvY+4]]), Gdip_DeletePen(Pen)
 			Gdip_TextToGraphics(G, "Advanced", "s10 x" ssaAdvX+ssaAdvToggleW+6 " y" ssaAdvY-1 " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 70, 16), Gdip_DeleteBrush(brush)
-			Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaDebugX, ssaDebugY, ssaAdvToggleW, ssaAdvToggleH, 7), Gdip_DeleteBrush(brush)
-			Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), ssaDebug ? ssaDebugX+16 : ssaDebugX-2, ssaDebugY-2, 18, 18), Gdip_DeleteBrush(brush)
-			if !ssaDebug {
-				Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaDebugX, ssaDebugY, 14, 14), Gdip_DeleteBrush(brush)
-				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[ssaDebugX+4, ssaDebugY+4 ], [ssaDebugX+10, ssaDebugY+10]])
-				Gdip_DrawLines(G, Pen								  , [[ssaDebugX+4, ssaDebugY+10], [ssaDebugX+10, ssaDebugY+4 ]]), Gdip_DeletePen(Pen)
+			Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaSafetyX, ssaSafetyY, ssaAdvToggleW, ssaAdvToggleH, 7), Gdip_DeleteBrush(brush)
+			Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), ssaSafety ? ssaSafetyX+16 : ssaSafetyX-2, ssaSafetyY-2, 18, 18), Gdip_DeleteBrush(brush)
+			if !ssaSafety {
+				Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaSafetyX, ssaSafetyY, 14, 14), Gdip_DeleteBrush(brush)
+				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[ssaSafetyX+4, ssaSafetyY+4 ], [ssaSafetyX+10, ssaSafetyY+10]])
+				Gdip_DrawLines(G, Pen								  , [[ssaSafetyX+4, ssaSafetyY+10], [ssaSafetyX+10, ssaSafetyY+4 ]]), Gdip_DeletePen(Pen)
 			} else
-				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaDebugX+20, ssaDebugY+7], [ssaDebugX+22, ssaDebugY+9], [ssaDebugX+26, ssaDebugY+4]]), Gdip_DeletePen(Pen)
-			Gdip_TextToGraphics(G, "Debug", "s10 x" ssaDebugX+ssaAdvToggleW+6 " y" ssaDebugY-1 " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 70, 16), Gdip_DeleteBrush(brush)
+				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaSafetyX+20, ssaSafetyY+7], [ssaSafetyX+22, ssaSafetyY+9], [ssaSafetyX+26, ssaSafetyY+4]]), Gdip_DeletePen(Pen)
+			Gdip_TextToGraphics(G, "Safety", "s10 x" ssaSafetyX+ssaAdvToggleW+6 " y" ssaSafetyY-1 " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 70, 16), Gdip_DeleteBrush(brush)
 			for i, j in ssaMainPassives {
 				y := ssaStartY + (A_Index-1) * ssaRowH
 				on := (mainPassive = j.text)
@@ -9761,7 +9761,7 @@ UpdateHoneyGui() {
 		, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
 		, StarShowerCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
 		, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
-		, DoublePassiveCheck, PollenCheck, ssaMainLookup, ssaAdvanced, ssaStatsInputs, ssaStatMinLookup, ssaDebug
+		, DoublePassiveCheck, PollenCheck, ssaMainLookup, ssaAdvanced, ssaStatsInputs, ssaStatMinLookup, ssaSafety
 		MouseGetPos(,,,&ctrl,2)
 		if !ctrl
 			return
@@ -9783,7 +9783,7 @@ UpdateHoneyGui() {
 			case "help":
 				ReplaceSystemCursors()
 				if (guiMode = "ssa")
-					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Open the SSA roll menu in-game``n- Select your main passive and side passives``n- Select up to 5 stats in the Stats column (Advanced: set Min %; 0 = ignore)``n``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nDebug: Enable the Debug toggle to write OCR logs to settings\\ssa_debug.txt (auto-trimmed).``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
+					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Open the SSA roll menu in-game``n- Select your main passive and side passives``n- Select up to 5 stats in the Stats column (Advanced: set Min %; 0 = ignore)``n``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nSafety: Enable the Safety toggle to stop the roller if OCR can`'t verify a full roll before timeout.``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
 				else
 					Msgbox("This feature allows you to roll royal jellies until you obtain your specified bees and/or mutations!``n``nTo use:``n- Select the bees and mutations you want``n- Make sure your in-game Auto-Jelly settings are right``n- Put a neonberry on the bee you want to change (if trying ``n  to obtain a mutated bee) ``n- Use one royal jelly on the bee and click Yes``n- Click on Roll.``n``nTo stop: ``n- Press the escape key``n``nAdditional options:``n- Stop on Gifteds stops on any gifted bee, ``n  ignoring the mutation and your bee selection``n- Stop on Mythics stops on any mythic bee, ``n  ignoring the mutation and your bee selection", "Auto-Jelly Help", "0x40040")
 			case "mode":
@@ -9826,11 +9826,11 @@ UpdateHoneyGui() {
 				IniWrite(ssaAdvanced, ".\settings\mutations.ini", "ssa", "ssaAdvanced")
 				SSA_EnforceStatMax()
 				UpdateHoneyGui()
-			case "ssaDebug":
+			case "ssaSafety":
 				if (guiMode != "ssa")
 					return
-				ssaDebug := !ssaDebug
-				IniWrite(ssaDebug, ".\settings\mutations.ini", "ssa", "ssaDebug")
+				ssaSafety := !ssaSafety
+				IniWrite(ssaSafety, ".\settings\mutations.ini", "ssa", "ssaSafety")
 			case "PollenCheck", "WhitePollenCheck", "RedPollenCheck", "BluePollenCheck", "ConvertRateCheck", "CriticalChanceCheck"
 				, "InstantConversionCheck", "BeeAbilityRateCheck", "BeeGatherPollenCheck":
 				if (guiMode != "ssa")
@@ -10017,7 +10017,7 @@ UpdateHoneyGui() {
 		UpdateHoneyGui()
 	}
 	blc_ssa_start() {
-		global stopping, ocr_enabled, ocr_language, HoneyLimit, HoneyLimitBase, HoneyLimitRemainingB, ssaDebug
+		global stopping, ocr_enabled, ocr_language, HoneyLimit, HoneyLimitBase, HoneyLimitRemainingB, ssaSafety
 		stopping := false
 		hotkey "~*esc", stopToggle, "On"
 		ocr_enabled := 1
@@ -10074,6 +10074,9 @@ UpdateHoneyGui() {
 			if (result = 1) {
 				msgbox "Found a match!``nChoose Keep/Replace in-game.", "SSA Roller", 0x40040
 				break
+			} else if (result = -3) {
+				msgbox "Safety stop: Unable to verify a full SSA roll before timeout.``nCheck the SSA menu and try again.", "SSA Roller", 0x40030
+				break
 			} else if (result = -2) {
 				msgbox "Honey limit reached. SSA roller stopped.", "SSA Roller", 0x40040
 				break
@@ -10092,11 +10095,11 @@ UpdateHoneyGui() {
 			, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
 			, DoublePassiveCheck, HoneyLimit, ssaStats, ssaAdvanced
 			, PollenMin, WhitePollenMin, RedPollenMin, BluePollenMin, ConvertRateMin
-			, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin, ssaDebug
+			, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin, ssaSafety, stopping
 		static lastRollTick := 0, pendingRoll := false, pendingSince := 0
 		doublePassive := (DoublePassiveCheck = 1)
 		rollCooldown := 900
-		pendingTimeout := 5000
+		pendingTimeout := 8000
 		if (!pendingRoll && lastRollTick) {
 			elapsed := A_TickCount - lastRollTick
 			if (elapsed < rollCooldown)
@@ -10130,8 +10133,12 @@ UpdateHoneyGui() {
 			if (elapsed > pendingTimeout) {
 				pendingRoll := false
 				pendingSince := 0
-				if ssaDebug
-					SSA_Log("OCR pending timeout; rerolling.")
+				if ssaSafety {
+					SSA_Log("Safety stop: OCR could not verify a full roll before timeout.")
+					stopping := true
+					return -3
+				}
+				SSA_Log("OCR pending timeout; rerolling.")
 				return 0
 			}
 			if (elapsed < 200)
@@ -10142,16 +10149,17 @@ UpdateHoneyGui() {
 		ocrW := 188
 		ocrH := 160
 		validOcr := false
+		ocrSegments := []
 		Loop 5 {
 			text := SSA_ReadOcrText(ocrX, ocrY, ocrW, ocrH)
-			validOcr := SSA_OcrLooksValid(text)
+			ocrSegments := []
+			validOcr := SSA_OcrHasFullRoll(text, doublePassive, &ocrSegments)
 			if validOcr
 				break
 			Sleep 250
 		}
 		if !validOcr {
-			if ssaDebug
-				SSA_Log("OCR invalid/empty after roll; retrying.")
+			SSA_Log("OCR invalid/empty after roll; retrying.")
 			return 0
 		}
 		pendingRoll := false
@@ -10190,15 +10198,9 @@ UpdateHoneyGui() {
 		presentStats := Map(), foundStats := Map(), foundSide := Map(), parsedStats := Map()
 		mainPassiveFound := 0
 		matched := false
-		for k, v in text {
-			line := StrLower(v)
-			for _, seg in StrSplit(line, "|") {
-				seg := Trim(seg)
-				if (seg = "")
-					continue
-				normSeg := NormalizeOCRLine(seg)
-				tokens := (normSeg = "") ? [] : StrSplit(normSeg, " ")
-				SSA_CorrectTokens(tokens)
+		for _, entry in ocrSegments {
+			seg := entry.seg
+			tokens := entry.tokens
 				for i, j in stats
 					if (j > 0) && !presentStats.Has(i) && SSA_StatLineMatch(i, tokens) {
 						presentStats[i] := 1
@@ -10211,69 +10213,64 @@ UpdateHoneyGui() {
 							foundStats[i] := 1
 						}
 					}
-				if (!mainPassiveFound && SSA_SidePassiveMatch(mainPassiveKey, tokens))
-					mainPassiveFound := 1
-				for i, j in sidePassives
-					if j && !foundSide.Has(i) && SSA_SidePassiveMatch(i, tokens)
-						foundSide[i] := 1
-				sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
-				statCount := ssaAdvanced ? foundStats.Count : presentStats.Count
-				if (statCount >= requiredStats && mainPassiveFound && sideMatch) {
-					matched := true
-					break
-				}
-			}
-			if matched
+			if (!mainPassiveFound && SSA_SidePassiveMatch(mainPassiveKey, tokens))
+				mainPassiveFound := 1
+			for i, j in sidePassives
+				if j && !foundSide.Has(i) && SSA_SidePassiveMatch(i, tokens)
+					foundSide[i] := 1
+			sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
+			statCount := ssaAdvanced ? foundStats.Count : presentStats.Count
+			if (statCount >= requiredStats && mainPassiveFound && sideMatch) {
+				matched := true
 				break
+			}
 		}
 		sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
 		statCount := ssaAdvanced ? foundStats.Count : presentStats.Count
-		if ssaDebug {
-			modeLabel := ssaAdvanced ? "ADV" : "BASIC"
-			SSA_Log("SSA " modeLabel ": main=" (mainPassiveFound ? 1 : 0) "/1 side=" foundSide.Count "/" selectedSide " stats=" statCount "/" requiredStats)
-			missing := []
-			if !mainPassiveFound
-				missing.Push("main passive")
-			if (selectedSide > 0 && foundSide.Count = 0)
-				missing.Push("side passive")
-			if (requiredStats > statCount) {
-				statLabels := Map()
-				for _, j in ssaStats
-					statLabels[j.key] := j.text
-				missingStats := []
-				for i, j in stats {
-					if (j <= 0)
-						continue
-					if ssaAdvanced {
-						if !foundStats.Has(i) {
-							val := parsedStats.Has(i) ? parsedStats[i] : 0
-							label := statLabels.Has(i) ? statLabels[i] : i
-							missingStats.Push(label " " val "/" j)
-						}
-					} else if !presentStats.Has(i) {
+		modeLabel := ssaAdvanced ? "ADV" : "BASIC"
+		SSA_Log("SSA " modeLabel ": main=" (mainPassiveFound ? 1 : 0) "/1 side=" foundSide.Count "/" selectedSide " stats=" statCount "/" requiredStats)
+		missing := []
+		if !mainPassiveFound
+			missing.Push("main passive")
+		if (selectedSide > 0 && foundSide.Count = 0)
+			missing.Push("side passive")
+		if (requiredStats > statCount) {
+			statLabels := Map()
+			for _, j in ssaStats
+				statLabels[j.key] := j.text
+			missingStats := []
+			for i, j in stats {
+				if (j <= 0)
+					continue
+				if ssaAdvanced {
+					if !foundStats.Has(i) {
+						val := parsedStats.Has(i) ? parsedStats[i] : 0
 						label := statLabels.Has(i) ? statLabels[i] : i
-						missingStats.Push(label)
+						missingStats.Push(label " " val "/" j)
 					}
-				}
-				if (missingStats.Length > 0) {
-					missingStatsText := ""
-					for _, item in missingStats {
-						if (missingStatsText != "")
-							missingStatsText .= ", "
-						missingStatsText .= item
-					}
-					missing.Push("stats: " missingStatsText)
+				} else if !presentStats.Has(i) {
+					label := statLabels.Has(i) ? statLabels[i] : i
+					missingStats.Push(label)
 				}
 			}
-			if (missing.Length > 0) {
-				missingText := ""
-				for _, item in missing {
-					if (missingText != "")
-						missingText .= "; "
-					missingText .= item
+			if (missingStats.Length > 0) {
+				missingStatsText := ""
+				for _, item in missingStats {
+					if (missingStatsText != "")
+						missingStatsText .= ", "
+					missingStatsText .= item
 				}
-				SSA_Log("Missing: " missingText)
+				missing.Push("stats: " missingStatsText)
 			}
+		}
+		if (missing.Length > 0) {
+			missingText := ""
+			for _, item in missing {
+				if (missingText != "")
+					missingText .= "; "
+				missingText .= item
+			}
+			SSA_Log("Missing: " missingText)
 		}
 		if (statCount >= requiredStats && mainPassiveFound && sideMatch)
 			return 1
@@ -10288,27 +10285,35 @@ UpdateHoneyGui() {
 		DeleteObject(hBitmap)
 		return StrSplit(ocr(pIRandomAccessStream), "``n")
 	}
-	SSA_OcrLooksValid(lines) {
+	SSA_OcrHasFullRoll(lines, doublePassive, &ocrSegments) {
+		ocrSegments := []
+		foundStats := Map()
+		foundPassives := Map()
 		for _, line in lines {
 			if (line = "")
 				continue
 			lower := StrLower(line)
-			if InStr(lower, "%")
-				return true
-			if InStr(lower, "passive") || InStr(lower, "pollen") || InStr(lower, "convert")
-				return true
-			if InStr(lower, "critical") || InStr(lower, "ability") || InStr(lower, "instant")
-				return true
-			if InStr(lower, "capacity") || InStr(lower, "star")
-				return true
+			for _, segRaw in StrSplit(lower, "|") {
+				seg := Trim(segRaw)
+				if (seg = "")
+					continue
+				normSeg := NormalizeOCRLine(seg)
+				tokens := (normSeg = "") ? [] : StrSplit(normSeg, " ")
+				SSA_CorrectTokens(tokens)
+				ocrSegments.Push({ seg: seg, tokens: tokens })
+				for _, key in ["white", "red", "blue", "pollen", "convert", "critical", "instant", "ability", "gath"]
+					if !foundStats.Has(key) && SSA_StatLineMatch(key, tokens)
+						foundStats[key] := 1
+				for _, key in ["pop", "scorch", "gummy", "guiding", "saw", "shower"]
+					if !foundPassives.Has(key) && SSA_SidePassiveMatch(key, tokens)
+						foundPassives[key] := 1
+			}
 		}
-		return false
+		requiredPassives := doublePassive ? 2 : 1
+		return (foundStats.Count >= 5 && foundPassives.Count >= requiredPassives)
 	}
 	SSA_Log(message) {
-		global ssaDebug
 		static logCount := 0
-		if !ssaDebug
-			return
 		logCount += 1
 		logPath := ".\\settings\\ssa_debug.txt"
 		if (logCount = 1 || Mod(logCount, 50) = 0)
