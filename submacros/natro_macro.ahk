@@ -10474,15 +10474,9 @@ robloxFPSGui(*) {
 			oldfps := (robloxtype = RobloxTypes.Web) ? webfps : uwpfps
 			if newfps = oldfps
 				continue
-			if robloxtype = RobloxTypes.Web {
-				while WinExist("ahk_exe RobloxPlayerBeta.exe") || WinExist("ahk_exe ApplicationFrameHost.exe")
-					if MsgBox("Please close Web Roblox before applying FPS changes.", , 0x40135) != "Retry"
-						continue 2 
-			} else {
-				while WinExist("ahk_exe ApplicationFrameHost.exe")
-					if MsgBox("Please close UWP Roblox before applying FPS changes.", , 0x40135) != "Retry"
-						continue 2 
-			}
+			while GetRobloxHWND()
+				if MsgBox("Please close Web Roblox before applying FPS changes.", , 0x40135) != "Retry"
+					continue 2 
 			try {
 				xml := FileRead(xmlpath)
 				xml := RegExReplace(
