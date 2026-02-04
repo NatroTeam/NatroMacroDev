@@ -10454,30 +10454,9 @@ UpdateHoneyGui() {
 		cleaned := RegExReplace(token, "[lI]", "1")
 		return RegExReplace(cleaned, "[sS]", "5")
 	}
-	SSA_CorrectTokens(tokens, corrections := "") {
-		for idx, token in tokens {
-			corrected := SSA_CorrectToken(token)
-			tokens[idx] := corrected
-			if IsObject(corrections)
-				corrections[token] := corrected
-		}
-	}
-	SSA_CorrectDebugSegment(seg, corrections) {
-		out := ""
-		pos := 1
-		while RegExMatch(seg, "[A-Za-z0-9.]+", &m, pos) {
-			out .= SubStr(seg, pos, m.Pos[0] - pos)
-			token := m[0]
-			if RegExMatch(token, "\\d") || RegExMatch(token, "i)^x[lisS]+(?:\\.[lisS]+)?$")
-				out .= SSA_NormalizeNumberToken(token)
-			else {
-				lower := StrLower(token)
-				out .= corrections.Has(lower) ? corrections[lower] : lower
-			}
-			pos := m.Pos[0] + m.Len[0]
-		}
-		out .= SubStr(seg, pos)
-		return out
+	SSA_CorrectTokens(tokens) {
+		for idx, token in tokens
+			tokens[idx] := SSA_CorrectToken(token)
 	}
 	SSA_SidePassiveMatch(key, tokens) {
 		static passiveTokens := Map(
