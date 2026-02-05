@@ -837,8 +837,8 @@ nm_importConfig()
 		, "n3minPercent", 80
 		, "n4minPercent", 80
 		, "n5minPercent", 40
-		, "HarvestInterval", 2
-		, "AutomaticHarvestInterval", 0
+		, "HarvestInterval", 0
+		, "AutomaticHarvestInterval", 1
 		, "HarvestFullGrown", 0
 		, "GotoPlanterField", 0
 		, "GatherFieldSipping", 0
@@ -3353,16 +3353,11 @@ MainGui.Add("Text", "xs ys+80 w12 vN5minPercent +Center" hidden, N5minPercent)
 MainGui.Add("UpDown", "xp+14 yp-1 h16 -16 Range1-9 vN5minPercentUpDown Disabled" hidden, N5minPercent//10).OnEvent("Change", nm_NectarMinPercent)
 
 MainGui.Add("Text", "x10 y171 w137 h1 0x7 vTextLine2" hidden)
-MainGui.Add("Text", "x5 y178 w70 h20 +right +BackgroundTrans vTextHarvest" hidden, "Harvest Every")
-MainGui.Add("CheckBox", "x103 y194 w40 vAutomaticHarvestInterval Disabled Checked" AutomaticHarvestInterval hidden, "Auto").OnEvent("Click", ba_AutoHarvestSwitch_)
+MainGui.Add("Text", "x5 y178 w70 h20 +right +BackgroundTrans vTextHarvest" hidden, "Harvest Mode")
 MainGui.Add("CheckBox", "x28 y194 vHarvestFullGrown Disabled Checked" HarvestFullGrown hidden, "Full Grown").OnEvent("Click", ba_HarvestFullGrownSwitch_)
 MainGui.Add("CheckBox", "x2 y211 w150 h13 vgotoPlanterField Disabled Checked" gotoPlanterField hidden, "Only Gather in Planter Field").OnEvent("Click", ba_gotoPlanterFieldSwitch_)
 MainGui.Add("CheckBox", "x2 y224 w150 h13 vgatherFieldSipping Disabled Checked" gatherFieldSipping hidden, "Gather Field Nectar Sipping").OnEvent("Click", ba_gatherFieldSippingSwitch_)
-MainGui.Add("Text", "x80 y178 w32 h20 cRed vAutoText +BackgroundTrans" (((PlanterMode = 2) && AutomaticHarvestInterval) ? "" : " Hidden"), "[Auto]")
 MainGui.Add("Text", "x80 y178 w32 h20 cRed vFullText +BackgroundTrans" (((PlanterMode = 2) && HarvestFullGrown) ? "" : " Hidden"), "[Full]")
-GuiCtrl := MainGui.Add("Edit", "x80 y174 w32 h20 limit2 Number vHarvestInterval Disabled" (((PlanterMode = 2) && !HarvestFullGrown && !AutomaticHarvestInterval) ? "" : " Hidden"), ValidateNumber(&HarvestInterval, 2))
-GuiCtrl.OnEvent("Change", ba_harvestInterval)
-MainGui.Add("Text", "x115 y178 w70 h20 +BackgroundTrans vTextHours" hidden, "Hours")
 MainGui.Add("Text", "x10 y209 w137 h1 0x7 vTextLine3" hidden)
 MainGui.Add("Button", "x261 y24 w96 h18 -Wrap vTimersButton Disabled" hidden, " Show Timers (" TimersHotkey ")").OnEvent("Click", ba_showPlanterTimers)
 MainGui.Add("Text", "x147 y28 w1 h182 0x7 vTextLine4" hidden)
@@ -4100,13 +4095,11 @@ nm_TabPlantersLock(){
 	MainGui["N4MinPercentUpDown"].Enabled := 0
 	MainGui["N5MinPercentUpDown"].Enabled := 0
 	MainGui["MaxAllowedPlanters"].Enabled := 0
-	MainGui["AutomaticHarvestInterval"].Enabled := 0
 	MainGui["HarvestFullGrown"].Enabled := 0
 	MainGui["gotoPlanterField"].Enabled := 0
 	MainGui["gatherFieldSipping"].Enabled := 0
 	MainGui["ConvertFullBagHarvest"].Enabled := 0
 	MainGui["GatherPlanterLoot"].Enabled := 0
-	MainGui["HarvestInterval"].Enabled := 0
 	MainGui["PlasticPlanterCheck"].Enabled := 0
 	MainGui["CandyPlanterCheck"].Enabled := 0
 	MainGui["BlueClayPlanterCheck"].Enabled := 0
@@ -4172,13 +4165,11 @@ nm_TabPlantersUnLock(){
 	MainGui["N4MinPercentUpDown"].Enabled := 1
 	MainGui["N5MinPercentUpDown"].Enabled := 1
 	MainGui["MaxAllowedPlanters"].Enabled := 1
-	MainGui["AutomaticHarvestInterval"].Enabled := 1
 	MainGui["HarvestFullGrown"].Enabled := 1
 	MainGui["gotoPlanterField"].Enabled := 1
 	MainGui["gatherFieldSipping"].Enabled := 1
 	MainGui["ConvertFullBagHarvest"].Enabled := 1
 	MainGui["GatherPlanterLoot"].Enabled := 1
-	MainGui["HarvestInterval"].Enabled := 1
 	MainGui["PlasticPlanterCheck"].Enabled := 1
 	MainGui["CandyPlanterCheck"].Enabled := 1
 	MainGui["BlueClayPlanterCheck"].Enabled := 1
@@ -6247,8 +6238,8 @@ ba_planterSwitch(*){
 		,"NPreset","TextPresets","TextNp","TextMin"
 		,"PlasticPlanterCheck","CandyPlanterCheck","BlueClayPlanterCheck","RedClayPlanterCheck","TackyPlanterCheck","PesticidePlanterCheck"
 		,"HeatTreatedPlanterCheck","HydroponicPlanterCheck","PetalPlanterCheck","PlanterOfPlentyCheck","PaperPlanterCheck","TicketPlanterCheck"
-		,"TextHarvest","HarvestFullGrown","gotoPlanterField","gatherFieldSipping","TextHours","TextMax","MaxAllowedPlanters","MaxAllowedPlantersText"
-		,"TextAllowedPlanters","TextAllowedFields","TimersButton","AutomaticHarvestInterval","ConvertFullBagHarvest","GatherPlanterLoot","TextBox1"
+		,"TextHarvest","HarvestFullGrown","gotoPlanterField","gatherFieldSipping","TextMax","MaxAllowedPlanters","MaxAllowedPlantersText"
+		,"TextAllowedPlanters","TextAllowedFields","TimersButton","ConvertFullBagHarvest","GatherPlanterLoot","TextBox1"
 		,"NPLeft","NPRight","NP1Left","NP1Right","NP2Left","NP2Right","NP3Left","NP3Right","NP4Left","NP4Right","NP5Left","NP5Right"]
 	, ManualPlantersControls := ["MHeader1Text","MHeader2Text","MHeader3Text"
 		,"MSlot1PlanterText","MSlot1FieldText","MSlot1SettingsText","MSlot1SeparatorLine"
@@ -6272,7 +6263,7 @@ ba_planterSwitch(*){
 		{
 			for k,v in PlantersPlusControls
 				MainGui[v].Visible := c
-			MainGui[HarvestFullGrown ? "FullText" : AutomaticHarvestInterval ? "AutoText" : "HarvestInterval"].Visible := c
+			MainGui["FullText"].Visible := (c && HarvestFullGrown)
 		}
 
 		if (((i = 1) && (PlanterMode != 1)) || ((i = 2) && (PlanterMode = 1))) ; hide/show all manual planters controls
@@ -6840,50 +6831,11 @@ nm_NectarMinPercent(GuiCtrl, *){
 		IniWrite NPreset, "settings\nm_config.ini", "Planters", "NPreset"
 	}
 }
-ba_harvestInterval(*){
-	global HarvestInterval
-	HarvestInterval := MainGui["HarvestInterval"].Value
-	if HarvestInterval is number
-	{
-		if HarvestInterval>0
-		{
-			HarvestInterval:=HarvestInterval
-			ba_saveConfig_()
-		} else {
-			MainGui["HarvestInterval"].Value := HarvestInterval
-		}
-	} else {
-		MainGui["HarvestInterval"].Value := HarvestInterval
-	}
-}
-ba_HarvestFullGrownSwitch_(*){
-	global HarvestFullGrown
+ba_HarvestFullGrownSwitch_(*){ 
+	global HarvestFullGrown, AutomaticHarvestInterval
 	HarvestFullGrown := MainGui["HarvestFullGrown"].Value
-	if(HarvestFullGrown) {
-		MainGui["HarvestInterval"].Visible := 0
-		MainGui["AutoText"].Visible := 0
-		MainGui["FullText"].Visible := 1
-		MainGui["AutomaticHarvestInterval"].Value := 0
-	} else {
-		MainGui["HarvestInterval"].Visible := 1
-		MainGui["FullText"].Visible := 0
-		MainGui["AutoText"].Visible := 0
-	}
-	ba_saveConfig_()
-}
-ba_AutoHarvestSwitch_(*){
-	global AutomaticHarvestInterval
-	AutomaticHarvestInterval := MainGui["AutomaticHarvestInterval"].Value
-	if(AutomaticHarvestInterval) {
-		MainGui["HarvestInterval"].Visible := 0
-		MainGui["FullText"].Visible := 0
-		MainGui["AutoText"].Visible := 1
-		MainGui["HarvestFullGrown"].Value := 0
-	} else {
-		MainGui["HarvestInterval"].Visible := 1
-		MainGui["FullText"].Visible := 0
-		MainGui["AutoText"].Visible := 0
-	}
+	AutomaticHarvestInterval := HarvestFullGrown ? 0 : 1
+	MainGui["FullText"].Visible := HarvestFullGrown
 	ba_saveConfig_()
 }
 ba_gotoPlanterFieldSwitch_(*){
@@ -6954,9 +6906,9 @@ ba_saveConfig_(*){ ;//todo: needs replacing!
 	n3minPercent := MainGui["n3minPercent"].Text
 	n4minPercent := MainGui["n4minPercent"].Text
 	n5minPercent := MainGui["n5minPercent"].Text
-	HarvestInterval := MainGui["HarvestInterval"].Value
-	AutomaticHarvestInterval := MainGui["AutomaticHarvestInterval"].Value
 	HarvestFullGrown := MainGui["HarvestFullGrown"].Value
+	AutomaticHarvestInterval := HarvestFullGrown ? 0 : 1
+	HarvestInterval := 0
 	GotoPlanterField := MainGui["GotoPlanterField"].Value
 	GatherFieldSipping := MainGui["GatherFieldSipping"].Value
 	ConvertFullBagHarvest := MainGui["ConvertFullBagHarvest"].Value
@@ -20536,7 +20488,6 @@ ba_planter(){
 	global LostPlanters
 	global GatherFieldBoostedStart, LastGlitter
 	global PlanterMode
-	global HarvestInterval
 	global HarvestFullGrown
 	global n1priority
 	global n2priority
@@ -20603,6 +20554,10 @@ ba_planter(){
 	If (PlanterSS1 || PlanterSS2 || PlanterSS3)
 		nm_planterSS()
 
+	horizonOverride := 0
+	deficitSlack := 1
+	autoHarvest := !HarvestFullGrown
+
 	nectars:=["n1", "n2", "n3", "n4", "n5"]
 	;get current field nectar
 	currentFieldNectar:="None"
@@ -20614,72 +20569,106 @@ ba_planter(){
 			}
 		}
 	}
-	Loop 2 {
-		;re-optimize planters
-		for key, value in nectars {
-			;--- get nectar priority --
-			varstring:=(value . "priority")
-			currentNectar:=%varstring%
-			if (currentNectar!="none") {
-				estimatedNectarPercent:=0
-				Loop 3 { ;3 max positions
-					planterNectar:=PlanterNectar%A_Index%
-					if (PlanterNectar=currentNectar) {
-						estimatedNectarPercent:=estimatedNectarPercent+PlanterEstPercent%A_Index%
-					}
-				}
-				nectarPercent:=ba_GetNectarPercent(currentnectar)
-				;recover planters that are collecting same nectar as currentField AND are not placed in currentField
-				if(currentNectar=currentFieldNectar && not HarvestFullGrown && GatherFieldSipping) {
-					Loop 3 { ;3 max positions
-						if(currentField!=PlanterField%A_Index% && currentFieldNectar=PlanterNectar%A_Index%) {
-							temp1:=PlanterField%A_Index%
-							PlanterHarvestTime%A_Index% := nowUnix()-1
-							IniWrite PlanterHarvestTime%A_Index%, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" A_Index
-						}
-					}
-				}
-				;recover planters that will overfill nectars
-				if (AutomaticHarvestInterval && ((nectarPercent>99)||(nectarPercent>90 && (nectarPercent+estimatedNectarPercent)>110)||(nectarPercent+estimatedNectarPercent)>120)){
-					Loop 3 { ;3 max positions
-						planterNectar:=PlanterNectar%A_Index%
-						if (PlanterNectar=currentNectar) {
-							PlanterHarvestTime%A_Index% := nowUnix()-1
-							IniWrite PlanterHarvestTime%A_Index%, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" A_Index
-						}
-					}
-				}
-			} else {
-				break
+	priorityList := []
+	for key, value in nectars {
+		varstring:=(value . "priority")
+		currentNectar:=%varstring%
+		if (currentNectar="none")
+			break
+		minPercent := %value%minPercent
+		priorityList.Push(Map("name", currentNectar, "min", minPercent))
+	}
+	if (!priorityList.Length)
+		return
+
+	projections := Map()
+	for _, item in priorityList {
+		projections[item["name"]] := ba_ProjectNectar(item["name"], horizonOverride)
+	}
+
+	allAboveMin := 1
+	for _, item in priorityList {
+		proj := projections[item["name"]]
+		if (proj[2] < (item["min"] - deficitSlack)) {
+			allAboveMin := 0
+			break
+		}
+	}
+
+	deficits := Map()
+	for _, item in priorityList {
+		target := allAboveMin ? 100 : item["min"]
+		proj := projections[item["name"]]
+		deficits[item["name"]] := max(0, target - proj[2])
+	}
+
+	currentFieldDeficit := (currentFieldNectar!="None" && deficits.Has(currentFieldNectar)) ? deficits[currentFieldNectar] : 0
+	sippingNeeded := GatherFieldSipping && !allAboveMin && (currentFieldDeficit > 0)
+	if (sippingNeeded) {
+		tempfieldname := StrReplace(CurrentField, " ", "")
+		if (!IsSet(%tempfieldname%FieldCheck) || !%tempfieldname%FieldCheck)
+			sippingNeeded := 0
+	}
+
+	; recover planters that are collecting same nectar as currentField AND are not placed in currentField
+	if (sippingNeeded && !HarvestFullGrown) {
+		Loop 3 {
+			if (currentField!=PlanterField%A_Index% && currentFieldNectar=PlanterNectar%A_Index%) {
+				PlanterHarvestTime%A_Index% := nowUnix()-1
+				IniWrite PlanterHarvestTime%A_Index%, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" A_Index
 			}
 		}
-		;recover placed planters here
-		Loop 3 {
-			if((PlanterHarvestTime%A_Index% < nowUnix()) && (PlanterName%A_Index%!="None") && (PlanterField%A_Index%!="None")){
-				i := A_Index
-				Loop 5 {
-					if (ba_harvestPlanter(i) = 1)
-						break
-					if (A_Index = 5) {
-						nm_setStatus("Error", "Failed to harvest " PlanterName%i% " in " PlanterField%i% "!")
-						;clear planter
-						PlanterName%i% := "None"
-						PlanterField%i% := "None"
-						PlanterNectar%i% := "None"
-						PlanterHarvestTime%i% := 2147483647
-						PlanterEstPercent%i% := 0
-						;write values to ini
-						IniWrite "None", "settings\nm_config.ini", "Planters", "PlanterName" i
-						IniWrite "None", "settings\nm_config.ini", "Planters", "PlanterField" i
-						IniWrite "None", "settings\nm_config.ini", "Planters", "PlanterNectar" i
-						IniWrite 2147483647, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" i
-						IniWrite 0, "settings\nm_config.ini", "Planters", "PlanterEstPercent" i
-						break
+	}
+
+	; recover planters that will overfill nectars
+	if (autoHarvest) {
+		for _, item in priorityList {
+			currentNectar := item["name"]
+			proj := projections[currentNectar]
+			nectarPercent := proj[1]
+			projectedFull := proj[3]
+			if ((nectarPercent>99) || (nectarPercent>90 && projectedFull>110) || (projectedFull>120)) {
+				Loop 3 {
+					if (PlanterNectar%A_Index% = currentNectar) {
+						PlanterHarvestTime%A_Index% := nowUnix()-1
+						IniWrite PlanterHarvestTime%A_Index%, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" A_Index
 					}
 				}
 			}
 		}
 	}
+
+	; recover placed planters here
+	Loop 3 {
+		if((PlanterHarvestTime%A_Index% < nowUnix()) && (PlanterName%A_Index%!="None") && (PlanterField%A_Index%!="None")){
+			i := A_Index
+			Loop 5 {
+				if (ba_harvestPlanter(i) = 1)
+					break
+				if (A_Index = 5) {
+					nm_setStatus("Error", "Failed to harvest " PlanterName%i% " in " PlanterField%i% "!")
+					;clear planter
+					PlanterName%i% := "None"
+					PlanterField%i% := "None"
+					PlanterNectar%i% := "None"
+					PlanterHarvestTime%i% := 2147483647
+					PlanterEstPercent%i% := 0
+					;write values to ini
+					IniWrite "None", "settings\nm_config.ini", "Planters", "PlanterName" i
+					IniWrite "None", "settings\nm_config.ini", "Planters", "PlanterField" i
+					IniWrite "None", "settings\nm_config.ini", "Planters", "PlanterNectar" i
+					IniWrite 2147483647, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" i
+					IniWrite 0, "settings\nm_config.ini", "Planters", "PlanterEstPercent" i
+					break
+				}
+			}
+		}
+	}
+
+	for _, item in priorityList {
+		projections[item["name"]] := ba_ProjectNectar(item["name"], horizonOverride)
+	}
+
 	;re-place planters here
 	;--- determine max number of planters ---
 	maxplanters:=0
@@ -20703,473 +20692,222 @@ ba_planter(){
 	;temp4:=planterSlots.Length
 	if(not planterSlots.Length)
 		return
-	;--- determine max number of nectars ---
-	maxnectars:=0
-
-	for key, value in nectars {
-		if(%value%priority != "none")
-			maxnectars:=maxnectars+1
-	}
-	if (maxnectars=0)
-		return
-
-	;//////// STAGE 1: Fill nectars to thresholds ///////////////
-	;---- fill in priority order until all thresholds have been met
-	for key, value in nectars {
-		;--- get nectar priority --
-		varstring:=(value . "priority")
-		currentNectar:=%varstring%
-		if (currentNectar = "None")
-			continue
-		nextPlanter:=[]
-		;get maxNectarPlanters
-		maxNectarPlanters:=0
-		for ind, field in %currentNectar%Fields
-		{
-			tempfieldname := StrReplace(field, " ", "")
-			if(%tempfieldname%FieldCheck)
-				maxNectarPlanters:=maxNectarPlanters+1
-		}
-		;get nectarPlantersPlaced
-		nectarPlantersPlaced:=0
-		Loop 3{
-			if(PlanterNectar%A_Index%=currentNectar)
-				nectarPlantersPlaced:=nectarPlantersPlaced+1
-		}
-		if (currentNectar!="none") {
-			planterSlots:=[]
-			Loop 3 {
-				if(PlanterName%A_Index%="none")
-					planterSlots.push(A_Index)
-			}
-			for i, planterNum in planterSlots {
-			;Loop 3 { ;3 max planters
-			;temp1:=planterSlots[1]
-			;temp2:=planterSlots[2]
-			;temp3:=planterSlots[3]
-			;temp4:=planterSlots.Length
-				;--- determine max number of planters ---
-				maxplanters:=0
-				for x, y in planternames {
-					maxplanters := maxplanters + %y%Check
-				}
-
-				maxplanters := min(MaxAllowedPlanters, maxplanters)
-				;determine last and next fields
-				if(currentNectar=currentFieldNectar && not GotoPlanterField && GatherFieldSipping){ ;always place planter in field you are collecting from
-					lastnextfield:=ba_getlastfield(currentNectar)
-					lastField:=lastNextField[1]
-					nextField:=CurrentField
-					maxNectarPlanters:=1
-				} else {
-					lastnextfield:=ba_getlastfield(currentNectar)
-					lastField:=lastNextField[1]
-					nextField:=lastNextField[2]
-				}
-				LostPlanters:=""
-				nextPlanter:=ba_getNextPlanter(nextField)
-				;there is an allowed field for this nectar and an available planter
-				;temp1:=nextPlanter[1]
-				if(nextField!="none" && nextPlanter[1]!="none" && plantersplaced<maxplanters && plantersplaced<MaxAllowedPlanters && nectarPlantersPlaced<maxNectarPlanters){
-					;determine current nectar percent
-					nectarPercent:=ba_GetNectarPercent(currentnectar)
-					nectarMinPercent:=%value%minPercent
-					estimatedNectarPercent:=0
-					Loop 3 { ;3 max positions
-						planterNectar:=PlanterNectar%A_Index%
-						if (PlanterNectar=currentNectar) {
-							estimatedNectarPercent:=estimatedNectarPercent+PlanterEstPercent%A_Index%
-						}
-					}
-					;temp1:=nectarPercent + estimatedNectarPercent
-					if(currentNectar=currentFieldNectar && estimatedNectarPercent>0){
-						break
-					}
-					if (((nectarPercent + estimatedNectarPercent) < nectarMinPercent)){
-						success:=-1, atField:=0
-						while (success!=1 && nextField!="none" && nextPlanter[1]!="none") {
-							success := ba_placePlanter(nextField, nextPlanter, planterNum, atField)
-							switch success {
-								case 1: ;planter placed successfully, break loop
-								plantersplaced++
-								nectarPlantersPlaced++
-								ba_SavePlacedPlanter(nextField, nextPlanter, planterNum, currentNectar)
-								break
-
-								case 2: ;already a planter in this field, change field and try
-								lastnextfield:=ba_getlastfield(currentNectar)
-								lastField:=lastNextField[1]
-								nextField:=lastNextField[2]
-								nextPlanter:=ba_getNextPlanter(nextField)
-								atField:=0
-								LostPlanters:=""
-								Last%currentnectar%Field := nextField
-								IniWrite Last%currentnectar%Field, "settings\nm_config.ini", "Planters", "Last" currentnectar "Field"
-
-								case 3: ;3 planters have been placed already, return
-								nm_OpenMenu()
-								return
-
-								case 4: ;not in a field, try again
-								atField:=0
-
-								default: ;cannot find planter, try alternative planter in this field
-								nextPlanter:=ba_getNextPlanter(nextField)
-								if (nextPlanter[1]="none")
-								{
-									nm_endWalk()
-									break
-								}
-								else
-									atField:=1
-							}
-							if (A_Index = 10) {
-								nm_setStatus("Error", "Failed to place planter in 10 tries!`nMaxAllowedPlanters has been reduced.")
-								MaxAllowedPlanters:=max(0, MaxAllowedPlanters-1)
-								MainGui["MaxAllowedPlanters"].Value := MaxAllowedPlanters
-								IniWrite MaxAllowedPlanters, "settings\nm_config.ini", "Planters", "MaxAllowedPlanters"
-								break
-							}
-						}
-					} else {
-						break
-					}
-				} else {
-					break
-				}
-				;maximum planters have been placed. leave function
-				if(plantersplaced=maxplanters || plantersplaced>=MaxAllowedPlanters) {
-					nm_OpenMenu()
-					return
-				}
-			}
-		} else {
-			break
-		}
-	}
-	;//////// STAGE 2: All Nectars are at or will be above thresholds after harvested ///////////////
-	;---- fill from lowest to highest nectar percent
-	tempArray:=[]
-	lowToHigh:=[] ;nectarname list
-	sortstring:=""
-	;create sort list
-	for key, value in nectars {
-		varstring:=(value . "priority")
-		currentNectar:=%varstring%
-		estimatedNectarPercent:=0
-		Loop 3 {
-			planterNectar:=PlanterNectar%A_Index%
-			if (PlanterNectar=currentNectar) {
-				estimatedNectarPercent:=estimatedNectarPercent+PlanterEstPercent%A_Index%
-			}
-		}
-		if (currentNectar!="none") {
-			nectarPercent:=ba_GetNectarPercent(currentnectar)+estimatedNectarPercent
-			if(key>1)
-				sortstring:=(sortstring . ";")
-			sortstring:=(sortstring . nectarPercent . "," . value . "," . currentNectar)
-		} else {
-			break
-		}
-	}
-	;sort list and re-extract nectars in low to high percent order
-	sortstring := Sort(sortstring, "D;")
-	tempArray := StrSplit(sortstring , ";")
-	for i, val in tempArray {
-		tempstring:=tempArray[A_Index]
-		lowToHigh.InsertAt(A_Index, StrSplit(tempArray[A_Index], ","))
-	}
-	;temp1:=lowToHigh[1][3]
-	;temp2:=lowToHigh[2][3]
-	;temp3:=lowToHigh[3][3]
-	;temp4:=lowToHigh[4][3]
-	;temp5:=lowToHigh[5][3]
-	for key, value in lowToHigh {
-		currentNectar:=lowToHigh[key][3]
-		if (currentNectar = "None")
-			continue
-		nextPlanter:=[]
-		planterSlots:=[]
-		;get maxNectarPlanters
-		maxNectarPlanters:=0
-		for ind, field in %currentNectar%Fields
-		{
-			tempfieldname := StrReplace(field, " ", "")
-			if(%tempfieldname%FieldCheck)
-				maxNectarPlanters:=maxNectarPlanters+1
-		}
-		;get nectarPlantersPlaced
-		nectarPlantersPlaced:=0
-		Loop 3{
-			if(PlanterNectar%A_Index%=currentNectar)
-				nectarPlantersPlaced:=nectarPlantersPlaced+1
-		}
-		Loop 3 {
-			if(PlanterName%A_Index%="none")
-				planterSlots.push(A_Index)
-		}
-		for i, planterNum in planterSlots {
-		;Loop 3 {
-			;--- determine max number of planters ---
-			maxplanters:=0
-			for x, y in planternames {
-				maxplanters := maxplanters + %y%Check
-			}
-			maxplanters := min(MaxAllowedPlanters, maxplanters)
-			;determine last and next fields
-			if(currentNectar=currentFieldNectar && not GotoPlanterField && GatherFieldSipping){
-				lastnextfield:=ba_getlastfield(currentNectar)
-				lastField:=lastNextField[1]
-				nextField:=CurrentField
-				maxNectarPlanters:=1
-			} else {
-				lastnextfield:=ba_getlastfield(currentNectar)
-				lastField:=lastNextField[1]
-				nextField:=lastNextField[2]
-			}
-			LostPlanters:=""
-			nextPlanter:=ba_getNextPlanter(nextField)
-			;there is an allowed field for this nectar and an available planter
-			if(nextField!="none" && nextPlanter[1]!="none" && plantersplaced<maxplanters && plantersplaced<MaxAllowedPlanters && nectarPlantersPlaced<maxNectarPlanters){
-				;determine current nectar percent
-				nectarPercent:=ba_GetNectarPercent(currentnectar)
-				estimatedNectarPercent:=0
-				Loop 3 {
-					planterNectar:=PlanterNectar%A_Index%
-					if (PlanterNectar=currentNectar) {
-						estimatedNectarPercent:=estimatedNectarPercent+PlanterEstPercent%A_Index%
-					}
-				}
-				;is the last element in the array
-				if (key=lowToHigh.Length){
-					success:=-1, atField:=0
-					while (success!=1 && nextField!="none" && nextPlanter[1]!="none") {
-						success := ba_placePlanter(nextField, nextPlanter, planterNum, atField)
-						switch success {
-							case 1: ;planter placed successfully, break loop
-							plantersplaced++
-							nectarPlantersPlaced++
-							ba_SavePlacedPlanter(nextField, nextPlanter, planterNum, currentNectar)
-							break
-
-							case 2: ;already a planter in this field, change field and try
-							lastnextfield:=ba_getlastfield(currentNectar)
-							lastField:=lastNextField[1]
-							nextField:=lastNextField[2]
-							nextPlanter:=ba_getNextPlanter(nextField)
-							atField:=0
-							LostPlanters:=""
-							Last%currentnectar%Field := nextField
-							IniWrite Last%currentnectar%Field, "settings\nm_config.ini", "Planters", "Last" currentnectar "Field"
-
-							case 3: ;3 planters have been placed already, return
-							nm_OpenMenu()
-							return
-
-							case 4: ;not in a field, try again
-							atField:=0
-
-							default: ;cannot find planter, try alternative planter in this field
-							nextPlanter:=ba_getNextPlanter(nextField)
-							if (nextPlanter[1]="none")
-							{
-								nm_endWalk()
-								break
-							}
-							else
-								atField:=1
-						}
-						if (A_Index = 10) {
-							nm_setStatus("Error", "Failed to place planter in 10 tries!`nMaxAllowedPlanters has been reduced.")
-							MaxAllowedPlanters:=max(0, MaxAllowedPlanters-1)
-							MainGui["MaxAllowedPlanters"].Value := MaxAllowedPlanters
-							IniWrite MaxAllowedPlanters, "settings\nm_config.ini", "Planters", "MaxAllowedPlanters"
-							break
-						}
-					}
-				} else { ;is not the last element in the array
-					temp:=lowToHigh[key+1][1]
-					if ((nectarPercent + estimatedNectarPercent) <= lowToHigh[key+1][1]){
-						success:=-1, atField:=0
-						while (success!=1 && nextField!="none" && nextPlanter[1]!="none") {
-							success := ba_placePlanter(nextField, nextPlanter, planterNum, atField)
-							switch success {
-								case 1: ;planter placed successfully, break loop
-								plantersplaced++
-								nectarPlantersPlaced++
-								ba_SavePlacedPlanter(nextField, nextPlanter, planterNum, currentNectar)
-								break
-
-								case 2: ;already a planter in this field, change field and try
-								lastnextfield:=ba_getlastfield(currentNectar)
-								lastField:=lastNextField[1]
-								nextField:=lastNextField[2]
-								nextPlanter:=ba_getNextPlanter(nextField)
-								atField:=0
-								LostPlanters:=""
-								Last%currentnectar%Field := nextField
-								IniWrite Last%currentnectar%Field, "settings\nm_config.ini", "Planters", "Last" currentnectar "Field"
-
-								case 3: ;3 planters have been placed already, return
-								nm_OpenMenu()
-								return
-
-								case 4: ;not in a field, try again
-								atField:=0
-
-								default: ;cannot find planter, try alternative planter in this field
-								nextPlanter:=ba_getNextPlanter(nextField)
-								if (nextPlanter[1]="none")
-								{
-									nm_endWalk()
-									break
-								}
-								else
-									atField:=1
-							}
-							if (A_Index = 10) {
-								nm_setStatus("Error", "Failed to place planter in 10 tries!`nMaxAllowedPlanters has been reduced.")
-								MaxAllowedPlanters:=max(0, MaxAllowedPlanters-1)
-								MainGui["MaxAllowedPlanters"].Value := MaxAllowedPlanters
-								IniWrite MaxAllowedPlanters, "settings\nm_config.ini", "Planters", "MaxAllowedPlanters"
-								break
-							}
-						}
-					} else {
-						break
-					}
-				}
-			} else {
+	triesNoProgress := 0
+	while (planterSlots.Length && plantersplaced<maxplanters && plantersplaced<MaxAllowedPlanters) {
+		allAboveMin := 1
+		for _, item in priorityList {
+			proj := projections[item["name"]]
+			if (proj[2] < (item["min"] - deficitSlack)) {
+				allAboveMin := 0
 				break
 			}
-			;maximum planters have been placed. leave function
-			if(plantersplaced=maxplanters || plantersplaced>=MaxAllowedPlanters) {
-				nm_OpenMenu()
-				return
+		}
+		for _, item in priorityList {
+			target := allAboveMin ? 100 : item["min"]
+			proj := projections[item["name"]]
+			deficits[item["name"]] := max(0, target - proj[2])
+		}
+
+		targetNectar := ""
+		maxDeficit := 0
+		for _, item in priorityList {
+			deficit := deficits[item["name"]]
+			if (deficit > maxDeficit + 0.01) {
+				maxDeficit := deficit
+				targetNectar := item["name"]
 			}
 		}
-	}
-	;//////// STAGE 3: All Nectars are full? ///////////////
-	;just place planters in priority order (this is a failsafe stage)
-	for key, value in nectars {
-		;--- get nectar priority --
-		varstring:=(value . "priority")
-		currentNectar:=%varstring%
-		if (currentNectar = "None")
-			continue
-		nextPlanter:=[]
-		;get maxNectarPlanters
+		if (maxDeficit <= 0.5)
+			break
+
 		maxNectarPlanters:=0
-		for ind, field in %currentNectar%Fields
+		for ind, field in %targetNectar%Fields
 		{
 			tempfieldname := StrReplace(field, " ", "")
 			if(%tempfieldname%FieldCheck)
 				maxNectarPlanters:=maxNectarPlanters+1
 		}
-		;get nectarPlantersPlaced
+		if (maxNectarPlanters = 0) {
+			deficits[targetNectar] := 0
+			triesNoProgress++
+			if (triesNoProgress > 5)
+				break
+			continue
+		}
 		nectarPlantersPlaced:=0
 		Loop 3{
-			if(PlanterNectar%A_Index%=currentNectar)
+			if(PlanterNectar%A_Index%=targetNectar)
 				nectarPlantersPlaced:=nectarPlantersPlaced+1
 		}
-		if (currentNectar!="none") {
-			planterSlots:=[]
-			Loop 3 {
-				if(PlanterName%A_Index%="none")
-					planterSlots.push(A_Index)
+		if (nectarPlantersPlaced>=maxNectarPlanters) {
+			deficits[targetNectar] := 0
+			triesNoProgress++
+			if (triesNoProgress > 5)
+				break
+			continue
+		}
+
+		lastnextfield:=ba_getlastfield(targetNectar)
+		nextField:=lastNextField[2]
+		if (sippingNeeded && targetNectar=currentFieldNectar && !GotoPlanterField) {
+			tempfieldname := StrReplace(CurrentField, " ", "")
+			if(%tempfieldname%FieldCheck && CurrentField!=PlanterField1 && CurrentField!=PlanterField2 && CurrentField!=PlanterField3) {
+				nextField:=CurrentField
+				maxNectarPlanters:=1
 			}
-					for i, planterNum in planterSlots {
-			;Loop 3 {
-				;--- determine max number of planters ---
-				maxplanters:=0
-				for x, y in planternames {
-					maxplanters := maxplanters + %y%Check
-				}
-				maxplanters := min(MaxAllowedPlanters, maxplanters)
-				;determine last and next fields
-				if(currentNectar=currentFieldNectar && not GotoPlanterField && GatherFieldSipping){
-					lastnextfield:=ba_getlastfield(currentNectar)
-					lastField:=lastNextField[1]
-					nextField:=CurrentField
-					maxNectarPlanters:=1
-				} else {
-					lastnextfield:=ba_getlastfield(currentNectar)
-					lastField:=lastNextField[1]
-					nextField:=lastNextField[2]
-				}
+		}
+		if (nextField="None") {
+			deficits[targetNectar] := 0
+			triesNoProgress++
+			if (triesNoProgress > 5)
+				break
+			continue
+		}
+
+		nextPlanter:=ba_getNextPlanter(nextField, targetNectar, !allAboveMin)
+		if (nextPlanter[1]="none") {
+			deficits[targetNectar] := 0
+			triesNoProgress++
+			if (triesNoProgress > 5)
+				break
+			continue
+		}
+
+		planterNum := planterSlots[1]
+		success := -1
+		atField := 0
+		tryCount := 0
+		while (success!=1 && nextField!="none" && nextPlanter[1]!="none") {
+			tryCount++
+			success := ba_placePlanter(nextField, nextPlanter, planterNum, atField)
+			switch success {
+				case 1: ;planter placed successfully, break loop
+				plantersplaced++
+				ba_SavePlacedPlanter(nextField, nextPlanter, planterNum, targetNectar)
+				planterSlots.RemoveAt(1)
+				projections[targetNectar] := ba_ProjectNectar(targetNectar, horizonOverride)
+				break
+
+				case 2: ;already a planter in this field, change field and try
+				lastnextfield:=ba_getlastfield(targetNectar)
+				nextField:=lastNextField[2]
+				nextPlanter:=ba_getNextPlanter(nextField, targetNectar, !allAboveMin)
+				atField:=0
 				LostPlanters:=""
-				nextPlanter:=ba_getNextPlanter(nextField)
-				;there is an allowed field for this nectar and an available planter
-				if(nextField!="none" && nextPlanter[1]!="none" && plantersplaced<maxplanters && plantersplaced<MaxAllowedPlanters && nectarPlantersPlaced<maxNectarPlanters){
-					;determine current nectar percent
-					nectarPercent:=ba_GetNectarPercent(currentnectar)
-					estimatedNectarPercent:=0
-					Loop 3 {
-						planterNectar:=PlanterNectar%A_Index%
-						if (PlanterNectar=currentNectar) {
-							estimatedNectarPercent:=estimatedNectarPercent+PlanterEstPercent%A_Index%
+				Last%targetNectar%Field := nextField
+				IniWrite Last%targetNectar%Field, "settings\nm_config.ini", "Planters", "Last" targetNectar "Field"
 
-						}
-					}
-					success:=-1, atField:=0
-					while (success!=1 && nextField!="none" && nextPlanter[1]!="none") {
-						success := ba_placePlanter(nextField, nextPlanter, planterNum, atField)
-						switch success {
-							case 1: ;planter placed successfully, break loop
-							plantersplaced++
-							nectarPlantersPlaced++
-							ba_SavePlacedPlanter(nextField, nextPlanter, planterNum, currentNectar)
-							break
+				case 3: ;3 planters have been placed already, return
+				nm_OpenMenu()
+				return
 
-							case 2: ;already a planter in this field, change field and try
-							lastnextfield:=ba_getlastfield(currentNectar)
-							lastField:=lastNextField[1]
-							nextField:=lastNextField[2]
-							nextPlanter:=ba_getNextPlanter(nextField)
-							atField:=0
-							LostPlanters:=""
-							Last%currentnectar%Field := nextField
-							IniWrite Last%currentnectar%Field, "settings\nm_config.ini", "Planters", "Last" currentnectar "Field"
+				case 4: ;not in a field, try again
+				atField:=0
 
-							case 3: ;3 planters have been placed already, return
-							nm_OpenMenu()
-							return
-
-							case 4: ;not in a field, try again
-							atField:=0
-
-							default: ;cannot find planter, try alternative planter in this field
-							nextPlanter:=ba_getNextPlanter(nextField)
-							if (nextPlanter[1]="none")
-							{
-								nm_endWalk()
-								break
-							}
-							else
-								atField:=1
-						}
-						if (A_Index = 10) {
-							nm_setStatus("Error", "Failed to place planter in 10 tries!`nMaxAllowedPlanters has been reduced.")
-							MaxAllowedPlanters:=max(0, MaxAllowedPlanters-1)
-							MainGui["MaxAllowedPlanters"].Value := MaxAllowedPlanters
-							IniWrite MaxAllowedPlanters, "settings\nm_config.ini", "Planters", "MaxAllowedPlanters"
-							break
-						}
-					}
-				} else {
+				default: ;cannot find planter, try alternative planter in this field
+				nextPlanter:=ba_getNextPlanter(nextField, targetNectar, !allAboveMin)
+				if (nextPlanter[1]="none")
+				{
+					nm_endWalk()
 					break
 				}
-				;maximum planters have been placed. leave function
-				if(plantersplaced=maxplanters || plantersplaced>=MaxAllowedPlanters) {
-					nm_OpenMenu()
-					return
-				}
+				else
+					atField:=1
 			}
+			if (tryCount >= 10) {
+				nm_setStatus("Error", "Failed to place planter in 10 tries!`nMaxAllowedPlanters has been reduced.")
+				MaxAllowedPlanters:=max(0, MaxAllowedPlanters-1)
+				MainGui["MaxAllowedPlanters"].Value := MaxAllowedPlanters
+				IniWrite MaxAllowedPlanters, "settings\nm_config.ini", "Planters", "MaxAllowedPlanters"
+				break
+			}
+		}
+		if (success != 1) {
+			deficits[targetNectar] := 0
+			triesNoProgress++
+			if (triesNoProgress > 5)
+				break
 		} else {
-			break
+			triesNoProgress := 0
 		}
 	}
 	nm_OpenMenu()
+}
+ba_GetPlanterStats(planterName, fieldName){
+	global BambooPlanters, BlueFlowerPlanters, CactusPlanters, CloverPlanters, CoconutPlanters, DandelionPlanters, MountainTopPlanters, MushroomPlanters, PepperPlanters
+		, PineTreePlanters, PineapplePlanters, PumpkinPlanters, RosePlanters, SpiderPlanters, StrawberryPlanters, StumpPlanters, SunflowerPlanters
+	if (planterName="None" || fieldName="None")
+		return [planterName, 1, 1, 1]
+	tempFieldName := StrReplace(fieldName, " ", "")
+	if !IsSet(%tempFieldName%Planters)
+		return [planterName, 1, 1, 1]
+	for i, v in %tempFieldName%Planters {
+		if (v[1] = planterName)
+			return v
+	}
+	return [planterName, 1, 1, 1]
+}
+ba_GetPlanterIntervalHours(estPercent, nectarBonus){
+	if (estPercent<=0 || nectarBonus<=0)
+		return 0.25
+	return max(0.25, (estPercent * 0.24) / nectarBonus)
+}
+ba_GetNectarHorizon(nectar){
+	global PlanterName1, PlanterName2, PlanterName3, PlanterField1, PlanterField2, PlanterField3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3
+		, PlanterNectar1, PlanterNectar2, PlanterNectar3, PlanterEstPercent1, PlanterEstPercent2, PlanterEstPercent3
+	horizonList := []
+	Loop 3 {
+		if (PlanterNectar%A_Index% != nectar)
+			continue
+		est := PlanterEstPercent%A_Index%
+		if (est<=0)
+			continue
+		fieldName := PlanterField%A_Index%
+		planterName := PlanterName%A_Index%
+		planterStats := ba_GetPlanterStats(planterName, fieldName)
+		nectarBonus := planterStats[2]
+		intervalHours := ba_GetPlanterIntervalHours(est, nectarBonus)
+		timeRemaining := max(0, (PlanterHarvestTime%A_Index% - nowUnix())/3600)
+		if (intervalHours<=0)
+			continue
+		effective := min(timeRemaining, intervalHours)
+		if (effective > 0)
+			horizonList.Push(effective)
+	}
+	if (!horizonList.Length)
+		return 4
+	horizonList.Sort()
+	mid := horizonList[Ceil(horizonList.Length/2)]
+	return min(12, max(2, mid))
+}
+ba_ProjectNectar(nectar, horizonHours){
+	global PlanterName1, PlanterName2, PlanterName3, PlanterField1, PlanterField2, PlanterField3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3
+		, PlanterNectar1, PlanterNectar2, PlanterNectar3, PlanterEstPercent1, PlanterEstPercent2, PlanterEstPercent3
+	current := ba_GetNectarPercent(nectar)
+	if (horizonHours<=0)
+		horizonHours := ba_GetNectarHorizon(nectar)
+	horizonGain := 0
+	fullGain := 0
+	Loop 3 {
+		if (PlanterNectar%A_Index% != nectar)
+			continue
+		est := PlanterEstPercent%A_Index%
+		if (est<=0)
+			continue
+		fieldName := PlanterField%A_Index%
+		planterName := PlanterName%A_Index%
+		planterStats := ba_GetPlanterStats(planterName, fieldName)
+		nectarBonus := planterStats[2]
+		intervalHours := ba_GetPlanterIntervalHours(est, nectarBonus)
+		timeRemaining := max(0, (PlanterHarvestTime%A_Index% - nowUnix())/3600)
+		if (intervalHours<=0)
+			continue
+		remainingFrac := min(1, timeRemaining / intervalHours)
+		horizonFrac := min(remainingFrac, min(horizonHours, timeRemaining) / intervalHours)
+		fullGain += est * remainingFrac
+		horizonGain += est * horizonFrac
+	}
+	return [current, current + horizonGain, current + fullGain]
 }
 ba_GetNectarPercent(var){
 	global nectarnames, totalCom, totalMot, totalRef, totalSat, totalInv
@@ -21242,7 +20980,7 @@ ba_getLastField(currentnectar){
 		arr[1] := availablefields[1], arr[2] := availablefields.Has(2) ? availablefields[2] : availablefields[1]
 	return arr
 }
-ba_getNextPlanter(nextfield){
+ba_getNextPlanter(nextfield, targetNectar:="", urgent:=0){
 	global BambooPlanters, BlueFlowerPlanters, CactusPlanters, CloverPlanters, CoconutPlanters, DandelionPlanters, MountainTopPlanters, MushroomPlanters, PepperPlanters
 		, PineTreePlanters, PineapplePlanters, PumpkinPlanters, RosePlanters, SpiderPlanters, StrawberryPlanters, StumpPlanters, SunflowerPlanters
 		, PlasticPlanterCheck, CandyPlanterCheck, BlueClayPlanterCheck, RedClayPlanterCheck, TackyPlanterCheck, PesticidePlanterCheck, HeatTreatedPlanterCheck
@@ -21257,6 +20995,8 @@ ba_getNextPlanter(nextfield){
 	nextPlanterNectarBonus:=0
 	nextPlanterGrowBonus:=0
 	nextPlanterGrowTime:=0
+	bestScore := -1
+	horizon := (urgent && (targetNectar!="")) ? ba_GetNectarHorizon(targetNectar) : 0
 	Loop arrayLen {
 		tempPlanter:=Trim(%tempfieldname%Planters[A_Index][1])
 		tempPlanterCheck:=%tempPlanter%Check
@@ -21264,11 +21004,27 @@ ba_getNextPlanter(nextfield){
 		{
 			if !InStr(LostPlanters, tempPlanter)
 			{
-				nextPlanterName:=%tempfieldname%Planters[A_Index][1]
-				nextPlanterNectarBonus:=%tempfieldname%Planters[A_Index][2]
-				nextPlanterGrowBonus:=%tempfieldname%Planters[A_Index][3]
-				nextPlanterGrowTime:=%tempfieldname%Planters[A_Index][4]
-				break
+				candidateName := %tempfieldname%Planters[A_Index][1]
+				candidateNectar := %tempfieldname%Planters[A_Index][2]
+				candidateGrow := %tempfieldname%Planters[A_Index][3]
+				candidateTime := %tempfieldname%Planters[A_Index][4]
+				if (targetNectar="") {
+					nextPlanterName:=candidateName
+					nextPlanterNectarBonus:=candidateNectar
+					nextPlanterGrowBonus:=candidateGrow
+					nextPlanterGrowTime:=candidateTime
+					break
+				}
+				baseScore := (candidateNectar * candidateGrow) / max(0.25, candidateTime)
+				timePenalty := urgent ? min(1, horizon / max(0.25, candidateTime)) : 1
+				score := baseScore * timePenalty
+				if (score > bestScore) {
+					bestScore := score
+					nextPlanterName:=candidateName
+					nextPlanterNectarBonus:=candidateNectar
+					nextPlanterGrowBonus:=candidateGrow
+					nextPlanterGrowTime:=candidateTime
+				}
 			}
 		}
 	}
@@ -21570,10 +21326,10 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 		, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3
 		, PlanterNectar1, PlanterNectar2, PlanterNectar3
 		, PlanterEstPercent1, PlanterEstPercent2, PlanterEstPercent3
-		, LastComfortingField, LastMotivatingField, LastSatisfyingField, LastRefreshingField, LastInvigoratingField, HarvestInterval
+		, LastComfortingField, LastMotivatingField, LastSatisfyingField, LastRefreshingField, LastInvigoratingField
 	global PlasticPlanterCheck, CandyPlanterCheck, BlueClayPlanterCheck, RedClayPlanterCheck, TackyPlanterCheck, PesticidePlanterCheck, HeatTreatedPlanterCheck
 		, HydroponicPlanterCheck, PetalPlanterCheck, PaperPlanterCheck, TicketPlanterCheck, PlanterOfPlentyCheck
-		, n1minPercent, n2minPercent, n3minPercent, n4minPercent, n5minPercent, AutomaticHarvestInterval, HarvestFullGrown
+		, n1minPercent, n2minPercent, n3minPercent, n4minPercent, n5minPercent, HarvestFullGrown
 	;temp1:=planter[1]
 	;temp2:=planter[2]
 	;temp3:=planter[3]
@@ -21621,24 +21377,12 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 	}
 	;nec=planter[2]
 	;gro=planter[3]
-	if(AutomaticHarvestInterval) {
-		planterHarvestInterval:=floor(min(planter[4], (autoInterval+autoInterval/(planter[2]*planter[3])), (timeToCap+timeToCap/(planter[2]*planter[3])))*60*60)
-		PlanterHarvestTime%planterNum%:=nowUnix()+planterHarvestInterval
-	} else if(HarvestFullGrown) {
+	if(HarvestFullGrown) {
 		planterHarvestInterval:=floor(planter[4]*60*60)
 		PlanterHarvestTime%planterNum%:=nowUnix()+planterHarvestInterval
 	} else {
-		;planterHarvestInterval:=floor(min(planter[4], HarvestInterval, (timeToCap+timeToCap/(planter[2]*planter[3])))*60*60)
-		;planterHarvestInterval:=floor(min(planter[4], HarvestInterval)*60*60)
-		;temp1:=planter[4]
-		planterHarvestInterval:=floor(min(planter[4], HarvestInterval)*60*60)
-		smallestHarvestInterval:=nowUnix()+planterHarvestInterval
-		Loop 3 {
-			if(PlanterHarvestTime%A_Index%>nowUnix() && PlanterHarvestTime%A_Index%<smallestHarvestInterval)
-				smallestHarvestInterval:=PlanterHarvestTime%A_Index%
-		}
-		PlanterHarvestTime%planterNum%:=min(smallestHarvestInterval, nowUnix()+planterHarvestInterval)
-		temp:=PlanterHarvestTime%planterNum%
+		planterHarvestInterval:=floor(min(planter[4], (autoInterval+autoInterval/(planter[2]*planter[3])), (timeToCap+timeToCap/(planter[2]*planter[3])))*60*60)
+		PlanterHarvestTime%planterNum%:=nowUnix()+planterHarvestInterval
 	}
 	;PlanterHarvestTime%planterNum%:=toUnix_()+planterHarvestInterval
 	PlanterHarvestTimeN:=PlanterHarvestTime%planterNum%
