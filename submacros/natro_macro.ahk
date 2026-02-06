@@ -6782,9 +6782,11 @@ nm_PlanterBuffer(GuiCtrl, *){
 nm_PlanterBufferHelp(*){
 	MsgBox("
 	(
-	Buffer adds a +/- % band around each nectar's minimum.
-	- Below min: the system targets min + buffer.
-	- Above min: harvest timing is capped to avoid dropping below min - buffer.
+	Buffer is a % of your nectar MINIMUM (% set in the Min column).
+	- Example: min = 90, buffer = 10% => buffer size = 9%.
+	- If nectar is below min, it aims for min + buffer.
+	- If nectar is above min + buffer, it protects min (buffer ignored).
+	- If nectar is just above min, it allows a small dip (to min - buffer).
 	Higher values reduce rapid harvests but recover more slowly.
 	)", "Planter Buffer", 0x40040)
 }
@@ -21292,8 +21294,9 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 			minPercent:=n%A_Index%minPercent ; minPercent > estimatedNectarPercent
 	}
 	buffer := max(0, min(20, PlanterBuffer))
-	lowerBound := max(0, minPercent - buffer)
-	upperTarget := min(100, minPercent + buffer)
+	bufferPoints := (minPercent * buffer) / 100
+	lowerBound := max(0, minPercent - bufferPoints)
+	upperTarget := min(100, minPercent + bufferPoints)
 	ratePerHour := (planter[2] * planter[3]) / 0.24
 	timeToCap := (ratePerHour>0) ? (max(0, (100 - estimatedNectarPercent)) / ratePerHour) : 0.25
 	if (minPercent > estimatedNectarPercent) {
@@ -21302,6 +21305,9 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 		timeToTarget := timeToCap
 	}
 	currentPercent := ba_GetNectarPercent(nectar)
+	if (currentPercent > upperTarget) {
+		lowerBound := minPercent
+	}
 	if (currentPercent > lowerBound) {
 		timeToMinDrop := max(0, (currentPercent - lowerBound)) * 0.24
 		timeToTarget := min(timeToTarget, timeToMinDrop)
