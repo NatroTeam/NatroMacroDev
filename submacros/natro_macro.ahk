@@ -857,18 +857,18 @@ nm_importConfig()
 		, "PaperPlanterCheck", 0
 		, "TicketPlanterCheck", 0
 		, "PlanterOfPlentyCheck", 0
-		, "BambooFieldCheck", 0
+		, "BambooFieldCheck", 1
 		, "BlueFlowerFieldCheck", 1
 		, "CactusFieldCheck", 1
 		, "CloverFieldCheck", 1
 		, "CoconutFieldCheck", 0
 		, "DandelionFieldCheck", 1
-		, "MountainTopFieldCheck", 0
-		, "MushroomFieldCheck", 0
-		, "PepperFieldCheck", 1
+		, "MountainTopFieldCheck", 1
+		, "MushroomFieldCheck", 1
+		, "PepperFieldCheck", 0
 		, "PineTreeFieldCheck", 1
 		, "PineappleFieldCheck", 1
-		, "PumpkinFieldCheck", 0
+		, "PumpkinFieldCheck", 1
 		, "RoseFieldCheck", 1
 		, "SpiderFieldCheck", 1
 		, "StrawberryFieldCheck", 1
@@ -3304,12 +3304,12 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 ;PLANTERS TAB
 ;------------------------
 TabCtrl.UseTab("Planters")
-MainGui.Add("Slider", "x364 y24 w130 h19 vPlanterMode Range0-2 AltSubmit Thick16 TickInterval1 Page1 Disabled", PlanterMode).OnEvent("Change", ba_PlanterSwitch)
-MainGui.Add("Text", "x366 y43 h20 cRed +Center +BackgroundTrans", "OFF")
-MainGui.Add("Text", "x410 y43 h20 c0xFF9200 +Center +BackgroundTrans", "MANUAL")
-MainGui.Add("Text", "x478 y43 h20 cGreen +Center +BackgroundTrans", "+")
+MainGui.Add("Slider", "x362 y24 w110 h19 vPlanterMode Range0-2 AltSubmit Thick16 TickInterval1 Page1 Disabled", PlanterMode).OnEvent("Change", ba_PlanterSwitch)
+MainGui.Add("Text", "x350 y43 w40 h20 cRed +Center +BackgroundTrans", "OFF")
+MainGui.Add("Text", "x387 y43 w60 h20 c0xFF9200 +Center +BackgroundTrans", "MANUAL")
+MainGui.Add("Text", "x444 y43 w60 h20 cGreen +Center +BackgroundTrans", "ADAPTIVE")
 
-;Planters+
+;Adaptive Planters
 hidden := ((PlanterMode = 2) ? "" : " Hidden")
 
 MainGui.Add("Text", "x23 y27 w40 h20 +BackgroundTrans vTextPresets" hidden, "Presets:")
@@ -6646,28 +6646,6 @@ nm_NectarPreset(GuiCtrl, *){
 		MainGui["n3minPercent"].Text := 80, MainGui["n3minPercentUpDown"].Value := 8 ;SAT
 		MainGui["n4minPercent"].Text := 80, MainGui["n4minPercentUpDown"].Value := 8 ;REF
 		MainGui["n5minPercent"].Text := 40, MainGui["n5minPercentUpDown"].Value := 4 ;INV
-		;COM
-		MainGui["DandelionFieldCheck"].Value := 1
-		MainGui["BambooFieldCheck"].Value := 0
-		MainGui["PineTreeFieldCheck"].Value := 1
-		;MOT
-		MainGui["MushroomFieldCheck"].Value := 0
-		MainGui["SpiderFieldCheck"].Value := 1
-		MainGui["RoseFieldCheck"].Value := 1
-		MainGui["StumpFieldCheck"].Value := 0
-		;SAT
-		MainGui["SunflowerFieldCheck"].Value := 1
-		MainGui["PineappleFieldCheck"].Value := 1
-		MainGui["PumpkinFieldCheck"].Value := 0
-		;REF
-		MainGui["BlueFlowerFieldCheck"].Value := 1
-		MainGui["StrawberryFieldCheck"].Value := 1
-		MainGui["CoconutFieldCheck"].Value := 0
-		;INV
-		MainGui["CloverFieldCheck"].Value := 1
-		MainGui["CactusFieldCheck"].Value := 1
-		MainGui["MountainTopFieldCheck"].Value := 0
-		MainGui["PepperFieldCheck"].Value := 1
 
 		case "Red":
 		MainGui["n1Priority"].Text := n1Priority := "Invigorating"
@@ -6681,28 +6659,6 @@ nm_NectarPreset(GuiCtrl, *){
 		MainGui["n3minPercent"].Text := 80, MainGui["n3minPercentUpDown"].Value := 8 ;MOT
 		MainGui["n4minPercent"].Text := 80, MainGui["n4minPercentUpDown"].Value := 8 ;SAT
 		MainGui["n5minPercent"].Text := 40, MainGui["n5minPercentUpDown"].Value := 4 ;COM
-		;INV
-		MainGui["CloverFieldCheck"].Value := 0
-		MainGui["CactusFieldCheck"].Value := 1
-		MainGui["MountainTopFieldCheck"].Value := 0
-		MainGui["PepperFieldCheck"].Value := 1
-		;REF
-		MainGui["BlueFlowerFieldCheck"].Value := 1
-		MainGui["StrawberryFieldCheck"].Value := 1
-		MainGui["CoconutFieldCheck"].Value := 0
-		;MOT
-		MainGui["MushroomFieldCheck"].Value := 0
-		MainGui["SpiderFieldCheck"].Value := 1
-		MainGui["RoseFieldCheck"].Value := 1
-		MainGui["StumpFieldCheck"].Value := 0
-		;SAT
-		MainGui["SunflowerFieldCheck"].Value := 1
-		MainGui["PineappleFieldCheck"].Value := 1
-		MainGui["PumpkinFieldCheck"].Value := 1
-		;COM
-		MainGui["DandelionFieldCheck"].Value := 1
-		MainGui["BambooFieldCheck"].Value := 1
-		MainGui["PineTreeFieldCheck"].Value := 1
 
 		case "White":
 		MainGui["n1Priority"].Text := n1Priority := "Satisfying"
@@ -6716,28 +6672,6 @@ nm_NectarPreset(GuiCtrl, *){
 		MainGui["n3minPercent"].Text := 80, MainGui["n3minPercentUpDown"].Value := 8 ;REF
 		MainGui["n4minPercent"].Text := 80, MainGui["n4minPercentUpDown"].Value := 8 ;COM
 		MainGui["n5minPercent"].Text := 40, MainGui["n5minPercentUpDown"].Value := 4 ;INV
-		;SAT
-		MainGui["SunflowerFieldCheck"].Value := 1
-		MainGui["PineappleFieldCheck"].Value := 1
-		MainGui["PumpkinFieldCheck"].Value := 0
-		;MOT
-		MainGui["MushroomFieldCheck"].Value := 0
-		MainGui["SpiderFieldCheck"].Value := 1
-		MainGui["RoseFieldCheck"].Value := 1
-		MainGui["StumpFieldCheck"].Value := 0
-		;REF
-		MainGui["BlueFlowerFieldCheck"].Value := 1
-		MainGui["StrawberryFieldCheck"].Value := 1
-		MainGui["CoconutFieldCheck"].Value := 0
-		;COM
-		MainGui["DandelionFieldCheck"].Value := 1
-		MainGui["BambooFieldCheck"].Value := 1
-		MainGui["PineTreeFieldCheck"].Value := 1
-		;INV
-		MainGui["CloverFieldCheck"].Value := 1
-		MainGui["CactusFieldCheck"].Value := 1
-		MainGui["MountainTopFieldCheck"].Value := 0
-		MainGui["PepperFieldCheck"].Value := 1
 	}
 	ba_saveConfig_()
 }
@@ -6865,7 +6799,7 @@ ba_gotoPlanterFieldSwitch_(*){
 
 		I understand that by selecting this option will cause the macro to IGNORE the gathering fields specified in the Main tab.
 
-		Enabling this option will make you gather in a field that contains a planter as selected by Planters+ instead.
+		Enabling this option will make you gather in a field that contains a planter as selected by Adaptive Planters instead.
 
 		I understand that this option will result in gathering Nectar much faster but will also result in less pollen/honey collection overall.
 		)", "WARNING!!", 1) = "Ok")
@@ -20793,9 +20727,10 @@ ba_planter(){
 		planterNum := planterSlots[1]
 		success := -1
 		atField := 0
-		tryCount := 0
+		attemptsInField := 0
+		maxAttemptsInField := 2
 		while (success!=1 && nextField!="none" && nextPlanter[1]!="none") {
-			tryCount++
+			attemptsInField++
 			success := ba_placePlanter(nextField, nextPlanter, planterNum, atField)
 			switch success {
 				case 1: ;planter placed successfully, break loop
@@ -20810,6 +20745,7 @@ ba_planter(){
 				nextField:=lastNextField[2]
 				nextPlanter:=ba_getNextPlanter(nextField, targetNectar, !allAboveMin)
 				atField:=0
+				attemptsInField := 0
 				LostPlanters:=""
 				Last%targetNectar%Field := nextField
 				IniWrite Last%targetNectar%Field, "settings\nm_config.ini", "Planters", "Last" targetNectar "Field"
@@ -20831,12 +20767,12 @@ ba_planter(){
 				else
 					atField:=1
 			}
-			if (tryCount >= 10) {
-				nm_setStatus("Error", "Failed to place planter in 10 tries!`nMaxAllowedPlanters has been reduced.")
-				MaxAllowedPlanters:=max(0, MaxAllowedPlanters-1)
-				MainGui["MaxAllowedPlanters"].Value := MaxAllowedPlanters
-				IniWrite MaxAllowedPlanters, "settings\nm_config.ini", "Planters", "MaxAllowedPlanters"
-				break
+			if (success!=1 && attemptsInField >= maxAttemptsInField) {
+				lastnextfield:=ba_getlastfield(targetNectar)
+				nextField:=lastNextField[2]
+				nextPlanter:=ba_getNextPlanter(nextField, targetNectar, !allAboveMin)
+				atField:=0
+				attemptsInField := 0
 			}
 		}
 		if (success != 1) {
@@ -21035,7 +20971,7 @@ ba_getNextPlanter(nextfield, targetNectar:="", urgent:=0){
 				candidateTime := %tempfieldname%Planters[A_Index][4]
 				baseScore := candidateNectar * candidateGrow
 				score := baseScore
-				if (score > bestScore) {
+				if (score > bestScore || (score = bestScore && candidateTime > nextPlanterGrowTime)) {
 					bestScore := score
 					nextPlanterName:=candidateName
 					nextPlanterNectarBonus:=candidateNectar
@@ -21394,7 +21330,7 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 	IniWrite fieldname, "settings\nm_config.ini", "Planters", "Last" nectar "Field"
 }
 
-mp_Planter() { ;//todo: merge these manual planter functions as much as possible with Planters+ functions, lots of code duplication here!
+mp_Planter() { ;//todo: merge these manual planter functions as much as possible with Adaptive Planters functions, lots of code duplication here!
 	Global
 	Local TimeElapsed, GlitterPos, field, i, k, v
 	Global PlanterGlitter1, PlanterGlitter2, PlanterGlitter3, PlanterGlitterC1, PlanterGlitterC2, PlanterGlitterC3, PlanterHarvestFull1, PlanterHarvestFull2, PlanterHarvestFull3, PlanterSS1, PlanterSS2, PlanterSS3
