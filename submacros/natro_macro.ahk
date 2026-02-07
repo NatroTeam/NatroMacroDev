@@ -20647,6 +20647,10 @@ ba_planter(){
 		return
 	triesNoProgress := 0
 	while (planterSlots.Length && plantersplaced<maxplanters && plantersplaced<MaxAllowedPlanters) {
+		; keep all nectar projections fresh while placement/travel time passes
+		for _, item in priorityList {
+			projections[item["name"]] := ba_ProjectNectar(item["name"], horizonOverride)
+		}
 		allAboveMin := 1
 		for _, item in priorityList {
 			proj := projections[item["name"]]
@@ -20739,7 +20743,6 @@ ba_planter(){
 				plantersplaced++
 				ba_SavePlacedPlanter(nextField, nextPlanter, planterNum, targetNectar)
 				planterSlots.RemoveAt(1)
-				projections[targetNectar] := ba_ProjectNectar(targetNectar, horizonOverride)
 				break
 
 				case 2: ;already a planter in this field, change field and try
@@ -20929,19 +20932,40 @@ ba_getLastField(currentnectar){
 	}
 	arraylen:=availablefields.Length
 	;no allowed fields exist for this nectar
-	if(arraylen=0)
+	if(arraylen=0) {
 		arr[2] := "None"
-	;find index of last nectar field
-	for k, v in availablefields {
-		;found index of last nectar field in availablefields
-		if (v=Last%currentnectar%Field)
-		{
-			arr[2] := availablefields[Mod(k,arrayLen)+1]
-			break
+		return arr
+	}
+
+	candidateFields := []
+	for _, field in availablefields {
+		if (arrayLen > 1 && field = arr[1])
+			continue
+		candidateFields.Push(field)
+	}
+	if (!candidateFields.Length)
+		candidateFields := availablefields
+
+	bestField := ""
+	bestScore := -1
+	bestTime := -1
+	for _, field in candidateFields {
+		planter := ba_getNextPlanter(field, currentNectar, 1)
+		if (planter[1] = "none")
+			continue
+		score := planter[2] * planter[3]
+		growTime := planter[4]
+		if (score > bestScore || (score = bestScore && growTime > bestTime)) {
+			bestScore := score
+			bestTime := growTime
+			bestField := field
 		}
 	}
-	if !arr[2]
-		arr[1] := availablefields[1], arr[2] := availablefields.Has(2) ? availablefields[2] : availablefields[1]
+
+	if (bestField != "")
+		arr[2] := bestField
+	else
+		arr[2] := "None"
 	return arr
 }
 ba_getNextPlanter(nextfield, targetNectar:="", urgent:=0){
@@ -20984,6 +21008,75 @@ ba_getNextPlanter(nextfield, targetNectar:="", urgent:=0){
 		}
 	}
 	return [nextPlanterName, nextPlanterNectarBonus, nextPlanterGrowBonus, nextPlanterGrowTime]
+}
+ba_GetTimeToNectarFloor(nectar, currentPercent, lowerBound, newPlanterNum, newPlanterRatePerHour, newPlanterMaxHours){
+	global PlanterName1, PlanterName2, PlanterName3, PlanterField1, PlanterField2, PlanterField3
+		, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3
+		, PlanterNectar1, PlanterNectar2, PlanterNectar3
+		, PlanterEstPercent1, PlanterEstPercent2, PlanterEstPercent3
+
+	if (currentPercent <= lowerBound)
+		return 0
+
+	decayRatePerHour := 100 / 24
+	segments := []
+	now := nowUnix()
+
+	Loop 3 {
+		if (A_Index = newPlanterNum || PlanterNectar%A_Index% != nectar)
+			continue
+		est := PlanterEstPercent%A_Index%
+		if (est <= 0)
+			continue
+		fieldName := PlanterField%A_Index%
+		planterName := PlanterName%A_Index%
+		planterStats := ba_GetPlanterStats(planterName, fieldName)
+		intervalHours := ba_GetPlanterIntervalHours(est, planterStats[2], planterStats[3])
+		if (intervalHours <= 0)
+			continue
+		timeRemaining := max(0, (PlanterHarvestTime%A_Index% - now) / 3600)
+		activeHours := min(intervalHours, timeRemaining)
+		if (activeHours <= 0)
+			continue
+		ratePerHour := est / intervalHours
+		segments.Push([activeHours, ratePerHour])
+	}
+
+	if (newPlanterRatePerHour > 0 && newPlanterMaxHours > 0)
+		segments.Push([newPlanterMaxHours, newPlanterRatePerHour])
+
+	if (!segments.Length)
+		return (currentPercent - lowerBound) / decayRatePerHour
+
+	segments.Sort((a, b) => (a[1] = b[1]) ? 0 : (a[1] < b[1] ? -1 : 1))
+
+	diff := currentPercent - lowerBound
+	prevT := 0
+	activeRate := 0
+	for _, segment in segments
+		activeRate += segment[2]
+
+	for _, segment in segments {
+		endT := segment[1]
+		if (endT <= prevT) {
+			activeRate -= segment[2]
+			continue
+		}
+		slope := activeRate - decayRatePerHour
+		deltaT := endT - prevT
+		if (slope < 0) {
+			timeToCross := diff / -slope
+			if (timeToCross <= deltaT)
+				return max(0, prevT + timeToCross)
+		}
+		diff += slope * deltaT
+		prevT := endT
+		activeRate -= segment[2]
+	}
+
+	if (diff <= 0)
+		return prevT
+	return max(0, prevT + (diff / decayRatePerHour))
 }
 ba_placePlanter(fieldName, planter, planterNum, atField:=0){
 	global BambooFieldCheck, BlueFlowerFieldCheck, CactusFieldCheck, CloverFieldCheck, CoconutFieldCheck, DandelionFieldCheck, MountainTopFieldCheck, MushroomFieldCheck, PepperFieldCheck, PineTreeFieldCheck, PineappleFieldCheck, PumpkinFieldCheck, RoseFieldCheck, SpiderFieldCheck, StrawberryFieldCheck, StumpFieldCheck, SunflowerFieldCheck, MaxAllowedPlanters, LostPlanters, bitmaps
@@ -21283,7 +21376,7 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 	estimatedNectarPercent:=0
 	Loop 3 { ;3 max positions
 		planterNectar:=PlanterNectar%A_Index%
-		if (PlanterNectar=nectar) {
+		if (planterNectar=nectar) {
 			estimatedNectarPercent:=estimatedNectarPercent+PlanterEstPercent%A_Index%
 		}
 	}
@@ -21309,7 +21402,7 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 		lowerBound := minPercent
 	}
 	if (currentPercent > lowerBound) {
-		timeToMinDrop := max(0, (currentPercent - lowerBound)) * 0.24
+		timeToMinDrop := ba_GetTimeToNectarFloor(nectar, currentPercent, lowerBound, planterNum, ratePerHour, planter[4])
 		timeToTarget := min(timeToTarget, timeToMinDrop)
 	}
 	planterHarvestInterval:=floor(min(planter[4], max(0, timeToTarget)) * 60 * 60)
@@ -21326,8 +21419,10 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 
 	;make all harvest times equal
 	Loop 3 {
-		if(PlanterHarvestTime%A_Index% > PlanterHarvestTimeN && PlanterHarvestTime%A_Index% < PlanterHarvestTimeN + 600)
+		if(PlanterHarvestTime%A_Index% > PlanterHarvestTimeN && PlanterHarvestTime%A_Index% < PlanterHarvestTimeN + 600) {
+			PlanterHarvestTime%A_Index% := PlanterHarvestTimeN
 			IniWrite PlanterHarvestTimeN, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" A_Index
+		}
 		else if(A_Index=planterNum)
 			IniWrite PlanterHarvestTimeN, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" planterNum
 	}
