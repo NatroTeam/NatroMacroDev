@@ -8268,13 +8268,13 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 		SaveConf(GuiCtrl)
 	}
 	PortHelpButton(*) {
-		MsgBox "The sockets connect to a specific port number. The tad alt account's port number needs to be the same as the main account's. for the connection to work.", "Port", 0x40000
+		MsgBox "The sockets connect to a specific port number. The tad alt account’s port number must be the same as the main account’s for the connection to work.", "Port", 0x40000
 	}
 	ConnectIPHelpButton(*) {
-		MsgBox "The IP address other computers on the network need to use to connect to this PC. Not needed for local connections.", "Connect IP", 0x40000
+		MsgBox "The IP address that other computers on the same network need to use to connect to this PC. Not needed for local connections.", "Connect IP", 0x40000
 	}
 	IPHelpButton(*) {
-		MsgBox "The IP address the alt account will connet to.", "IP", 0x40000
+		MsgBox "The IP address that the alt account will connect to.", "IP", 0x40000
 	}
 	ToggleFields()
 	ConfGui.Show("AutoSize")
@@ -8287,9 +8287,9 @@ nm_CommunicationStyleRot(GuiCtrl, *) {
 	MainGui["CommunicationStyle"].Text := CommunicationStyle := val[(GuiCtrl.Name = "CSRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
 	if CommunicationStyle = "Socket" && SocketFirewallWarning {
 		disable_warning := MsgBox(
-		"The first time this application connects with sockets, Windows may show a firewall prompt. "
-		"This is normal and happens because the app uses the network to communicate. "
-		"For the socket communication to work, you will need to allow Windows Firewall access so it can communicate over the network."
+		"The first time this application connects using sockets, Windows may display a firewall prompt. "
+		"This is normal and occurs because the application uses the network for communication. "
+		"To allow socket communication to work, you must grant Windows Firewall access so the application can communicate over the network."
 		"`r`nDo you want to disable this warning?"
 		, "Firewall Warning", "Icon! YesNo")
 		if disable_warning = "Yes"
@@ -8432,7 +8432,7 @@ nm_ControlAltField(GuiCtrl, *) {
 		"PineTree", "Pine Tree",
 		"MountainTop","Mountain Top")
 	
-	field_name := StrReplace(GuiCtrl.Name, "CA")
+	field_name := SubStr(GuiCtrl.Name, 3)
 	if correct_field_names.Has(field_name)
 		field_name := correct_field_names[field_name]
 	paylod := {type: "Tad Alt", action: "Go to Field", field: field_name, time: 60}
@@ -23678,7 +23678,3 @@ F10:: {
 ;		vars .= '"' (x = "" ? "" : x) '" '
 ;	Run path " " vars
 ;}
-
-F11:: {
-	nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: "Blue Flower", time: 60})
-}

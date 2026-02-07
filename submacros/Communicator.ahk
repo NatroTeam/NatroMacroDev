@@ -54,8 +54,8 @@ CommunicationChannelID := A_Args[12]
 IP := A_Args[13]
 PortNumber := A_Args[14]
 IdentifiedConnections := {}
-CommunicatorSocket := 0
-CommunicatorIsConnected := false
+CommunicatorSocket := ListenerSocket := -1
+CommunicatorIsConnected := ListenerIsConnected := false
 ; general
 CommunicationStyle := A_Args[15]
 CommunicationID := (AccountType = "Main Acc" ? -1 : A_Args[16])
@@ -101,42 +101,6 @@ ReadMessages() {
 ;-----------------
 ; Socket
 ;-----------------
-SocketSetup() {
-	global CommunicatorSocket, CommunicatorIsConnected
-	static WM := 0x5565
-
-	client_cant_connect := (CommunicatorSocket is Socket.Client) && (SocketListenerExists() = false)
-	listener_cant_bind := (CommunicatorSocket is Socket.Server) && (SocketListenerExists() = true)
-	if client_cant_connect || listener_cant_bind {
-		SocketReconnect()
-		return
-	}
-
-	if AccountType != "Main Acc" {
-		try {
-			CommunicatorSocket := Socket.Client(EventHandler.Alt, ++WM)
-			CommunicatorSocket.Connect(IP, PortNumber)
-			CommunicatorSocket.AsyncSelect(Socket.FD.READ | Socket.FD.CLOSE)
-		} catch {
-			SocketReconnect()
-			return
-		}
-		CommunicatorSocket.IsIdentified := false
-		CommunicatorSocket.ClientSide := "Alt"
-	} else {
-		try {
-			CommunicatorSocket := Socket.Server(EventHandler.Main, ++WM)
-			CommunicatorSocket.Bind("0.0.0.0", PortNumber)
-			CommunicatorSocket.Listen(10)
-			CommunicatorSocket.AsyncSelect(Socket.FD.ACCEPT)
-		} catch {
-			SocketReconnect()
-			return
-		}
-	}
-	CommunicatorIsConnected := true
-}
-
 EventHandler := {
 	Alt: {
 		Receive: SocketReceive, 
@@ -147,61 +111,103 @@ EventHandler := {
 	}
 }
 
+SocketSetup() {
+	global CommunicatorSocket, ListenerSocket, CommunicatorIsConnected, ListenerIsConnected
+	static WM := 0x5565
+
+	setup_succeded := false
+	if (AccountType = "Main Acc") && !SocketListenerExists() {
+		try {
+			ListenerSocket := Socket.Server()
+			ListenerSocket.Bind("0.0.0.0", PortNumber)
+			ListenerSocket.Listen(10)
+			ListenerSocket.AsyncSelect(Socket.FD.ACCEPT, EventHandler.Main, WM++)
+			ListenerIsConnected := setup_succeded := true
+		}
+	}
+	else if SocketListenerExists() {
+		try {
+			CommunicatorSocket := Socket.Client()
+			CommunicatorSocket.Connect(IP, PortNumber)
+			CommunicatorSocket.AsyncSelect(Socket.FD.READ | Socket.FD.CLOSE, EventHandler.Alt, WM++)
+			CommunicatorSocket.IsIdentified := false
+			CommunicatorSocket.IsOwnedByMain := false
+			CommunicatorIsConnected := setup_succeded := true
+		}
+	}
+
+	if !setup_succeded
+		SocketReconnect()
+}
+
 SocketAccept(self) {
 	static WM := 0x5565
+	accepted := false
 	try {
-		newSock := Socket.Client(EventHandler.Alt, ++WM, self.Accept())
-		newSock.AsyncSelect(Socket.FD.READ | Socket.FD.CLOSE)
-	} catch 
-		return
-	newSock.ClientSide := "Main"
-	newSock.IsIdentified := false
-	newSock.Identifier := -1
-	try newSock.SendText(JSON.stringify({type: "identify"}))
+		hSock := self.Accept()
+		new_sock := Socket.Client(hSock)
+		new_sock.AsyncSelect(Socket.FD.READ | Socket.FD.CLOSE, EventHandler.Alt, WM++)
+		accepted := true
+	}
+	if accepted {
+		new_sock.IsOwnedByMain := true
+		new_sock.IsIdentified := false
+		new_sock.Identifier := -1
+		new_sock.SendText('{"type": "identify"}')		
+	}
 }
 
 SocketReceive(self) {
-	try message := JSON.parse(self.ReceiveText())
-	catch
-		return
-	if self.IsIdentified {
-		Interpreter(message)	
-		return 
+	received_message := false	
+	try {
+		message := JSON.parse(self.ReceiveText())
+		received_message := true
 	}
-	SocketIdentification(self, message)
+	if received_message {
+		if self.IsIdentified
+			Interpreter(message)	
+		else
+			SocketIdentification(self, message)
+	}
 }
 
 SocketClose(self) {
 	global CommunicatorSocket, CommunicatorIsConnected
 	try self.Close()
-	if self.ClientSide = "Alt" {
-		CommunicatorIsConnected := false
-		CommunicatorSocket := 0
-		SocketReconnect()
-	} else {
-		self.IsIdentified := false
-		if self.Identifier > 0 && IdentifiedConnections.HasOwnProp(self.Identifier)
+
+	if self.IsOwnedByMain {
+		if IdentifiedConnections.HasOwnProp(self.Identifier)
 			IdentifiedConnections.DeleteProp(self.Identifier)
-		self.Identifier := 0
+		self.IsIdentified := false, self.Identifier := -1
 		nm_UpdateConnectionTotal(ObjOwnPropCount(IdentifiedConnections))
-		if (SocketListenerExists() = false) && CommunicatorIsConnected
+
+		; reconnect the listener if none exists
+		if !SocketListenerExists() && ListenerIsConnected 
 			SocketReconnect()
+	}
+	else {
+		CommunicatorIsConnected := false
+		CommunicatorSocket := -1
+		SocketReconnect()
 	}
 }
 
 SocketIdentification(self, message) {
-	if self.ClientSide = "Alt" && message["type"] = "identify" {
+	if !self.IsOwnedByMain {
+		received_identifer := false
 		try {
-			payload := JSON.stringify({identifier: CommunicationID})
-			try self.SendText(payload)
+			self.SendText('{"identifier": ' CommunicationID '}')
+			received_identifer := true
 		}
-		catch
+		if received_identifer
+			self.IsIdentified := true
+		else
 			SocketReconnect()
-		self.IsIdentified := true
-	} else {
+	} 
+	else {
 		identifier := message["identifier"]
-		self.Identifier := identifier
 		IdentifiedConnections.%identifier% := self
+		self.Identifier := identifier
 		self.IsIdentified := true
 		nm_UpdateConnectionTotal(ObjOwnPropCount(IdentifiedConnections))
 	}
@@ -209,14 +215,15 @@ SocketIdentification(self, message) {
 
 SocketListenerExists() {
 	static AF_INET := 2, TCP_TABLE_BASIC_LISTENER := 0
+	listener_exists := false
 	pTcpTable := Buffer(4096)
 	DllCall("IPHLPAPI\GetExtendedTcpTable",
 		"ptr", pTcpTable.Ptr,
-		"uint*", &(size := pTcpTable.Size),
+		"uint*", &(size := pTcpTable.Size), ; in case of future use
 		"uchar", true,
-		"uint64", AF_INET,
+		"int64", AF_INET,
 		"int", TCP_TABLE_BASIC_LISTENER,
-		"uint64", 0,
+		"int64", 0,
 		"uint")
 
 	struct_count := NumGet(pTcpTable, "uint")
@@ -224,15 +231,22 @@ SocketListenerExists() {
 		MIB_TCPROW := pTcpTable.Ptr + 4 + (20 * (A_Index - 1))    
 		dwLocalPort := NumGet(MIB_TCPROW, 8, "uint")
 		if (((dwLocalPort >> 8) & 0xff) | ((dwLocalPort & 0xff) << 8)) = PortNumber
-			return true
+			listener_exists := true
 	}
-	return false
+	return listener_exists
 }
 
 SocketReconnect() {
-	global CommunicatorSocket, CommunicatorIsConnected
-	CommunicatorSocket := 0
-	CommunicatorIsConnected := false
+	global CommunicatorSocket, ListenerSocket, CommunicatorIsConnected, ListenerIsConnected
+	if AccountType != "Main Acc" {
+		ListenerSocketSocket := -1
+		ListenerIsConnected := false
+	}
+	else {
+		CommunicatorSocket := -1
+		CommunicatorIsConnected := false
+	}
+
 	SetTimer((*) => SocketSetup(), -10000)
 }
 
@@ -250,16 +264,12 @@ SendMessageToAlts(wParam, lParam, *) {
 		jsonObj := JSON.parse(StringText)
 	} catch
 		return
-	if !IsObject(jsonObj)
-		return
 
 	if Webhook != "" && CommunicationStyle = "Discord" && AccountType = "Main Acc" {
 		payload := Map("content", JSON.Stringify(jsonObj))
 		try discord.SendMessageAPI(JSON.stringify(payload), "application/json", , Webhook)
-		catch
-			return
 	}
-	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && CommunicatorIsConnected {
+	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && ListenerIsConnected {
 		for identifier, sock in IdentifiedConnections.OwnProps() {
 			requested_id := jsonObj.Has("identifier") ? jsonObj["identifier"] : identifier
 			if identifier != requested_id
@@ -282,9 +292,10 @@ GetMessages(*) {
 }
 
 Interpreter(msg, *) {
-	discord_wrong_identifier := ((msg.Has("identifier") && discordMode > 0) ? CommunicationID != msg["identifier"] : 0)
-	if !IsObject(msg) || msg.HasOwnProp("error") || discord_wrong_identifier
+	incorrect_id := msg.Has("identifier") && (msg["identifier"] != CommunicationID)
+	if !IsObject(msg) || msg.HasOwnProp("error") || incorrect_id
 		return
+
 	try Send_WM_COPYDATA(JSON.stringify(msg), "natro_macro ahk_class AutoHotkey", 2)
 }
 
@@ -306,9 +317,7 @@ SelfReload(*) { ; to refresh vals, it has to be ran by natro_macro.ahk
 
 nm_UpdateConnectionTotal(num) {
 	Critical
-	DetectHiddenWindows 1
 	try SendMessage(0x5561,num,,,"natro_macro ahk_class AutoHotkey")
-	DetectHiddenWindows 0
 }
 
 Send_WM_COPYDATA(StringToSend, TargetScriptTitle, wParam:=0)
@@ -351,7 +360,6 @@ Heartbeat() {
 		Interpreter(msg)
 }
 
-F9::msgbox "Output`n`n" JSON.stringify(ReadMessages())
 ExitFunc(*) {
 	Critical
 	try	CommunicatorSocket.Close()
