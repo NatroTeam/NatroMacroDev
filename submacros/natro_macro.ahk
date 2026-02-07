@@ -368,31 +368,31 @@ nm_importConfig() {
         , "HideErrors", 1
         , "DebugHotkey", "F6")
     
-    config["Status"] := Map("StatusLogReverse", 0
-        , "TotalRuntime", 0
-        , "SessionRuntime", 0
-        , "TotalGatherTime", 0
-        , "SessionGatherTime", 0
-        , "TotalConvertTime", 0
-        , "SessionConvertTime", 0
-        , "TotalViciousKills", 0
-        , "SessionViciousKills", 0
-        , "TotalBossKills", 0
-        , "SessionBossKills", 0
-        , "TotalBugKills", 0
-        , "SessionBugKills", 0
-        , "TotalPlantersCollected", 0
-        , "SessionPlantersCollected", 0
-        , "TotalQuestsComplete", 0
-        , "SessionQuestsComplete", 0
-        , "TotalDisconnects", 0
-        , "SessionDisconnects", 0
-        , "DiscordMode", 0
-        , "DiscordCheck", 0
-        , "Webhook", ""
-        , "BotToken", ""
-        , "MainChannelCheck", 1
-        , "MainChannelID", ""
+    config["Status"] := Map("StatusLogReverse", {default: 0, type: configTypes.blacklist}
+        , "TotalRuntime", {default: 0, type: configTypes.blacklist}
+        , "SessionRuntime", {default: 0, type: configTypes.blacklist}
+        , "TotalGatherTime", {default: 0, type: configTypes.blacklist}
+        , "SessionGatherTime", {default: 0, type: configTypes.blacklist}
+        , "TotalConvertTime", {default: 0, type: configTypes.blacklist}
+        , "SessionConvertTime", {default: 0, type: configTypes.blacklist}
+        , "TotalViciousKills", {default: 0, type: configTypes.blacklist}
+        , "SessionViciousKills", {default: 0, type: configTypes.blacklist}
+        , "TotalBossKills", {default: 0, type: configTypes.blacklist}
+        , "SessionBossKills", {default: 0, type: configTypes.blacklist}
+        , "TotalBugKills", {default: 0, type: configTypes.blacklist}
+        , "SessionBugKills", {default: 0, type: configTypes.blacklist}
+        , "TotalPlantersCollected", {default: 0, type: configTypes.blacklist}
+        , "SessionPlantersCollected", {default: 0, type: configTypes.blacklist}
+        , "TotalQuestsComplete", {default: 0, type: configTypes.blacklist}
+        , "SessionQuestsComplete", {default: 0, type: configTypes.blacklist}
+        , "TotalDisconnects", {default: 0, type: configTypes.blacklist}
+        , "SessionDisconnects", {default: 0, type: configTypes.blacklist}
+        , "DiscordMode", {default: 0, type: configTypes.blacklist}
+        , "DiscordCheck", {default: 0, type: configTypes.blacklist}
+        , "Webhook", {default: "", type: configTypes.blacklist}
+        , "BotToken", {default: "", type: configTypes.blacklist}
+        , "MainChannelCheck", {default: 0, type: configTypes.blacklist}
+        , "MainChannelID", {default: "", type: configTypes.blacklist}
         , "ReportChannelCheck", 1
         , "ReportChannelID", ""
         , "WebhookEasterEgg", 0
@@ -625,7 +625,7 @@ nm_importConfig() {
         , "StickerPrinterEgg", "Basic")
     
     config["Shrine"] := Map("ShrineCheck", 0
-        , "LastShrine", 1
+        , "LastShrine", {default: 1, type: configTypes.blacklist}
         , "ShrineAmount1", 0
         , "ShrineAmount2", 0
         , "ShrineItem1", "None"
@@ -781,16 +781,16 @@ nm_importConfig() {
 		, "PlanterSS1", 0
 		, "PlanterSS2", 0
 		, "PlanterSS3", 0
-		, "LastPlanterGatherSlot", 3
-		, "PlanterName1", "None"
-		, "PlanterName2", "None"
-		, "PlanterName3", "None"
-		, "PlanterField1", "None"
-		, "PlanterField2", "None"
-		, "PlanterField3", "None"
-		, "PlanterHarvestTime1", 2147483647
-		, "PlanterHarvestTime2", 2147483647
-		, "PlanterHarvestTime3", 2147483647
+		, "LastPlanterGatherSlot", {default: 3, type: configTypes.blacklist}
+		, "PlanterName1", {default: "None", type: configTypes.blacklist}
+		, "PlanterName2", {default: "None", type: configTypes.blacklist}
+		, "PlanterName3", {default: "None", type: configTypes.blacklist}
+		, "PlanterField1", {default: "None", type: configTypes.blacklist}
+		, "PlanterField2", {default: "None", type: configTypes.blacklist}
+		, "PlanterField3", {default: "None", type: configTypes.blacklist}
+		, "PlanterHarvestTime1", {default: 1, type: configTypes.blacklist}
+		, "PlanterHarvestTime2", {default: 1, type: configTypes.blacklist}
+		, "PlanterHarvestTime3", {default: 1, type: configTypes.blacklist}
 		, "PlanterNectar1", "None"
 		, "PlanterNectar2", "None"
 		, "PlanterNectar3", "None"
@@ -858,13 +858,10 @@ nm_importConfig() {
 		, "StrawberryFieldCheck", 1
 		, "StumpFieldCheck", 0
 		, "SunflowerFieldCheck", 1
-		, "TimerGuiTransparency", 0
-		, "TimerX", 150
-		, "TimerY", 150
-		, "TimersOpen", 0)
-
-		
-	
+		, "TimerGuiTransparency", {default: 0, type: configTypes.blacklist}
+		, "TimerX", {default: 150, type: configTypes.blacklist}
+		, "TimerY", {default: 150, type: configTypes.blacklist}
+		, "TimersOpen", {default: 0, type: configTypes.blacklist})
 
 	local k, v, i, j
 	for k, v in config {
