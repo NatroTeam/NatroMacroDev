@@ -19,7 +19,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "%A_ScriptDir%\..\lib"
 #Include "Roblox.ahk"
 #Include "ReadIni.ahk"
-; #Include "ErrorHandling.ahk" ; Uncomment for the final
+#Include "ErrorHandling.ahk"
 
 SendMode "Event"
 DetectHiddenWindows 1
@@ -27,6 +27,7 @@ SetWorkingDir A_ScriptDir "\.."
 TraySetIcon "nm_image_assets\auryn.ico"
 
 OnMessage(0x0102, WM_CHAR)
+OnExit(nm_ManualHotbarExit)
 
 ; check for the correct AHK version before starting
 if (A_PtrSize != 4)
@@ -34,7 +35,7 @@ if (A_PtrSize != 4)
     SplitPath(A_AhkPath, , &ahkDirectory)
 
     if (!FileExist(ahkPath := ahkDirectory "\AutoHotkey32.exe"))
-        MsgBox "Couldn't find the 32-bit version of Autohotkey in:`n" ahkPath, "Error", 0x10
+        MsgBox "Could not find the 32-bit version of Autohotkey in:`n" ahkPath, "Error", 0x10
     else
         ReloadScript(ahkpath)
 
@@ -97,6 +98,7 @@ nm_importHotbarGlobals() {
 	local file := FileOpen(inipath, "w-d")
 	file.Write(ini), file.Close()
 }
+
 nm_importHotbarGlobals()
 
 ; GUI position
@@ -113,8 +115,6 @@ if (ManualHBX && ManualHBY)
 }
 else
 	ManualHBX:=ManualHBY:=20
-
-OnExit(nm_ManualHotbarExit)
 
 ;GUI
 ManualHotbar := Gui("-Caption +Border +E0x00000088", "Manual Hotbar")
@@ -256,30 +256,23 @@ nm_ManualHotbar(num, *){
     ManualHotbar["ManualHotbarTimer" num].Text := Round(ManualHotbarCountdown%num%,1)
 }
 
-nm_ToggleManualAll(GuiCtrl, *){
-    ;toggle on
+nm_ToggleManualAll(GuiCtrl, *)
+{
     global
-    local startNum := 0
-    if (GuiCtrl.Text = "Start`nAll" && ((ManualHotbarButton1=0 && ManualHotbarArmed1) || (ManualHotbarButton2=0 && ManualHotbarArmed2) || (ManualHotbarButton3=0 && ManualHotbarArmed3) || (ManualHotbarButton4=0 && ManualHotbarArmed4) || (ManualHotbarButton5=0 && ManualHotbarArmed5) || (ManualHotbarButton6=0 && ManualHotbarArmed6) || (ManualHotbarButton7=0 && ManualHotbarArmed7))) {
-        GuiCtrl.Text := "Stop`nAll"
-        loop 7 
-        {
+    isStarting := (GuiCtrl.Text = "Start`nAll")
+    
+    if isStarting {
+        startNum := 0
+        loop 7
             if (!ManualHotbarButton%A_Index% && ManualHotbarArmed%A_Index%)
                 startNum += nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index], -1)
-        }
-        if !startNum
-            GuiCtrl.Text := "Start`nAll"
+        GuiCtrl.Text := startNum ? "Stop`nAll" : "Start`nAll"
     }
-    ;toggle off
-    else if (GuiCtrl.Text = "Stop`nAll") {
-        GuiCtrl.Text := "Start`nAll"
+    else {
         loop 7
-        {
-            if !ManualHotbarButton%A_Index%
-                continue
-            else
-               nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index]) 
-        }
+            if ManualHotbarButton%A_Index%
+                nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index])
+        GuiCtrl.Text := "Start`nAll"
     }
 
     nm_LockHotbar()
@@ -289,26 +282,25 @@ nm_ToggleManualAll(GuiCtrl, *){
 nm_ToggleManualHotbar(GuiCtrl, param?,*){
     global
     num := SubStr(GuiCtrl.Name, -1)
-    if(!ManualHotbarButton%num% && ManualHotbarArmed%num%) {
+    
+    if (!ManualHotbarButton%num% && ManualHotbarArmed%num%) {
         if !ManualHotbar["ManualHotbarTimer" num].Value
-            if IsSet(param) && param == -1
-                return 0
-            else return msgbox("Cant start a timer with 0 seconds",,0x40010)
-        ManualHotbar["ManualHotbarButton" num].Text := ("Stop " . num)
+            return (IsSet(param) && param == -1) ? 0 : msgbox("Cannot start a timer with 0 seconds!",,0x40010)
+        
+        ManualHotbar["ManualHotbarButton" num].Text := "Stop " num
         ManualHotbar["ToggleManualAll"].Text := "Stop`nAll"
         ManualHotbarButton%num% := 1
-        ;ManualHotbar["ManualHotbarTimer" num].Enabled := 0
-        ManualHotbarCountdown%num%:=ManualHotbarTimer%num%
+        ManualHotbarCountdown%num% := ManualHotbarTimer%num%
         return 1
-    } else {
-        ManualHotbar["ManualHotbarButton" num].Text := ("Start " . num)
-        ManualHotbarButton%num% := 0
-        ;ManualHotbar["ManualHotbarTimer" num].Enabled := 1
-        ManualHotbar["ManualHotbarTimer" num].Text := ManualHotbarTimer%num%
-        if(!ManualHotbarButton1 && !ManualHotbarButton2 && !ManualHotbarButton3 && !ManualHotbarButton4 && !ManualHotbarButton5 && !ManualHotbarButton6 && !ManualHotbarButton7){
-            ManualHotbar["ToggleManualAll"].Text := "Start`nAll"
-        }
     }
+    
+    ManualHotbar["ManualHotbarButton" num].Text := "Start " num
+    ManualHotbarButton%num% := 0
+    ManualHotbar["ManualHotbarTimer" num].Text := ManualHotbarTimer%num%
+    
+    if !(ManualHotbarButton1 || ManualHotbarButton2 || ManualHotbarButton3 || ManualHotbarButton4 || ManualHotbarButton5 || ManualHotbarButton6 || ManualHotbarButton7)
+        ManualHotbar["ToggleManualAll"].Text := "Start`nAll"
+    
     nm_LockHotbar()
     ActivateRoblox()
 }
