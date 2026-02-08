@@ -1,4 +1,4 @@
-/*
+﻿/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -244,11 +244,6 @@ nm_importPatterns()
 		file := FileOpen(A_WorkingDir "\settings\imported\patterns.ahk", "w-d"), file.Write(import), file.Close()
 }
 nm_importPatterns()
-
-
-nm_importPaths_rework() {
-	static types := ["gtb", "gtc", "gtf", "gtp", "gtq", "wf"]
-}
 
 nm_importPaths(){
     pathtypes := ["gtb", "gtc", "gtf", "gtp", "gtq", "wf"]
@@ -23642,39 +23637,3 @@ nm_UpdateGUIVar(var)
 		}
 	}
 }
-
-combinePaths(paths*) {
-	combinedPath := nm_PathVars() "`n"
-	for i, path in paths {
-		if i = 1
-			combinedPath .= path
-		else
-			combinedPath .= "`n" path
-	}
-	return combinedPath
-}
-
-/* combine path example
-GetRobloxClientPos()
-global offsetY := GetYOffset()
-MouseMove windowX+350, windowY+offsetY+100
-nm_setShiftLock(0)
-nm_createWalk(combinePaths(paths['gtf']["pinetree"], paths['wf']["pinetree"]))
-KeyWait "F14", "D T5 L"
-KeyWait "F14", "T120 L" ; will a path really run for 2 minutes ?
-nm_endWalk()
-*/
-
-
-F10:: {
-	msgbox ActionList["collect"]["Dispensers"]
-}
-
-;F10:: {
-;	path := '"' exe_path64 '" /script "' A_WorkingDir '\submacros\Communicator.ahk" '
-;	params := [AccountType, discordMode, discordCheck, MainChannelCheck, MainChannelID, ReportChannelCheck, ReportChannelID, WebhookEasterEgg, DiscordUID, CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, PortNumber, CommunicationStyle, CommunicationID, A_TickCount]
-;	vars := ""
-;	for i, x in params
-;		vars .= '"' (x = "" ? "" : x) '" '
-;	Run path " " vars
-;}

@@ -125,7 +125,7 @@ SocketSetup() {
 			ListenerIsConnected := setup_succeded := true
 		}
 	}
-	else if SocketListenerExists() {
+	else if (IP != "127.0.0.1") || SocketListenerExists() {
 		try {
 			CommunicatorSocket := Socket.Client()
 			CommunicatorSocket.Connect(IP, PortNumber)
