@@ -20909,43 +20909,39 @@ ba_ProjectNectar(nectar, horizonHours){
 	return [current, projectedHorizon, projectedFull]
 }
 ba_GetNectarPercent(var){
-	global nectarnames, totalCom, totalMot, totalRef, totalSat, totalInv
-	static nectarcolors := Map("comforting",0x7E9EB3, "motivating",0x937DB3, "satisfying",0xB398A7, "refreshing",0x78B375, "invigorating",0xB35951)
-	nectarpercent := 0
-	for key, value in nectarnames {
-		if (var=value){
-			nectarColor := nectarcolors[StrLower(var)]
-			hwnd := GetRobloxHWND()
-			offsetY := GetYOffset(hwnd)
-			GetRobloxClientPos(hwnd)
-			try
-				result := PixelSearch(&bx2, &by2, windowX, windowY+offsetY+30, windowX+860, windowY+offsetY+150, nectarColor)
-			catch
-				result := 0
-			If (result = 1) {
-				nexty:=by2+1
-				pixels:=1
-				loop 38 {
-					OutputVar := PixelGetColor(bx2, nexty)
-					If (OutputVar=nectarColor) {
-						nexty:=nexty+1
-						pixels:=pixels+1
-					} else {
-						nectarpercent:=round(pixels/38*100, 0)
-						break
-					}
-				}
-				if (pixels >= 39)
-					nectarpercent := 100
+	global totalCom, totalMot, totalRef, totalSat, totalInv
+	static nectarcolors := Map("comforting",0xFF7E9EB3, "motivating",0xFF937DB3, "satisfying",0xFFB398A7, "refreshing",0xFF78B375, "invigorating",0xFFB35951)
+	nectarName := StrLower(var)
+	if !nectarcolors.Has(nectarName)
+		return 0
+	nectarColor := nectarcolors[nectarName]
+	hwnd := GetRobloxHWND()
+	GetRobloxClientPos(hwnd)
+	pBMScreen:=Gdip_BitmapFromScreen(windowX "|" windowY + offsetY + 36 "|" windowWidth "|" 38)
+	loop 22 { ;just checking the first 22 slots since nectars rarely move from thet top.
+		icoX := (A_Index-1)*38
+		pixel := Gdip_GetPixel(pBMScreen, icoX, 37)
+		if (pixel != nectarColor)
+			continue
+		high:=bottomY:=37, low:=0
+		while (low<high) {
+			mid := Floor((low+high)/2)
+			if (Gdip_GetPixel(pBMScreen, icoX, mid) = nectarColor) {
+				high := mid
 			} else {
-				nectarpercent:=0
+				low := mid+1
 			}
 		}
+		Gdip_DisposeImage(pBMScreen)
+		percent := Round((bottomY-low+1)/38*100,0)
+		if (percent>100)
+			percent := 99.99
+		total%SubStr(var, 1, 3)% := percent
+		return percent
 	}
-	if (nectarpercent=100)
-		nectarpercent:=99.99
-	total%SubStr(var, 1, 3)% := nectarpercent
-	return nectarpercent
+	Gdip_DisposeImage(pBMScreen)
+	total%SubStr(var, 1, 3)% := 0
+	return 0
 }
 ba_getLastField(currentnectar){
 	global ComfortingFields, RefreshingFields, SatisfyingFields, MotivatingFields, InvigoratingFields
