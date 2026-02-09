@@ -843,6 +843,7 @@ nm_importConfig()
 		, "HarvestFullGrown", 0
 		, "GotoPlanterField", 0
 		, "GatherFieldSipping", 0
+		, "AdaptivePlanterGatherInterrupt", 0
 		, "ConvertFullBagHarvest", 0
 		, "GatherPlanterLoot", 1
 		, "PlasticPlanterCheck", 1
@@ -3360,6 +3361,7 @@ MainGui.Add("UpDown", "xp+20 yp-1 h16 -16 Range0-20 vPlanterBufferUpDown Disable
 MainGui.Add("Button", "xp+20 yp w14 h16 vPlanterBufferHelp Disabled" hidden, "?").OnEvent("Click", nm_PlanterBufferHelp)
 MainGui.Add("CheckBox", "x2 y211 w150 h13 vgotoPlanterField Disabled Checked" gotoPlanterField hidden, "Only Gather in Planter Field").OnEvent("Click", ba_gotoPlanterFieldSwitch_)
 MainGui.Add("CheckBox", "x2 y224 w150 h13 vgatherFieldSipping Disabled Checked" gatherFieldSipping hidden, "Gather Field Nectar Sipping").OnEvent("Click", ba_gatherFieldSippingSwitch_)
+MainGui.Add("CheckBox", "x2 y237 w220 h13 vAdaptivePlanterGatherInterrupt Disabled Checked" AdaptivePlanterGatherInterrupt hidden, "Allow Gather Interrupt (Adaptive Planters)").OnEvent("Click", ba_saveConfig_)
 MainGui.Add("Text", "x10 y209 w137 h1 0x7 vTextLine3" hidden)
 MainGui.Add("Button", "x261 y24 w96 h18 -Wrap vTimersButton Disabled" hidden, " Show Timers (" TimersHotkey ")").OnEvent("Click", ba_showPlanterTimers)
 MainGui.Add("Text", "x147 y28 w1 h182 0x7 vTextLine4" hidden)
@@ -4100,6 +4102,7 @@ nm_TabPlantersLock(){
 	MainGui["PlanterBuffer"].Enabled := 0
 	MainGui["PlanterBufferUpDown"].Enabled := 0
 	MainGui["PlanterBufferHelp"].Enabled := 0
+	MainGui["AdaptivePlanterGatherInterrupt"].Enabled := 0
 	MainGui["gotoPlanterField"].Enabled := 0
 	MainGui["gatherFieldSipping"].Enabled := 0
 	MainGui["ConvertFullBagHarvest"].Enabled := 0
@@ -4172,6 +4175,7 @@ nm_TabPlantersUnLock(){
 	MainGui["PlanterBuffer"].Enabled := 1
 	MainGui["PlanterBufferUpDown"].Enabled := 1
 	MainGui["PlanterBufferHelp"].Enabled := 1
+	MainGui["AdaptivePlanterGatherInterrupt"].Enabled := 1
 	MainGui["gotoPlanterField"].Enabled := 1
 	MainGui["gatherFieldSipping"].Enabled := 1
 	MainGui["ConvertFullBagHarvest"].Enabled := 1
@@ -6245,7 +6249,7 @@ ba_planterSwitch(*){
 		,"PlasticPlanterCheck","CandyPlanterCheck","BlueClayPlanterCheck","RedClayPlanterCheck","TackyPlanterCheck","PesticidePlanterCheck"
 		,"HeatTreatedPlanterCheck","HydroponicPlanterCheck","PetalPlanterCheck","PlanterOfPlentyCheck","PaperPlanterCheck","TicketPlanterCheck"
 		,"gotoPlanterField","gatherFieldSipping","TextMax","MaxAllowedPlanters","MaxAllowedPlantersText"
-	,"TextAllowedPlanters","TextAllowedFields","TimersButton","ConvertFullBagHarvest","GatherPlanterLoot","TextBox1","TextBuffer","PlanterBuffer","PlanterBufferUpDown","PlanterBufferHelp"
+	,"TextAllowedPlanters","TextAllowedFields","TimersButton","ConvertFullBagHarvest","GatherPlanterLoot","TextBox1","TextBuffer","PlanterBuffer","PlanterBufferUpDown","PlanterBufferHelp","AdaptivePlanterGatherInterrupt"
 		,"NPLeft","NPRight","NP1Left","NP1Right","NP2Left","NP2Right","NP3Left","NP3Right","NP4Left","NP4Right","NP5Left","NP5Right"]
 	, ManualPlantersControls := ["MHeader1Text","MHeader2Text","MHeader3Text"
 		,"MSlot1PlanterText","MSlot1FieldText","MSlot1SettingsText","MSlot1SeparatorLine"
@@ -6864,6 +6868,7 @@ ba_saveConfig_(*){ ;//todo: needs replacing!
 	HarvestInterval := 0
 	GotoPlanterField := MainGui["GotoPlanterField"].Value
 	GatherFieldSipping := MainGui["GatherFieldSipping"].Value
+	AdaptivePlanterGatherInterrupt := MainGui["AdaptivePlanterGatherInterrupt"].Value
 	ConvertFullBagHarvest := MainGui["ConvertFullBagHarvest"].Value
 	GatherPlanterLoot := MainGui["GatherPlanterLoot"].Value
 	PlasticPlanterCheck := MainGui["PlasticPlanterCheck"].Value
@@ -6945,6 +6950,7 @@ ba_saveConfig_(*){ ;//todo: needs replacing!
 	IniWrite HarvestFullGrown, "settings\nm_config.ini", "Planters", "HarvestFullGrown"
 	IniWrite GotoPlanterField, "settings\nm_config.ini", "Planters", "GotoPlanterField"
 	IniWrite GatherFieldSipping, "settings\nm_config.ini", "Planters", "GatherFieldSipping"
+	IniWrite AdaptivePlanterGatherInterrupt, "settings\nm_config.ini", "Planters", "AdaptivePlanterGatherInterrupt"
 	IniWrite ConvertFullBagHarvest, "settings\nm_config.ini", "Planters", "ConvertFullBagHarvest"
 	IniWrite GatherPlanterLoot, "settings\nm_config.ini", "Planters", "GatherPlanterLoot"
 }
@@ -16142,7 +16148,7 @@ nm_GoGather(){
 		, FieldName3, FieldPattern3, FieldPatternSize3, FieldPatternReps3, FieldPatternShift3, FieldPatternInvertFB3, FieldPatternInvertLR3, FieldUntilMins3, FieldUntilPack3, FieldReturnType3, FieldSprinklerLoc3, FieldSprinklerDist3, FieldRotateDirection3, FieldRotateTimes3, FieldDriftCheck3
 		, FieldName, FieldPattern, FieldPatternSize, FieldPatternReps, FieldPatternShift, FieldPatternInvertFB, FieldPatternInvertLR, FieldUntilMins, FieldUntilPack, FieldReturnType, FieldSprinklerLoc, FieldSprinklerDist, FieldRotateDirection, FieldRotateTimes, FieldDriftCheck
 		, MondoBuffCheck, MondoAction, LastMondoBuff
-		, PlanterMode, gotoPlanterField, MPlanterGatherA, MPlanterGather1, MPlanterGather2, MPlanterGather3, LastPlanterGatherSlot, MPlanterHold1, MPlanterHold2, MPlanterHold3, PlanterField1, PlanterField2, PlanterField3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3
+		, PlanterMode, gotoPlanterField, MPlanterGatherA, MPlanterGather1, MPlanterGather2, MPlanterGather3, LastPlanterGatherSlot, MPlanterHold1, MPlanterHold2, MPlanterHold3, PlanterField1, PlanterField2, PlanterField3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3, AdaptivePlanterGatherInterrupt
 		, QuestLadybugs, QuestRhinoBeetles, QuestSpider, QuestMantis, QuestScorpions, QuestWerewolf
 		, GatherStartTime, TotalGatherTime, SessionGatherTime, ConvertStartTime, TotalConvertTime, SessionConvertTime
 		, GameFrozenCounter
@@ -16594,6 +16600,20 @@ nm_GoGather(){
 				;continue if boosted
 				if nm_GatherBoostInterrupt()
 					continue
+				if ((PlanterMode = 2) && AdaptivePlanterGatherInterrupt) {
+					now := nowUnix()
+					dueHarvest := 0
+					Loop 3 {
+						if ((PlanterField%A_Index% != "None") && (PlanterHarvestTime%A_Index% <= now)) {
+							dueHarvest := 1
+							break
+						}
+					}
+					if (dueHarvest) {
+						interruptReason := "Planter Cycle"
+						break
+					}
+				}
 				;Manual planter gather interrupt
 				if ((fieldOverrideReason="Manual Planter") && (PlanterMode = 1) && (MPlanterGatherA)) {
 					;update current field planter progress every 2 minutes during planter gather
@@ -20452,6 +20472,7 @@ ba_planter(){
 	global n3minPercent
 	global n4minPercent
 	global n5minPercent
+	global PlanterBuffer
 	global PlasticPlanterCheck
 	global CandyPlanterCheck
 	global BlueClayPlanterCheck
@@ -20508,7 +20529,7 @@ ba_planter(){
 		nm_planterSS()
 
 	horizonOverride := 0
-	deficitSlack := 1
+	deficitSlack := 0
 	autoHarvest := 1
 
 	nectars:=["n1", "n2", "n3", "n4", "n5"]
@@ -20549,8 +20570,14 @@ ba_planter(){
 	}
 
 	deficits := Map()
+	buffer := max(0, min(20, PlanterBuffer))
 	for _, item in priorityList {
-		target := allAboveMin ? 100 : item["min"]
+		if (allAboveMin) {
+			target := 100
+		} else {
+			bufferPoints := (item["min"] * buffer) / 100
+			target := min(100, item["min"] + bufferPoints)
+		}
 		proj := projections[item["name"]]
 		deficits[item["name"]] := max(0, target - proj[2])
 	}
@@ -20660,7 +20687,12 @@ ba_planter(){
 			}
 		}
 		for _, item in priorityList {
-			target := allAboveMin ? 100 : item["min"]
+			if (allAboveMin) {
+				target := 100
+			} else {
+				bufferPoints := (item["min"] * buffer) / 100
+				target := min(100, item["min"] + bufferPoints)
+			}
 			proj := projections[item["name"]]
 			deficits[item["name"]] := max(0, target - proj[2])
 		}
@@ -20879,6 +20911,7 @@ ba_ProjectNectar(nectar, horizonHours){
 ba_GetNectarPercent(var){
 	global nectarnames, totalCom, totalMot, totalRef, totalSat, totalInv
 	static nectarcolors := Map("comforting",0x7E9EB3, "motivating",0x937DB3, "satisfying",0xB398A7, "refreshing",0x78B375, "invigorating",0xB35951)
+	nectarpercent := 0
 	for key, value in nectarnames {
 		if (var=value){
 			nectarColor := nectarcolors[StrLower(var)]
@@ -20902,6 +20935,8 @@ ba_GetNectarPercent(var){
 						break
 					}
 				}
+				if (pixels >= 39)
+					nectarpercent := 100
 			} else {
 				nectarpercent:=0
 			}
@@ -21380,12 +21415,17 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 			estimatedNectarPercent:=estimatedNectarPercent+PlanterEstPercent%A_Index%
 		}
 	}
-	estimatedNectarPercent:=estimatedNectarPercent+ba_GetNectarPercent(nectar) ;projected nectar percent
-	minPercent:=estimatedNectarPercent
+	currentPercent := ba_GetNectarPercent(nectar)
+	estimatedNectarPercent:=estimatedNectarPercent+currentPercent ;projected nectar percent
+	minPercent:=0
 	Loop 5{ ;5 nectar priorities
-		if(n%A_Index%priority=nectar && minPercent<=n%A_Index%minPercent)
-			minPercent:=n%A_Index%minPercent ; minPercent > estimatedNectarPercent
+		if(n%A_Index%priority=nectar) {
+			minPercent:=n%A_Index%minPercent
+			break
+		}
 	}
+	if (minPercent<=0)
+		minPercent:=estimatedNectarPercent
 	buffer := max(0, min(20, PlanterBuffer))
 	bufferPoints := (minPercent * buffer) / 100
 	lowerBound := max(0, minPercent - bufferPoints)
@@ -21397,7 +21437,6 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 	} else {
 		timeToTarget := timeToCap
 	}
-	currentPercent := ba_GetNectarPercent(nectar)
 	if (currentPercent > upperTarget) {
 		lowerBound := minPercent
 	}
@@ -21421,7 +21460,11 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar){
 	Loop 3 {
 		if(PlanterHarvestTime%A_Index% > PlanterHarvestTimeN && PlanterHarvestTime%A_Index% < PlanterHarvestTimeN + 600) {
 			PlanterHarvestTime%A_Index% := PlanterHarvestTimeN
+			remainingSeconds := max(0, PlanterHarvestTime%A_Index% - nowUnix())
+			planterStats := ba_GetPlanterStats(PlanterName%A_Index%, PlanterField%A_Index%)
+			PlanterEstPercent%A_Index% := round((remainingSeconds * (planterStats[2] * planterStats[3])) / 864, 1)
 			IniWrite PlanterHarvestTimeN, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" A_Index
+			IniWrite PlanterEstPercent%A_Index%, "settings\nm_config.ini", "Planters", "PlanterEstPercent" A_Index
 		}
 		else if(A_Index=planterNum)
 			IniWrite PlanterHarvestTimeN, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" planterNum
