@@ -14318,7 +14318,7 @@ nm_Bugrun(){
 				nm_setStatus("Traveling", "Rhino Beetles (Blue Flower)")
 				movement :=
 				(
-				nm_Walk(18, BackKey) '
+				nm_Walk(22, BackKey) '
 				send "{' RotLeft ' 2}"
 				' nm_Walk(10, BackKey)
 				)
