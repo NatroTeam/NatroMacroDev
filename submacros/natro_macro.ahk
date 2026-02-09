@@ -11348,6 +11348,7 @@ nm_KillTimeEstimation(bossName, bossTimer)
 	}
 }
 nm_imgSearch(fileName,v,aim := "full", trans:="none"){
+	static last_memory_usage := [0, 0]
 	GetRobloxClientPos()
 	;xi := 0
 	;yi := 0
@@ -11363,9 +11364,30 @@ nm_imgSearch(fileName,v,aim := "full", trans:="none"){
 		catch as err {
             ; Log of the error
             FileAppend("Error: " err.message "`nWith Stack:`n" err.Stack, "nm_imgSearch-stack.log")
-			nm_setStatus("Error", err.Message)
+			message := 
+			(
+			"
+				Error Message: " err.Message "
+
+				Memory Usage: " last_memory_usage[1] "%
+				Memory Usage (MB): " last_memory_usage[2] / 1000000 "
+			"
+			)
+			nm_setStatus("Error", message)
 			Sleep 5000
 			ProcessClose DllCall("GetCurrentProcessId")
+		}
+		else {
+			LPMEMORYSTATUSEX := Buffer(64)
+			NumPut("uint", 64, LPMEMORYSTATUSEX)
+			success := DllCall("GlobalMemoryStatusEx", "ptr", LPMEMORYSTATUSEX, "int")
+			if success {
+				dwMemoryLoad := NumGet(LPMEMORYSTATUSEX, 4, "uint")
+				ullTotalPhys := NumGet(LPMEMORYSTATUSEX, 8, "int64")
+				ullAvailPhys := NumGet(LPMEMORYSTATUSEX, 16, "int64")
+				last_memory_usage[1] := dwMemoryLoad
+				last_memory_usage[2] := ullTotalPhys - ullAvailPhys
+			}
 		}
 		if (result = 1)
 			return [0,FoundX-windowX,FoundY-windowY]
