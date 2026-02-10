@@ -111,7 +111,7 @@ OnMessage(0x5560, nm_copyDebugLog)
 OnMessage(0x0020, nm_WM_SETCURSOR)
 
 ; set version identifier
-VersionID := "1.1.0-B"
+VersionID := "1.1.0-B2"
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
@@ -1255,8 +1255,20 @@ PolarBear := Map("Aromatic Pie",
 
 	, "Trail Mix",
 		[[1,"Collect","Sunflower"]
-		,[2,"Collect","Pineapple"]])
+		,[2,"Collect","Pineapple"]]
 
+	; TODO: PETALDETECT
+	, "Petal Tabbouleh",
+		[[1, "Collect", "Pineapple"]
+		, [2, "Collect", "Strawberry"]
+		, [3, "Kill", "RhinoBeetles"]]
+
+	, "Mashed Blooms",
+		[[1, "Collect", "Pumpkin"]
+		,[2, "Collect", "Spider"]
+		,[3, "Collect", "Bamboo"]
+		,[4, "Kill", "Spider"]]
+)
 
 BlackBear := Map("Just White",
 		[[1,"Collect","White"]]
@@ -1396,6 +1408,11 @@ BuckoBee := Map("Abilities",
 		,[4,"Kill","RhinoBeetles"]
 		,[1,"Collect","Blue Flower"]
 		,[2,"Collect","Bamboo"]
+		,[3,"Collect","Pine Tree"]]
+
+	, "Petals",
+		[[1,"Collect","Clover"]
+		,[2,"Collect","Pineapple"]
 		,[3,"Collect","Pine Tree"]])
 
 
@@ -1466,7 +1483,13 @@ RileyBee := Map("Abilities",
 		,[4,"Kill","Ladybugs"]
 		,[1,"Collect","Mushroom"]
 		,[2,"Collect","Strawberry"]
-		,[3,"Collect","Rose"]])
+		,[3,"Collect","Rose"]]
+
+	, "Petals",
+		[[1,"Collect","Clover"]
+		,[2,"Collect","Spider"]
+		,[3,"Collect","Strawberry"]]
+)
 
 ;field booster data
 FieldBooster:=Map("pine tree", {booster:"blue", stacks:1}
@@ -7942,9 +7965,9 @@ nm_ClaimMethodHelp(*){ ; join method information
 	MsgBox "
 	(
 	DESCRIPTION:
-	This option lets you choose between 'Detect' and 'To Hive' Hive Claiming.
+	This option lets you choose between 'Detect' and 'To Slot' Hive Claiming.
 
-	'To Hive' is the more reliable option out of the bunch, this will go straight to hive without any concern to if it's claimed or not.
+	'To Slot' is the more reliable option out of the bunch, this will go straight to the set hive slot without any concern as to if it's claimed or not.
 	This is the best choice if you are in a private server.
 
 	'Detect' is only recommended if you are playing in a public server for speed.
@@ -10284,24 +10307,20 @@ nm_copyDebugLog(param:="", *) {
 	debugReport :=
 	(
 	'``````md
-	<NM Debug>
-	#PC Info'
+	<NM Debug>'
+	header("PC Info", "`n")
 	PcInfo()
-	'
 
-	#Macro Info'
+	header("Macro Info")
 	MacroInfo()
-	'
 
-	#Roblox Info'
+	header("Roblox Info")
 	RobloxInfo()
-	'
-
-	#Detected Problems'
+	
+	header("Detected Problems")
 	DetectedProblems()
-	'
 
-	#Recent Issues'
+	header("Recent Issues")
 	RecentIssues()
 	'``````'
 	)
@@ -10312,6 +10331,11 @@ nm_copyDebugLog(param:="", *) {
 
 	return 1
 
+	;formatters
+	header(text, newlines:="`n`n") => newlines "# " text
+	point(label, text) => "`n- " label ": " text
+	path(text) => "``" text "``"
+ 
 	PcInfo(){
 		static DisplayScale := Map(
 		96, 100,
@@ -10322,11 +10346,9 @@ nm_copyDebugLog(param:="", *) {
 		if fromRC {
 			return 
 			(
-			'
-			%OS%
-			* Resolution: ' A_ScreenWidth 'x' A_ScreenHeight ' (' DisplayScale[A_ScreenDPI] '%)
-			%CPU%
-			%RAM%'
+			'%OS%'
+			point("Resolution", A_ScreenWidth 'x' A_ScreenHeight ' (' DisplayScale[A_ScreenDPI] '%)')
+			'%CPU% %RAM%'
 			)
 		}
 		winmgmts := ComObjGet("winmgmts:")
@@ -10347,21 +10369,19 @@ nm_copyDebugLog(param:="", *) {
 
 		return
 		(
-		'
-		* OS: ' os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')
-		* Resolution: ' A_ScreenWidth 'x' A_ScreenHeight ' (' DisplayScale[A_ScreenDPI] '%)'
-		. (processorName ? '`n* CPU: ' processorName : '')
-		. (RAMAmount ? '`n* RAM: ' RAMAmount ' GB' : '')
+		point("OS", os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')')
+		point("Resolution", A_ScreenWidth 'x' A_ScreenHeight ' (' DisplayScale[A_ScreenDPI] '%)')
+		. (processorName ? point("CPU", processorName) : '')
+		. (RAMAmount ? point("RAM", RAMAmount ' GB') : '')
 		)
 	}
 	MacroInfo(){
 		return 
 		(
-		'
-		* AHK Version: ' A_AhkVersion (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? ' (built-in)' : ' (installed)') '
-		* Natro Version: ' VersionID ' (' ((VerCompare(VersionID, LatestVer) = 0) ? 'latest' : 'outdated') ')
-		* Installation Path: ``' StrReplace(A_WorkingDir, EnvGet("USERPROFILE"), '%USERPROFILE%') '``'
-	)
+			point("AHK Version", A_AhkVersion (A_AhkPath = A_WorkingDir '\submacros\AutoHotkey32.exe' ? ' (built-in)' : ' (installed)'))
+			point("Natro Version", VersionID ((VerCompare(VersionID, LatestVer) < 0) ? ' (outdated)' : ''))	
+			point("Installation Path", path(StrReplace(A_WorkingDir, EnvGet("USERPROFILE"), '%USERPROFILE%')))
+		)
 	}
 	RobloxInfo(){
 		robloxtype := nm_DetectRobloxType()
@@ -10370,11 +10390,12 @@ nm_copyDebugLog(param:="", *) {
 			robloxpath := nm_GetRobloxUWPPath()
 		else
 			robloxpath := nm_GetRobloxWebPath()
+		if robloxpath 
+			robloxpath := Trim(StrReplace(StrReplace(StrReplace(robloxpath, EnvGet("USERPROFILE"), '%USERPROFILE%'), '%1', ''), '"', ''))
 		return 
 		(
-		(robloxpath ? '`n* Path: ``' Trim(StrReplace(StrReplace(StrReplace(robloxpath, EnvGet("USERPROFILE"), '%USERPROFILE%'), '%1', ''), '"', '')) '``' : '')
-		'
-		* Default app: ' robloxtype
+			(robloxpath ? point("Path", path(robloxpath)) : '')
+			point("Default app", robloxtype)
 		)
 	}
 	DetectedProblems(){
@@ -10388,7 +10409,7 @@ nm_copyDebugLog(param:="", *) {
 			checkProblem((offsetfail ?? 0), 'Recent y-offset fail')
 			checkProblem((VerCompare(VersionID, LatestVer) < 0), 'Outdated Natro Macro version')
 			checkProblem((InStr(EnvGet("SESSIONNAME"), "RDP") && remoteDesktopMinimize != 2), 'Minimizing remote desktop connection will cause Natro Macro to break')
-			checkProblem((DllCall("GetSystemMetrics", "Int", 95) != 0), 'Touchscreen is enabled')
+			checkProblem(((DllCall("GetSystemMetrics", "int", 94)) & 0x40 && DllCall("GetSystemMetrics", "int", 95) >= 2), 'Touchscreen is enabled')
 			checkProblem((robloxtype = RobloxTypes.UWP), 'Using UWP Roblox, it is currently unsupported for this Natro Macro version')
 			checkProblem((HideErrors = 0), 'Error hiding is disabled')
 
@@ -10400,14 +10421,13 @@ nm_copyDebugLog(param:="", *) {
 		if (DebugLogEnabled = 0)
 			return '`n<Debugging disabled>'
 		latestDebuglog := FileRead('.\settings\debug_log.txt')
-		latestLogs := SubStr(latestDebugLog, InStr(latestDebuglog, '`n', 0, -1, -250))
+		latestLogs := SubStr(latestDebugLog, ((pos := InStr(latestDebuglog, '`n', 0, -1, -250)) ? pos : 1))
 		issues := '', totalissues := 0
 
 		loop parse latestLogs, '`r`n' {
 			if InStr(A_LoopField, 'Error') || InStr(A_LoopField, 'Warning') || InStr(A_LoopField, 'Failed'){
 				issues .= A_LoopField '`n'
-				totalissues++
-				if totalissues > 10	
+				if ++totalissues > 10	
 					break
 			}
 		}
@@ -11111,6 +11131,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 
 		resetTime:=nowUnix()
 		PostSubmacroMessage("background", 0x5554, 1, resetTime)
+
 		;reset
 		ActivateRoblox()
 		GetRobloxClientPos()
@@ -11122,8 +11143,11 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			n += ((Gdip_ImageSearch(pBMScreen, bitmaps["emptyhealth"], , , , , , 10) || nm_HealthBar()) = (n = 0))
 			Gdip_DisposeImage(pBMScreen)
 		}
-		Sleep 1000
+
 		SetKeyDelay PrevKeyDelay
+
+		; Nate's quick fix for laggy pcs - Will be removed soon
+		Sleep 2000 + 1000 * A_Index
 
 		; hive check
 		if !atHive() && nm_DetectSpawn() {
@@ -11140,7 +11164,7 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 			if atHive()
 				HiveConfirmed := 1
 		} else {
-			nm_SetHiveCameraDirection(2)
+			nm_SetHiveCameraDirection(4)
 		}
 	}
 	;convert
@@ -14303,7 +14327,7 @@ nm_Bugrun(){
 				nm_setStatus("Traveling", "Rhino Beetles (Blue Flower)")
 				movement :=
 				(
-				nm_Walk(18, BackKey) '
+				nm_Walk(22, BackKey) '
 				send "{' RotLeft ' 2}"
 				' nm_Walk(10, BackKey)
 				)
@@ -16755,8 +16779,11 @@ nm_GoGather(){
 		pBMScreen := Gdip_BitmapFromScreen(WindowX+WindowWidth*0.5-260 "|" WindowY+WindowHeight-101 "|" 75*7 "|" 66) ;hotbar
 		if (Gdip_ImageSearch(pBMScreen,bitmaps["whirligigslot"], , , , , , 10, ,3) = 1) {
 			Gdip_DisposeImage(pBMScreen)
-			Send "{" WhirligigKey "}{ " RotUp " 10}{ " RotDown " 4}{" ZoomIn " 10}"
+			Send "{" WhirligigKey "}"
 			sleep(2000) ; make sure the player is on the ground
+
+			Send "{ " RotDown " 10}{ " RotUp " 7}{" ZoomIn " 10}"
+
 			if !nm_SetHiveCameraDirection(1)
 				nm_setStatus("Warning", "Unable to confirm hive!")
 			
@@ -22325,12 +22352,13 @@ start(*){
 			}
 		}
 
-		if !RemoteStart && !ForceStart
+		if !RemoteStart && !ForceStart {
 			if nm_MsgBoxIncorrectRobloxSettings()
 				(MainGui["StartButton"].Enabled := 1, Hotkey(StartHotkey, "On"), nm_LockTabs(0))
+		}
 
 		;Touchscreen WARNING @ start
-		if (DllCall("GetSystemMetrics", "Int", 95) != 0) {
+		if ((DllCall("GetSystemMetrics", "int", 94)) & 0x40 && DllCall("GetSystemMetrics", "int", 95) >= 2) {
 			if RemoteStart {
 				nm_setStatus("Error", "Touchscreen enabled, please disable it for the macro to function correctly.")
 			} else {

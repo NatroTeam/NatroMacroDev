@@ -2460,14 +2460,15 @@ nm_command(command)
 				if !result
 					discord.SendEmbed("Timed out", 5066239, , , , id)
 				else {
+					point(key, value) => "`n- " key ": " value
 					str := A_Clipboard
-					str := StrReplace(str, '%RAM%', '* RAM: ' RAMAmount 'GB')
-					str := StrReplace(str, '%OS%', '* OS: ' os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')')
-					str := StrReplace(str, '%CPU%', '* CPU: ' processorName)
+					str := StrReplace(str, '%RAM%', point('RAM', RAMAmount 'GB'))
+					str := StrReplace(str, '%OS%', point('OS', os_version ' (' (A_Is64bitOS ? '64-bit' : '32-bit') ')'))
+					str := StrReplace(str, '%CPU%', point('CPU', processorName))
 					str := StrReplace(StrReplace(StrReplace(str, '\', '\\'), '`n', '\n'), '`r', '')
 				}
 				A_Clipboard := str
-				discord.SendEmbed('**Debug Log**\nTo get help with debugging you can join [our discord](https:\/\/discord.gg\/invite\/xbkXjwWh8U) and ask for help here: https:\/\/discord.com\/channels\/1012610056921038868\/1073389106568122378', , str, , , id)
+				discord.SendEmbed('**Debug Log**\nTo get help with debugging you can join [our discord](https:\/\/discord.gg\/invite\/xbkXjwWh8U)', , str, , , id)
 			}
 			DetectHiddenWindows 0
 
