@@ -18174,8 +18174,6 @@ nm_Night(){
 
 nm_confirmNight()
 {
-	global CheckNight
-
 	nm_setStatus("Confirming", "Night")
 	nm_Reset(0, 2000, 0)
 	ActivateRoblox()
@@ -18187,7 +18185,7 @@ nm_confirmNight()
 	; AHK loops through maps alphanumerically.
 	; bitmaps["confirm"]["day"] comes first because d is before n.
 	; so the return value is set to 0 when the loop is on day
-	; and then the return value is set to 1 when the loop is on night.
+	; and then the return value is set to 1 when the loop is on ni,ht.
 
 	for Time in bitmaps["confirm"]
 	{
