@@ -18189,23 +18189,20 @@ nm_confirmNight()
 	; so the return value is set to 0 when the loop is on day
 	; and then the return value is set to 1 when the loop is on night.
 
-	for DayTime in bitmaps["confirm"]
+	for Time in bitmaps["confirm"]
 	{
-		ReturnValue := A_Index - 1
-		for spot in bitmaps["confirm"][DayTime]
+		isNight := A_Index - 1 
+		for spot in bitmaps["confirm"][Time]
 		{
-			if Gdip_ImageSearch(pBMArea, bitmaps["confirm"][DayTime][spot])
-			{
-				Gdip_DisposeImage(pBMArea)
-				return ReturnValue
-			}	
+			if Gdip_ImageSearch(pBMArea, bitmaps["confirm"][Time][spot])
+				break 2
 		}
 	}
 
 	CamMove(1)
 	Gdip_DisposeImage(pBMArea)
 
-	return 0
+	return isNight
 
 	CamMove(Revert)
 	{
