@@ -9528,12 +9528,12 @@ blc_mutations(*) {
 		if updating
 			return
 		updating := true
-		value := RegExReplace(ctrl.Value, "\\D+")
+		value := RegExReplace(ctrl.Value, "\D+")
 		if (value != ctrl.Value)
 			ctrl.Value := value
 		HoneyLimit := (value = "") ? "0" : value
 		HoneyLimitBase := HoneyLimit
-		HoneyLimitRemainingB := (HoneyLimit = "0") ? 0 : Integer(HoneyLimit) * 1000
+		HoneyLimitRemainingB := (HoneyLimit = "0") ? 0 : HoneyLimit * 1000
 		IniWrite(HoneyLimit, ".\\settings\\mutations.ini", "ssa", "HoneyLimit")
 		updating := false
 	}
@@ -10058,7 +10058,7 @@ UpdateHoneyGui() {
 				return
 		if (HoneyLimit && HoneyLimit != "0") {
 			HoneyLimitBase := HoneyLimit
-			HoneyLimitRemainingB := Integer(HoneyLimit) * 1000
+			HoneyLimitRemainingB := HoneyLimit * 1000
 		}
 		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
 			return msgbox("You must have Bee Swarm Simulator open to use this!", "SSA Roller", 0x40030)
@@ -10099,8 +10099,7 @@ UpdateHoneyGui() {
 			, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin, ssaSafety, stopping
 		static lastRollTick := 0, pendingRoll := false, pendingSince := 0
 		doublePassive := (DoublePassiveCheck = 1)
-		rollCooldown := 900
-		pendingTimeout := 8000
+		static rollCooldown := 900
 		if (!pendingRoll && lastRollTick) {
 			elapsed := A_TickCount - lastRollTick
 			if (elapsed < rollCooldown)
@@ -10131,7 +10130,7 @@ UpdateHoneyGui() {
 			Sleep 300
 		} else {
 			elapsed := A_TickCount - pendingSince
-			if (elapsed > pendingTimeout) {
+			if (elapsed > 8000) {
 				pendingRoll := false
 				pendingSince := 0
 				if ssaSafety {
@@ -10319,7 +10318,7 @@ UpdateHoneyGui() {
 		logPath := ".\\settings\\ssa_debug.txt"
 		if (logCount = 1 || Mod(logCount, 50) = 0)
 			SSA_TrimLog(logPath)
-		FileAppend("[" A_Hour ":" A_Min ":" A_Sec "] " message "``r``n", logPath)
+		FileAppend("[" A_Hour ":" A_Min ":" A_Sec "] " message "`r`n", logPath)
 	}
 	SSA_TrimLog(logPath) {
 		maxBytes := 262144
@@ -10336,16 +10335,16 @@ UpdateHoneyGui() {
 		f.Seek(-readBytes, 2)
 		tail := f.Read()
 		f.Close()
-		tail := RTrim(tail, "``r``n")
+		tail := RTrim(tail, "`r`n")
 		if (tail = "")
 			return
-		lines := StrSplit(tail, "``n", "``r")
+		lines := StrSplit(tail, "`n", "`r")
 		start := Max(1, lines.Length - (maxLines - 1))
 		newText := ""
 		for idx, line in lines {
 			if (idx < start)
 				continue
-			newText .= line "``r``n"
+			newText .= line "`r`n"
 		}
 		f := FileOpen(logPath, "w")
 		if !f
@@ -10355,15 +10354,15 @@ UpdateHoneyGui() {
 	}
 	SSA_ParseStatValue(line, key) {
 		cleaned := StrLower(line)
-		cleaned := RegExReplace(cleaned, "i)x\\s*[li]", "x1")
-		cleaned := RegExReplace(cleaned, "(\\d)\\s+(?=\\d)", "$1")
-		cleaned := RegExReplace(cleaned, "(\\.)\\s+(?=\\d)", "$1")
+		cleaned := RegExReplace(cleaned, "i)x\s*[li]", "x1")
+		cleaned := RegExReplace(cleaned, "(\d)\s+(?=\d)", "$1")
+		cleaned := RegExReplace(cleaned, "(\.)\s+(?=\d)", "$1")
 		if (key = "convert") {
-			if RegExMatch(cleaned, "i)x?\\s*([0-9lIsS.\\s]+)\\s*convert\\s*rate", &m) {
-				raw := RegExReplace(m[1], "\\s+", "")
+			if RegExMatch(cleaned, "i)x?\s*([0-9lIsS.\s]+)\s*convert\s*rate", &m) {
+				raw := RegExReplace(m[1], "\s+", "")
 				raw := SSA_NormalizeNumberToken(raw)
 				raw := RegExReplace(raw, "[^0-9.]", "")
-				if RegExMatch(raw, "^[0-9]+(?:\\.[0-9]+)?$") {
+				if RegExMatch(raw, "^[0-9]+(?:\.[0-9]+)?$") {
 					val := raw + 0
 					if (val >= 1.0 && val <= 2.0)
 						return Round(val * 100)
@@ -10371,8 +10370,8 @@ UpdateHoneyGui() {
 			}
 			return 0
 		}
-		if RegExMatch(cleaned, "i)([0-9lIsS]+(?:\\s*[0-9lIsS]+)*)\\s*%", &m) {
-			raw := RegExReplace(m[1], "\\s+", "")
+		if RegExMatch(cleaned, "i)([0-9lIsS]+(?:\s*[0-9lIsS]+)*)\s*%", &m) {
+			raw := RegExReplace(m[1], "\s+", "")
 			raw := SSA_NormalizeNumberToken(raw)
 			if RegExMatch(raw, "^[0-9]+$")
 				return Integer(raw)
@@ -10385,7 +10384,7 @@ UpdateHoneyGui() {
 		line := StrReplace(line, "1", "l")
 		line := StrReplace(line, "5", "s")
 		norm := RegExReplace(line, "[^a-z]+", " ")
-		return Trim(RegExReplace(norm, "\\s+", " "))
+		return Trim(RegExReplace(norm, "\s+", " "))
 	}
 	SSA_StatLineMatch(key, tokens) {
 		if (tokens.Length = 0)
@@ -10485,7 +10484,7 @@ UpdateHoneyGui() {
 		if (!HoneyLimit || HoneyLimit = "0")
 			return 1
 		if (HoneyLimitBase != HoneyLimit) {
-			if !RegExMatch(HoneyLimit, "^\\d+$", &out)
+			if !RegExMatch(HoneyLimit, "^\d+$", &out)
 				return 1
 			HoneyLimitBase := HoneyLimit
 			HoneyLimitRemainingB := Integer(out[0]) * 1000
