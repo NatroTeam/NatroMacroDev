@@ -8955,6 +8955,7 @@ blc_mutations(*) {
 	#include %A_ScriptDir%\lib\Roblox.ahk
 	#include %A_ScriptDir%\lib\Gdip_ImageSearch.ahk
 	#include %A_ScriptDir%\lib\ErrorHandling.ahk
+	#include %A_ScriptDir%\lib\LevenshteinDistance.ahk
 	;==================================
 	SendMode("Event")
 	CoordMode(`'Pixel`', `'Screen`')
@@ -10111,7 +10112,7 @@ UpdateHoneyGui() {
 		if fail
 			return -1
 		if !pendingRoll {
-			rollCost := doublePassive ? 500 : 250
+			rollCost := doublePassive ? 500 : 10
 			if (ssa_subHoney(rollCost) < 0)
 				return -2
 			ActivateRoblox()
@@ -10478,24 +10479,6 @@ UpdateHoneyGui() {
 			if SSA_TokenMatch(tokens, cand)
 				return true
 		return false
-	}
-	LevenshteinDistance(s1, s2) {
-		len1 := StrLen(s1), len2 := StrLen(s2)
-		s1 := StrSplit(s1), s2 := StrSplit(s2)
-		d := {}, d.0 := { 0: 0 }
-		Loop len1
-			d.%A_Index% := { 0: A_Index }
-		Loop len2
-			d.0.%A_Index% := A_Index
-		Loop len1 {
-			i := A_Index
-			Loop len2 {
-				j := A_Index
-				cost := s1[i] != s2[j]
-				d.%i%.%j% := Min(d.%i - 1%.%j% + 1, d.%i%.%j - 1% + 1, d.%i - 1%.%j - 1% + cost)
-			}
-		}
-		return d.%len1%.%len2%
 	}
 	ssa_subHoney(amount) {
 		global HoneyLimit, HoneyLimitRemainingB, HoneyLimitBase
