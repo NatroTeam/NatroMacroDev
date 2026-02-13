@@ -9420,11 +9420,13 @@ blc_mutations(*) {
 				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[x+25, y+9], [x+28, y+12], [x+33, y+5]]), Gdip_DeletePen(Pen)
 		}
 		} else {
-			Gdip_TextToGraphics(G, "Main Passive", "s12 x" ssaMainX " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
-			Gdip_TextToGraphics(G, "Side Passives", "s12 x" ssaSideX " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
+			ssaLabelBrush := Gdip_BrushCreateSolid("0xFFFEC6DF")
+			Gdip_TextToGraphics(G, "Main Passive", "s12 x" ssaMainX " y" ssaStartY-24 " Near vCenter c" ssaLabelBrush, "Comic Sans MS", 140, 20)
+			Gdip_TextToGraphics(G, "Side Passives", "s12 x" ssaSideX " y" ssaStartY-24 " Near vCenter c" ssaLabelBrush, "Comic Sans MS", 140, 20)
 			if ssaAdvanced
-				Gdip_TextToGraphics(G, "Min %", "s9 x" ssaStatsX " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", ssaStatsInputW+4, 14), Gdip_DeleteBrush(brush)
-			Gdip_TextToGraphics(G, "Stats", "s12 x" ssaStatsX+ssaLabelOffset " y" ssaStartY-24 " Near vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 140, 20), Gdip_DeleteBrush(brush)
+				Gdip_TextToGraphics(G, "Min %", "s9 x" ssaStatsX " y" ssaStartY-24 " Near vCenter c" ssaLabelBrush, "Comic Sans MS", ssaStatsInputW+4, 14)
+			Gdip_TextToGraphics(G, "Stats", "s12 x" ssaStatsX+ssaLabelOffset " y" ssaStartY-24 " Near vCenter c" ssaLabelBrush, "Comic Sans MS", 140, 20)
+			Gdip_DeleteBrush(ssaLabelBrush)
 			Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaAdvX, ssaAdvY, ssaAdvToggleW, ssaAdvToggleH, 7), Gdip_DeleteBrush(brush)
 			Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), ssaAdvanced ? ssaAdvX+16 : ssaAdvX-2, ssaAdvY-2, 18, 18), Gdip_DeleteBrush(brush)
 			if !ssaAdvanced {
@@ -10000,6 +10002,8 @@ UpdateHoneyGui() {
 			Gdip_DisposeEffect(pEffect)
 			hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmap)
 			pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
+			Gdip_DisposeImage(pBitmap)
+			DeleteObject(hBitmap)
 			text:= RegExReplace(ocr(pIRandomAccessStream), "i)([\r\n\s]|mutation)*")
 			found := 0
 			for i, j in selectedMutations
@@ -10152,7 +10156,6 @@ UpdateHoneyGui() {
 		ocrSegments := []
 		Loop 5 {
 			text := SSA_ReadOcrText(ocrX, ocrY, ocrW, ocrH)
-			ocrSegments := []
 			validOcr := SSA_OcrHasFullRoll(text, doublePassive, &ocrSegments)
 			if validOcr
 				break
@@ -10318,7 +10321,7 @@ UpdateHoneyGui() {
 		logPath := ".\\settings\\ssa_debug.txt"
 		if (logCount = 1 || Mod(logCount, 50) = 0)
 			SSA_TrimLog(logPath)
-		FileAppend("[" A_Hour ":" A_Min ":" A_Sec "] " message "`r`n", logPath)
+		FileAppend("[" A_Hour ":" A_Min ":" A_Sec "] " message "``r``n", logPath)
 	}
 	SSA_TrimLog(logPath) {
 		maxBytes := 262144
@@ -10335,16 +10338,16 @@ UpdateHoneyGui() {
 		f.Seek(-readBytes, 2)
 		tail := f.Read()
 		f.Close()
-		tail := RTrim(tail, "`r`n")
+		tail := RTrim(tail, "``r``n")
 		if (tail = "")
 			return
-		lines := StrSplit(tail, "`n", "`r")
+		lines := StrSplit(tail, "``n", "``r")
 		start := Max(1, lines.Length - (maxLines - 1))
 		newText := ""
 		for idx, line in lines {
 			if (idx < start)
 				continue
-			newText .= line "`r`n"
+			newText .= line "``r``n"
 		}
 		f := FileOpen(logPath, "w")
 		if !f
@@ -10603,6 +10606,7 @@ UpdateHoneyGui() {
 		BitmapFrame := ComObjQuery(BitmapDecoder, IBitmapFrame := "{72A49A1C-8081-438D-91BC-94ECFC8185C6}")
 		ComCall(12, BitmapFrame, "uint*", &width:=0)   ; get_PixelWidth
 		ComCall(13, BitmapFrame, "uint*", &height:=0)   ; get_PixelHeight
+		ObjRelease(BitmapFrame)
 		if (width > MaxDimension) or (height > MaxDimension)
 		{
 			msgbox "Image is to big - " width "x" height ".``nIt should be maximum - " MaxDimension " pixels"
@@ -10610,6 +10614,7 @@ UpdateHoneyGui() {
 		}
 		BitmapFrameWithSoftwareBitmap := ComObjQuery(BitmapDecoder, IBitmapFrameWithSoftwareBitmap := "{FE287C9A-420C-4963-87AD-691436E08383}")
 		ComCall(6, BitmapFrameWithSoftwareBitmap, "ptr*", &SoftwareBitmap:=0)   ; GetSoftwareBitmapAsync
+		ObjRelease(BitmapFrameWithSoftwareBitmap)
 		WaitForAsync(&SoftwareBitmap)
 		ComCall(6, OcrEngine, "ptr", SoftwareBitmap, "ptr*", &OcrResult:=0)   ; RecognizeAsync
 		WaitForAsync(&OcrResult)
@@ -10625,8 +10630,10 @@ UpdateHoneyGui() {
 		}
 		Close := ComObjQuery(IRandomAccessStream, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")
 		ComCall(6, Close)   ; Close
+		ObjRelease(Close)
 		Close := ComObjQuery(SoftwareBitmap, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")
 		ComCall(6, Close)   ; Close
+		ObjRelease(Close)
 		ObjRelease(IRandomAccessStream)
 		ObjRelease(BitmapDecoder)
 		ObjRelease(SoftwareBitmap)
