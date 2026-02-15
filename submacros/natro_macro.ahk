@@ -11294,6 +11294,23 @@ nm_SetHiveCameraDirection(rotations){
 		Gdip_DisposeImage(pBMScreen)
 		sendinput "{" RotRight " " rotations "}" ((maxindex/2 = A_Index) ? ("{" ((hivedown := !hivedown) ? RotDown : RotUp) "}") : "")
 	}
+
+	loop 8 {
+		sleep 250+KeyDelay
+		pBMScreen := Gdip_BitmapFromScreen(region), s := 0
+		for i, k in bitmaps["hive"] {
+			s := Max(s, Gdip_ImageSearch(pBMScreen, k, , , , , , 4, , , sconf))
+			if (s >= sconf) {
+				Gdip_DisposeImage(pBMScreen)
+				HiveConfirmed := 1
+				sendinput "{" RotRight " 4}" (hivedown ? ("{" RotUp "}") : "")
+				Send "{" ZoomOut " 5}"
+				return 1
+			}
+		}
+		Gdip_DisposeImage(pBMScreen)
+		sendinput "{" RotRight "}"
+	}
 }
 nm_setShiftLock(state, *){
 	global bitmaps, SC_LShift, ShiftLockEnabled
