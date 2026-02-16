@@ -8,7 +8,7 @@ bitmaps["day"]["beesmas"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAkA
 bitmaps["day"]["ant"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAAA1SURBVChTY1S4KPafAStgBJNMDIxABlYMUcMEVoYHMEEV4sSETcBuPxQDzcBvAlANASsYGAAwDgI9KuYaygAAAABJRU5ErkJggg==")
 
 bitmaps["night"] := Map()
-bitmaps["night"]["snow"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYSURBVBhXYxT3kP/PgAUwQWkMQHsJBgYA3lgBiezzPlsAAAAASUVORK5CYII=")
+bitmaps["night"]["snow"] := Gdip_CreateBitmap(5, 5), G := Gdip_GraphicsFromImage(bitmaps["night"]["snow"]), Gdip_GraphicsClear(G, 0xFF17481F), Gdip_DeleteGraphics(G)
 bitmaps["night"]["grass"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAkSURBVBhXYxR0l/nPgAUwQWkMgCTBiIKJ0YEKkCRAboDh/wwA+bkFfyoGEywAAAAASUVORK5CYII=")
 
 (bitmaps["confirm_night"] := Map()).CaseSense := 0
