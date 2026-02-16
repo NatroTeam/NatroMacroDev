@@ -11216,11 +11216,11 @@ nm_ConfirmAtHive(){
 nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here since it seems to reliably detect hive slots even when the stuff is really bad
     ActivateRoblox()
     GetRobloxClientPos()
-    loop 5
-        send("{" ZoomIn "}"), sleep(50)
-    send("{" RotDown " 11}"), sleep(100), send("{" RotUp " 5}")
+    send "{" ZoomIn " 5}{" RotDown " 11}{" RotUp " 5}"
+
 	sconf := windowWidth**2//3200
     spawnConfirmed := 0
+
 	loop 4 {
 		sleep 250
 		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//4), s := 0
@@ -11229,15 +11229,14 @@ nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here s
 			if (s >= sconf) {
 				Gdip_DisposeImage(pBMScreen)
 				spawnConfirmed := 1 
-				Send "{" RotUp " 2}"
-				loop 5
-                    send("{" ZoomOut "}"), sleep(50)
 				break 2
 			}
 		}
 		Gdip_DisposeImage(pBMScreen)
 		sendinput "{" RotRight " 4}"
 	}
+	;rotate back
+	Send "{" RotUp " 2}{" ZoomOut " 5}"
 	return spawnConfirmed
 }
 nm_detectHiveSlots() {
@@ -18165,8 +18164,13 @@ nm_searchForE(){
 nm_boostBypassCheck() => 0 ; always returns 0 for now: no field boost bypass implemented
 nm_Night(){
 	global CheckNight
+
 	if CheckNight != 1
 		return
+
+	if !nm_confirmNight()
+		return
+
 	nm_NightMemoryMatch()
 	nm_ViciousBee()
 	CheckNight := 0
@@ -18174,44 +18178,31 @@ nm_Night(){
 
 nm_confirmNight()
 {
+	isNight := 0
+	nm_Reset(0, 0, 0)
 	nm_setStatus("Confirming", "Night")
-	nm_Reset(0, 2000, 0)
 	ActivateRoblox()
 	GetRobloxClientPos()
-	CamMove(0)
 
-	pBMArea := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
+	Send "{" ZoomOut " 11}{" RotUp " 10}"
+	sleep 250
 
-	; AHK loops through maps alphanumerically.
-	; bitmaps["confirm"]["day"] comes first because d is before n.
-	; so the return value is set to 0 when the loop is on day
-	; and then the return value is set to 1 when the loop is on ni,ht.
+	pBMArea := Gdip_BitmapFromScreen(windowX+300 "|" windowY+windowHeight//2+50 "|" windowWidth-600 "|" windowHeight//2-50) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
+	Gdip_SetBitmapToClipboard pBMArea
 
-	for Time in bitmaps["confirm"]
-	{
-		isNight := A_Index - 1 
-		for spot in bitmaps["confirm"][Time]
-		{
-			if Gdip_ImageSearch(pBMArea, bitmaps["confirm"][Time][spot])
-				break 2
-		}
-	}
+	for key, bitmap in bitmaps["confirm_night"] 
+		if Gdip_ImageSearch(pBMArea, bitmap) = 1
+			isNight := 1
 
-	CamMove(1)
 	Gdip_DisposeImage(pBMArea)
+	Send "{" RotDown " 4}"
+
+	if isNight
+		nm_SetStatus("Confirmed", "Night")
+	else 
+		nm_SetStatus("Aborting", "Not night")
 
 	return isNight
-
-	CamMove(Revert)
-	{
-		if Revert
-			loop 4
-				SendInput("{" RotDown "}"), SendInput("{" ZoomIn "}")
-		else
-			loop 4
-				SendInput("{" RotUp "}"), SendInput("{" ZoomOut "}")
-		Sleep(50)
-	}
 }
 
 nm_NightMemoryMatch(){
