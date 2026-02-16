@@ -18306,7 +18306,7 @@ nm_locateVB(){
 			nm_gotoField(data.field)
 			
 			if attackingVB {
-				switch vic := nm_killVB(data.field) {
+				switch (vic := nm_killVB(data.field)).result {
 					case VBResults.success, VBResults.failed: ; death message or timeout
 						return VBEnd(vic)
 					case VBResults.retry: ; return to field
@@ -18327,7 +18327,7 @@ nm_locateVB(){
 			Loop 3 { ; 1 alignment, 2 search
 				i := A_Index
 				Loop (i = 2 ? data.reps : 1) { ; only repeat for search pattern
-					switch vic := SearchforVB(patterns[i], data.field) {
+					switch (vic := SearchforVB(patterns[i], data.field)).result {
 						case VBResults.success, VBResults.failed, VBResults.dead: ; end loop
 							return VBEnd(vic)
 						case VBResults.retry: ; return to field
