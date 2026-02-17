@@ -18188,7 +18188,6 @@ nm_confirmNight()
 	sleep 250
 
 	pBMArea := Gdip_BitmapFromScreen(windowX+300 "|" windowY+windowHeight//2+50 "|" windowWidth-600 "|" windowHeight//2-50) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
-	Gdip_SetBitmapToClipboard pBMArea
 
 	for key, bitmap in bitmaps["confirm_night"] 
 		if Gdip_ImageSearch(pBMArea, bitmap) = 1
