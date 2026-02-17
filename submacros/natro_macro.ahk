@@ -18169,7 +18169,7 @@ nm_Night(){
 		return
 
 	if !nm_confirmNight()
-		return
+		return CheckNight := 0
 
 	nm_NightMemoryMatch()
 	nm_ViciousBee()
