@@ -23,6 +23,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
 #include "ErrorHandling.ahk"
+
 SetWorkingDir A_ScriptDir "\.."
 
 if (A_Args.Length = 0)
@@ -46,6 +47,7 @@ ReconnectMin := A_Args[8]
 EmergencyBalloonPingCheck := A_Args[9]
 ConvertBalloon := A_Args[10]
 NightMemoryMatchCheck := A_Args[11]
+beesmasActive := A_Args[12]
 ;LastNightMemoryMatch := A_Args[12] not in use
 
 pToken := Gdip_Startup()

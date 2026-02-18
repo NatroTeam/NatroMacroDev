@@ -22584,7 +22584,7 @@ start(*){
 	try run
 	(
 	'"' exe_path32 '" /script "' A_WorkingDir '\submacros\background.ahk" "' 0 '" "' 0 '" "' StingerCheck '" "' 0 '" '
-	'"' AnnounceGuidingStar '" "' ReconnectInterval '" "' ReconnectHour '" "' ReconnectMin '" "' EmergencyBalloonPingCheck '" "' ConvertBalloon '" "' NightMemoryMatchCheck '" "' 0 '"'
+	'"' AnnounceGuidingStar '" "' ReconnectInterval '" "' ReconnectHour '" "' ReconnectMin '" "' EmergencyBalloonPingCheck '" "' ConvertBalloon '" "' NightMemoryMatchCheck '" "' beesmasActive '" "' 0 '"'
 	)
 	;(re)start stat monitor
 	global SessionTotalHoney, HoneyAverage
