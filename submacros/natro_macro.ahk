@@ -18169,7 +18169,7 @@ nm_Night(){
 		return
 
 	if !nm_confirmNight()
-		return
+		return CheckNight := 0
 
 	nm_NightMemoryMatch()
 	nm_ViciousBee()
@@ -18188,7 +18188,6 @@ nm_confirmNight()
 	sleep 250
 
 	pBMArea := Gdip_BitmapFromScreen(windowX+300 "|" windowY+windowHeight//2+50 "|" windowWidth-600 "|" windowHeight//2-50) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
-	Gdip_SetBitmapToClipboard pBMArea
 
 	for key, bitmap in bitmaps["confirm_night"] 
 		if Gdip_ImageSearch(pBMArea, bitmap) = 1
@@ -18306,7 +18305,7 @@ nm_locateVB(){
 			nm_gotoField(data.field)
 			
 			if attackingVB {
-				switch vic := nm_killVB(data.field) {
+				switch (vic := nm_killVB(data.field)).result {
 					case VBResults.success, VBResults.failed: ; death message or timeout
 						return VBEnd(vic)
 					case VBResults.retry: ; return to field
@@ -18327,7 +18326,7 @@ nm_locateVB(){
 			Loop 3 { ; 1 alignment, 2 search
 				i := A_Index
 				Loop (i = 2 ? data.reps : 1) { ; only repeat for search pattern
-					switch vic := SearchforVB(patterns[i], data.field) {
+					switch (vic := SearchforVB(patterns[i], data.field)).result {
 						case VBResults.success, VBResults.failed, VBResults.dead: ; end loop
 							return VBEnd(vic)
 						case VBResults.retry: ; return to field
