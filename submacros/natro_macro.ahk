@@ -11216,7 +11216,9 @@ nm_ConfirmAtHive(){
 nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here since it seems to reliably detect hive slots even when the stuff is really bad
     ActivateRoblox()
     GetRobloxClientPos()
-    send "{" ZoomIn " 5}{" RotDown " 11}{" RotUp " 5}"
+    send "{" RotDown " 11}{" RotUp " 5}"
+	loop 5
+		send("{" ZoomIn "}"), Sleep(50)
 
 	sconf := windowWidth**2//3200
     spawnConfirmed := 0
@@ -11236,7 +11238,9 @@ nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here s
 		sendinput "{" RotRight " 4}"
 	}
 	;rotate back
-	Send "{" RotUp " 2}{" ZoomOut " 5}"
+	Send "{" RotUp " 2}"
+	loop 5
+		send("{" ZoomOut "}"), Sleep(50)
 	return spawnConfirmed
 }
 nm_detectHiveSlots() {
@@ -18184,8 +18188,10 @@ nm_confirmNight()
 	ActivateRoblox()
 	GetRobloxClientPos()
 
-	Send "{" ZoomOut " 11}{" RotUp " 10}"
-	sleep 250
+	Send "{" RotUp " 10}"
+
+	loop 11
+		Send("{" ZoomOut "}"), Sleep(25)
 
 	pBMArea := Gdip_BitmapFromScreen(windowX+300 "|" windowY+windowHeight//2+50 "|" windowWidth-600 "|" windowHeight//2-50) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
 
