@@ -18190,10 +18190,10 @@ nm_confirmNight()
 
 	Send "{" RotUp " 10}"
 
-	loop 11
+	loop 7
 		Send("{" ZoomOut "}"), Sleep(25)
 
-	pBMArea := Gdip_BitmapFromScreen(windowX+300 "|" windowY+windowHeight//2+50 "|" windowWidth-600 "|" windowHeight//2-50) ; Limit to bottom screen half. Hives lighten the ground beneath so i want to keep the search ret big.
+	pBMArea := Gdip_BitmapFromScreen(windowX+300 "|" windowY+windowHeight//2+50 "|" windowWidth-600 "|" windowHeight//2-50) ; searches bottom middle of the screen with offset
 
 	for key, bitmap in bitmaps["confirm_night"] 
 		if Gdip_ImageSearch(pBMArea, bitmap) = 1
@@ -18223,6 +18223,9 @@ nm_ViciousBee(){
 }
 /**
  * Check each enabled field for vicious
+ * @returns {x < 0} if not enabled
+ * @returns {x = 0} if all fields checked
+ * @returns {x = 1} if success
  */
 nm_locateVB(){ 
 	global VBfieldStart, VBStart := nowUnix(), fieldsChecked := 0, attackingVB := 0
@@ -18304,10 +18307,10 @@ nm_locateVB(){
 		global VBfieldStart := nowUnix()
 		
 		fieldloop:
-		while (A_Index < 4) || attackingVB ; keep going to field if attacking vb
+		while (A_Index < 4) || attackingVB ; keep going to field if attacking vb, max 3 loops otherwise
 		{
 			nm_Reset(0, 2000, 0)
-			nm_setStatus("Traveling", "Vicious Bee (" data.field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
+			nm_setStatus("Traveling", "Vicious Bee (" data.field ")" ((A_Index > 1) ? " — Attempt " A_Index : ""))
 			nm_gotoField(data.field)
 			
 			if attackingVB {
@@ -18341,21 +18344,23 @@ nm_locateVB(){
 				}
 			}
 
+			; nothing found, no issues
 			Click "Up"
 			break fieldloop
 		}
 	}
+	; vb not found
 	return 0
 }
 /**
- * End cycle and send status message
+ * End cycle and send status message using vic Obj
  */
 VBEnd(vic){
 	global VBLastKilled
 	Click "Up"
 
 	nm_setStatus("Completed"
-	, "Vicious Bee — " vic.result  "—" vic.reason
+	, "Vicious Bee — " vic.result  " — " vic.reason
 	. "`nTime: " DurationFromSeconds(nowUnix() - VBStart, "mm:ss") 
 	. "`nFields Checked: " fieldsChecked)
 
@@ -18417,7 +18422,7 @@ SearchforVB(movement, field){
 			if (vic.reason = VBReasons.inactivehoney) {
 				if (++inactiveHoney < 5) {
 					inactiveHoney := 0
-					nm_setStatus("Warning", "Vicious Bee - Inactive Honey - Retrying")
+					nm_setStatus("Warning", "Vicious Bee — Inactive Honey — Retrying")
 				} else {
 					; don't retry yet: not enough inactive honey triggers
 					vic.result := 0
@@ -18467,7 +18472,7 @@ nm_killVB(field) {
  */
 nm_VBCheck() {
 	static LastRan := 0
-	GetRobloxClientPos(hwnd := GetRobloxHWND())
+	GetRobloxClientPos()
 	offsetY := GetYOffset()
 	if (nowUnix()-LastRan>=40) { ; chat translucent after 3 seconds, text dissapears after 40 seconds
 		if !GetKeyState("F14")
