@@ -16,16 +16,16 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #MaxThreads 255
 #Warn VarUnset, Off
 
+SetWorkingDir A_ScriptDir "\.."
 #Include "%A_ScriptDir%\..\lib"
+#Include "ErrorHandling.ahk"
 #Include "Gdip_All.ahk"
 #Include "Gdip_ImageSearch.ahk"
 #Include "JSON.ahk"
 #Include "Discord.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "Roblox.ahk"
-#Include "ErrorHandling.ahk"
 
-SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
 
 if (A_Args.Length = 0)

@@ -16,14 +16,14 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #NoTrayIcon
 #MaxThreads 255
 
+SetWorkingDir A_ScriptDir "\.."
 #Include "%A_ScriptDir%\..\lib"
+#include "ErrorHandling.ahk"
 #Include "Gdip_All.ahk"
 #Include "Gdip_ImageSearch.ahk"
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
-#include "ErrorHandling.ahk"
-SetWorkingDir A_ScriptDir "\.."
 
 if (A_Args.Length = 0)
 {
