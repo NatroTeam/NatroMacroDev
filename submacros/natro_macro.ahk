@@ -16264,16 +16264,17 @@ nm_getPetalPatternScript() {
 	(
 	'
 	static __petalInit := 0
-		, __visionDll := A_ScriptDir "../lib/vision.dll"
+		, __visionDll := A_ScriptDir "/lib/Vision.dll"
 		, __calibReady := 0
 		, __vfX := 0.0
 		, __vfY := 0.0
 		, __vrX := 0.0
 		, __vrY := 0.0
+		, __vfSign := 1
+		, __vrSign := 1
 		, __calibTiles := 3
-		, __maxPoints := 512
-		, __matchRadiusPx := 96.0
-		, __petalInit := 0
+		, __postBloomWaitMs := 250
+		, __diamondRadiusTiles := 5
 
 	if !__petalInit {
 		if !FileExist(__visionDll)
@@ -16288,181 +16289,268 @@ nm_getPetalPatternScript() {
 		clientW := 0, clientH := 0
 		try WinGetClientPos(&clientX, &clientY, &clientW, &clientH, "ahk_id " hwnd)
 		if (clientW > 0 && clientH > 0) {
-				originX := Round((clientW - 1) * 0.50)
-				originY := Round((clientH - 1) * 0.60)
+			originX := Round((clientW - 1) * 0.50)
+			originY := Round((clientH - 1) * 0.50)
+			errChars := 1024
 
-				errChars := 1024
-				pointsBuf := Buffer(__maxPoints * 8, 0)
-				totalBuf := Buffer(4, 0)
-				writtenBuf := Buffer(4, 0)
-				errBuf := Buffer(errChars * 2, 0)
-				status := DllCall(
-					__visionDll "\Vision_LocateHWND"
-					, "Ptr", hwnd
-					, "Int", 1
-					, "Ptr", pointsBuf.Ptr
-					, "Int", __maxPoints
-					, "Ptr", totalBuf.Ptr
-					, "Ptr", writtenBuf.Ptr
-					, "Ptr", errBuf.Ptr
-					, "Int", errChars
-					, "Int")
+			loc := pd_LocatePointsFromClient(__visionDll, clientX, clientY, clientW, clientH, errChars)
+			if (pd_IsLocateStatusOk(loc.status) && (loc.written > 0)) {
+				nearest := pd_FindNearestToOrigin(loc.pointsBuf, loc.written, originX, originY)
+				if (nearest.found) {
+					targetX := nearest.x
+					targetY := nearest.y
 
-				if ((status = 0) || (status = 4)) {
-					written := NumGet(writtenBuf, 0, "Int")
-					if (written > 0) {
-						bestIdx := 0
-						bestD2 := 1.0e30
-						Loop written {
-							i := A_Index - 1
-							off := i * 8
-							px := NumGet(pointsBuf, off, "Int")
-							py := NumGet(pointsBuf, off + 4, "Int")
-							dx0 := px - originX
-							dy0 := py - originY
-							d20 := (dx0 * dx0) + (dy0 * dy0)
-							if (d20 < bestD2) {
-								bestD2 := d20
-								bestIdx := i
-							}
+					if !__calibReady {
+						calib := pd_CalibrateVectors(
+							__visionDll,
+							clientX, clientY, clientW, clientH,
+							errChars,
+							__calibTiles,
+							targetX, targetY,
+							originX, originY)
+						if (calib.ready) {
+							__calibReady := 1
+							__vfX := calib.vfX
+							__vfY := calib.vfY
+							__vrX := calib.vrX
+							__vrY := calib.vrY
+							__vfSign := calib.vfSign
+							__vrSign := calib.vrSign
 						}
+					}
 
-						if (bestIdx >= 0) {
-							targetX := NumGet(pointsBuf, bestIdx * 8, "Int")
-							targetY := NumGet(pointsBuf, bestIdx * 8 + 4, "Int")
+					if (__calibReady) {
+						dx := targetX - originX
+						dy := targetY - originY
+						det := (__vfX * __vrY) - (__vfY * __vrX)
+						if (Abs(det) >= 0.000001) {
+							fwdRaw := (((-dx) * __vrY) - ((-dy) * __vrX)) / det
+							rightRaw := ((__vfX * (-dy)) - (__vfY * (-dx))) / det
+							fwdTiles := Round(fwdRaw, 2)
+							rightTiles := Round(rightRaw, 2)
 
-							if !__calibReady {
-								matchD2Limit := __matchRadiusPx * __matchRadiusPx
-								foundF := 0, foundR := 0
-								shiftFx := 0.0, shiftFy := 0.0
-								shiftRx := 0.0, shiftRy := 0.0
+							if (fwdTiles > 0)
+								nm_Walk(fwdTiles, FwdKey)
+							else if (fwdTiles < 0)
+								nm_Walk(Abs(fwdTiles), BackKey)
 
-								nm_Walk(__calibTiles, FwdKey)
-								Sleep 80
+							if (rightTiles > 0)
+								nm_Walk(rightTiles, RightKey)
+							else if (rightTiles < 0)
+								nm_Walk(Abs(rightTiles), LeftKey)
 
-								pointsBufF := Buffer(__maxPoints * 8, 0)
-								totalBufF := Buffer(4, 0)
-								writtenBufF := Buffer(4, 0)
-								errBufF := Buffer(errChars * 2, 0)
-								statusF := DllCall(
-									__visionDll "\Vision_LocateHWND"
-									, "Ptr", hwnd
-									, "Int", 1
-									, "Ptr", pointsBufF.Ptr
-									, "Int", __maxPoints
-									, "Ptr", totalBufF.Ptr
-									, "Ptr", writtenBufF.Ptr
-									, "Ptr", errBufF.Ptr
-									, "Int", errChars
-									, "Int")
+							Sleep __postBloomWaitMs
+							nm_Walk(__diamondRadiusTiles, FwdKey)
+							nm_Walk(__diamondRadiusTiles, BackKey, RightKey)
+							nm_Walk(__diamondRadiusTiles, BackKey, LeftKey)
+							nm_Walk(__diamondRadiusTiles, FwdKey, LeftKey)
+							nm_Walk(__diamondRadiusTiles, FwdKey, RightKey)
+							nm_Walk(__diamondRadiusTiles, BackKey)
 
-								if ((statusF = 0) || (statusF = 4)) {
-									writtenF := NumGet(writtenBufF, 0, "Int")
-									if (writtenF > 0) {
-										bestFD2 := 1.0e30
-										Loop writtenF {
-											i := A_Index - 1
-											off := i * 8
-											px := NumGet(pointsBufF, off, "Int")
-											py := NumGet(pointsBufF, off + 4, "Int")
-											tdx := px - targetX
-											tdy := py - targetY
-											d2 := (tdx * tdx) + (tdy * tdy)
-											if (d2 < bestFD2) {
-												bestFD2 := d2
-												shiftFx := px - targetX
-												shiftFy := py - targetY
-												foundF := 1
-											}
-										}
-										if (bestFD2 > matchD2Limit)
-											foundF := 0
-									}
-								}
+							if (rightTiles > 0)
+								nm_Walk(rightTiles, LeftKey)
+							else if (rightTiles < 0)
+								nm_Walk(Abs(rightTiles), RightKey)
 
-								nm_Walk(__calibTiles, BackKey)
-								Sleep 60
-								nm_Walk(__calibTiles, RightKey)
-								Sleep 80
-
-								pointsBufR := Buffer(__maxPoints * 8, 0)
-								totalBufR := Buffer(4, 0)
-								writtenBufR := Buffer(4, 0)
-								errBufR := Buffer(errChars * 2, 0)
-								statusR := DllCall(
-									__visionDll "\Vision_LocateHWND"
-									, "Ptr", hwnd
-									, "Int", 1
-									, "Ptr", pointsBufR.Ptr
-									, "Int", __maxPoints
-									, "Ptr", totalBufR.Ptr
-									, "Ptr", writtenBufR.Ptr
-									, "Ptr", errBufR.Ptr
-									, "Int", errChars
-									, "Int")
-
-								if ((statusR = 0) || (statusR = 4)) {
-									writtenR := NumGet(writtenBufR, 0, "Int")
-									if (writtenR > 0) {
-										bestRD2 := 1.0e30
-										Loop writtenR {
-											i := A_Index - 1
-											off := i * 8
-											px := NumGet(pointsBufR, off, "Int")
-											py := NumGet(pointsBufR, off + 4, "Int")
-											tdx := px - targetX
-											tdy := py - targetY
-											d2 := (tdx * tdx) + (tdy * tdy)
-											if (d2 < bestRD2) {
-												bestRD2 := d2
-												shiftRx := px - targetX
-												shiftRy := py - targetY
-												foundR := 1
-											}
-										}
-										if (bestRD2 > matchD2Limit)
-											foundR := 0
-									}
-								}
-
-								nm_Walk(__calibTiles, LeftKey)
-								Sleep 60
-
-								if (foundF && foundR) {
-									__vfX := shiftFx / __calibTiles
-									__vfY := shiftFy / __calibTiles
-									__vrX := shiftRx / __calibTiles
-									__vrY := shiftRy / __calibTiles
-									det0 := (__vfX * __vrY) - (__vfY * __vrX)
-									if (Abs(det0) >= 0.000001)
-										__calibReady := 1
-								}
-							}
-
-							if (__calibReady) {
-								dx := targetX - originX
-								dy := targetY - originY
-								det := (__vfX * __vrY) - (__vfY * __vrX)
-								if (Abs(det) >= 0.000001) {
-									fwdRaw := (((-dx) * __vrY) - ((-dy) * __vrX)) / det
-									rightRaw := ((__vfX * (-dy)) - (__vfY * (-dx))) / det
-									fwdTiles := Round(fwdRaw)
-									rightTiles := Round(rightRaw)
-
-									if (fwdTiles > 0)
-										nm_Walk(fwdTiles, FwdKey)
-									else if (fwdTiles < 0)
-										nm_Walk(Abs(fwdTiles), BackKey)
-
-									if (rightTiles > 0)
-										nm_Walk(rightTiles, RightKey)
-									else if (rightTiles < 0)
-										nm_Walk(Abs(rightTiles), LeftKey)
-								}
-							}
+							if (fwdTiles > 0)
+								nm_Walk(fwdTiles, BackKey)
+							else if (fwdTiles < 0)
+								nm_Walk(Abs(fwdTiles), FwdKey)
 						}
 					}
 				}
+			}
+		}
+	}
+
+	pd_IsLocateStatusOk(status) {
+		return ((status = 0) || (status = 4))
+	}
+
+	pd_LocatePointsFromClient(dllPath, clientX, clientY, clientW, clientH, errChars := 1024) {
+		totalBuf := Buffer(4, 0)
+		writtenBuf := Buffer(4, 0)
+		errBuf := Buffer(errChars * 2, 0)
+		pointsBuf := 0
+		written := 0
+		status := -1
+
+		pBM := Gdip_BitmapFromScreen(clientX "|" clientY "|" clientW "|" clientH)
+		hBmp := pBM ? Gdip_CreateHBITMAPFromBitmap(pBM) : 0
+		if (pBM)
+			Gdip_DisposeImage(pBM)
+		if !hBmp
+			return { status: -1, written: 0, pointsBuf: 0 }
+
+		statusCount := DllCall(
+			dllPath "\Vision_LocateHBitmap"
+			, "Ptr", hBmp
+			, "Ptr", 0
+			, "Int", 0
+			, "Ptr", totalBuf.Ptr
+			, "Ptr", writtenBuf.Ptr
+			, "Ptr", errBuf.Ptr
+			, "Int", errChars
+			, "Int")
+		totalFound := NumGet(totalBuf, 0, "Int")
+		if (pd_IsLocateStatusOk(statusCount) && (totalFound > 0)) {
+			pointsBuf := Buffer(totalFound * 8, 0)
+			status := DllCall(
+				dllPath "\Vision_LocateHBitmap"
+				, "Ptr", hBmp
+				, "Ptr", pointsBuf.Ptr
+				, "Int", totalFound
+				, "Ptr", totalBuf.Ptr
+				, "Ptr", writtenBuf.Ptr
+				, "Ptr", errBuf.Ptr
+				, "Int", errChars
+				, "Int")
+			written := NumGet(writtenBuf, 0, "Int")
+		} else {
+			status := statusCount
+			written := NumGet(writtenBuf, 0, "Int")
+		}
+
+		DllCall("gdi32\DeleteObject", "Ptr", hBmp)
+		return { status: status, written: written, pointsBuf: pointsBuf }
+	}
+
+	pd_FindNearestToOrigin(pointsBuf, written, originX, originY) {
+		if (!pointsBuf || written <= 0)
+			return { found: 0, index: -1, x: 0, y: 0, d2: 0.0 }
+
+		bestIdx := -1
+		bestD2 := 1.0e30
+		bestX := 0
+		bestY := 0
+
+		Loop written {
+			i := A_Index - 1
+			off := i * 8
+			px := NumGet(pointsBuf, off, "Int")
+			py := NumGet(pointsBuf, off + 4, "Int")
+			dx := px - originX
+			dy := py - originY
+			d2 := (dx * dx) + (dy * dy)
+			if (d2 < bestD2) {
+				bestD2 := d2
+				bestIdx := i
+				bestX := px
+				bestY := py
+			}
+		}
+
+		return { found: (bestIdx >= 0) ? 1 : 0, index: bestIdx, x: bestX, y: bestY, d2: bestD2 }
+	}
+
+	pd_FindNearestToTarget(pointsBuf, written, targetX, targetY) {
+		if (!pointsBuf || written <= 0)
+			return { found: 0, x: 0, y: 0, shiftX: 0.0, shiftY: 0.0, d2: 0.0 }
+
+		bestD2 := 1.0e30
+		bestX := 0
+		bestY := 0
+
+		Loop written {
+			i := A_Index - 1
+			off := i * 8
+			px := NumGet(pointsBuf, off, "Int")
+			py := NumGet(pointsBuf, off + 4, "Int")
+			tdx := px - targetX
+			tdy := py - targetY
+			d2 := (tdx * tdx) + (tdy * tdy)
+			if (d2 < bestD2) {
+				bestD2 := d2
+				bestX := px
+				bestY := py
+			}
+		}
+
+		if (bestD2 >= 1.0e29)
+			return { found: 0, x: 0, y: 0, shiftX: 0.0, shiftY: 0.0, d2: 0.0 }
+
+		return {
+			found: 1,
+			x: bestX,
+			y: bestY,
+			shiftX: bestX - targetX,
+			shiftY: bestY - targetY,
+			d2: bestD2
+		}
+	}
+
+	pd_CalibrateVectors(dllPath, clientX, clientY, clientW, clientH, errChars, calibTiles, targetX, targetY, originX, originY) {
+		global FwdKey, BackKey, LeftKey, RightKey
+
+		foundF := 0
+		foundR := 0
+		shiftFx := 0.0
+		shiftFy := 0.0
+		shiftRx := 0.0
+		shiftRy := 0.0
+		vfX := 0.0
+		vfY := 0.0
+		vrX := 0.0
+		vrY := 0.0
+		vfSign := 1
+		vrSign := 1
+		ready := 0
+
+		dxTarget := targetX - originX
+		dyTarget := targetY - originY
+		fwdMoveKey := (dyTarget <= 0) ? FwdKey : BackKey
+		fwdUndoKey := (dyTarget <= 0) ? BackKey : FwdKey
+		rightMoveKey := (dxTarget <= 0) ? LeftKey : RightKey
+		rightUndoKey := (dxTarget <= 0) ? RightKey : LeftKey
+		vfSign := (fwdMoveKey = FwdKey) ? 1 : -1
+		vrSign := (rightMoveKey = RightKey) ? 1 : -1
+
+		nm_Walk(calibTiles, fwdMoveKey)
+		Sleep 80
+		locF := pd_LocatePointsFromClient(dllPath, clientX, clientY, clientW, clientH, errChars)
+		if (pd_IsLocateStatusOk(locF.status) && (locF.written > 0)) {
+			matchF := pd_FindNearestToTarget(locF.pointsBuf, locF.written, targetX, targetY)
+			if (matchF.found) {
+				foundF := 1
+				shiftFx := matchF.shiftX
+				shiftFy := matchF.shiftY
+			}
+		}
+		nm_Walk(calibTiles, fwdUndoKey)
+		Sleep 60
+
+		nm_Walk(calibTiles, rightMoveKey)
+		Sleep 80
+		locR := pd_LocatePointsFromClient(dllPath, clientX, clientY, clientW, clientH, errChars)
+		if (pd_IsLocateStatusOk(locR.status) && (locR.written > 0)) {
+			matchR := pd_FindNearestToTarget(locR.pointsBuf, locR.written, targetX, targetY)
+			if (matchR.found) {
+				foundR := 1
+				shiftRx := matchR.shiftX
+				shiftRy := matchR.shiftY
+			}
+		}
+		nm_Walk(calibTiles, rightUndoKey)
+		Sleep 60
+
+		if (foundF && foundR) {
+			vfX := (shiftFx / calibTiles) * vfSign
+			vfY := (shiftFy / calibTiles) * vfSign
+			vrX := (shiftRx / calibTiles) * vrSign
+			vrY := (shiftRy / calibTiles) * vrSign
+			det0 := (vfX * vrY) - (vfY * vrX)
+			if (Abs(det0) >= 0.000001)
+				ready := 1
+		}
+
+		return {
+			ready: ready,
+			vfX: vfX,
+			vfY: vfY,
+			vrX: vrX,
+			vrY: vrY,
+			vfSign: vfSign,
+			vrSign: vrSign
 		}
 	}
 	'
