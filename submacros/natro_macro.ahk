@@ -235,6 +235,7 @@ nm_importPatterns()
 			#SingleInstance Off
 			#Warn All, StdOut
 
+			#Include "%A_ScriptDir%\lib\Vision.ahk"
 			' nm_KeyVars() '
 
 			size:=1, reps:=1, facingcorner:=0
@@ -16265,6 +16266,7 @@ nm_getPetalPatternScript() {
 	'
 	static __petalInit := 0
 		, __visionDll := A_ScriptDir "/lib/Vision.dll"
+		, __vision := 0
 		, __calibReady := 0
 		, __vfX := 0.0
 		, __vfY := 0.0
@@ -16279,10 +16281,13 @@ nm_getPetalPatternScript() {
 	if !__petalInit {
 		if !FileExist(__visionDll)
 			throw Error("Vision.dll missing at expected path: " __visionDll)
-		Send "{" RotUp " 4}{" RotLeft " 2}{" SC_1 "}"
+		__vision := Vision(__visionDll)
+		Send "{" RotUp " 4}{" SC_1 "}"
 		Sleep 100
 		__petalInit := 1
 	}
+	if !__vision
+		__vision := Vision(__visionDll)
 
 	hwnd := GetRobloxHWND()
 	if (hwnd) {
@@ -16291,20 +16296,17 @@ nm_getPetalPatternScript() {
 		if (clientW > 0 && clientH > 0) {
 			originX := Round((clientW - 1) * 0.50)
 			originY := Round((clientH - 1) * 0.50)
-			errChars := 1024
-
-			loc := pd_LocatePointsFromClient(__visionDll, clientX, clientY, clientW, clientH, errChars)
+			loc := pd_LocatePointsFromClient(__vision, clientX, clientY, clientW, clientH)
 			if (pd_IsLocateStatusOk(loc.status) && (loc.written > 0)) {
-				nearest := pd_FindNearestToOrigin(loc.pointsBuf, loc.written, originX, originY)
+				nearest := pd_FindNearestToOrigin(loc.points, originX, originY)
 				if (nearest.found) {
 					targetX := nearest.x
 					targetY := nearest.y
 
 					if !__calibReady {
 						calib := pd_CalibrateVectors(
-							__visionDll,
+							__vision,
 							clientX, clientY, clientW, clientH,
-							errChars,
 							__calibTiles,
 							targetX, targetY,
 							originX, originY)
@@ -16367,56 +16369,21 @@ nm_getPetalPatternScript() {
 		return ((status = 0) || (status = 4))
 	}
 
-	pd_LocatePointsFromClient(dllPath, clientX, clientY, clientW, clientH, errChars := 1024) {
-		totalBuf := Buffer(4, 0)
-		writtenBuf := Buffer(4, 0)
-		errBuf := Buffer(errChars * 2, 0)
-		pointsBuf := 0
-		written := 0
-		status := -1
-
+	pd_LocatePointsFromClient(visionObj, clientX, clientY, clientW, clientH) {
 		pBM := Gdip_BitmapFromScreen(clientX "|" clientY "|" clientW "|" clientH)
 		hBmp := pBM ? Gdip_CreateHBITMAPFromBitmap(pBM) : 0
 		if (pBM)
 			Gdip_DisposeImage(pBM)
 		if !hBmp
-			return { status: -1, written: 0, pointsBuf: 0 }
+			return { status: -1, written: 0, points: [] }
 
-		statusCount := DllCall(
-			dllPath "\Vision_LocateHBitmap"
-			, "Ptr", hBmp
-			, "Ptr", 0
-			, "Int", 0
-			, "Ptr", totalBuf.Ptr
-			, "Ptr", writtenBuf.Ptr
-			, "Ptr", errBuf.Ptr
-			, "Int", errChars
-			, "Int")
-		totalFound := NumGet(totalBuf, 0, "Int")
-		if (pd_IsLocateStatusOk(statusCount) && (totalFound > 0)) {
-			pointsBuf := Buffer(totalFound * 8, 0)
-			status := DllCall(
-				dllPath "\Vision_LocateHBitmap"
-				, "Ptr", hBmp
-				, "Ptr", pointsBuf.Ptr
-				, "Int", totalFound
-				, "Ptr", totalBuf.Ptr
-				, "Ptr", writtenBuf.Ptr
-				, "Ptr", errBuf.Ptr
-				, "Int", errChars
-				, "Int")
-			written := NumGet(writtenBuf, 0, "Int")
-		} else {
-			status := statusCount
-			written := NumGet(writtenBuf, 0, "Int")
-		}
-
+		result := visionObj.LocateHBitmapAll(hBmp)
 		DllCall("gdi32\DeleteObject", "Ptr", hBmp)
-		return { status: status, written: written, pointsBuf: pointsBuf }
+		return result
 	}
 
-	pd_FindNearestToOrigin(pointsBuf, written, originX, originY) {
-		if (!pointsBuf || written <= 0)
+	pd_FindNearestToOrigin(points, originX, originY) {
+		if (points.Length <= 0)
 			return { found: 0, index: -1, x: 0, y: 0, d2: 0.0 }
 
 		bestIdx := -1
@@ -16424,17 +16391,16 @@ nm_getPetalPatternScript() {
 		bestX := 0
 		bestY := 0
 
-		Loop written {
-			i := A_Index - 1
-			off := i * 8
-			px := NumGet(pointsBuf, off, "Int")
-			py := NumGet(pointsBuf, off + 4, "Int")
+		for i, p in points {
+			idx := i - 1
+			px := p.x
+			py := p.y
 			dx := px - originX
 			dy := py - originY
 			d2 := (dx * dx) + (dy * dy)
 			if (d2 < bestD2) {
 				bestD2 := d2
-				bestIdx := i
+				bestIdx := idx
 				bestX := px
 				bestY := py
 			}
@@ -16443,19 +16409,17 @@ nm_getPetalPatternScript() {
 		return { found: (bestIdx >= 0) ? 1 : 0, index: bestIdx, x: bestX, y: bestY, d2: bestD2 }
 	}
 
-	pd_FindNearestToTarget(pointsBuf, written, targetX, targetY) {
-		if (!pointsBuf || written <= 0)
+	pd_FindNearestToTarget(points, targetX, targetY) {
+		if (points.Length <= 0)
 			return { found: 0, x: 0, y: 0, shiftX: 0.0, shiftY: 0.0, d2: 0.0 }
 
 		bestD2 := 1.0e30
 		bestX := 0
 		bestY := 0
 
-		Loop written {
-			i := A_Index - 1
-			off := i * 8
-			px := NumGet(pointsBuf, off, "Int")
-			py := NumGet(pointsBuf, off + 4, "Int")
+		for _, p in points {
+			px := p.x
+			py := p.y
 			tdx := px - targetX
 			tdy := py - targetY
 			d2 := (tdx * tdx) + (tdy * tdy)
@@ -16479,7 +16443,7 @@ nm_getPetalPatternScript() {
 		}
 	}
 
-	pd_CalibrateVectors(dllPath, clientX, clientY, clientW, clientH, errChars, calibTiles, targetX, targetY, originX, originY) {
+	pd_CalibrateVectors(visionObj, clientX, clientY, clientW, clientH, calibTiles, targetX, targetY, originX, originY) {
 		global FwdKey, BackKey, LeftKey, RightKey
 
 		foundF := 0
@@ -16507,9 +16471,9 @@ nm_getPetalPatternScript() {
 
 		nm_Walk(calibTiles, fwdMoveKey)
 		Sleep 80
-		locF := pd_LocatePointsFromClient(dllPath, clientX, clientY, clientW, clientH, errChars)
+		locF := pd_LocatePointsFromClient(visionObj, clientX, clientY, clientW, clientH)
 		if (pd_IsLocateStatusOk(locF.status) && (locF.written > 0)) {
-			matchF := pd_FindNearestToTarget(locF.pointsBuf, locF.written, targetX, targetY)
+			matchF := pd_FindNearestToTarget(locF.points, targetX, targetY)
 			if (matchF.found) {
 				foundF := 1
 				shiftFx := matchF.shiftX
@@ -16521,9 +16485,9 @@ nm_getPetalPatternScript() {
 
 		nm_Walk(calibTiles, rightMoveKey)
 		Sleep 80
-		locR := pd_LocatePointsFromClient(dllPath, clientX, clientY, clientW, clientH, errChars)
+		locR := pd_LocatePointsFromClient(visionObj, clientX, clientY, clientW, clientH)
 		if (pd_IsLocateStatusOk(locR.status) && (locR.written > 0)) {
-			matchR := pd_FindNearestToTarget(locR.pointsBuf, locR.written, targetX, targetY)
+			matchR := pd_FindNearestToTarget(locR.points, targetX, targetY)
 			if (matchR.found) {
 				foundR := 1
 				shiftRx := matchR.shiftX
@@ -17253,6 +17217,7 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	#Include "Gdip_ImageSearch.ahk"
 	#Include "HyperSleep.ahk"
 	#Include "Roblox.ahk"
+	#Include "Vision.ahk"
 	'
 	)
 
