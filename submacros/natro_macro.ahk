@@ -16289,80 +16289,83 @@ nm_getPetalPatternScript() {
 	if !__vision
 		__vision := Vision(__visionDll)
 
-	hwnd := GetRobloxHWND()
-	if (hwnd) {
-		clientW := 0, clientH := 0
-		try WinGetClientPos(&clientX, &clientY, &clientW, &clientH, "ahk_id " hwnd)
-		if (clientW > 0 && clientH > 0) {
-			originX := Round((clientW - 1) * 0.50)
-			originY := Round((clientH - 1) * 0.50)
-			loc := pd_LocatePointsFromClient(__vision, clientX, clientY, clientW, clientH)
-			if (pd_IsLocateStatusOk(loc.status) && (loc.written > 0)) {
-				nearest := pd_FindNearestToOrigin(loc.points, originX, originY)
-				if (nearest.found) {
-					targetX := nearest.x
-					targetY := nearest.y
+	Loop {
+		hwnd := GetRobloxHWND()
+		if (hwnd) {
+			clientW := 0, clientH := 0
+			try WinGetClientPos(&clientX, &clientY, &clientW, &clientH, "ahk_id " hwnd)
+			if (clientW > 0 && clientH > 0) {
+				originX := Round((clientW - 1) * 0.50)
+				originY := Round((clientH - 1) * 0.50)
+				loc := pd_LocatePointsFromClient(__vision, clientX, clientY, clientW, clientH)
+				if (pd_IsLocateStatusOk(loc.status) && (loc.written > 0)) {
+					nearest := pd_FindNearestToOrigin(loc.points, originX, originY)
+					if (nearest.found) {
+						targetX := nearest.x
+						targetY := nearest.y
 
-					if !__calibReady {
-						calib := pd_CalibrateVectors(
-							__vision,
-							clientX, clientY, clientW, clientH,
-							__calibTiles,
-							targetX, targetY,
-							originX, originY)
-						if (calib.ready) {
-							__calibReady := 1
-							__vfX := calib.vfX
-							__vfY := calib.vfY
-							__vrX := calib.vrX
-							__vrY := calib.vrY
-							__vfSign := calib.vfSign
-							__vrSign := calib.vrSign
+						if !__calibReady {
+							calib := pd_CalibrateVectors(
+								__vision,
+								clientX, clientY, clientW, clientH,
+								__calibTiles,
+								targetX, targetY,
+								originX, originY)
+							if (calib.ready) {
+								__calibReady := 1
+								__vfX := calib.vfX
+								__vfY := calib.vfY
+								__vrX := calib.vrX
+								__vrY := calib.vrY
+								__vfSign := calib.vfSign
+								__vrSign := calib.vrSign
+							}
 						}
-					}
 
-					if (__calibReady) {
-						dx := targetX - originX
-						dy := targetY - originY
-						det := (__vfX * __vrY) - (__vfY * __vrX)
-						if (Abs(det) >= 0.000001) {
-							fwdRaw := (((-dx) * __vrY) - ((-dy) * __vrX)) / det
-							rightRaw := ((__vfX * (-dy)) - (__vfY * (-dx))) / det
-							fwdTiles := Round(fwdRaw, 2)
-							rightTiles := Round(rightRaw, 2)
+						if (__calibReady) {
+							dx := targetX - originX
+							dy := targetY - originY
+							det := (__vfX * __vrY) - (__vfY * __vrX)
+							if (Abs(det) >= 0.000001) {
+								fwdRaw := (((-dx) * __vrY) - ((-dy) * __vrX)) / det
+								rightRaw := ((__vfX * (-dy)) - (__vfY * (-dx))) / det
+								fwdTiles := Round(fwdRaw, 2)
+								rightTiles := Round(rightRaw, 2)
 
-							if (fwdTiles > 0)
-								nm_Walk(fwdTiles, FwdKey)
-							else if (fwdTiles < 0)
-								nm_Walk(Abs(fwdTiles), BackKey)
+								if (fwdTiles > 0)
+									nm_Walk(fwdTiles, FwdKey)
+								else if (fwdTiles < 0)
+									nm_Walk(Abs(fwdTiles), BackKey)
 
-							if (rightTiles > 0)
-								nm_Walk(rightTiles, RightKey)
-							else if (rightTiles < 0)
-								nm_Walk(Abs(rightTiles), LeftKey)
+								if (rightTiles > 0)
+									nm_Walk(rightTiles, RightKey)
+								else if (rightTiles < 0)
+									nm_Walk(Abs(rightTiles), LeftKey)
 
-							Sleep __postBloomWaitMs
-							nm_Walk(__diamondRadiusTiles, FwdKey)
-							nm_Walk(__diamondRadiusTiles, BackKey, RightKey)
-							nm_Walk(__diamondRadiusTiles, BackKey, LeftKey)
-							nm_Walk(__diamondRadiusTiles, FwdKey, LeftKey)
-							nm_Walk(__diamondRadiusTiles, FwdKey, RightKey)
-							nm_Walk(__diamondRadiusTiles, BackKey)
+								Sleep __postBloomWaitMs
+								nm_Walk(__diamondRadiusTiles, FwdKey)
+								nm_Walk(__diamondRadiusTiles, BackKey, RightKey)
+								nm_Walk(__diamondRadiusTiles, BackKey, LeftKey)
+								nm_Walk(__diamondRadiusTiles, FwdKey, LeftKey)
+								nm_Walk(__diamondRadiusTiles, FwdKey, RightKey)
+								nm_Walk(__diamondRadiusTiles, BackKey)
 
-							if (rightTiles > 0)
-								nm_Walk(rightTiles, LeftKey)
-							else if (rightTiles < 0)
-								nm_Walk(Abs(rightTiles), RightKey)
+								if (rightTiles > 0)
+									nm_Walk(rightTiles, LeftKey)
+								else if (rightTiles < 0)
+									nm_Walk(Abs(rightTiles), RightKey)
 
-							if (fwdTiles > 0)
-								nm_Walk(fwdTiles, BackKey)
-							else if (fwdTiles < 0)
-								nm_Walk(Abs(fwdTiles), FwdKey)
+								if (fwdTiles > 0)
+									nm_Walk(fwdTiles, BackKey)
+								else if (fwdTiles < 0)
+									nm_Walk(Abs(fwdTiles), FwdKey)
+							}
 						}
 					}
 				}
 			}
 		}
+		Sleep 250
 	}
 
 	pd_IsLocateStatusOk(status) {
@@ -19265,6 +19268,8 @@ nm_PolarQuestProg(){
 				else if(action="Petal"){ ; Blooms
 					QuestPetal:=pcolor
 					QuestPetalField:=where
+					QuestGatherField:=where
+					QuestGatherFieldSlot:=PolarBear[PolarQuest][A_Index][1]
 				}
 			}
 			;border color, white (titlebar), black (text)
@@ -19543,6 +19548,8 @@ nm_RileyQuestProg(){
 				else if(action="Petal"){ ; Blooms
 					QuestPetal:=pcolor
 					QuestPetalField:=where
+					QuestGatherField:=where
+					QuestGatherFieldSlot:=RileyBee[RileyQuest][A_Index][1]
 				}
 			}
 			;border color, white (titlebar), black (text)
@@ -19829,6 +19836,8 @@ nm_BuckoQuestProg(){
 				else if(action="Petal"){ ; Blooms
 					QuestPetal:=pcolor
 					QuestPetalField:=where
+					QuestGatherField:=where
+					QuestGatherFieldSlot:=BuckoBee[BuckoQuest][A_Index][1]
 				}
 			}
 			;border color, white (titlebar), black (text)
