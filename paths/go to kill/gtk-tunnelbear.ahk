@@ -34,14 +34,14 @@
 if goInside {
     if goOutside {
         nm_walk(8, RightKey)
-        nm_Walk(7, BackKey)
+        nm_Walk(7.25, BackKey)
     } else {
         Send "{" RotRight " 2}"
         nm_Walk(15, LeftKey)
         nm_Walk(4, FwdKey)
         nm_Walk(3, BackKey)
         nm_Walk(15, RightKey)
-        nm_Walk(6.8, BackKey)
+        nm_Walk(7.25, BackKey)
     }
     Sleep(1000)
     nm_Walk(4, FwdKey, RightKey)
