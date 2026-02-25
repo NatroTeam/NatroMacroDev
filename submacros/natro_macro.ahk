@@ -16265,7 +16265,7 @@ nm_getPetalPatternScript() {
 	(
 	'
 	static __petalInit := 0
-		, __visionDll := A_ScriptDir "/lib/Vision.dll"
+		, __visionDll := A_ScriptDir "/lib/ChromaAhk.dll"
 		, __vision := 0
 		, __calibReady := 0
 		, __vfX := 0.0

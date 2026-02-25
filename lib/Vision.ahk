@@ -111,17 +111,70 @@ class Vision {
     static CFG_O_DRAW_REJECTED := 216
     static CFG_SIZE_EXPECTED := 220
 
+    ; ChromaAhkDebugImageV1 layout (byte offsets)
+    static DBG_SIZE_EXPECTED := (A_PtrSize = 8) ? 40 : 32
+    static DBG_O_STRUCT_SIZE := 0
+    static DBG_O_PIXELS := (A_PtrSize = 8) ? 8 : 4
+    static DBG_O_CAPACITY := (A_PtrSize = 8) ? 16 : 8
+    static DBG_O_WIDTH := (A_PtrSize = 8) ? 20 : 12
+    static DBG_O_HEIGHT := (A_PtrSize = 8) ? 24 : 16
+    static DBG_O_STRIDE := (A_PtrSize = 8) ? 28 : 20
+    static DBG_O_BYTES_REQUIRED := (A_PtrSize = 8) ? 32 : 24
+    static DBG_O_BYTES_WRITTEN := (A_PtrSize = 8) ? 36 : 28
+
     __New(dllPath) {
         if !FileExist(dllPath) {
             throw Error("Vision.dll not found: " dllPath)
         }
         this.dllPath := dllPath
+        this.apiPrefix := "ChromaAhk"
+        this._procCache := Map()
+        this.hModule := DllCall("LoadLibrary", "Str", this.dllPath, "Ptr")
+        if !this.hModule {
+            throw Error("LoadLibrary failed for: " this.dllPath)
+        }
+        try {
+            DllCall(this.Api("GetApiVersion"), "Int")
+        } catch {
+            throw Error("Unsupported vision DLL. Expected ChromaAhk_* exports.")
+        }
 
         cfgSize := this.GetConfigStructSize()
         if (cfgSize != Vision.CFG_SIZE_EXPECTED) {
             throw Error("Vision config layout mismatch. DLL size=" cfgSize ", wrapper expects=" Vision.CFG_SIZE_EXPECTED)
         }
     }
+
+    __Delete() {
+        if (HasProp(this, "hModule") && this.hModule) {
+            DllCall("FreeLibrary", "Ptr", this.hModule)
+            this.hModule := 0
+        }
+    }
+
+    Api(funcName) {
+        exportName := this.apiPrefix "_" funcName
+        if this._procCache.Has(exportName) {
+            return this._procCache[exportName]
+        }
+
+        addr := DllCall("GetProcAddress", "Ptr", this.hModule, "AStr", exportName, "Ptr")
+        if !addr {
+            throw Error("Missing DLL export: " exportName)
+        }
+
+        this._procCache[exportName] := addr
+        return addr
+    }
+
+    EnsureAutoDebugBuffer(width, height) {
+        required := width * height * 8
+        if (!HasProp(this, "_autoDebugBuffer") || !IsObject(this._autoDebugBuffer) || this._autoDebugBuffer.Size < required) {
+            this._autoDebugBuffer := Buffer(required, 0)
+        }
+        return this._autoDebugBuffer
+    }
+
 
     LocateFile(scenePath, maxPoints := 512) {
         hBitmap := VisionBitmap.LoadFromFile(scenePath)
@@ -133,11 +186,11 @@ class Vision {
     }
 
     GetApiVersion() {
-        return DllCall(this.dllPath "\Vision_GetApiVersion", "Int")
+        return DllCall(this.Api("GetApiVersion"), "Int")
     }
 
     GetConfigStructSize() {
-        return DllCall(this.dllPath "\Vision_GetConfigStructSize", "Int")
+        return DllCall(this.Api("GetConfigStructSize"), "Int")
     }
 
     GetDefaultConfig() {
@@ -145,14 +198,14 @@ class Vision {
         errChars := 1024
         errBuf := Buffer(errChars * 2, 0)
         status := DllCall(
-            this.dllPath "\Vision_GetDefaultConfig",
+            this.Api("GetDefaultConfig"),
             "Ptr", cfgBuf.Ptr,
             "Ptr", errBuf.Ptr,
             "Int", errChars,
             "Int")
 
         if (status != Vision.STATUS_OK) {
-            throw Error("Vision_GetDefaultConfig failed (" Vision.StatusToText(status) "): " Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "))
+            throw Error(this.apiPrefix "_GetDefaultConfig failed (" Vision.StatusToText(status) "): " Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "))
         }
         return this.ConfigFromBuffer(cfgBuf)
     }
@@ -162,14 +215,14 @@ class Vision {
         errChars := 1024
         errBuf := Buffer(errChars * 2, 0)
         status := DllCall(
-            this.dllPath "\Vision_GetActiveConfig",
+            this.Api("GetActiveConfig"),
             "Ptr", cfgBuf.Ptr,
             "Ptr", errBuf.Ptr,
             "Int", errChars,
             "Int")
 
         if (status != Vision.STATUS_OK) {
-            throw Error("Vision_GetActiveConfig failed (" Vision.StatusToText(status) "): " Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "))
+            throw Error(this.apiPrefix "_GetActiveConfig failed (" Vision.StatusToText(status) "): " Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "))
         }
         return this.ConfigFromBuffer(cfgBuf)
     }
@@ -179,7 +232,7 @@ class Vision {
         errChars := 1024
         errBuf := Buffer(errChars * 2, 0)
         status := DllCall(
-            this.dllPath "\Vision_SetActiveConfig",
+            this.Api("SetActiveConfig"),
             "Ptr", cfgBuf.Ptr,
             "Ptr", errBuf.Ptr,
             "Int", errChars,
@@ -196,7 +249,7 @@ class Vision {
         errChars := 1024
         errBuf := Buffer(errChars * 2, 0)
         status := DllCall(
-            this.dllPath "\Vision_ResetConfigToDefault",
+            this.Api("ResetConfigToDefault"),
             "Ptr", errBuf.Ptr,
             "Int", errChars,
             "Int")
@@ -226,7 +279,7 @@ class Vision {
         writtenBuf := Buffer(4, 0)
 
         status := DllCall(
-            this.dllPath "\Vision_LocateBitmapBGRAW",
+            this.Api("LocateBitmapBGRAW"),
             "Ptr", pixelPtr,
             "Int", width,
             "Int", height,
@@ -261,7 +314,7 @@ class Vision {
         writtenBuf := Buffer(4, 0)
 
         status := DllCall(
-            this.dllPath "\Vision_LocateBitmapWithConfigBGRAW",
+            this.Api("LocateBitmapWithConfigBGRAW"),
             "Ptr", pixelPtr,
             "Int", width,
             "Int", height,
@@ -286,6 +339,71 @@ class Vision {
             points: this.ReadPoints(pointsBuf, written)
         }
     }
+    LocateBitmapWithDebugBGRA(pixelPtr, width, height, strideBytes, maxPoints := 512, debugBuffer := 0) {
+        if !pixelPtr {
+            throw Error("pixelPtr is null.")
+        }
+        if (width <= 0 || height <= 0) {
+            throw Error("width/height must be > 0.")
+        }
+        if (strideBytes = 0) {
+            throw Error("strideBytes must not be 0.")
+        }
+
+        if !IsObject(debugBuffer) {
+            debugBuffer := this.EnsureAutoDebugBuffer(width, height)
+        }
+
+        maxPoints := Max(0, maxPoints)
+        pointsBuf := Buffer(maxPoints * Vision.POINT_SIZE_BYTES, 0)
+        errChars := 1024
+        errBuf := Buffer(errChars * 2, 0)
+        totalBuf := Buffer(4, 0)
+        writtenBuf := Buffer(4, 0)
+
+        dbgBuf := Buffer(Vision.DBG_SIZE_EXPECTED, 0)
+        NumPut("Int", Vision.DBG_SIZE_EXPECTED, dbgBuf, Vision.DBG_O_STRUCT_SIZE)
+
+        if IsObject(debugBuffer) {
+            NumPut("Ptr", debugBuffer.Ptr, dbgBuf, Vision.DBG_O_PIXELS)
+            NumPut("Int", debugBuffer.Size, dbgBuf, Vision.DBG_O_CAPACITY)
+        }
+
+        status := DllCall(
+            this.Api("LocateBitmapWithDebugBGRAW"),
+            "Ptr", pixelPtr,
+            "Int", width,
+            "Int", height,
+            "Int", strideBytes,
+            "Ptr", (maxPoints > 0 ? pointsBuf.Ptr : 0),
+            "Int", maxPoints,
+            "Ptr", totalBuf.Ptr,
+            "Ptr", writtenBuf.Ptr,
+            "Ptr", dbgBuf.Ptr,
+            "Ptr", errBuf.Ptr,
+            "Int", errChars,
+            "Int")
+
+        totalFound := NumGet(totalBuf, 0, "Int")
+        written := NumGet(writtenBuf, 0, "Int")
+
+        return {
+            status: status,
+            statusText: Vision.StatusToText(status),
+            error: Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "),
+            totalFound: totalFound,
+            written: written,
+            points: this.ReadPoints(pointsBuf, written),
+            debug: {
+                width: NumGet(dbgBuf, Vision.DBG_O_WIDTH, "Int"),
+                height: NumGet(dbgBuf, Vision.DBG_O_HEIGHT, "Int"),
+                strideBytes: NumGet(dbgBuf, Vision.DBG_O_STRIDE, "Int"),
+                bytesRequired: NumGet(dbgBuf, Vision.DBG_O_BYTES_REQUIRED, "Int"),
+                bytesWritten: NumGet(dbgBuf, Vision.DBG_O_BYTES_WRITTEN, "Int"),
+                hasBuffer: IsObject(debugBuffer)
+            }
+        }
+    }
 
     LocateHBitmap(hBitmap, maxPoints := 512) {
         if !hBitmap {
@@ -301,7 +419,7 @@ class Vision {
         writtenBuf := Buffer(4, 0)
 
         status := DllCall(
-            this.dllPath "\Vision_LocateHBitmap",
+            this.Api("LocateHBitmap"),
             "UPtr", hBitmap,
             "Ptr", (maxPoints > 0 ? pointsBuf.Ptr : 0),
             "Int", maxPoints,
@@ -338,7 +456,7 @@ class Vision {
         status := Vision.STATUS_RUNTIME_ERROR
 
         statusCount := DllCall(
-            this.dllPath "\Vision_LocateHBitmap",
+            this.Api("LocateHBitmap"),
             "UPtr", hBitmap,
             "Ptr", 0,
             "Int", 0,
@@ -352,7 +470,7 @@ class Vision {
         if ((statusCount = Vision.STATUS_OK || statusCount = Vision.STATUS_BUFFER_TOO_SMALL) && (totalFound > 0)) {
             pointsBuf := Buffer(totalFound * Vision.POINT_SIZE_BYTES, 0)
             status := DllCall(
-                this.dllPath "\Vision_LocateHBitmap",
+                this.Api("LocateHBitmap"),
                 "UPtr", hBitmap,
                 "Ptr", pointsBuf.Ptr,
                 "Int", totalFound,
@@ -392,7 +510,7 @@ class Vision {
         writtenBuf := Buffer(4, 0)
 
         status := DllCall(
-            this.dllPath "\Vision_LocateHWND",
+            this.Api("LocateHWND"),
             "Ptr", hWnd,
             "Int", captureClientArea ? 1 : 0,
             "Ptr", (maxPoints > 0 ? pointsBuf.Ptr : 0),
@@ -531,8 +649,12 @@ class Vision {
             "petalSatRange", "petalValRange",
             "greenHueRanges", "minPetalRatio", "drawRejectedCandidates"
         ]
+
+        isMap := (Type(overrides) = "Map")
         for key in keys {
-            if HasProp(overrides, key) {
+            if (isMap && overrides.Has(key)) {
+                cfg.%key% := overrides[key]
+            } else if (!isMap && HasProp(overrides, key)) {
                 cfg.%key% := overrides.%key%
             }
         }
