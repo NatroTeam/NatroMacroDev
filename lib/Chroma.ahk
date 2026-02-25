@@ -1,6 +1,6 @@
 #Requires AutoHotkey v2.0
 
-class VisionBitmap {
+class ChromaBitmap {
     static LoadFromFile(path) {
         if !FileExist(path) {
             throw Error("Image file not found: " path)
@@ -9,8 +9,8 @@ class VisionBitmap {
         if !src {
             throw Error("LoadPicture failed: " path)
         }
-        normalized := VisionBitmap.NormalizeToDib32(src)
-        VisionBitmap.Free(src)
+        normalized := ChromaBitmap.NormalizeToDib32(src)
+        ChromaBitmap.Free(src)
         if !normalized {
             throw Error("NormalizeToDib32 failed: " path)
         }
@@ -77,7 +77,7 @@ class VisionBitmap {
     }
 }
 
-class Vision {
+class Chroma {
     static STATUS_OK := 0
     static STATUS_INVALID_ARGUMENT := 1
     static STATUS_CONFIG_ERROR := 2
@@ -87,7 +87,7 @@ class Vision {
     static MAX_HUE_RANGES := 8
     static POINT_SIZE_BYTES := 8
 
-    ; VisionConfigV1 layout (byte offsets)
+    ; ChromaAhkConfigV1 layout (byte offsets)
     static CFG_O_STRUCT_SIZE := 0
     static CFG_O_YELLOW_COUNT := 4
     static CFG_O_YELLOW_RANGES := 8
@@ -124,7 +124,7 @@ class Vision {
 
     __New(dllPath) {
         if !FileExist(dllPath) {
-            throw Error("Vision.dll not found: " dllPath)
+            throw Error("ChromaAhk.dll not found: " dllPath)
         }
         this.dllPath := dllPath
         this.apiPrefix := "ChromaAhk"
@@ -136,12 +136,12 @@ class Vision {
         try {
             DllCall(this.Api("GetApiVersion"), "Int")
         } catch {
-            throw Error("Unsupported vision DLL. Expected ChromaAhk_* exports.")
+            throw Error("Unsupported Chroma DLL. Expected ChromaAhk_* exports.")
         }
 
         cfgSize := this.GetConfigStructSize()
-        if (cfgSize != Vision.CFG_SIZE_EXPECTED) {
-            throw Error("Vision config layout mismatch. DLL size=" cfgSize ", wrapper expects=" Vision.CFG_SIZE_EXPECTED)
+        if (cfgSize != Chroma.CFG_SIZE_EXPECTED) {
+            throw Error("Chroma config layout mismatch. DLL size=" cfgSize ", wrapper expects=" Chroma.CFG_SIZE_EXPECTED)
         }
     }
 
@@ -177,11 +177,11 @@ class Vision {
 
 
     LocateFile(scenePath, maxPoints := 512) {
-        hBitmap := VisionBitmap.LoadFromFile(scenePath)
+        hBitmap := ChromaBitmap.LoadFromFile(scenePath)
         try {
             return this.LocateHBitmap(hBitmap, maxPoints)
         } finally {
-            VisionBitmap.Free(hBitmap)
+            ChromaBitmap.Free(hBitmap)
         }
     }
 
@@ -204,8 +204,8 @@ class Vision {
             "Int", errChars,
             "Int")
 
-        if (status != Vision.STATUS_OK) {
-            throw Error(this.apiPrefix "_GetDefaultConfig failed (" Vision.StatusToText(status) "): " Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "))
+        if (status != Chroma.STATUS_OK) {
+            throw Error(this.apiPrefix "_GetDefaultConfig failed (" Chroma.StatusToText(status) "): " Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "))
         }
         return this.ConfigFromBuffer(cfgBuf)
     }
@@ -221,8 +221,8 @@ class Vision {
             "Int", errChars,
             "Int")
 
-        if (status != Vision.STATUS_OK) {
-            throw Error(this.apiPrefix "_GetActiveConfig failed (" Vision.StatusToText(status) "): " Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "))
+        if (status != Chroma.STATUS_OK) {
+            throw Error(this.apiPrefix "_GetActiveConfig failed (" Chroma.StatusToText(status) "): " Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "))
         }
         return this.ConfigFromBuffer(cfgBuf)
     }
@@ -240,7 +240,7 @@ class Vision {
 
         return {
             status: status,
-            statusText: Vision.StatusToText(status),
+            statusText: Chroma.StatusToText(status),
             error: Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t ")
         }
     }
@@ -255,7 +255,7 @@ class Vision {
             "Int")
         return {
             status: status,
-            statusText: Vision.StatusToText(status),
+            statusText: Chroma.StatusToText(status),
             error: Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t ")
         }
     }
@@ -272,7 +272,7 @@ class Vision {
         }
 
         maxPoints := Max(0, maxPoints)
-        pointsBuf := Buffer(maxPoints * Vision.POINT_SIZE_BYTES, 0)
+        pointsBuf := Buffer(maxPoints * Chroma.POINT_SIZE_BYTES, 0)
         errChars := 1024
         errBuf := Buffer(errChars * 2, 0)
         totalBuf := Buffer(4, 0)
@@ -296,7 +296,7 @@ class Vision {
 
         return {
             status: status,
-            statusText: Vision.StatusToText(status),
+            statusText: Chroma.StatusToText(status),
             error: Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "),
             totalFound: totalFound,
             written: written,
@@ -307,7 +307,7 @@ class Vision {
     LocateBitmapWithConfigBGRA(pixelPtr, width, height, strideBytes, configObj, maxPoints := 512) {
         cfgBuf := this.ConfigToBuffer(configObj)
         maxPoints := Max(0, maxPoints)
-        pointsBuf := Buffer(maxPoints * Vision.POINT_SIZE_BYTES, 0)
+        pointsBuf := Buffer(maxPoints * Chroma.POINT_SIZE_BYTES, 0)
         errChars := 1024
         errBuf := Buffer(errChars * 2, 0)
         totalBuf := Buffer(4, 0)
@@ -332,7 +332,7 @@ class Vision {
 
         return {
             status: status,
-            statusText: Vision.StatusToText(status),
+            statusText: Chroma.StatusToText(status),
             error: Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "),
             totalFound: totalFound,
             written: written,
@@ -355,18 +355,18 @@ class Vision {
         }
 
         maxPoints := Max(0, maxPoints)
-        pointsBuf := Buffer(maxPoints * Vision.POINT_SIZE_BYTES, 0)
+        pointsBuf := Buffer(maxPoints * Chroma.POINT_SIZE_BYTES, 0)
         errChars := 1024
         errBuf := Buffer(errChars * 2, 0)
         totalBuf := Buffer(4, 0)
         writtenBuf := Buffer(4, 0)
 
-        dbgBuf := Buffer(Vision.DBG_SIZE_EXPECTED, 0)
-        NumPut("Int", Vision.DBG_SIZE_EXPECTED, dbgBuf, Vision.DBG_O_STRUCT_SIZE)
+        dbgBuf := Buffer(Chroma.DBG_SIZE_EXPECTED, 0)
+        NumPut("Int", Chroma.DBG_SIZE_EXPECTED, dbgBuf, Chroma.DBG_O_STRUCT_SIZE)
 
         if IsObject(debugBuffer) {
-            NumPut("Ptr", debugBuffer.Ptr, dbgBuf, Vision.DBG_O_PIXELS)
-            NumPut("Int", debugBuffer.Size, dbgBuf, Vision.DBG_O_CAPACITY)
+            NumPut("Ptr", debugBuffer.Ptr, dbgBuf, Chroma.DBG_O_PIXELS)
+            NumPut("Int", debugBuffer.Size, dbgBuf, Chroma.DBG_O_CAPACITY)
         }
 
         status := DllCall(
@@ -389,17 +389,17 @@ class Vision {
 
         return {
             status: status,
-            statusText: Vision.StatusToText(status),
+            statusText: Chroma.StatusToText(status),
             error: Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "),
             totalFound: totalFound,
             written: written,
             points: this.ReadPoints(pointsBuf, written),
             debug: {
-                width: NumGet(dbgBuf, Vision.DBG_O_WIDTH, "Int"),
-                height: NumGet(dbgBuf, Vision.DBG_O_HEIGHT, "Int"),
-                strideBytes: NumGet(dbgBuf, Vision.DBG_O_STRIDE, "Int"),
-                bytesRequired: NumGet(dbgBuf, Vision.DBG_O_BYTES_REQUIRED, "Int"),
-                bytesWritten: NumGet(dbgBuf, Vision.DBG_O_BYTES_WRITTEN, "Int"),
+                width: NumGet(dbgBuf, Chroma.DBG_O_WIDTH, "Int"),
+                height: NumGet(dbgBuf, Chroma.DBG_O_HEIGHT, "Int"),
+                strideBytes: NumGet(dbgBuf, Chroma.DBG_O_STRIDE, "Int"),
+                bytesRequired: NumGet(dbgBuf, Chroma.DBG_O_BYTES_REQUIRED, "Int"),
+                bytesWritten: NumGet(dbgBuf, Chroma.DBG_O_BYTES_WRITTEN, "Int"),
                 hasBuffer: IsObject(debugBuffer)
             }
         }
@@ -412,7 +412,7 @@ class Vision {
         hBitmap += 0
 
         maxPoints := Max(0, maxPoints)
-        pointsBuf := Buffer(maxPoints * Vision.POINT_SIZE_BYTES, 0)
+        pointsBuf := Buffer(maxPoints * Chroma.POINT_SIZE_BYTES, 0)
         errChars := 1024
         errBuf := Buffer(errChars * 2, 0)
         totalBuf := Buffer(4, 0)
@@ -433,7 +433,7 @@ class Vision {
 
         return {
             status: status,
-            statusText: Vision.StatusToText(status),
+            statusText: Chroma.StatusToText(status),
             error: Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "),
             totalFound: totalFound,
             written: written,
@@ -453,7 +453,7 @@ class Vision {
         writtenBuf := Buffer(4, 0)
         points := []
         written := 0
-        status := Vision.STATUS_RUNTIME_ERROR
+        status := Chroma.STATUS_RUNTIME_ERROR
 
         statusCount := DllCall(
             this.Api("LocateHBitmap"),
@@ -467,8 +467,8 @@ class Vision {
             "Int")
         totalFound := NumGet(totalBuf, 0, "Int")
 
-        if ((statusCount = Vision.STATUS_OK || statusCount = Vision.STATUS_BUFFER_TOO_SMALL) && (totalFound > 0)) {
-            pointsBuf := Buffer(totalFound * Vision.POINT_SIZE_BYTES, 0)
+        if ((statusCount = Chroma.STATUS_OK || statusCount = Chroma.STATUS_BUFFER_TOO_SMALL) && (totalFound > 0)) {
+            pointsBuf := Buffer(totalFound * Chroma.POINT_SIZE_BYTES, 0)
             status := DllCall(
                 this.Api("LocateHBitmap"),
                 "UPtr", hBitmap,
@@ -489,7 +489,7 @@ class Vision {
 
         return {
             status: status,
-            statusText: Vision.StatusToText(status),
+            statusText: Chroma.StatusToText(status),
             error: Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "),
             totalFound: totalFound,
             written: written,
@@ -503,7 +503,7 @@ class Vision {
         }
 
         maxPoints := Max(0, maxPoints)
-        pointsBuf := Buffer(maxPoints * Vision.POINT_SIZE_BYTES, 0)
+        pointsBuf := Buffer(maxPoints * Chroma.POINT_SIZE_BYTES, 0)
         errChars := 1024
         errBuf := Buffer(errChars * 2, 0)
         totalBuf := Buffer(4, 0)
@@ -525,7 +525,7 @@ class Vision {
 
         return {
             status: status,
-            statusText: Vision.StatusToText(status),
+            statusText: Chroma.StatusToText(status),
             error: Trim(StrGet(errBuf.Ptr, errChars, "UTF-16"), "`r`n`t "),
             totalFound: totalFound,
             written: written,
@@ -535,44 +535,44 @@ class Vision {
 
     ConfigFromBuffer(cfgBuf) {
         cfg := {}
-        yCount := NumGet(cfgBuf, Vision.CFG_O_YELLOW_COUNT, "Int")
-        yCount := Max(0, Min(yCount, Vision.MAX_HUE_RANGES))
-        gCount := NumGet(cfgBuf, Vision.CFG_O_GREEN_COUNT, "Int")
-        gCount := Max(0, Min(gCount, Vision.MAX_HUE_RANGES))
+        yCount := NumGet(cfgBuf, Chroma.CFG_O_YELLOW_COUNT, "Int")
+        yCount := Max(0, Min(yCount, Chroma.MAX_HUE_RANGES))
+        gCount := NumGet(cfgBuf, Chroma.CFG_O_GREEN_COUNT, "Int")
+        gCount := Max(0, Min(gCount, Chroma.MAX_HUE_RANGES))
 
         cfg.yellowHueRanges := []
         Loop yCount {
             i := A_Index - 1
-            off := Vision.CFG_O_YELLOW_RANGES + (i * 8)
+            off := Chroma.CFG_O_YELLOW_RANGES + (i * 8)
             cfg.yellowHueRanges.Push([NumGet(cfgBuf, off, "Int"), NumGet(cfgBuf, off + 4, "Int")])
         }
-        cfg.yellowSatRange := [NumGet(cfgBuf, Vision.CFG_O_YELLOW_SAT, "Int"), NumGet(cfgBuf, Vision.CFG_O_YELLOW_SAT + 4, "Int")]
-        cfg.yellowValRange := [NumGet(cfgBuf, Vision.CFG_O_YELLOW_VAL, "Int"), NumGet(cfgBuf, Vision.CFG_O_YELLOW_VAL + 4, "Int")]
+        cfg.yellowSatRange := [NumGet(cfgBuf, Chroma.CFG_O_YELLOW_SAT, "Int"), NumGet(cfgBuf, Chroma.CFG_O_YELLOW_SAT + 4, "Int")]
+        cfg.yellowValRange := [NumGet(cfgBuf, Chroma.CFG_O_YELLOW_VAL, "Int"), NumGet(cfgBuf, Chroma.CFG_O_YELLOW_VAL + 4, "Int")]
 
-        cfg.morphOpenIterations := NumGet(cfgBuf, Vision.CFG_O_MORPH_OPEN, "Int")
-        cfg.morphCloseIterations := NumGet(cfgBuf, Vision.CFG_O_MORPH_CLOSE, "Int")
-        cfg.dilateIterations := NumGet(cfgBuf, Vision.CFG_O_DILATE, "Int")
+        cfg.morphOpenIterations := NumGet(cfgBuf, Chroma.CFG_O_MORPH_OPEN, "Int")
+        cfg.morphCloseIterations := NumGet(cfgBuf, Chroma.CFG_O_MORPH_CLOSE, "Int")
+        cfg.dilateIterations := NumGet(cfgBuf, Chroma.CFG_O_DILATE, "Int")
 
-        cfg.minBlobArea := NumGet(cfgBuf, Vision.CFG_O_MIN_BLOB, "Int")
-        cfg.maxBlobArea := NumGet(cfgBuf, Vision.CFG_O_MAX_BLOB, "Int")
-        cfg.minCircularity := NumGet(cfgBuf, Vision.CFG_O_MIN_CIRC, "Float")
-        cfg.minCenterFillRatio := NumGet(cfgBuf, Vision.CFG_O_MIN_FILL, "Float")
+        cfg.minBlobArea := NumGet(cfgBuf, Chroma.CFG_O_MIN_BLOB, "Int")
+        cfg.maxBlobArea := NumGet(cfgBuf, Chroma.CFG_O_MAX_BLOB, "Int")
+        cfg.minCircularity := NumGet(cfgBuf, Chroma.CFG_O_MIN_CIRC, "Float")
+        cfg.minCenterFillRatio := NumGet(cfgBuf, Chroma.CFG_O_MIN_FILL, "Float")
 
-        cfg.requirePetalContext := NumGet(cfgBuf, Vision.CFG_O_REQUIRE_CTX, "Int") != 0
-        cfg.ringInnerRadiusPercent := NumGet(cfgBuf, Vision.CFG_O_RING_INNER, "Int")
-        cfg.ringOuterRadiusPercent := NumGet(cfgBuf, Vision.CFG_O_RING_OUTER, "Int")
+        cfg.requirePetalContext := NumGet(cfgBuf, Chroma.CFG_O_REQUIRE_CTX, "Int") != 0
+        cfg.ringInnerRadiusPercent := NumGet(cfgBuf, Chroma.CFG_O_RING_INNER, "Int")
+        cfg.ringOuterRadiusPercent := NumGet(cfgBuf, Chroma.CFG_O_RING_OUTER, "Int")
 
-        cfg.petalSatRange := [NumGet(cfgBuf, Vision.CFG_O_PETAL_SAT, "Int"), NumGet(cfgBuf, Vision.CFG_O_PETAL_SAT + 4, "Int")]
-        cfg.petalValRange := [NumGet(cfgBuf, Vision.CFG_O_PETAL_VAL, "Int"), NumGet(cfgBuf, Vision.CFG_O_PETAL_VAL + 4, "Int")]
+        cfg.petalSatRange := [NumGet(cfgBuf, Chroma.CFG_O_PETAL_SAT, "Int"), NumGet(cfgBuf, Chroma.CFG_O_PETAL_SAT + 4, "Int")]
+        cfg.petalValRange := [NumGet(cfgBuf, Chroma.CFG_O_PETAL_VAL, "Int"), NumGet(cfgBuf, Chroma.CFG_O_PETAL_VAL + 4, "Int")]
 
         cfg.greenHueRanges := []
         Loop gCount {
             i := A_Index - 1
-            off := Vision.CFG_O_GREEN_RANGES + (i * 8)
+            off := Chroma.CFG_O_GREEN_RANGES + (i * 8)
             cfg.greenHueRanges.Push([NumGet(cfgBuf, off, "Int"), NumGet(cfgBuf, off + 4, "Int")])
         }
-        cfg.minPetalRatio := NumGet(cfgBuf, Vision.CFG_O_MIN_PETAL, "Float")
-        cfg.drawRejectedCandidates := NumGet(cfgBuf, Vision.CFG_O_DRAW_REJECTED, "Int") != 0
+        cfg.minPetalRatio := NumGet(cfgBuf, Chroma.CFG_O_MIN_PETAL, "Float")
+        cfg.drawRejectedCandidates := NumGet(cfgBuf, Chroma.CFG_O_DRAW_REJECTED, "Int") != 0
         return cfg
     }
 
@@ -580,57 +580,57 @@ class Vision {
         cfg := this.MergeWithDefaultConfig(configObj)
         cfgBuf := Buffer(this.GetConfigStructSize(), 0)
 
-        NumPut("Int", this.GetConfigStructSize(), cfgBuf, Vision.CFG_O_STRUCT_SIZE)
+        NumPut("Int", this.GetConfigStructSize(), cfgBuf, Chroma.CFG_O_STRUCT_SIZE)
 
         yRanges := cfg.yellowHueRanges
         if (yRanges.Length < 1) {
             throw Error("yellowHueRanges must contain at least one range.")
         }
-        yCount := Min(yRanges.Length, Vision.MAX_HUE_RANGES)
-        NumPut("Int", yCount, cfgBuf, Vision.CFG_O_YELLOW_COUNT)
+        yCount := Min(yRanges.Length, Chroma.MAX_HUE_RANGES)
+        NumPut("Int", yCount, cfgBuf, Chroma.CFG_O_YELLOW_COUNT)
         Loop yCount {
             i := A_Index - 1
-            off := Vision.CFG_O_YELLOW_RANGES + (i * 8)
+            off := Chroma.CFG_O_YELLOW_RANGES + (i * 8)
             r := yRanges[A_Index]
             NumPut("Int", r[1], cfgBuf, off)
             NumPut("Int", r[2], cfgBuf, off + 4)
         }
 
-        NumPut("Int", cfg.yellowSatRange[1], cfgBuf, Vision.CFG_O_YELLOW_SAT)
-        NumPut("Int", cfg.yellowSatRange[2], cfgBuf, Vision.CFG_O_YELLOW_SAT + 4)
-        NumPut("Int", cfg.yellowValRange[1], cfgBuf, Vision.CFG_O_YELLOW_VAL)
-        NumPut("Int", cfg.yellowValRange[2], cfgBuf, Vision.CFG_O_YELLOW_VAL + 4)
+        NumPut("Int", cfg.yellowSatRange[1], cfgBuf, Chroma.CFG_O_YELLOW_SAT)
+        NumPut("Int", cfg.yellowSatRange[2], cfgBuf, Chroma.CFG_O_YELLOW_SAT + 4)
+        NumPut("Int", cfg.yellowValRange[1], cfgBuf, Chroma.CFG_O_YELLOW_VAL)
+        NumPut("Int", cfg.yellowValRange[2], cfgBuf, Chroma.CFG_O_YELLOW_VAL + 4)
 
-        NumPut("Int", cfg.morphOpenIterations, cfgBuf, Vision.CFG_O_MORPH_OPEN)
-        NumPut("Int", cfg.morphCloseIterations, cfgBuf, Vision.CFG_O_MORPH_CLOSE)
-        NumPut("Int", cfg.dilateIterations, cfgBuf, Vision.CFG_O_DILATE)
+        NumPut("Int", cfg.morphOpenIterations, cfgBuf, Chroma.CFG_O_MORPH_OPEN)
+        NumPut("Int", cfg.morphCloseIterations, cfgBuf, Chroma.CFG_O_MORPH_CLOSE)
+        NumPut("Int", cfg.dilateIterations, cfgBuf, Chroma.CFG_O_DILATE)
 
-        NumPut("Int", cfg.minBlobArea, cfgBuf, Vision.CFG_O_MIN_BLOB)
-        NumPut("Int", cfg.maxBlobArea, cfgBuf, Vision.CFG_O_MAX_BLOB)
-        NumPut("Float", cfg.minCircularity, cfgBuf, Vision.CFG_O_MIN_CIRC)
-        NumPut("Float", cfg.minCenterFillRatio, cfgBuf, Vision.CFG_O_MIN_FILL)
+        NumPut("Int", cfg.minBlobArea, cfgBuf, Chroma.CFG_O_MIN_BLOB)
+        NumPut("Int", cfg.maxBlobArea, cfgBuf, Chroma.CFG_O_MAX_BLOB)
+        NumPut("Float", cfg.minCircularity, cfgBuf, Chroma.CFG_O_MIN_CIRC)
+        NumPut("Float", cfg.minCenterFillRatio, cfgBuf, Chroma.CFG_O_MIN_FILL)
 
-        NumPut("Int", cfg.requirePetalContext ? 1 : 0, cfgBuf, Vision.CFG_O_REQUIRE_CTX)
-        NumPut("Int", cfg.ringInnerRadiusPercent, cfgBuf, Vision.CFG_O_RING_INNER)
-        NumPut("Int", cfg.ringOuterRadiusPercent, cfgBuf, Vision.CFG_O_RING_OUTER)
+        NumPut("Int", cfg.requirePetalContext ? 1 : 0, cfgBuf, Chroma.CFG_O_REQUIRE_CTX)
+        NumPut("Int", cfg.ringInnerRadiusPercent, cfgBuf, Chroma.CFG_O_RING_INNER)
+        NumPut("Int", cfg.ringOuterRadiusPercent, cfgBuf, Chroma.CFG_O_RING_OUTER)
 
-        NumPut("Int", cfg.petalSatRange[1], cfgBuf, Vision.CFG_O_PETAL_SAT)
-        NumPut("Int", cfg.petalSatRange[2], cfgBuf, Vision.CFG_O_PETAL_SAT + 4)
-        NumPut("Int", cfg.petalValRange[1], cfgBuf, Vision.CFG_O_PETAL_VAL)
-        NumPut("Int", cfg.petalValRange[2], cfgBuf, Vision.CFG_O_PETAL_VAL + 4)
+        NumPut("Int", cfg.petalSatRange[1], cfgBuf, Chroma.CFG_O_PETAL_SAT)
+        NumPut("Int", cfg.petalSatRange[2], cfgBuf, Chroma.CFG_O_PETAL_SAT + 4)
+        NumPut("Int", cfg.petalValRange[1], cfgBuf, Chroma.CFG_O_PETAL_VAL)
+        NumPut("Int", cfg.petalValRange[2], cfgBuf, Chroma.CFG_O_PETAL_VAL + 4)
 
         gRanges := cfg.greenHueRanges
-        gCount := Min(gRanges.Length, Vision.MAX_HUE_RANGES)
-        NumPut("Int", gCount, cfgBuf, Vision.CFG_O_GREEN_COUNT)
+        gCount := Min(gRanges.Length, Chroma.MAX_HUE_RANGES)
+        NumPut("Int", gCount, cfgBuf, Chroma.CFG_O_GREEN_COUNT)
         Loop gCount {
             i := A_Index - 1
-            off := Vision.CFG_O_GREEN_RANGES + (i * 8)
+            off := Chroma.CFG_O_GREEN_RANGES + (i * 8)
             r := gRanges[A_Index]
             NumPut("Int", r[1], cfgBuf, off)
             NumPut("Int", r[2], cfgBuf, off + 4)
         }
-        NumPut("Float", cfg.minPetalRatio, cfgBuf, Vision.CFG_O_MIN_PETAL)
-        NumPut("Int", cfg.drawRejectedCandidates ? 1 : 0, cfgBuf, Vision.CFG_O_DRAW_REJECTED)
+        NumPut("Float", cfg.minPetalRatio, cfgBuf, Chroma.CFG_O_MIN_PETAL)
+        NumPut("Int", cfg.drawRejectedCandidates ? 1 : 0, cfgBuf, Chroma.CFG_O_DRAW_REJECTED)
 
         return cfgBuf
     }
@@ -665,7 +665,7 @@ class Vision {
         points := []
         Loop pointCount {
             idx := A_Index - 1
-            offset := idx * Vision.POINT_SIZE_BYTES
+            offset := idx * Chroma.POINT_SIZE_BYTES
             x := NumGet(pointsBuf, offset, "Int")
             y := NumGet(pointsBuf, offset + 4, "Int")
             points.Push({ x: x, y: y })
@@ -675,15 +675,15 @@ class Vision {
 
     static StatusToText(status) {
         switch status {
-            case Vision.STATUS_OK:
+            case Chroma.STATUS_OK:
                 return "OK"
-            case Vision.STATUS_INVALID_ARGUMENT:
+            case Chroma.STATUS_INVALID_ARGUMENT:
                 return "INVALID_ARGUMENT"
-            case Vision.STATUS_CONFIG_ERROR:
+            case Chroma.STATUS_CONFIG_ERROR:
                 return "CONFIG_ERROR"
-            case Vision.STATUS_RUNTIME_ERROR:
+            case Chroma.STATUS_RUNTIME_ERROR:
                 return "RUNTIME_ERROR"
-            case Vision.STATUS_BUFFER_TOO_SMALL:
+            case Chroma.STATUS_BUFFER_TOO_SMALL:
                 return "BUFFER_TOO_SMALL"
             default:
                 return "UNKNOWN(" status ")"

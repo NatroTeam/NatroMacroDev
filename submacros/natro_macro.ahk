@@ -235,7 +235,7 @@ nm_importPatterns()
 			#SingleInstance Off
 			#Warn All, StdOut
 
-			#Include "%A_ScriptDir%\lib\Vision.ahk"
+			#Include "%A_ScriptDir%\lib\Chroma.ahk"
 			' nm_KeyVars() '
 
 			size:=1, reps:=1, facingcorner:=0
@@ -16265,8 +16265,8 @@ nm_getPetalPatternScript() {
 	(
 	'
 	static __petalInit := 0
-		, __visionDll := A_ScriptDir "/lib/ChromaAhk.dll"
-		, __vision := 0
+		, __chromaDll := A_ScriptDir "/lib/ChromaAhk.dll"
+		, __chroma := 0
 		, __calibReady := 0
 		, __vfX := 0.0
 		, __vfY := 0.0
@@ -16279,15 +16279,22 @@ nm_getPetalPatternScript() {
 		, __diamondRadiusTiles := 5
 
 	if !__petalInit {
-		if !FileExist(__visionDll)
-			throw Error("Vision.dll missing at expected path: " __visionDll)
-		__vision := Vision(__visionDll)
+		if !FileExist(__chromaDll)
+			throw Error("ChromaAhk.dll missing at expected path: " __chromaDll)
+		__chroma := Chroma(__chromaDll)
+		cfgResult := __chroma.SetActiveConfig(pd_GetChromaConfigBase())
+		if (cfgResult.status != 0)
+			throw Error("Chroma SetActiveConfig failed: " cfgResult.statusText " - " cfgResult.error)
 		Send "{" RotUp " 4}{" SC_1 "}"
 		Sleep 100
 		__petalInit := 1
 	}
-	if !__vision
-		__vision := Vision(__visionDll)
+	if !__chroma {
+		__chroma := Chroma(__chromaDll)
+		cfgResult := __chroma.SetActiveConfig(pd_GetChromaConfigBase())
+		if (cfgResult.status != 0)
+			throw Error("Chroma SetActiveConfig failed: " cfgResult.statusText " - " cfgResult.error)
+	}
 
 	Loop {
 		hwnd := GetRobloxHWND()
@@ -16297,7 +16304,7 @@ nm_getPetalPatternScript() {
 			if (clientW > 0 && clientH > 0) {
 				originX := Round((clientW - 1) * 0.50)
 				originY := Round((clientH - 1) * 0.50)
-				loc := pd_LocatePointsFromClient(__vision, clientX, clientY, clientW, clientH)
+				loc := pd_LocatePointsFromClient(__chroma, clientX, clientY, clientW, clientH)
 				if (pd_IsLocateStatusOk(loc.status) && (loc.written > 0)) {
 					nearest := pd_FindNearestToOrigin(loc.points, originX, originY)
 					if (nearest.found) {
@@ -16306,7 +16313,7 @@ nm_getPetalPatternScript() {
 
 						if !__calibReady {
 							calib := pd_CalibrateVectors(
-								__vision,
+								__chroma,
 								clientX, clientY, clientW, clientH,
 								__calibTiles,
 								targetX, targetY,
@@ -16372,7 +16379,30 @@ nm_getPetalPatternScript() {
 		return ((status = 0) || (status = 4))
 	}
 
-	pd_LocatePointsFromClient(visionObj, clientX, clientY, clientW, clientH) {
+	pd_GetChromaConfigBase() {
+		return {
+			yellowHueRanges: [[16, 32]],
+			yellowSatRange: [50, 125],
+			yellowValRange: [85, 255],
+			morphOpenIterations: 5,
+			morphCloseIterations: 3,
+			dilateIterations: 1,
+			minBlobArea: 20,
+			maxBlobArea: 800,
+			minCircularity: 0.75,
+			minCenterFillRatio: 0.68,
+			requirePetalContext: true,
+			ringInnerRadiusPercent: 105,
+			ringOuterRadiusPercent: 225,
+			petalSatRange: [0, 255],
+			petalValRange: [120, 255],
+			greenHueRanges: [[52, 68], [24, 48]],
+			minPetalRatio: 0.42,
+			drawRejectedCandidates: false
+		}
+	}
+
+	pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH) {
 		pBM := Gdip_BitmapFromScreen(clientX "|" clientY "|" clientW "|" clientH)
 		hBmp := pBM ? Gdip_CreateHBITMAPFromBitmap(pBM) : 0
 		if (pBM)
@@ -16380,7 +16410,7 @@ nm_getPetalPatternScript() {
 		if !hBmp
 			return { status: -1, written: 0, points: [] }
 
-		result := visionObj.LocateHBitmapAll(hBmp)
+		result := chromaObj.LocateHBitmapAll(hBmp)
 		DllCall("gdi32\DeleteObject", "Ptr", hBmp)
 		return result
 	}
@@ -16446,7 +16476,7 @@ nm_getPetalPatternScript() {
 		}
 	}
 
-	pd_CalibrateVectors(visionObj, clientX, clientY, clientW, clientH, calibTiles, targetX, targetY, originX, originY) {
+	pd_CalibrateVectors(chromaObj, clientX, clientY, clientW, clientH, calibTiles, targetX, targetY, originX, originY) {
 		global FwdKey, BackKey, LeftKey, RightKey
 
 		foundF := 0
@@ -16474,7 +16504,7 @@ nm_getPetalPatternScript() {
 
 		nm_Walk(calibTiles, fwdMoveKey)
 		Sleep 80
-		locF := pd_LocatePointsFromClient(visionObj, clientX, clientY, clientW, clientH)
+		locF := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
 		if (pd_IsLocateStatusOk(locF.status) && (locF.written > 0)) {
 			matchF := pd_FindNearestToTarget(locF.points, targetX, targetY)
 			if (matchF.found) {
@@ -16488,7 +16518,7 @@ nm_getPetalPatternScript() {
 
 		nm_Walk(calibTiles, rightMoveKey)
 		Sleep 80
-		locR := pd_LocatePointsFromClient(visionObj, clientX, clientY, clientW, clientH)
+		locR := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
 		if (pd_IsLocateStatusOk(locR.status) && (locR.written > 0)) {
 			matchR := pd_FindNearestToTarget(locR.points, targetX, targetY)
 			if (matchR.found) {
@@ -17220,7 +17250,7 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	#Include "Gdip_ImageSearch.ahk"
 	#Include "HyperSleep.ahk"
 	#Include "Roblox.ahk"
-	#Include "Vision.ahk"
+	#Include "Chroma.ahk"
 	'
 	)
 
