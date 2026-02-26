@@ -2036,6 +2036,7 @@ try Hotkey StopHotkey, stop, "On"
 
 pToken := Gdip_Startup()
 currentWalk := {pid:"", name:""} ; stores "pid" (script process ID) and "name" (pattern/movement name)
+PetalCalibCache := {ready:0, vfX:0.0, vfY:0.0, vrX:0.0, vrY:0.0, vfSign:1, vrSign:1}
 PetalPatternOverride := 0
 
 priorityList:=[], defaultPriorityList:=["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
@@ -16296,6 +16297,16 @@ nm_getPetalPatternScript() {
 			throw Error("Chroma SetActiveConfig failed: " cfgResult.statusText " - " cfgResult.error)
 	}
 
+	if (!__calibReady && IsSet(__petalCalibReady) && (__petalCalibReady + 0)) {
+		__calibReady := 1
+		__vfX := IsSet(__petalCalibVfX) ? (__petalCalibVfX + 0.0) : 0.0
+		__vfY := IsSet(__petalCalibVfY) ? (__petalCalibVfY + 0.0) : 0.0
+		__vrX := IsSet(__petalCalibVrX) ? (__petalCalibVrX + 0.0) : 0.0
+		__vrY := IsSet(__petalCalibVrY) ? (__petalCalibVrY + 0.0) : 0.0
+		__vfSign := (IsSet(__petalCalibVfSign) && ((__petalCalibVfSign + 0) < 0)) ? -1 : 1
+		__vrSign := (IsSet(__petalCalibVrSign) && ((__petalCalibVrSign + 0) < 0)) ? -1 : 1
+	}
+	pd_PublishCalibState(__calibReady, __vfX, __vfY, __vrX, __vrY, __vfSign, __vrSign)
 	Loop {
 		hwnd := GetRobloxHWND()
 		if (hwnd) {
@@ -16326,6 +16337,7 @@ nm_getPetalPatternScript() {
 								__vrY := calib.vrY
 								__vfSign := calib.vfSign
 								__vrSign := calib.vrSign
+								pd_PublishCalibState(__calibReady, __vfX, __vfY, __vrX, __vrY, __vfSign, __vrSign)
 							}
 						}
 
@@ -16375,6 +16387,16 @@ nm_getPetalPatternScript() {
 		Sleep 250
 	}
 
+	pd_PublishCalibState(ready, vfX, vfY, vrX, vrY, vfSign, vrSign) {
+		if !(IsSet(__petalCalibParentHwnd) && __petalCalibParentHwnd)
+			return
+		payload := "NMPCAL|" ((ready + 0) ? 1 : 0) "|" Round(vfX, 6) "|" Round(vfY, 6) "|" Round(vrX, 6) "|" Round(vrY, 6) "|" ((vfSign < 0) ? -1 : 1) "|" ((vrSign < 0) ? -1 : 1)
+		cds := Buffer(A_PtrSize*3, 0)
+		NumPut("UPtr", 0, cds, 0)
+		NumPut("UInt", (StrLen(payload) + 1) * 2, cds, A_PtrSize)
+		NumPut("Ptr", StrPtr(payload), cds, A_PtrSize*2)
+		try DllCall("SendMessageW", "Ptr", __petalCalibParentHwnd, "UInt", 0x004A, "Ptr", A_ScriptHwnd, "Ptr", cds.Ptr, "Ptr")
+	}
 	pd_IsLocateStatusOk(status) {
 		return ((status = 0) || (status = 4))
 	}
@@ -17142,6 +17164,7 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 		: (patternsize="L") ? 1.5
 		: (patternsize="XL") ? 2
 		: 1 ; medium (default)
+	petalCalibSeed := (pattern = "__PetalPattern__") ? nm_getPetalCalibSeedScript() : ""
 
 	DetectHiddenWindows 1
 	if ((index = 1) || !WinExist("ahk_class AutoHotkey ahk_pid " currentWalk.pid))
@@ -17167,6 +17190,7 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 			FieldRotateDirection:="' FieldRotateDirection '"
 			FieldRotateTimes:=' FieldRotateTimes '
 			FieldDriftCheck:=' FieldDriftCheck '
+			' petalCalibSeed '
 			nm_CameraRotation(Dir, count) {
 				Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Mod(Abs(LR), 8) "}{" Rot%(UD > 0 ? "Up" : "Down")% " " Abs(UD) "}"), -1)
 				send "{" Rot%Dir% " " count "}"
@@ -17186,6 +17210,22 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 
 	if (KeyWait("F14", "D T5 L") = 0) ; wait for pattern start
 		nm_endWalk()
+}
+nm_getPetalCalibSeedScript() {
+	global PetalCalibCache
+	return
+	(
+	'
+	__petalCalibParentHwnd:=' A_ScriptHwnd '
+	__petalCalibReady:=' (PetalCalibCache.ready ? 1 : 0) '
+	__petalCalibVfX:=' PetalCalibCache.vfX '
+	__petalCalibVfY:=' PetalCalibCache.vfY '
+	__petalCalibVrX:=' PetalCalibCache.vrX '
+	__petalCalibVrY:=' PetalCalibCache.vrY '
+	__petalCalibVfSign:=' PetalCalibCache.vfSign '
+	__petalCalibVrSign:=' PetalCalibCache.vrSign '
+	'
+	)
 }
 nm_KeyVars() {
 	return
@@ -23104,9 +23144,26 @@ timers(*) => ba_showPlanterTimers()
 
 nm_WM_COPYDATA(wParam, lParam, *){
 	Critical
-	global LastGuid, PMondoGuid, MondoAction, MondoBuffCheck, currentWalk, FwdKey, BackKey, LeftKey, RightKey, SC_Space
+	global LastGuid, PMondoGuid, MondoAction, MondoBuffCheck, currentWalk, FwdKey, BackKey, LeftKey, RightKey, SC_Space, PetalCalibCache
 	StringAddress := NumGet(lParam + 2*A_PtrSize, "Ptr")  ; Retrieves the CopyDataStruct's lpData member.
 	StringText := StrGet(StringAddress)  ; Copy the string out of the structure.
+	if InStr(StringText, "NMPCAL|") {
+		parts := StrSplit(StringText, "|")
+		if ((parts.Length >= 8) && (parts[1] = "NMPCAL")) {
+			try {
+				PetalCalibCache.ready := ((parts[2] + 0) != 0) ? 1 : 0
+				PetalCalibCache.vfX := parts[3] + 0.0
+				PetalCalibCache.vfY := parts[4] + 0.0
+				PetalCalibCache.vrX := parts[5] + 0.0
+				PetalCalibCache.vrY := parts[6] + 0.0
+				PetalCalibCache.vfSign := ((parts[7] + 0) < 0) ? -1 : 1
+				PetalCalibCache.vrSign := ((parts[8] + 0) < 0) ? -1 : 1
+			} catch {
+				return 0
+			}
+		}
+		return 0
+	}
 	if(wParam=1){ ;guiding star detected
 		nm_setStatus("Detected", "Guiding Star in " . StringText)
 		;pause
