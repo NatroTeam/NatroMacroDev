@@ -236,6 +236,7 @@ nm_importPatterns()
 			Gdip_ImageSearch(*) => ""
 			Gdip_BitmapFromBase64(*) => ""
 			nm_CameraRotation(param1, param2) => ""
+			nm_corruption(*) => ""
 
 			' pattern '
 
@@ -16861,6 +16862,7 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 
 	' nm_KeyVars() '
 	' vars '
+	#Include "%A_ScriptDir%\nm_image_assets\buffs\bitmaps.ahk"
 
 	start()
 	return
@@ -16870,6 +16872,18 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 		Send "{" MoveKey1 " down}" (MoveKey2 ? "{" MoveKey2 " down}" : "")
 		' (NewWalk ? 'Walk(tiles)' : ('HyperSleep(4000/' MoveSpeedNum '*tiles)')) '
 		Send "{" MoveKey1 " up}" (MoveKey2 ? "{" MoveKey2 " up}" : "")
+	}
+
+	nm_corruption()
+	{
+		GetRobloxClientPos()
+		pBMHayStack := Gdip_BitmapFromScreen(windowX "|" windowY + 30 "|" windowWidth "|50")
+
+		corruptionResult := Gdip_ImageSearch(pBMHayStack, bitmaps["corruption"],,,,,, 5)
+
+		Gdip_DisposeImage(pBMHayStack)
+
+		return corruptionResult
 	}
 
 	F13::
