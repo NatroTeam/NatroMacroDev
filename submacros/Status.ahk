@@ -24,6 +24,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "DurationFromSeconds.ahk"
 #Include "Roblox.ahk"
 #Include "ErrorHandling.ahk"
+#Include "Auxiliary.ahk"
 
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
@@ -2507,12 +2508,6 @@ nm_command(command)
 		if !IsSet(item)
 			return {item:0,dist:100} ;large dist to break
 		return {item:item,dist:dist}
-	}
-	ObjHasValue(obj, value) {
-		for k,v in obj
-			if (v = value)
-			return k
-		return 0
 	}
 }
 
