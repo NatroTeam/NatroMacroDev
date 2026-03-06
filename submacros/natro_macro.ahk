@@ -241,28 +241,49 @@ nm_importPatterns()
 nm_importPatterns()
 
 ; import paths
-nm_importPaths(){
-	path_types := ["gtb", "gtc", "gtf", "gtp", "gtq", "gtk", "wf"]
+nm_importPaths()
+{
+	static path_names := Map(
+		"gtb", ["blue", "mountain", "red"], ; go to (field) booster
+		"gtc", ["clock", "antpass", "robopass", "honeydis", "treatdis", "blueberrydis", "strawberrydis", "coconutdis", "gluedis", "royaljellydis", "blender", "windshrine", ; go to collect (machine)
+				"stockings", "wreath", "feast", "gingerbread", "snowmachine", "candles", "samovar", "lidart", "gummybeacon", "rbpdelevel", ; beesmas
+				"honeylb", "honeystorm", "stickerstack", "stickerprinter", "normalmm", "megamm", "nightmm", "extrememm", "wintermm"], ; other
+		"gtf", ["bamboo-from-pineapple", "bamboo", "blueflower-from-clover", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom-from-strawberry", 
+				"mushroom", "pepper", "pinetree-from-pumpkin", "pinetree", "pineapple", "pumpkin", "rose", "spider", "strawberry", "stump", "sunflower"], ; go to field
+		"gtp", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
+				"rose-from-pinetree", "rose", "spider-from-bamboo", "spider", "strawberry-from-bamboo", "strawberry-from-spider", "strawberry", "stump", "sunflower"], ; go to planter
+		"gtq", ["black", "brown", "bucko", "honey", "polar", "riley"], ; go to questgiver
+		"wf",  ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
+				"rose", "spider", "strawberry", "stump", "sunflower"],  ; walk from (field to hive)
+		"gtk", ["cococrab", "commando", "kingbeetle", "tunnelbear"]   ; go to kill (boss)
+	)
+
 	global paths := Map()
 	paths.CaseSense := 0
-	
-	for path_type in path_types {
-		(paths[path_type] := Map()).CaseSense := 0
 
-		loop files A_WorkingDir "\paths\" path_type "-*.ahk", "R" {
-			name := StrReplace(StrReplace(A_LoopFileName, path_type "-"), ".ahk")
-			contents := FileRead(A_LoopFilePath)
-			paths[path_type][name] := contents
-			if RegexMatch(contents, "im)paths\[") {
+	for k, list in path_names
+	{
+		(paths[k] := Map()).CaseSense := 0
+		for v in list
+		{
+			try {
+				file := FileOpen(A_WorkingDir "\paths\" k "-" v ".ahk", "r"), paths[k][v] := file.Read(), file.Close()
+				if regexMatch(paths[k][v], "im)paths\[")
+					MsgBox
+					(
+					"Path '" k '-' v "' seems to be deprecated!
+					This means the macro will NOT work correctly!
+					Check for an updated version of the path or
+					restore the default path"
+					), "Error", 0x40010 " T60"
+			}
+			catch
 				MsgBox
 				(
-				"Path '" path_type "-" name "' seems to be deprecated!
+				"Could not find the '" k '-' v "' path!
 				This means the macro will NOT work correctly!
-				Check for an updated version of the path or
-				restore the default path"
+				Make sure the path exists in the 'paths' folder and redownload if it doesn't!"
 				), "Error", 0x40010 " T60"
-				continue
-			}			
 		}
 	}
 }
@@ -18433,13 +18454,7 @@ nm_bugDeathCheck(){
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; PATH FUNCTIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-nm_createPath(type, location, vars := ""){
-	if paths[type].Has(location) {
-		nm_createWalk(paths[type][location], , nm_PathVars() "`r`n" vars)
-		return
-	}
-	nm_setStatus("Error", "Path " type "-" location " not found!")
-}
+nm_createPath(path) => nm_createWalk(path, , nm_PathVars())
 nm_PathVars(){
 	return
 	(
@@ -18597,16 +18612,21 @@ nm_PathVars(){
 }
 nm_gotoField(location){
 	global HiveConfirmed:=0
+	path := paths["gtf"][StrReplace(location, " ")]
 
 	nm_setShiftLock(0)
-	nm_createPath("gtf", StrReplace(location, " "))
+
+	nm_createPath(path)
 	KeyWait "F14", "D T5 L"
 	KeyWait "F14", "T120 L"
 	nm_endWalk()
 }
 nm_walkFrom(field){
+	path := paths["wf"][StrReplace(field, " ")]
+
 	nm_setShiftLock(0)
-	nm_createPath("wf", StrReplace(field, " "))
+
+	nm_createPath(path)
 	KeyWait "F14", "D T5 L"
 	nm_setStatus("Traveling", "Hive")
 	KeyWait "F14", "T120 L"
@@ -18614,9 +18634,11 @@ nm_walkFrom(field){
 }
 nm_gotoPlanter(location, waitEnd := 1){
 	global HiveConfirmed:=0
+	path := paths["gtp"][StrReplace(location, " ")]
 
 	nm_setShiftLock(0)
-	nm_createPath("gtp", StrReplace(location, " ") )
+
+	nm_createPath(path)
 	KeyWait "F14", "D T5 L"
 	if WaitEnd
 	{
@@ -18626,9 +18648,11 @@ nm_gotoPlanter(location, waitEnd := 1){
 }
 nm_gotoCollect(location, waitEnd := 1){
 	global HiveConfirmed:=0
+	path := paths["gtc"][StrReplace(location, " ")]
 
 	nm_setShiftLock(0)
-	nm_createPath("gtc", StrReplace(location, " "))
+
+	nm_createPath(path)
 	KeyWait "F14", "D T5 L"
 	if waitEnd
 	{
@@ -18638,14 +18662,17 @@ nm_gotoCollect(location, waitEnd := 1){
 }
 nm_gotoBooster(booster){
 	global HiveConfirmed:=0
+	path := paths["gtb"][booster]
 
 	nm_setShiftLock(0)
-	nm_createPath("gtb", booster)
+
+	nm_createPath(path)
 	KeyWait "F14", "D T5 L"
 	KeyWait "F14", "T120 L"
 	nm_endWalk()
 }
 nm_gotoQuestgiver(giver){
+	path := paths["gtq"][giver]
 	nm_setShiftLock(0)
 	success:=0
 	Loop 2
@@ -18656,7 +18683,7 @@ nm_gotoQuestgiver(giver){
 
 		nm_setStatus("Traveling", "Questgiver: " giver)
 
-		nm_createPath("gtq", giver)
+		nm_createPath(path)
 		KeyWait "F14", "D T5 L"
 		KeyWait "F14", "T120 L"
 		nm_endWalk()
@@ -18698,14 +18725,13 @@ nm_gotoQuestgiver(giver){
 nm_gotoKill(boss, goOutside := true, goInside := true){
 	global HiveConfirmed := 0
 
+	path := "goOutside := " goOutside ", goInside := " goInside "`r`n" paths["gtk"][boss]
 	nm_setShiftLock(false)
-	nm_createPath("gtk", boss, "goOutside := " goOutside ", goInside := " goInside)
+	nm_createPath(path)
 	KeyWait "F14", "D T5 L"
 	KeyWait "F14", "T120 L"
 	nm_endWalk()
 }
-
-
 ba_planter(){
 	global planternames
 	global nectarnames
