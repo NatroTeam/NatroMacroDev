@@ -2101,6 +2101,7 @@ TempGather_Field := ""
 TempGather_Duration := 0
 TempGather_StartTime := 0
 TempGather := false
+GatherBoostedFieldTime := 15
 nm_WM_SETCURSOR(*) => CUSTOM_CURSOR
 
 ForceStart := 0
@@ -13926,6 +13927,10 @@ nm_toBooster(location){
 					if nm_fieldBoostCheck(v, 1)
 					{
 						nm_setStatus("Boosted", v), RecentFBoost := v
+						if BoostChaserCheck && %StrReplace(v, " ")BoosterCheck% && (v != FieldName1) {
+							nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: v, time: GatherBoostedFieldTime})
+							nm_TempGather(v, GatherBoostedFieldTime, false)
+						}
 						break 2
 					}
 
