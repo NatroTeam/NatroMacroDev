@@ -316,7 +316,8 @@ SelfReload(*) { ; to refresh vals, it has to be ran by natro_macro.ahk
 
 nm_UpdateConnectionTotal(num) {
 	Critical
-	try SendMessage(0x5561,num,,,"natro_macro ahk_class AutoHotkey")
+	if WinExist("natro_macro.ahk ahk_class AutoHotkey") > 0
+		SendMessage(0x5561, num)
 }
 
 Send_WM_COPYDATA(StringToSend, TargetScriptTitle, wParam:=0)

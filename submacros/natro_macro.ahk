@@ -110,7 +110,7 @@ OnMessage(0x5557, nm_ForceReconnect)
 OnMessage(0x5558, nm_AmuletPrompt)
 OnMessage(0x5559, nm_FindItem)
 OnMessage(0x5560, nm_copyDebugLog)
-; OnMessage(0x5561, nm_UpdateConnectionTotal)
+OnMessage(0x5561, nm_UpdateConnectionTotal)
 OnMessage(0x0020, nm_WM_SETCURSOR)
 
 ; set version identifier
@@ -13927,7 +13927,7 @@ nm_toBooster(location){
 					if nm_fieldBoostCheck(v, 1)
 					{
 						nm_setStatus("Boosted", v), RecentFBoost := v
-						if BoostChaserCheck && %StrReplace(v, " ")BoosterCheck% && (v != FieldName1) {
+						if BoostChaserCheck && %StrReplace(v, " ")%BoosterCheck && (v != FieldName1) {
 							nm_sendInstructions({type: "Tad Alt", action: "Go to Field", field: v, time: GatherBoostedFieldTime})
 							nm_TempGather(v, GatherBoostedFieldTime, false)
 						}
