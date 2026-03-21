@@ -249,9 +249,10 @@ nm_importPaths()
 				"stockings", "wreath", "feast", "gingerbread", "snowmachine", "candles", "samovar", "lidart", "gummybeacon", "rbpdelevel", ; beesmas
 				"honeylb", "honeystorm", "stickerstack", "stickerprinter", "normalmm", "megamm", "nightmm", "extrememm", "wintermm"], ; other
 		"gtf", ["bamboo-from-pineapple", "bamboo", "blueflower-from-clover", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom-from-strawberry", 
-				"mushroom", "pepper", "pinetree-from-pumpkin", "pinetree", "pineapple", "pumpkin", "rose", "spider", "strawberry", "stump", "sunflower"], ; go to field
+				"mushroom", "pepper", "pinetree-from-pumpkin", "pinetree", "pineapple", "pumpkin", "rose-from-pinetree", "rose",  "spider-from-bamboo", "spider",
+				"strawberry-from-bamboo", "strawberry-from-spider", "strawberry", "stump", "sunflower"], ; go to field
 		"gtp", ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
-				"rose-from-pinetree", "rose", "spider-from-bamboo", "spider", "strawberry-from-bamboo", "strawberry-from-spider", "strawberry", "stump", "sunflower"], ; go to planter
+				"rose", "spider", "strawberry", "stump", "sunflower"], ; go to planter
 		"gtq", ["black", "brown", "bucko", "honey", "polar", "riley"], ; go to questgiver
 		"wf",  ["bamboo", "blueflower", "cactus", "clover", "coconut", "dandelion", "mountaintop", "mushroom", "pepper", "pinetree", "pineapple", "pumpkin",
 				"rose", "spider", "strawberry", "stump", "sunflower"],  ; walk from (field to hive)
