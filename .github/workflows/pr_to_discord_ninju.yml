@@ -1,0 +1,14 @@
+name: Discord PR notify
+on:
+  pull_request_target:
+    types: [opened, reopened]
+  workflow_dispatch:
+
+jobs:
+  PR:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ninjubaer/pr-to-discord@master
+        with:
+          webhook_url: "${{ secrets.NINJU_WEBHOOK_URL }}"
+          content: "<@727937385274540046> New PR opened!"
