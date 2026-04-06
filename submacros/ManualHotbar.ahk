@@ -26,8 +26,13 @@ DetectHiddenWindows 1
 SetWorkingDir A_ScriptDir "\.."
 TraySetIcon "nm_image_assets\auryn.ico"
 
-OnMessage(0x0102, WM_CHAR)
 OnExit(nm_ManualHotbarExit)
+
+
+nm_ManualHotbarExit(*){
+    nm_saveManualHotbarGui()
+    DllCall(A_WorkingDir "\nm_image_assets\Styles\USkin.dll\USkinExit")
+}
 
 ; check for the correct AHK version before starting
 if (A_PtrSize != 4)
@@ -44,7 +49,9 @@ if (A_PtrSize != 4)
 
 ReloadScript(ahkpath)
 {
-	static cmd := DllCall("GetCommandLine", "Str"), params := DllCall("shlwapi\PathGetArgs","Str",cmd,"Str")
+	cmd := DllCall("GetCommandLine", "Str")
+    params := DllCall("shlwapi\PathGetArgs", "Str", cmd, "Str")
+
 	Run '"' ahkpath '" /restart ' params
 }
 
@@ -69,13 +76,14 @@ nm_importHotbarGlobals() {
 		, "ManualHotbarTimer5", 600
 		, "ManualHotbarTimer6", 600
 		, "ManualHotbarTimer7", 600
-		, "ManualHotbarArmed1", 0
-		, "ManualHotbarArmed2", 0
-		, "ManualHotbarArmed3", 0
-		, "ManualHotbarArmed4", 0
-		, "ManualHotbarArmed5", 0
-		, "ManualHotbarArmed6", 0
-		, "ManualHotbarArmed7", 0)
+		, "ManualHotbarEnabled1", 0
+		, "ManualHotbarEnabled2", 0
+		, "ManualHotbarEnabled3", 0
+		, "ManualHotbarEnabled4", 0
+		, "ManualHotbarEnabled5", 0
+		, "ManualHotbarEnabled6", 0
+		, "ManualHotbarEnabled7", 0
+        , "ManualHotbarTutorial", 0)
 
 	local k, v, i, j
 	for k,v in ManualHotbarGlobals ; load the default values as globals, will be overwritten if a new value exists when reading
@@ -115,58 +123,75 @@ if (ManualHBX && ManualHBY)
 }
 else
 	ManualHBX:=ManualHBY:=20
-
 ;GUI
-ManualHotbar := Gui("-Caption +Border +E0x00000088", "Manual Hotbar")
-ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w585 h45 NA")
-(GuiCtrl := ManualHotbar.Add("Picture", "x0 y15 w15 h15", ".\nm_image_assets\auryn.ico")).OnEvent("Click", (*) => SendMessage(0xA1, 2))
+ManualHotbar := Gui("-Caption +Border +E0x00000088 +OwnDialogs", "Manual Hotbar")
+
+MenuWidth := 54
+Width := 579
+Height := 50
+
+BoxWidth := MenuWidth//3
+CurrentX := 1
+
+; natro icon and window control
+(GuiCtrl := ManualHotbar.Add("Picture", "x" CurrentX " y0 w" BoxWidth-3 " h" BoxWidth-3, ".\nm_image_assets\auryn.ico")).OnEvent("Click", (*) => SendMessage(0xA1, 2))
 GuiCtrl.OnEvent("ContextMenu", nm_toggleGuiMode)
-ManualHotbar.SetFont("s20")
-ManualHotbar.Add("Text", "xp y18", Chr(10799)).OnEvent("Click", (*) => (nm_ManualHotbarExit(), ExitApp())) ;Chr 10799 "⨯", close icon
-ManualHotbar.SetFont("s8")
-ManualHotbar.Add("Picture", "x570 y15 w15 h15 vUnlockButton Hidden", ".\nm_image_assets\unlock_icon.png").OnEvent("Click", nm_LockHotbar)
-ManualHotbar.Add("Picture", "x570 y15 w15 h15 vLockButton", ".\nm_image_assets\lock_icon.png").OnEvent("Click", nm_UnlockHotbar)
-ManualHotbar.Add("Button", "xp yp+15 w15 h15 vHelpButton", "?").OnEvent("Click", nm_ManualHotbarHelp)
-ManualHotbar.Add("Button", "x15 y15 w30 h30 vToggleManualAll", "Start`nALL").OnEvent("Click", nm_ToggleManualAll)
 
-ManualHotbar.Add("Text", "x0 y13 w595 h1 0x7")
+; help icon
+ManualHotbar.SetFont("s9 Bold"), CurrentX := BoxWidth, offset := -1 ; offset due to text being rendered a bit to the right, also iucon doesnt take up 100% of width
+ManualHotbar.Add("Text", "x" CurrentX+offset " y1 Center w" BoxWidth, "?").OnEvent("Click", nm_ManualHotbarHelp)
 
+; close icon
+ManualHotbar.SetFont("s20 Norm") , CurrentX := BoxWidth*2
+ManualHotbar.Add("Text", "x" CurrentX " yp-12", Chr(10799)).OnEvent("Click", (*) => (nm_ManualHotbarExit(), ExitApp())) ;Chr 10799 "⨯", close icon
+
+; start button
+ManualHotbar.SetFont("s8"), CurrentX := 1, BoxWidth *= 3, offset := -2 ; offset to center 
+ManualHotbar.Add("Button", "x1 y17 w" BoxWidth+offset " h33 vToggleManualAll", "Start`nAll").OnEvent("Click", (GuiCtrl, *) => nm_ToggleAll((GuiCtrl.Text = "Start`nAll")))
+
+; dividers
+ManualHotbar.Add("Text", "x0 y15 w579 h1 0x7") ;vertical line
+ManualHotbar.Add("Text", "x" MenuWidth " y0 w1 h50 0x7") ;horz line
+
+; hotbar stuff
 loop 7
 {
-    x := 46 + (A_Index - 1) * 75
+    i := A_Index
+    x := 55 + (A_Index - 1) * 75
     
     ManualHotbar.SetFont("s8 w700")
-    ManualHotbar.Add("Text", "x" x " y0 w73 h13 Center", "Slot " A_Index)
+    ManualHotbar.Add("Text", "x" x " y0 w73 h13 Center +BackgroundTrans", "Slot " i)
     
     ManualHotbar.SetFont("cRed Bold")
-    ManualHotbar.Add("Text", "x" (x + 15) " y16 cRED", "Disabled")
+    ManualHotbar.Add("Text", "x" (x + 15) " y18 cRED vManualHotbarDisabledText" i " " (ManualHotbarEnabled%i% ? "Hidden" : ""), "Disabled").OnEvent("Click", ((GuiCtrl, *) => nm_enableManualHotbarSlot(SubStr(GuiCtrl.Name, -1), GuiCtrl.Visible)))
     ManualHotbar.SetFont("cBlack Norm")
     
-    ManualHotbar.Add("CheckBox", "x" x " y15 w13 h13 vManualHotbarArmed" A_Index " Checked" ManualHotbarArmed%A_Index%).OnEvent("Click", nm_armManualHotbar)
+    ManualHotbar.Add("CheckBox", "x" x " y18 w13 h13 vManualHotbarEnabled" i " Checked" ManualHotbarEnabled%i%).OnEvent("Click", ((GuiCtrl, *) => nm_enableManualHotbarSlot(SubStr(GuiCtrl.Name, -1), GuiCtrl.Value)))
     
-    ManualHotbar.SetFont("w700")
-    ManualHotbar.Add("Edit", "x" (x + 14) " y15 w58 h15 vManualHotbarTimer" A_Index " Limit7 Center Disabled " (ManualHotbarArmed%A_Index% = 0 ? "Hidden" : ""), ManualHotbarTimer%A_Index% || 0).OnEvent("Change", nm_saveManualHotbar)
+    ; box around timer
+    ManualHotbar.SetFont("cBlue")
+    loop 2 {
+        ManualHotbar.Add("Text", "x" (x+17) " y" 17 + ( A_Index-1 ) * 14 " w56 h1 0x7 vDivider" A_Index "-" i " " (ManualHotbarEnabled%i% = 0 ? "Hidden" : "")) ;divider (1-4)-(1-7)
+        ManualHotbar.Add("Text", "x" (x+17) + ( A_Index-1 ) * 55 " y17 w1 h14 0x7 vDivider" A_Index+2 "-" i " " (ManualHotbarEnabled%i% = 0 ? "Hidden" : ""))
+    }
+    ManualHotbar.SetFont("cBlack w700")
+
+    (GuiCtrl := ManualHotbar.Add("Text", "x" (x + 14) " y17 w58 h15 vManualHotbarTimer" i " Center +BackgroundTrans " (ManualHotbarEnabled%i% = 0 ? "Hidden" : ""), ManualHotbarTimer%i% || 0)).OnEvent("DoubleClick", nm_EditHotbarInterval)
     
     ManualHotbar.SetFont("Norm")
-    ManualHotbar.Add("Button", "x" x " y30 w73 h15 vManualHotbarButton" A_Index, "Start").OnEvent("Click", nm_toggleManualHotbar)
+    ManualHotbar.Add("Button", "x" x " y35 w73 h15 vManualHotbarStarted" i " " (!ManualHotbarEnabled%i% ? "Disabled" : ""), "Start").OnEvent("Click", (GuiCtrl, *) => nm_ToggleHotbarSlot(SubStr(GuiCtrl.Name, -1), (GuiCtrl.Text = "Start" ? 1 : 0)))
 }
 
 ManualHotbar.OnEvent("Close", (*) => ExitApp())
+ManualHotbar.Show("x" ManualHBX " y" ManualHBY " w" Width " h" Height " NA")
 
-;; Place Holder Delay
-loop 7
-    PostMessage 0x1501 , 1 , StrPtr("Delay") , ManualHotbar["ManualHotbarTimer" A_Index]
+; required because the variables are referenced dynamically AND loaded dynamically
+ManualHotbarEnabled1:=ManualHotbarEnabled1, ManualHotbarEnabled2:=ManualHotbarEnabled2, ManualHotbarEnabled3:=ManualHotbarEnabled3, ManualHotbarEnabled4:=ManualHotbarEnabled4, ManualHotbarEnabled5:=ManualHotbarEnabled5, ManualHotbarEnabled6:=ManualHotbarEnabled6, ManualHotbarEnabled7:=ManualHotbarEnabled7
+ManualHotbarCountdown1 := ManualHotbarTimer1, ManualHotbarCountdown2 := ManualHotbarTimer2, ManualHotbarCountdown3 := ManualHotbarTimer3, ManualHotbarCountdown4 := ManualHotbarTimer4, ManualHotbarCountdown5 := ManualHotbarTimer5, ManualHotbarCountdown6 := ManualHotbarTimer6, ManualHotbarCountdown7 := ManualHotbarTimer7
+ManualHotbarStarted1 := ManualHotbarStarted2 := ManualHotbarStarted3 := ManualHotbarStarted4 := ManualHotbarStarted5 := ManualHotbarStarted6 := ManualHotbarStarted7 := 0
 
-;; Initialise Countdown Timers
-ManualHotbarCountdown1 := ManualHotbarTimer1
-ManualHotbarCountdown2 := ManualHotbarTimer2
-ManualHotbarCountdown3 := ManualHotbarTimer3
-ManualHotbarCountdown4 := ManualHotbarTimer4
-ManualHotbarCountdown5 := ManualHotbarTimer5
-ManualHotbarCountdown6 := ManualHotbarTimer6
-ManualHotbarCountdown7 := ManualHotbarTimer7
-ManualHotbarButton1 := ManualHotbarButton2 := ManualHotbarButton3 := ManualHotbarButton4 := ManualHotbarButton5 := ManualHotbarButton6 := ManualHotbarButton7 := 0
-
+if !ManualHotbarTutorial
+    nm_ManualHotbarHelp()
 ; Main Loop
 DllCall("QueryPerformanceFrequency", "int64p", &f:=0)
 loop
@@ -174,7 +199,8 @@ loop
     DllCall("QueryPerformanceCounter", "int64p", &s:=0)
     
     loop 7
-        ManualHotbarArmed%A_Index% && ManualHotbarButton%A_Index% && nm_ManualHotbar(A_Index)
+        if ManualHotbarEnabled%A_Index% && ManualHotbarStarted%A_Index%
+            nm_ManualHotbar(A_Index)
     
     loop
     {
@@ -183,67 +209,98 @@ loop
             break
     }
 }
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GUI functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 nm_ManualHotbarHelp(*){
     MsgBox "
     (
     DESCRIPTION:
-    The Manual Hotbar will automatically press your actionbar buttons at the specified interval (in seconds).
+    The Manual Hotbar will automatically press your hotbar slot buttons at the specified interval (in seconds).
 
     HOW TO CONFIGURE:
     1) Click on the cooresponding checkbox for each key that is to be pressed automatically.
-    2) Unlock/Lock the interval settings by pressing the padlock icon in the upper right corner.
-    3) Enter the interval (in seconds) for each actionbar key.
+    2) Double click the number to edit the interaval of the item.
+    3) Enter the interval (in seconds) for each hotbar slot key.
 
     HOW TO START/STOP:
-    * Individual buttons can be start/stopped by pressing the corresponding button below.
-    * Alternatively, ALL checked buttons can be start/stopped by pressing the "Start ALL" button on the left side of the GUI.
+    * Individual buttons can be start/stopped by pressing the Start/Stop button.
+    * Alternatively, all checked buttons can be started/stopped by pressing the "Start All" button.
 
     HOW TO MOVE GUI:
     Click-and-hold on the Auryn icon in the upper left corner.
-    Right-click on the Auryn icon to hide the GUI.
+    Right-click on the Auryn icon to minimize the GUI.
 
     RECOMMENDED PLACEMENT:
     The GUI is designed to fit just under your actionbar buttons.
-    )", "Manual Hotbar Help", 0x40000
-}
+    )" . (!ManualHotbarTutorial ? "
+    (
+    `n
+    NOTE:
+    This message will only be shown once, but you can access it again by clicking the "?" button.
+    )" : ""), "Manual Hotbar Help", 0x40000
 
-nm_LockHotbar(*){
-    global
-    if (ManualHotbarButton1 && ManualHotbarButton2 && ManualHotbarButton3 && ManualHotbarButton4 && ManualHotbarButton5 && ManualHotbarButton6 && ManualHotbarButton7) or (!ManualHotbarArmed1 && !ManualHotbarArmed2 && !ManualHotbarArmed3 && !ManualHotbarArmed4 && !ManualHotbarArmed5 && !ManualHotbarArmed6 && !ManualHotbarArmed7)
-        return
-    ManualHotbar["UnlockButton"].Visible :=0
-    ManualHotbar["LockButton"].Visible :=1
-    loop 7
-        ManualHotbar["ManualHotbarTimer" A_Index].Enabled := 0
-}
-
-nm_UnlockHotbar(*){
-    global
-    if (ManualHotbarButton1 && ManualHotbarButton2 && ManualHotbarButton3 && ManualHotbarButton4 && ManualHotbarButton5 && ManualHotbarButton6 && ManualHotbarButton7) or (!ManualHotbarArmed1 && !ManualHotbarArmed2 && !ManualHotbarArmed3 && !ManualHotbarArmed4 && !ManualHotbarArmed5 && !ManualHotbarArmed6 && !ManualHotbarArmed7)
-        return
-    ManualHotbar["LockButton"].Visible :=0
-    ManualHotbar["UnlockButton"].Visible :=1
-    loop 7
-        if !ManualHotbarButton%A_Index%
-            ManualHotbar["ManualHotbarTimer" A_Index].Enabled := 1
-    WinActivate "Manual Hotbar"
+    if !ManualHotbarTutorial
+        IniWrite 1, "settings\manual_hotbar.ini", "ManualHotbar", "ManualHotbarTutorial"
 }
 
 nm_saveManualHotbarGui(*){
-	wp := Buffer(44)
-    DllCall("GetWindowPlacement", "UInt", ManualHotbar.Hwnd, "Ptr", wp)
-	x := NumGet(wp, 28, "Int"), y := NumGet(wp, 32, "Int")
-	if (x > 0)
-		IniWrite x, "settings\manual_hotbar.ini", "ManualHotbar", "ManualHBX"
-	if (y > 0)
-		IniWrite y, "settings\manual_hotbar.ini", "ManualHotbar", "ManualHBY"
+    try {
+        WinGetPos(&x, &y, , , "ahk_id" ManualHotbar.hwnd)
+        if (x > 0)
+            IniWrite x, "settings\manual_hotbar.ini", "ManualHotbar", "ManualHBX"
+        if (y > 0)
+            IniWrite y, "settings\manual_hotbar.ini", "ManualHotbar", "ManualHBY"
+    }   
 }
 
-nm_ManualHotbarExit(*){
-    nm_saveManualHotbarGui()
-    DllCall(A_WorkingDir "\nm_image_assets\Styles\USkin.dll\USkinExit")
+nm_toggleGuiMode(*)
+{
+    static GuiHidden := 0
+    ManualHotbar.Show((GuiHidden := !GuiHidden) ? "w17 h15" : "w" Width "h" Height)
 }
+
+nm_EditHotbarInterval(GuiCtrl, *){
+    num := SubStr(GuiCtrl.Name, -1)
+    
+    if ManualHotbarStarted%num%
+        return
+
+    previousText := GuiCtrl.Text
+    GuiCtrl.Text := ""
+    input := InputHook("B1 L5 T10", "{Enter}{Esc}{Space}wasd,.")
+    input.OnChar := checkNum
+    input.OnEnd := checkReason
+    input.KeyOpt("{All}", "+I")
+    input.KeyOpt("1,2,3,4,5,6,7,8,9,0", "-I")
+    input.Start()
+    Tooltip "Start typing to change interval in seconds. Press Enter to save..."
+    input.Wait()
+    Tooltip ""
+
+    checkNum(input, char){
+        if IsNumber(char){
+            GuiCtrl.Text := input.Input
+        }
+    }
+    checkReason(input){
+        if input.EndReason = "EndKey" 
+            if input.EndKey != "Enter"
+                return GuiCtrl.Text := previousText
+        if input.EndReason = "Timeout"
+            return GuiCtrl.Text := previousText
+
+        GuiCtrl.Text := Number(GuiCtrl.Text)
+
+        if !GuiCtrl.Text
+            nm_DisableSlot(num)
+    }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Manual Hotbar functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 nm_ManualHotbar(num, *){
     global
@@ -256,107 +313,86 @@ nm_ManualHotbar(num, *){
     ManualHotbar["ManualHotbarTimer" num].Text := Round(ManualHotbarCountdown%num%,1)
 }
 
-nm_ToggleManualAll(GuiCtrl, *)
-{
-    global
-    isStarting := (GuiCtrl.Text = "Start`nAll")
-    
-    if isStarting {
-        startNum := 0
-        loop 7
-            if (!ManualHotbarButton%A_Index% && ManualHotbarArmed%A_Index%)
-                startNum += nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index], -1)
-        GuiCtrl.Text := startNum ? "Stop`nAll" : "Start`nAll"
-    }
-    else {
-        loop 7
-            if ManualHotbarButton%A_Index%
-                nm_ToggleManualHotbar(ManualHotbar["ManualHotbarButton" A_Index])
-        GuiCtrl.Text := "Start`nAll"
-    }
+nm_ToggleAll(toggle) => (toggle ? nm_StartAll() : nm_StopAll())
+nm_StopAll(){
+    loop 7
+        nm_stopHotbarSlot(A_Index)
+}
+nm_StartAll(){
+    loop 7
+        nm_startHotbarSlot(A_Index)
+}
 
-    nm_LockHotbar()
+; starting
+nm_ToggleHotbarSlot(num, toggle) => ( toggle ? nm_startHotbarSlot(num) : nm_stopHotbarSlot(num) )
+nm_startHotbarSlot(num){
+    global
+
+    if !ManualHotbar["ManualHotbarTimer" num].Text || !ManualHotbarEnabled%num%
+        return 0
+    
+    ManualHotbar["ManualHotbarStarted" num].Text := "Stop"
+    ManualHotbarStarted%num% := 1
+    ManualHotbarCountdown%num% := ManualHotbarTimer%num%
+    ManualHotbar["ManualHotbarTimer" num].SetFont("cGreen")
+    
+    ManualHotbar["ToggleManualAll"].Text := "Stop`nAll"
+    
     ActivateRoblox()
 }
 
-nm_ToggleManualHotbar(GuiCtrl, param?,*){
+nm_stopHotbarSlot(num){
     global
-    num := SubStr(GuiCtrl.Name, -1)
     
-    if (!ManualHotbarButton%num% && ManualHotbarArmed%num%) {
-        if !ManualHotbar["ManualHotbarTimer" num].Value
-            return (IsSet(param) && param == -1) ? 0 : msgbox("Cannot start a timer with 0 seconds!",,0x40010)
-        
-        ManualHotbar["ManualHotbarButton" num].Text := "Stop " num
-        ManualHotbar["ToggleManualAll"].Text := "Stop`nAll"
-        ManualHotbarButton%num% := 1
-        ManualHotbarCountdown%num% := ManualHotbarTimer%num%
-        return 1
-    }
-    
-    ManualHotbar["ManualHotbarButton" num].Text := "Start " num
-    ManualHotbarButton%num% := 0
+    ManualHotbar["ManualHotbarStarted" num].Text := "Start"
+    ManualHotbarStarted%num% := 0
     ManualHotbar["ManualHotbarTimer" num].Text := ManualHotbarTimer%num%
-    
-    if !(ManualHotbarButton1 || ManualHotbarButton2 || ManualHotbarButton3 || ManualHotbarButton4 || ManualHotbarButton5 || ManualHotbarButton6 || ManualHotbarButton7)
-        ManualHotbar["ToggleManualAll"].Text := "Start`nAll"
-    
-    nm_LockHotbar()
+    ManualHotbar["ManualHotbarTimer" num].SetFont("cBlack")
+
+    loop 7 {
+        if ManualHotbarStarted%A_Index%
+            break
+        if A_Index = 7
+            ManualHotbar["ToggleManualAll"].Text := "Start`nAll"
+    }
+
     ActivateRoblox()
 }
 
-nm_armManualHotbar(GuiCtrl, *){
+nm_enableManualHotbarSlot(index, toggle){
+    nm_saveManualHotbar("ManualHotbarEnabled" index, toggle)
+    nm_ToggleSlot(index, toggle)
+}
+
+; checkbox toggles
+nm_ToggleSlot(num, toggle) => (toggle ? nm_EnableSlot(num) : nm_DisableSlot(num))
+nm_DisableSlot(num){
     global
-    num := SubStr(GuiCtrl.Name, -1)
-    nm_saveManualHotbar(GuiCtrl)
+    ManualHotbar["ManualHotbarTimer" num].Visible := 0
+    ManualHotbar["ManualHotbarDisabledText" num].Visible := 1
+    ManualHotbar["ManualHotbarEnabled" num].Value := 0
+    ManualHotbar["ManualHotbarStarted" num].Enabled := 0
+    
+    loop 4 {
+        ManualHotbar["Divider" A_Index "-" num].Visible := 0
+    }
 
-    if ManualHotbarArmed%num%=1
-        ManualHotbar["ManualHotbarTimer" num].Visible := 1
+    nm_stopHotbarSlot(num)
+}
 
-    else {
-        ManualHotbar["ManualHotbarTimer" num].Visible := 0
-        if (ManualHotbarButton%num%) {
-            ManualHotbar["ManualHotbarButton" num].Text := "Start " num
-            ManualHotbarButton%num% := 0
-            ManualHotbarCountdown%num%:=ManualHotbarTimer%num%
-            ManualHotbar["ManualHotbarTimer" num].Text := ManualHotbarTimer%num%
-            ManualHotbar["ManualHotbarTimer" num].Enabled := 1
-        }
+nm_EnableSlot(num){
+    global
+    ManualHotbar["ManualHotbarTimer" num].Visible := 1
+    ManualHotbar["ManualHotbarDisabledText" num].Visible := 0
+    ManualHotbar["ManualHotbarEnabled" num].Value := 1
+    ManualHotbar["ManualHotbarStarted" num].Enabled := 1
+    loop 4 {
+        ManualHotbar["Divider" A_Index "-" num].Visible := 1
     }
 }
 
-nm_saveManualHotbar(GuiCtrl, *)
+nm_saveManualHotbar(name, value)
 {
 	global
-    if (GuiCtrl.type = "Edit" && !(GuiCtrl.Value ~= '^\d*(\.\d?)?$')) {
-        nm_showErrorBalloonTip(GuiCtrl, "Invalid Input", "Only numbers with one decimal place are allowed")
-        GuiCtrl.Value := %GuiCtrl.Name%
-        return
-    }
-    %GuiCtrl.Name% := GuiCtrl.Value
-	IniWrite GuiCtrl.Value, "settings\manual_hotbar.ini", "ManualHotbar", GuiCtrl.Name
-}
-
-nm_toggleGuiMode(*)
-{
-    static GuiHidden := 0
-    ManualHotbar.Show((GuiHidden := !GuiHidden) ? "w15 h15" : "w585 h30")
-}
-
-nm_showErrorBalloonTip(ctrl, Title, text)
-{
-    Buf := Buffer(4 * A_PtrSize, 0)
-    NumPut("uint", 4*A_PtrSize,
-            "ptr", StrPtr(Title),
-            "ptr", StrPtr(text),
-            "uint", 3, Buf)
-    SendMessage(0x1503, 0, Buf, ctrl)
-}
-
-WM_CHAR(a*)
-{
-    if a[3] != 0x0102 || !a[4]
-        return
-    if !(a[1] = 0x8 || a[1] = 0x2E || (a[1] > 0x2f && a[1] < 0x3A))
-        return nm_showErrorBalloonTip(ManualHotbar[a[4]], "Invalid Input", "Only numbers are allowed") || 0
+	IniWrite (%name% := value), "settings\manual_hotbar.ini", "ManualHotbar", name
 }
