@@ -24,6 +24,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "DurationFromSeconds.ahk"
 #Include "Roblox.ahk"
 #Include "ErrorHandling.ahk"
+#include "LevenshteinDistance.ahk"
 
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
@@ -2481,24 +2482,6 @@ nm_command(command)
 	}
 
 	command_buffer.RemoveAt(1)
-	LevenshteinDistance(s1, s2) {
-		len1 := StrLen(s1), len2 := StrLen(s2)
-		s1 := StrSplit(s1), s2 := StrSplit(s2)
-		d := {}, d.0 := { 0: 0 }
-		Loop len1
-			d.%A_Index% := { 0: A_Index }
-		Loop len2
-			d.0.%A_Index% := A_Index
-		Loop len1 {
-			i := A_Index
-			Loop len2 {
-				j := A_Index  ; only for simplicity
-				cost := s1[i] != s2[j]
-				d.%i%.%j% := Min(d.%i - 1%.%j% + 1, d.%i%.%j - 1% + 1, d.%i - 1%.%j - 1% + cost)
-			}
-		}
-		return d.%len1%.%len2%
-	}
 	findClosestItem(arr,needle) {
 		dist := StrLen(needle)
 		for i,v in arr
