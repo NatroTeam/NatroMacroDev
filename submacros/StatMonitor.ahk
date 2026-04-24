@@ -20,6 +20,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
+#Include "WM_COPYDATA.ahk"
 
 #Warn VarUnset, Off
 
@@ -1835,17 +1836,4 @@ WaitForAsync(&Object)
 	ComCall(8, Object, "ptr*", &ObjectResult:=0)   ; GetResults
 	ObjRelease(Object)
 	Object := ObjectResult
-}
-
-Send_WM_COPYDATA(StringToSend, TargetScriptTitle, wParam:=0)
-{
-	CopyDataStruct := Buffer(3*A_PtrSize)
-	SizeInBytes := (StrLen(StringToSend) + 1) * 2
-	NumPut("Ptr", SizeInBytes
-		, "Ptr", StrPtr(StringToSend)
-		, CopyDataStruct, A_PtrSize)
-	DetectHiddenWindows 1
-	try ret := SendMessage(0x004A, wParam, CopyDataStruct,, TargetScriptTitle)
-	DetectHiddenWindows 0
-	return IsSet(ret) ? ret : 0
 }

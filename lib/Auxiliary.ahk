@@ -27,12 +27,12 @@ ObjIndexOf(obj, val)
 			return k
 	return 0
 }
+; does not check for non primitive types
 ObjStrJoin(delim, arr) {
 	out := ""
-	try {
-		for v in arr
-			out .= (out = "" ? "" : delim) . v
-		return out
-	} catch
-		return 0
+	for str in arr {
+		if str is Primitive
+			out .= (out != "" ? delim : "") str
+	}
+	return out
 }

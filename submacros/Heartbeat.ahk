@@ -15,7 +15,9 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #SingleInstance Force
 #MaxThreads 255
 
-#Include "%A_ScriptDir%\..\lib\nowUnix.ahk"
+#Include "%A_ScriptDir%\..\lib\"
+#Include "nowUnix.ahk"
+#Include "WM_COPYDATA.ahk"
 
 SetWorkingDir A_ScriptDir
 OnMessage(0x5552, nm_SetGlobalInt)
@@ -23,6 +25,8 @@ OnMessage(0x5556, nm_SetHeartbeat)
 
 LastRobloxWindow := LastStatusHeartbeat := LastMainHeartbeat := LastBackgroundHeartbeat := LastCommunicatorHeartbeat := nowUnix()
 MacroState := 0
+config_path := A_ScriptDir ".\..\settings\nm_config.ini"
+RunCommunicator := FileExist(config_path) ? IniRead(config_path, "Alts", "RunCommunicator") : false
 path := '"' A_AhkPath '" "' A_ScriptDir '\natro_macro.ahk"'
 
 Loop
@@ -45,7 +49,7 @@ Loop
 	if (((MacroState = 2) && (((time - LastMainHeartbeat > 120) && (reason := "Macro Unresponsive Timeout!"))
 		|| ((time - LastBackgroundHeartbeat > 120) && (reason := "Background Script Timeout!"))
 		|| ((time - LastStatusHeartbeat > 120) && (reason := "Status Script Timeout!"))
-		|| ((time - LastCommunicatorHeartbeat > 120) && (reason := "Communicator Script Timeout!"))
+		|| (RunCommunicator && ((time - LastCommunicatorHeartbeat > 120) && (reason := "Communicator Script Timeout!")))
 		|| ((time - LastRobloxWindow > 600) && (reason := "No Roblox Window Timeout!"))))
 
 		|| ((MacroState = 1) && (((time - LastMainHeartbeat > 120) && (reason := "Macro Unresponsive Timeout!"))
@@ -82,22 +86,6 @@ Loop
 	Sleep 5000
 }
 
-Send_WM_COPYDATA(StringToSend, TargetScriptTitle, wParam:=0)
-{
-    CopyDataStruct := Buffer(3*A_PtrSize)
-    SizeInBytes := (StrLen(StringToSend) + 1) * 2
-    NumPut("Ptr", SizeInBytes
-		, "Ptr", StrPtr(StringToSend)
-		, CopyDataStruct, A_PtrSize)
-
-	try
-		s := SendMessage(0x004A, wParam, CopyDataStruct,, TargetScriptTitle)
-	catch
-		return -1
-	else
-		return s
-}
-
 nm_SetHeartbeat(wParam, *)
 {
 	global
@@ -112,7 +100,7 @@ nm_SetGlobalInt(wParam, lParam, *)
 	Critical
 	local var
 	; enumeration
-	static arr := Map(23, "MacroState")
+	static arr := Map(23, "MacroState", 369, "RunCommunicator")
 
 	var := arr[wParam], %var% := lParam
 	return 0

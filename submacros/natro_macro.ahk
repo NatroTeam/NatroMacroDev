@@ -32,6 +32,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "ErrorHandling.ahk"
 #Include "HashFile.ahk"
 #Include "Auxiliary.ahk"
+#Include "WM_COPYDATA.ahk"
 
 #Warn VarUnset, Off
 
@@ -905,7 +906,8 @@ nm_importConfig()
 		, "TimerY", 150
 		, "TimersOpen", 0)
 
-	config["Alts"] := Map("AccountType", "Main Acc"
+	config["Alts"] := Map("AccountType", "Disabled"
+		, "RunCommunicator", false
 		, "CommunicationStyle", "Discord"
 		, "CommunicationWebhook", ""
 		, "CommunicationBotToken", ""
@@ -2096,12 +2098,21 @@ VBReasons := {
 	killed: "Killed"
 }
 CUSTOM_CURSOR := 1
-TempGather_Interrupt := 0
+TempGather_Interrupt := false
 TempGather_Field := ""
 TempGather_Duration := 0
 TempGather_StartTime := 0
 TempGather := false
 GatherBoostedFieldTime := 15
+AccountTypes := {
+	Disabled: "Disabled",
+	Main: "Main Acc",
+	TadAlt: "Tad Alt"
+}
+CommunicationStyles := {
+	Socket: "Socket",
+	Discord: "Discord"
+}
 nm_WM_SETCURSOR(*) => CUSTOM_CURSOR
 
 ForceStart := 0
@@ -2143,21 +2154,26 @@ Run
 nm_LaunchCommunicator() {
 	global AccountType, discordMode, discordCheck, MainChannelCheck, MainChannelID, ReportChannelCheck,
 	ReportChannelID, WebhookEasterEgg, DiscordUID, CommunicationWebhook, CommunicationBotToken, CommunicationChannelID,
-	CommunicationIP, PortNumber, CommunicationStyle, CommunicationID
+	CommunicationIP, PortNumber, CommunicationStyle, CommunicationID, RunCommunicator
+
 	DetectHiddenWindows true
 	if WinExist("Communicator.ahk ahk_class AutoHotkey") > 0 {
 		process_id := WinGetPID()
 		ProcessClose(process_id)
 	}
 	DetectHiddenWindows false
+	if !RunCommunicator
+		return
+
+	vars := ""
 	path := '"' exe_path64 '" /script "' A_WorkingDir '\submacros\Communicator.ahk" '
 	params := [AccountType, discordMode, discordCheck, MainChannelCheck, MainChannelID, ReportChannelCheck, ReportChannelID, WebhookEasterEgg
 	, DiscordUID, CommunicationWebhook, CommunicationBotToken, CommunicationChannelID, CommunicationIP, PortNumber, CommunicationStyle
 	, CommunicationID, A_TickCount]
-	vars := ""
 	for param in params
-		vars .= '"' (param = "" ? "" : param) '" '
-	nm_UpdateConnectionTotal(0)
+		vars .= '"' param '" '
+	if IsSet(MainGui)
+		nm_UpdateConnectionTotal(0)
 	Run path " " vars
 }
 nm_LaunchCommunicator()
@@ -2870,7 +2886,9 @@ SetLoadingProgress(28)
 ; ------------------------
 TabCtrl.UseTab("Alts")
 MainGui.SetFont("w700")
-isMain := AccountType != "Main Acc" ? "Hidden" : ""
+isMain := AccountType == AccountTypes.Main
+isAlt := (AccountType != AccountTypes.Main) && (AccountType != AccountTypes.Disabled) 
+isSocket := CommunicationStyle == CommunicationStyles.Socket
 
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Text", "x7 y30 +BackgroundTrans +Center", "Account Type:")
@@ -2882,32 +2900,39 @@ MainGui.Add("Text", "x175 y30 +BackgroundTrans +Center", "Communication Style:")
 MainGui.Add("Button", "x297 y30 w65 h16 +Center +BackgroundTrans vCommunicationStyle Disabled", CommunicationStyle).OnEvent("Click", (*) => nm_CommunicationStyle(CommunicationStyle, CommunicationStyle))
 MainGui.Add("Button", "x280 y30 w12 h16 vCSLeft Disabled", "<").OnEvent("Click", nm_CommunicationStyleRot)
 MainGui.Add("Button", "x368 y30 w12 h16 vCSRight Disabled", ">").OnEvent("Click", nm_CommunicationStyleRot)
-
-MainGui.Add("Text", "x400 y30 +BackgroundTrans +Center vConnectionStatus", "Connected: 0")
+MainGui.Add("Text", "x400 y30 +BackgroundTrans +Center vConnectionStatus Hidden" (!(isMain && isSocket)), "Connected: 0")
 
 ; Control Alts (Main Acc)
 AltAccountList := StrSplit(AltIDList, "|")
 SelectedAlt := "N/A"
-MainGui.Add("GroupBox", "x145 y50 w350 h183 vControlAltsSection " isMain, "Control Alts")
-(GuiCtrl := MainGui.Add("DropDownList", "x150 y70 w110 h100 vControlAlt Disabled " isMain, AltAccountList)).Text := SelectedAlt, GuiCtrl.OnEvent("Change", nm_ControlAltSelect)
-MainGui.Add("Button", "x268 y70 w13 h10 vAddAltToList Disabled " isMain, "+").OnEvent("Click", nm_EditControlAltSection)
-MainGui.Add("Button", "x268 y80 w13 h10 vRemoveAltFromList Disabled " isMain, "-").OnEvent("Click", nm_EditControlAltSection)
-(GuiCtrl := MainGui.Add("Edit", "x281 y70 w60 h20 vSelectAltID Disabled " isMain " Number")).OnEvent("Change", nm_ValidatePositiveNumber)
+MainGui.Add("GroupBox", "x10 y50 w205 h183 vControlAltsSection Hidden" (!isMain), "Manual Alt Control")
+MainGui.Add("Button", "x110 y50 w10 h15 vManualAltControlHelp Disabled Hidden" (!isMain), "?").OnEvent("Click", nm_ManualAltControlHelp)
+(GuiCtrl := MainGui.Add("DropDownList", "x15 y70 w110 h100 vControlAlt Disabled Hidden" (!isMain), AltAccountList)).Text := SelectedAlt, GuiCtrl.OnEvent("Change", nm_ControlAltSelect)
+MainGui.Add("Button", "x133 y70 w13 h10 vAddAltToList Disabled Hidden" (!isMain), "+").OnEvent("Click", nm_EditControlAltSection)
+MainGui.Add("Button", "x133 y80 w13 h10 vRemoveAltFromList Disabled Hidden" (!isMain), "-").OnEvent("Click", nm_EditControlAltSection)
+(GuiCtrl := MainGui.Add("Edit", "x148 y70 w60 h20 vSelectAltID Disabled Hidden" (!isMain) " Number")).OnEvent("Change", nm_ValidatePositiveNumber)
 SendMessage(0x1501, 0, StrPtr("Identifier"), GuiCtrl.Hwnd)
 
 ; only show if "N/A" isn't selected
-isNA := (SelectedAlt = "N/A" || AccountType != "Main Acc") ? "Hidden" : ""
+isNA := (SelectedAlt = "N/A" || AccountType != AccountTypes.Main) ? "Hidden" : ""
 CAFieldList := ["BlueFlower", "Bamboo", "PineTree", "Stump", "Mushroom", "Strawberry", "Rose", "Pepper", "Dandelion", "Spider", "Pineapple", "Coconut", "Clover", "Cactus", "Pumpkin", "MountainTop", "Sunflower"]
-for i in CAFieldList
-	hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["field_icons"][i]), MainGui.Add("Picture", "x" 150 + Mod((A_Index-1),4)*29 " y" 95 + Floor((A_Index-1)/4)*27 " w25 h25 vCA" i " +BackgroundTrans " isNA, "HBITMAP:*" hbm).OnEvent("Click", nm_ControlAltField), DllCall("DeleteObject", "ptr", hBM)
+for field in CAFieldList {
+	x := 15 + Mod((A_Index - 1), 4) * 29
+	y := 95 + Floor((A_Index - 1) / 4) * 27
+	hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["field_icons"][field])
+	ctrl := MainGui.Add("Picture", "x" x " y" y " w25 h25 vCA" field " +BackgroundTrans " isNA, "HBITMAP:*" hBM)
+	ctrl.OnEvent("Click", nm_ControlAltField)
+	DllCall("DeleteObject", "ptr", hBM)
+}
 
 ;Tad Alt settings
-isNotMain := isMain = "Hidden" ? "" : "Hidden"
-MainGui.Add("GroupBox", "x10 y50 w130 h95 vTadAltSettingsSeciton " isNotMain, "Alt Settings")
-MainGui.Add("Button", "x15 y70 w10 h15 vIDHelp " isNotMain, "?").OnEvent("Click", nm_IDHelp)
-MainGui.Add("Text", "xs+25 yp vIDTxt " isNotMain, "Identification:")
-(GuiCtrl := MainGui.Add("Edit", "xp-15 y+5 w120 h20 -Wrap Number Disabled vCommunicationID " isNotMain, CommunicationID)).Section := "Alts", GuiCtrl.OnEvent("Change", nm_ValidatePositiveNumber)
-MainGui.Add("Button", "xp yp+25 wp hp Disabled vSetIdentifier " isNotMain, "Set Identifier").OnEvent("Click", nm_SetCommunicationID)
+MainGui.Add("GroupBox", "x10 y50 w130 h95 vTadAltSettingsSeciton Hidden" (!isAlt), "Alt Settings")
+MainGui.Add("Button", "x15 y70 w10 h15 vIDHelp Hidden" (!isAlt), "?").OnEvent("Click", nm_IDHelp)
+MainGui.Add("Text", "xs+25 yp vIDTxt Hidden" (!isAlt), "Identification:")
+(GuiCtrl := MainGui.Add("Edit", "xp-15 y+5 w120 h20 -Wrap Number Disabled vCommunicationID Hidden" (!isAlt), CommunicationID)).Section := "Alts"
+GuiCtrl.OnEvent("Change", (ctrl, *) => (nm_ValidatePositiveNumber(ctrl, true)))
+MainGui.Add("Button", "xp yp+25 wp hp Disabled vSetIdentifier Hidden" (!isAlt), "Set Identifier").OnEvent("Click", nm_SetCommunicationID)
+SetLoadingProgress(29)
 
 ; SETTINGS TAB
 ; ------------------------
@@ -2932,7 +2957,7 @@ Loop Files A_WorkingDir "\nm_image_assets\Styles\*.msstyles"
 MainGui.Add("Text", "x10 y57 w100 +BackgroundTrans", "GUI Transparency:")
 MainGui.Add("Text", "x104 y57 w20 +Center +BackgroundTrans vGuiTransparency", GuiTransparency)
 MainGui.Add("UpDown", "xp+22 yp-1 h16 -16 Range0-14 vGuiTransparencyUpDown Disabled", GuiTransparency//5).OnEvent("Change", nm_guiTransparencySet)
-SetLoadingProgress(29)
+SetLoadingProgress(30)
 
 ;hive settings
 MainGui.Add("Text", "x10 y110 w60 +BackgroundTrans", "Hive Slot:")
@@ -3020,7 +3045,7 @@ MainGui.Add("Text", "x340 y210 w110 +BackgroundTrans", "Release Channel:")
 MainGui.Add("Text", "x443 yp w35 vReleaseChannel +BackgroundTrans +Center" , ReleaseChannel)
 MainGui.Add("Button", "xp-16 yp w12 h16 vRCLeft Disabled", "<").OnEvent("Click", nm_ReleaseChannel)
 MainGui.Add("Button", "xp+52 yp wp hp vRCRight Disabled", ">").OnEvent("Click", nm_ReleaseChannel)
-SetLoadingProgress(30)
+SetLoadingProgress(31)
 
 ;COLLECT/Kill TAB
 ;------------------------
@@ -3242,7 +3267,7 @@ MainGui.Add("Text", "x448 y186 w22 vSnailTimeText +Center Hidden", (SnailTime = 
 MainGui.Add("UpDown", "xp+22 yp-1 w10 h16 -16 Range1-4 vSnailTimeUpDown Disabled Hidden", (SnailTime = "Kill") ? 4 : SnailTime//5).OnEvent("Change", nm_SnailTime)
 MainGui.Add("Text", "x448 y207 w22 vChickTimeText +Center Hidden", (ChickTime = "Kill") ? ChickTime : ChickTime "m")
 MainGui.Add("UpDown", "xp+22 yp-1 w10 h16 -16 Range1-4 vChickTimeUpDown Disabled Hidden", (ChickTime = "Kill") ? 4 : ChickTime//5).OnEvent("Change", nm_ChickTime)
-SetLoadingProgress(31)
+SetLoadingProgress(32)
 
 ;BOOST TAB
 ;------------------------
@@ -3317,7 +3342,7 @@ Loop 6
 	MainGui.Add("UpDown", "x170 y" (94 + 20 * A_Index) " w10 h16 -16 Range1-99999 vHotbarTime" i " Hidden Disabled", HotbarTime%i%).OnEvent("Change", nm_HotbarTimeUpDown)
 	MainGui.Add("Text", "x188 y" (94 + 20 * A_Index) " w62 vHBConditionText" i " +Center Hidden")
 	(GuiCtrl := MainGui.Add("UpDown", "x250 y" (94 + 20 * A_Index) " w10 h16 -16 Range1-100 vHotbarMax" i " Hidden Disabled", HotbarMax%i%)).Section := "Boost", GuiCtrl.OnEvent("Change", nm_hotbarMaxUpDown)
-	SetLoadingProgress(31+A_Index)
+	SetLoadingProgress(32+A_Index)
 }
 nm_HotbarWhile()
 MainGui.Add("Button", "x200 y34 w90 h30 vAutoFieldBoostButton Disabled", (AutoFieldBoostActive ? "Auto Field Boost`n[ON]" : "Auto Field Boost`n[OFF]")).OnEvent("Click", nm_autoFieldBoostGui)
@@ -3522,7 +3547,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 MainGui.Add("Text", "x354 y196 w144 h36 0x7 vTextBox1" hidden)
 (GuiCtrl := MainGui.Add("CheckBox", "x358 y200 w138 h13 vConvertFullBagHarvest Disabled Checked" ConvertFullBagHarvest hidden, "Convert Full Bag Harvest")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
 (GuiCtrl := MainGui.Add("CheckBox", "x358 y216 w138 h13 vGatherPlanterLoot Disabled Checked" GatherPlanterLoot hidden, "Gather Planter Loot")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
-SetLoadingProgress(38)
+SetLoadingProgress(39)
 
 ;Manual Planters
 MPlanterList := ["", "Plastic", "Candy", "Blue Clay", "Red Clay", "Tacky", "Pesticide", "Heat Treated", "Hydroponic", "Petal", "Planter of Plenty", "Paper", "Ticket"]
@@ -3550,7 +3575,7 @@ Loop 3 {
 		x := (Mod(A_Index, 3) = 1) ? "s+108" : "p+46"
 		(GuiCtrl := MainGui.Add("DropDownList", "x" x " ys+38 w46 vMSlot" i "Cycle" A_Index "AutoFull Disabled" hiddenPlanter, ["Full", "Timed"])).OnEvent("Change", mp_SaveConfig)
 		GuiCtrl.Text := MSlot%i%Cycle%A_Index%AutoFull
-		SetLoadingProgress(17.25+i*20.25+A_Index*2.25)
+		SetLoadingProgress(18.25+i*20.25+A_Index*2.25)
 	}
 	MainGui.Add("Text", "xs ys+20 +Center Section vMSlot" i "FieldText" hidden, "S" i " Fields:")
 	MainGui.Add("Text", "xs ys+20 +Center Section vMSlot" i "SettingsText" hidden, "S" i " Settings:")
@@ -4341,13 +4366,8 @@ nm_TabAltsLock() {
 	MainGui["CommunicationStyle"].Enabled := 0
 	MainGui["CSLeft"].Enabled := 0
 	MainGui["CSRight"].Enabled := 0
-	MainGui["EGHelp"].Enabled := 0
-	MainGui["GFHelp"].Enabled := 0
-	MainGui["GBHelp"].Enabled := 0
-	MainGui["GAHelp"].Enabled := 0
-	MainGui["AIHelp"].Enabled := 0
-	MainGui["AICHelp"].Enabled := 0
 	MainGui["CommunicationID"].Enabled := 0
+	MainGui["ManualAltControlHelp"].Enabled := 0
 	MainGui["SetIdentifier"].Enabled := 0
 	MainGui["ControlAlt"].Enabled := 0
 	MainGui["AddAltToList"].Enabled := 0
@@ -4361,13 +4381,8 @@ nm_TabAltsUnLock() {
 	MainGui["CommunicationStyle"].Enabled := 1
 	MainGui["CSLeft"].Enabled := 1
 	MainGui["CSRight"].Enabled := 1
-	MainGui["EGHelp"].Enabled := 1
-	MainGui["GFHelp"].Enabled := 1
-	MainGui["GBHelp"].Enabled := 1
-	MainGui["GAHelp"].Enabled := 1
-	MainGui["AIHelp"].Enabled := 1
-	MainGui["AICHelp"].Enabled := 1
 	MainGui["CommunicationID"].Enabled := 1
+	MainGui["ManualAltControlHelp"].Enabled := 1
 	MainGui["SetIdentifier"].Enabled := 1
 	MainGui["ControlAlt"].Enabled := 1
 	MainGui["AddAltToList"].Enabled := 1
@@ -7723,23 +7738,37 @@ nm_WebhookGUI(*){
 ; ALTS TAB
 ; ------------------------
 nm_AccountType(GuiCtrl, *) {
-	global AccountType
-	static val := ["Main Acc", "Tad Alt"], l := val.Length ; Guiding Alt, Attack Alt, Fuzzy Alt coming soon
-	i := (AccountType = "Main Acc") ? 1 : (AccountType = "Tad Alt") ? 2 : (AccountType = "Guiding Alt") ? 3 : (AccountType = "Attack Alt") ? 4 : 5
-	MainGui["AccountType"].Text := AccountType := val[(GuiCtrl.Name = "ATRRIght") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
-	isMain := AccountType = "Main Acc"
-	
-	; MainGui["EGHelp"].Visible := isMain
-	; MainGui["GFHelp"].Visible := isMain
-	; MainGui["GBHelp"].Visible := isMain
-	; MainGui["GAHelp"].Visible := isMain
-	; MainGui["AIHelp"].Visible := isMain
-	; MainGui["AICHelp"].Visible := isMain
-	MainGui["IDTxt"].Visible := !isMain
-	MainGui["TadAltSettingsSeciton"].Visible := !isMain
-	MainGui["IDHelp"].Visible := !isMain
-	MainGui["CommunicationID"].Visible := !isMain
-	MainGui["SetIdentifier"].Visible := !isMain
+	global AccountType, RunCommunicator
+	static length := ObjOwnPropCount(AccountTypes), WM_SETINT := 0x5552
+	types := []
+	for , text in AccountTypes.OwnProps() {
+		types.Push(text)
+		if AccountType == text
+			index := A_Index
+	}
+
+	type_index := (GuiCtrl.Name = "ATRRIght") ? (Mod(index, length) + 1) : (Mod(length + index - 2, length) + 1)
+	new_type := types[type_index]
+	if AccountType !== new_type {
+		RunCommunicator := new_type !== AccountTypes.Disabled
+		IniWrite(RunCommunicator, A_ScriptDir ".\..\settings\nm_config.ini", "Alts", "RunCommunicator")
+		PostSubmacroMessage("Heartbeat", WM_SETINT, 369, RunCommunicator)
+	}
+
+	AccountType := new_type
+
+	MainGui["AccountType"].Text := AccountType
+	isMain := AccountType == AccountTypes.Main
+	isAlt := (AccountType != AccountTypes.Main) && (AccountType != AccountTypes.Disabled)
+	isSocket := CommunicationStyle == CommunicationStyles.Socket
+
+	MainGui["ManualAltControlHelp"].Visible := isMain
+	MainGui["ConnectionStatus"].Visible := isMain && isSocket
+	MainGui["IDTxt"].Visible := isAlt
+	MainGui["TadAltSettingsSeciton"].Visible := isAlt
+	MainGui["IDHelp"].Visible := isAlt
+	MainGui["CommunicationID"].Visible := isAlt
+	MainGui["SetIdentifier"].Visible := isAlt
 	MainGui["ControlAltsSection"].Visible := isMain
 	MainGui["ControlAlt"].Visible := isMain
 	MainGui["AddAltToList"].Visible := isMain
@@ -7764,9 +7793,9 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 	ConfGui.Add("Button", "w0 h0", "") ; when GUI is shown, it focuses on the first thing on the GUI, I hate that.
 	ConfGui.SetFont("s8 cDefault Norm", "Tahoma")
 	; DISCORD
-	confDiscord := ConfGui.Add("GroupBox", "xm ym w300 h" (AccountType = "Main Acc" ? 70 : 110), "Discord Configuration")
+	confDiscord := ConfGui.Add("GroupBox", "xm ym w300 h" (AccountType == AccountTypes.Main ? 70 : 110), "Discord Configuration")
 	txtWebhook := ConfGui.Add("Text", "xs+10 ys+15", "Webhook:")
-	(edtWebhook := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap vCommunicationWebhook", CommunicationWebhook)).OnEvent("Change", SaveConf)
+	(edtWebhook := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap vCommunicationWebhook", CommunicationWebhook)).OnEvent("Change", CommunicationWebhookEdit)
 	txtBotToken := ConfGui.Add("Text", "xs+10 ys+15", "Bot Token:")
 	(edtBotToken := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap vCommunicationBotToken", CommunicationBotToken)).OnEvent("Change", SaveConf)
 	txtChannelID := ConfGui.Add("Text", "xs+10 y+5", "Channel ID:")
@@ -7778,13 +7807,13 @@ nm_CommunicationStyle(selected, groupKey, close?) {
     (edtPort := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap Number vPortNumber", PortNumber)).OnEvent("Change", ValidateNumberCtrl)
     (btnIP := ConfGui.Add("Button", "xs+10 y+5 w10 h15", "?")).OnEvent("Click", IPHelpButton)
 	txtIP := ConfGui.Add("Text", "xs+25 yp", "IP Address:")
-    (edtIP := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap vCommunicationIP", CommunicationIP)).OnEvent("Change", SaveConf)
+    (edtIP := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap vCommunicationIP", CommunicationIP)).OnEvent("LoseFocus", CommuinicationIPEdit)
 	(btnConnectionIP := ConfGui.Add("Button", "xs+10 yp-20 w10 h15", "?")).OnEvent("Click", ConnectIPHelpButton)
 	txtConnectionIP := ConfGui.Add("Text", "xs+25 yp", "Connection IP:")
 	(edtConnectionIP := ConfGui.Add("Edit", "xp-15 y+5 w280 h20 -Wrap ReadOnly", SysGetIPAddresses()[1]))
 	ToggleFields(*) {
-		isMain := AccountType = "Main Acc"
-		isDiscord := CommunicationStyle = "Discord"  
+		isMain := AccountType == AccountTypes.Main
+		isDiscord := CommunicationStyle == CommunicationStyles.Discord  
 		confDiscord.Visible	:= isDiscord
         txtWebhook.Visible := isMain && isDiscord
         edtWebhook.Visible := isMain && isDiscord
@@ -7808,9 +7837,25 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 		%GuiCtrl.Name% := ConfGui[GuiCtrl.Name].Value
 		IniWrite GuiCtrl.Value, "settings\nm_config.ini", "Alts", GuiCtrl.Name
 	}
+	CommunicationWebhookEdit(GuiCtrl, *) {
+		if !(GuiCtrl.Text ~= "^https:\/\/discord\.com\/api\/webhooks\/\d+\/[a-zA-Z0-9_\-]+$") {
+			GuiCtrl.Text := ""
+			return
+		}
+		SaveConf(GuiCtrl)
+	}
+	CommuinicationIPEdit(GuiCtrl, *) {
+		if !(GuiCtrl.Text ~= "^(((?!25?[6-9])[12]\d|[1-9])?\d\.?\b){4}$") {
+			MsgBox(
+			'Invalid IP Address: "' GuiCtrl.Text '".`r`n`r`nValid IP format: xxx.xxx.xxx.xxx (each number 0-255).',
+			"Invalid IP", "Icon!")
+			return
+		}
+		SaveConf(GuiCtrl)
+	}
 	ValidateNumberCtrl(GuiCtrl, *) {
-		if InStr(GuiCtrl.Value, "-")
-			GuiCtrl.Value := StrReplace(GuiCtrl.Value, "-")
+		if GuiCtrl.Value < 0
+			GuiCtrl.Value := Abs(GuiCtrl.Value)
 		SaveConf(GuiCtrl)
 	}
 	PortHelpButton(*) {
@@ -7829,24 +7874,47 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 nm_CommunicationStyleRot(GuiCtrl, *) {
 	global CommunicationStyle, SocketFirewallWarning
 	static val := ["Discord", "Socket"], l := val.Length
-	i := (CommunicationStyle = "Discord") ? 1 : 2
-	MainGui["CommunicationStyle"].Text := CommunicationStyle := val[(GuiCtrl.Name = "CSRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
-	if CommunicationStyle = "Socket" && SocketFirewallWarning {
+
+	static len := ObjOwnPropCount(CommunicationStyles)
+	types := []
+	for , text in CommunicationStyles.OwnProps() {
+		types.Push(text)
+		if CommunicationStyle == text
+			idx := A_Index
+	}
+
+	new_index := (GuiCtrl.Name = "CSRight") ? (Mod(idx, len) + 1) : (Mod(len + idx - 2, len) + 1)
+	new_text := val[new_index]
+	MainGui["CommunicationStyle"].Text := CommunicationStyle := new_text 
+	MainGui["ConnectionStatus"].Visible := (AccountType == AccountTypes.Main) && (CommunicationStyle == CommunicationStyles.Socket)
+
+
+	if (CommunicationStyle == CommunicationStyles.Socket) && SocketFirewallWarning {
 		disable_warning := MsgBox(
 		"The first time this application connects using sockets, Windows may display a firewall prompt. "
 		"This is normal and occurs because the application uses the network for communication. "
 		"To allow socket communication to work, you must grant Windows Firewall access so the application can communicate over the network."
-		"`r`nDo you want to disable this warning?"
+		"`r`n`r`nDo you want to disable this warning?"
 		, "Firewall Warning", "Icon! YesNo")
 		if disable_warning = "Yes"
 			IniWrite SocketFirewallWarning := false, "settings\nm_config.ini", "Settings", "SocketFirewallWarning"
 	}
+	
 	nm_LaunchCommunicator()
 	IniWrite CommunicationStyle, "settings\nm_config.ini", "Alts", "CommunicationStyle"
 }
 
 nm_UpdateConnectionTotal(num, *) {
 	try MainGui["ConnectionStatus"].Text := "Connected: " num
+}
+
+nm_ManualAltControlHelp(ctrl, *) {
+	MsgBox(
+		'Provides manual control of alt accounts through the GUI.`r`n`r`nSelect an alt by choosing its identifier from ' 
+		'the dropdown list. Selecting the “All” option will send all alts to the chosen field. To add or remove '
+		'identifiers, enter the identifier in the edit box and click “+” to add it or “–” to remove it. ', 
+		"Maunal Alt Control"
+	)
 }
 
 nm_ControlAltSelect(GuiCtrl, *) {
@@ -7862,13 +7930,13 @@ nm_EditControlAltSection(GuiCtrl, *) {
 		return
 
 	MainGui["SelectAltID"].Text := ""
-	if GuiCtrl.Name = "AddAltToList" {
+	if GuiCtrl.Name == "AddAltToList" {
 		if ObjHasValue(AltAccountList, alt_id)
 			return
 		MainGui["ControlAlt"].Add([alt_id])
 		AltAccountList.Push(alt_id)
 	} 
-	else if (i := ObjIndexOf(AltAccountList, alt_id)) > 0  {
+	else if (i := ObjIndexOf(AltAccountList, alt_id)) > 0 {
 		MainGui["ControlAlt"].Delete(i)
 		AltAccountList.RemoveAt(i)
 		if alt_id = SelectedAlt {
@@ -7882,7 +7950,7 @@ nm_EditControlAltSection(GuiCtrl, *) {
 }
 
 nm_FieldIconsVisible(*) {
-	isNA := !(SelectedAlt = "N/A" || SelectedAlt = "" || AccountType != "Main Acc")
+	isNA := !(SelectedAlt == "N/A" || SelectedAlt == "" || AccountType != AccountTypes.Main)
 	for i in CAFieldList
 		MainGui["CA" i].Visible := isNA
 }
@@ -7906,9 +7974,12 @@ nm_IDHelp(*) {
 	MsgBox "The unique identifier the main account uses to distinguish the different alt accounts.", "ID", 0x40000
 }
 
-nm_ValidatePositiveNumber(GuiCtrl, *) {
-	if InStr(GuiCtrl.Value, "-")
-		StrReplace(GuiCtrl.Value, "-")
+nm_ValidatePositiveNumber(ctrl, save_value := false, *) {
+	global
+	if ctrl.Value < 0
+		MainGui[ctrl.Name].Text := Abs(ctrl.Value)
+	if save_value 
+		IniWrite(%ctrl.Name% := ctrl.Value, A_ScriptDir ".\..\settings\nm_config.ini", ctrl.Section, ctrl.Name)
 }
 
 nm_SetCommunicationID(*) {
@@ -16631,8 +16702,8 @@ nm_GoGather(){
 	global fieldOverrideReason:="None"
 	loop 1 {
 		; alt sync override
-		if (TempGather = true) {
-			fieldOverrideReason := "Main Macro Sync"
+		if (TempGather) {
+			fieldOverrideReason := "Syncing to main account"
 			FieldName := TempGather_Field
 			FieldPattern := FieldDefault[TempGather_Field]["pattern"]
 			FieldPatternSize := FieldDefault[TempGather_Field]["size"]
@@ -17045,15 +17116,15 @@ nm_GoGather(){
 					break
 				}
 				; temp gather
-				if (TempGather_Interrupt = 1) {
-					interruptReason := "Main Macro Sync - Interrupt"
+				if (TempGather_Interrupt) {
+					interruptReason := "Syncing to main account"
 					TempGather_Interrupt := 0
 					break
 				}
 				; temp gather over
-				if (TempGather = true && nowUnix() - TempGather_StartTime > TempGather_Duration*60) {
+				if (TempGather && ((nowUnix() - TempGather_StartTime) > (TempGather_Duration * 60))) {
 					TempGather := false
-					interruptReason := "Main Macro Sync - Over"
+					interruptReason := "Main account sync over"
 					break
 				}
 				;mondo
@@ -22663,8 +22734,6 @@ mp_HarvestPlanter(PlanterIndex) {
 }
 
 nm_sendInstructions(instuctions) {
-	if !IsObject(instuctions)
-		return
 	DetectHiddenWindows 1
 	CopyDataStruct := Buffer(A_PtrSize * 3)
 	StringToSend := JSON.stringify(instuctions)
@@ -22674,7 +22743,7 @@ nm_sendInstructions(instuctions) {
 	DetectHiddenWindows 0
 }
 
-nm_TempGather(field, time, interrupt:=1) {
+nm_TempGather(field, time, interrupt := true) {
 	global
 	TempGather_Interrupt := interrupt
 	TempGather_Field := field
@@ -23146,8 +23215,7 @@ timers(*) => ba_showPlanterTimers()
 nm_WM_COPYDATA(wParam, lParam, *){
 	Critical
 	global LastGuid, PMondoGuid, MondoAction, MondoBuffCheck, currentWalk, FwdKey, BackKey, LeftKey, RightKey, SC_Space
-	StringAddress := NumGet(lParam + 2*A_PtrSize, "Ptr")  ; Retrieves the CopyDataStruct's lpData member.
-	StringText := StrGet(StringAddress)  ; Copy the string out of the structure.
+	StringText := StringFromCopyData(lParam)
 	if(wParam=1){ ;guiding star detected
 		nm_setStatus("Detected", "Guiding Star in " . StringText)
 		;pause

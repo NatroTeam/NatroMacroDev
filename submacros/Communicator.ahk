@@ -11,14 +11,15 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #NoTrayIcon
 #SingleInstance Force
 
-#Include "%A_ScriptDir%\..\lib"
+#Include "%A_ScriptDir%\..\lib\"
 #Include "Gdip_All.ahk"
 #Include "JSON.ahk"
 #Include "Discord.ahk"
 #Include "Socket.ahk"
 #Include "nowUnix.ahk"
-;#Include "ErrorHandling.ahk"
-#include "Auxiliary.ahk"
+#Include "ErrorHandling.ahk"
+#Include "Auxiliary.ahk"
+#Include "WM_COPYDATA.ahk"
 
 #Warn VarUnset, Off
 SetWorkingDir A_ScriptDir "\.."
@@ -32,22 +33,33 @@ if (A_Args.Length = 0) {
 ; Initialize
 ;-----------------
 ; general
-MacroState := 0
 MacroStates := {
 	Stopped: 0,
 	Paused: 1,
 	Running: 2
 }
+AccountTypes := {
+	Disabled: "Disabled",
+	Main: "Main Acc",
+	TadAlt: "Tad Alt"
+}
+CommunicationStyles := {
+	Socket: "Socket",
+	Discord: "Discord"
+}
 AccountType := A_Args[1]
+MacroState := MacroStates.Stopped
+CommunicationStyle := A_Args[15]
+CommunicationID := (AccountType == AccountTypes.Main ? -1 : A_Args[16])
 ; discord
-discordMode := A_Args[2]
-discordCheck := A_Args[3]
-MainChannelCheck := A_Args[4]
-MainChannelID := A_Args[5]
-ReportChannelCheck := A_Args[6]
-ReportChannelID := A_Args[7]
-WebhookEasterEgg := A_Args[8]
-DiscordUID := A_Args[9]
+;discordMode := A_Args[2]
+;discordCheck := A_Args[3]
+;MainChannelCheck := A_Args[4]
+;MainChannelID := A_Args[5]
+;ReportChannelCheck := A_Args[6]
+;ReportChannelID := A_Args[7]
+;WebhookEasterEgg := A_Args[8]
+;DiscordUID := A_Args[9]
 Webhook := A_Args[10]
 BotToken := A_Args[11]
 CommunicationChannelID := A_Args[12]
@@ -57,33 +69,26 @@ PortNumber := A_Args[14]
 IdentifiedConnections := {}
 CommunicatorSocket := ListenerSocket := -1
 CommunicatorIsConnected := ListenerIsConnected := false
-; general
-CommunicationStyle := A_Args[15]
-CommunicationID := (AccountType = "Main Acc" ? -1 : A_Args[16])
-; override valuies
-if BotToken != "" && CommunicationStyle = "Discord" && AccountType != "Main Acc"
-	discordMode := 1
 ; misc
 OnExit(ExitFunc, -1)
-OnMessage(0x5550, SelfReload)
 OnMessage(0x5552, nm_setGlobalInt)
 OnMessage(0x5556, nm_sendHeartbeat)
 OnMessage(0x004A, SendMessageToAlts)
 SetTimer Heartbeat, 1000
 DetectHiddenWindows 1
+
 ;-----------------
 ; Discord
 ;-----------------
 ReadMessages() {
-	static LastLoggedMessage := ""
 	if MacroState != MacroStates.Running
-		return {error: "Macro not running"}
-	if CommunicationChannelID = 0 || BotToken = "" || CommunicationStyle != "Discord" || AccountType = "Main Acc"
-		return {error: "Discord communication not set up"}
+		throw Error("Macro not running")
+	if CommunicationChannelID = 0 || BotToken == "" || CommunicationStyle != CommunicationStyles.Discord || AccountType == AccountTypes.Main
+		throw Error("Discord communication not set up")
 
 	messages := discord.GetRecentMessages(CommunicationChannelID)
-	if !IsObject(messages) || messages = -1 || messages.Length = 0
-		return {error: "No new messages"}
+	if messages = -1 || messages.Length = 0
+		throw Error("No new messages")
 
 	for i, msg in messages {
 		if msg["content"] = ""
@@ -96,7 +101,7 @@ ReadMessages() {
 		} catch
 			continue
 	}
-	return {error: "No valid JSON found"}
+	throw Error("No valid JSON found")
 }
 
 ;-----------------
@@ -114,20 +119,23 @@ EventHandler := {
 
 SocketSetup() {
 	global CommunicatorSocket, ListenerSocket, CommunicatorIsConnected, ListenerIsConnected
-	static WM := 0x5565
+	static WM := 0x5665
 
-	if (AccountType = "Main Acc") && !SocketListenerExists() {
+	switch  {
+	; main account
+	case (AccountType == AccountTypes.Main) && !SocketListenerExists():
 		try {
 			ListenerSocket := Socket.Server()
 			ListenerSocket.Bind("0.0.0.0", PortNumber)
 			ListenerIsConnected := true
-			ListenerSocket.Listen(10)
+			ListenerSocket.Listen()
 			ListenerSocket.AsyncSelect(Socket.FD.ACCEPT, EventHandler.Main, WM++)
 		}
 		catch 
 			SocketReconnect()
-	}
-	else if (AccountType != "Main Acc") && ((IP != "127.0.0.1") || SocketListenerExists()) {
+	
+	; tad alt 
+	case (AccountType == AccountTypes.TadAlt) && ((IP != "127.0.0.1") || SocketListenerExists()):
 		try {
 			CommunicatorSocket := Socket.Client()
 			CommunicatorSocket.Connect(IP, PortNumber)
@@ -145,6 +153,7 @@ SocketSetup() {
 
 SocketAccept(self) {
 	static WM := 0x5565
+	connected := false
 	try {
 		hSock := self.Accept()
 		new_sock := Socket.Client(hSock)
@@ -152,7 +161,7 @@ SocketAccept(self) {
 		new_sock.AsyncSelect(Socket.FD.READ | Socket.FD.CLOSE, EventHandler.Alt, WM++)
 	}
 	catch
-		(connected) && new_sock.Close()
+		TryClose(connected, new_sock)
 	else {
 		new_sock.IsOwnedByMain := true
 		new_sock.IsIdentified := false
@@ -183,9 +192,8 @@ SocketClose(self) {
 			IdentifiedConnections.DeleteProp(self.Identifier)
 		self.IsIdentified := false
 		self.Identifier := -1
-		nm_UpdateConnectionTotal(ObjOwnPropCount(IdentifiedConnections))
 
-		; reconnect the listener if none exists
+		nm_UpdateConnectionTotal(ObjOwnPropCount(IdentifiedConnections))
 		if !SocketListenerExists() && ListenerIsConnected
 			SocketReconnect()
 	}
@@ -218,7 +226,7 @@ SocketListenerExists() {
 	pTcpTable := Buffer(4096)
 	DllCall("IPHLPAPI\GetExtendedTcpTable",
 		"ptr", pTcpTable.Ptr,
-		"uint*", &(size := pTcpTable.Size), ; in case of future use
+		"uint*", &(size := pTcpTable.Size),
 		"uchar", true,
 		"int64", AF_INET,
 		"int", TCP_TABLE_BASIC_LISTENER,
@@ -237,19 +245,23 @@ SocketListenerExists() {
 
 SocketReconnect() {
 	global CommunicatorSocket, ListenerSocket, CommunicatorIsConnected, ListenerIsConnected
-	if AccountType = "Main Acc" {
-		try (ListenerIsConnected) && ListenerSocket.Close()
+	if AccountType == AccountTypes.Main {
+		TryClose(ListenerIsConnected, ListenerSocket)
 		ListenerIsConnected := false
 	}
 	else {
-		try (CommunicatorIsConnected) && CommunicatorSocket.Close()
+		TryClose(CommunicatorIsConnected, CommunicatorSocket)
 		CommunicatorIsConnected := false
 	}
 
 	SetTimer((*) => SocketSetup(), -10000)
 }
 
-if CommunicationStyle = "Socket"
+TryClose(condition, sock) {
+	try (condition) && sock.Close()
+}
+
+if CommunicationStyle = CommunicationStyles.Socket
 	SocketSetup()
 
 ;-----------------
@@ -257,18 +269,20 @@ if CommunicationStyle = "Socket"
 ;-----------------
 ; natro_macro.ahk sends data here
 SendMessageToAlts(wParam, lParam, *) {
+	parsed := false
 	try {
-		StringAddress := NumGet(lParam + 2*A_PtrSize, "Ptr")
-		StringText := StrGet(StringAddress)
+		StringText := StringFromCopyData(lParam)
 		jsonObj := JSON.parse(StringText)
-	} catch
+		parsed := true
+	} 
+	if (AccountType != AccountTypes.Main) || !parsed 
 		return
 
-	if Webhook != "" && CommunicationStyle = "Discord" && AccountType = "Main Acc" {
+	if (Webhook != "") && (CommunicationStyle == CommunicationStyles.Discord) {
 		payload := Map("content", JSON.Stringify(jsonObj))
 		try discord.SendMessageAPI(JSON.stringify(payload), "application/json", , Webhook)
 	}
-	if CommunicationStyle = "Socket" && AccountType = "Main Acc" && ListenerIsConnected {
+	if ListenerIsConnected && (CommunicationStyle == CommunicationStyles.Socket) {
 		for identifier, sock in IdentifiedConnections.OwnProps() {
 			requested_id := jsonObj.Has("identifier") ? jsonObj["identifier"] : identifier
 			if identifier != requested_id
@@ -279,61 +293,30 @@ SendMessageToAlts(wParam, lParam, *) {
 }
 
 GetMessages(*) {
-	if MacroState != Macrostates.Running
+	is_discord := CommunicationStyle == CommunicationStyles.Discord
+	is_main := AccountType != AccountTypes.Main
+	if (MacroState != MacroStates.Running) && !is_discord && is_main 
 		return 0
-	if CommunicationStyle = "Discord" && AccountType != "Main Acc" {
+
+	try 
 		msg := ReadMessages()
-		if !IsObject(msg) || msg.HasOwnProp("error")
-			return 0 
-	} else
+	catch
 		return 0
+
 	return msg
 }
 
 Interpreter(msg, *) {
-	incorrect_id := msg.Has("identifier") && (msg["identifier"] != CommunicationID)
-	if !IsObject(msg) || msg.HasOwnProp("error") || incorrect_id
+	if (MacroState != MacroStates.Running) && (msg.Has("identifier") && (msg["identifier"] != CommunicationID))
 		return
 
 	try Send_WM_COPYDATA(JSON.stringify(msg), "natro_macro ahk_class AutoHotkey", 2)
-}
-
-SelfReload(*) { ; to refresh vals, it has to be ran by natro_macro.ahk
-	Critical
-	if (A_Args.Length > 0) {
-		LastReload := A_Args[A_Args.Length] ; keep A_TickCount at the end
-		if (IsNumber(LastReload) && (A_TickCount-LastReload < 5000)) {
-			return
-		}
-	}
-	exe_path64 := (A_Is64bitOS && FileExist("submacros\AutoHotkey64.exe")) ? (A_WorkingDir "\submacros\AutoHotkey64.exe") : A_AhkPath
-	path := '"' exe_path64 '" /script "' A_WorkingDir '\submacros\Communicator.ahk" ', vars := ""
-	for i, x in A_Args
-		vars .= '"' (x = "" ? " " : A_Index = A_Args.Length ? A_TickCount : x) '" '
-	Run path " " vars
-	ExitApp
 }
 
 nm_UpdateConnectionTotal(num) {
 	Critical
 	if WinExist("natro_macro.ahk ahk_class AutoHotkey") > 0
 		SendMessage(0x5561, num)
-}
-
-Send_WM_COPYDATA(StringToSend, TargetScriptTitle, wParam:=0)
-{
-	CopyDataStruct := Buffer(3*A_PtrSize)
-	SizeInBytes := (StrLen(StringToSend) + 1) * 2
-	NumPut("Ptr", SizeInBytes
-		, "Ptr", StrPtr(StringToSend)
-		, CopyDataStruct, A_PtrSize)
-
-	try
-		s := SendMessage(0x004A, wParam, CopyDataStruct,, TargetScriptTitle)
-	catch
-		return -1
-	else
-		return s
 }
 
 nm_sendHeartbeat(*){
@@ -356,13 +339,13 @@ nm_setGlobalInt(wParam, lParam, *)
 
 Heartbeat() {
 	msg := GetMessages()
-	if (msg != 0 && !msg.HasOwnProp("error"))
+	if msg != 0
 		Interpreter(msg)
 }
 
 ExitFunc(*) {
 	Critical
-	if AccountType != "Main Acc" {
+	if AccountType != AccountTypes.Main {
 		try (CommunicatorIsConnected) && CommunicatorSocket.Close()
 		(CommunicatorSocket != -1) && CommunicatorSocket.Cleanup()
 	} 
@@ -370,5 +353,5 @@ ExitFunc(*) {
 		try (ListenerIsConnected) && ListenerSocket.Close()
 		(ListenerSocket != -1) && ListenerSocket.Cleanup()
 	}
-	ExitApp
+	ExitApp()
 }

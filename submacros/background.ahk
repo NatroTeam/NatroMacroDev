@@ -23,6 +23,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
 #include "ErrorHandling.ahk"
+#Include "WM_COPYDATA.ahk"
 SetWorkingDir A_ScriptDir "\.."
 
 if (A_Args.Length = 0)
@@ -479,20 +480,4 @@ nm_setGlobalStr(wParam, lParam, *)
 	local var := arr[wParam], section := sections[lParam]
 	try %var% := IniRead("settings\nm_config.ini", section, var)
 	return 0
-}
-
-Send_WM_COPYDATA(StringToSend, TargetScriptTitle, wParam:=0)
-{
-    CopyDataStruct := Buffer(3*A_PtrSize)
-    SizeInBytes := (StrLen(StringToSend) + 1) * 2
-    NumPut("Ptr", SizeInBytes
-		, "Ptr", StrPtr(StringToSend)
-		, CopyDataStruct, A_PtrSize)
-
-	try
-		s := SendMessage(0x004A, wParam, CopyDataStruct,, TargetScriptTitle)
-	catch
-		return -1
-	else
-		return s
 }
