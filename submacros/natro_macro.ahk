@@ -7797,7 +7797,7 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 	txtWebhook := ConfGui.Add("Text", "xs+10 ys+15", "Webhook:")
 	(edtWebhook := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap vCommunicationWebhook", CommunicationWebhook)).OnEvent("Change", CommunicationWebhookEdit)
 	txtBotToken := ConfGui.Add("Text", "xs+10 ys+15", "Bot Token:")
-	(edtBotToken := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap vCommunicationBotToken", CommunicationBotToken)).OnEvent("Change", SaveConf)
+	(edtBotToken := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap vCommunicationBotToken", CommunicationBotToken)).OnEvent("Change", CommunicationBotTokenEdit)
 	txtChannelID := ConfGui.Add("Text", "xs+10 y+5", "Channel ID:")
 	(edtChannelID := ConfGui.Add("Edit", "y+5 w280 h20 -Wrap Number vCommunicationChannelID", CommunicationChannelID)).OnEvent("Change", ValidateNumberCtrl)
 	; Socket
@@ -7838,7 +7838,14 @@ nm_CommunicationStyle(selected, groupKey, close?) {
 		IniWrite GuiCtrl.Value, "settings\nm_config.ini", "Alts", GuiCtrl.Name
 	}
 	CommunicationWebhookEdit(GuiCtrl, *) {
-		if !(GuiCtrl.Text ~= "^https:\/\/discord\.com\/api\/webhooks\/\d+\/[a-zA-Z0-9_\-]+$") {
+		if !(GuiCtrl.Text ~= "^https:\/\/discord\.com\/api\/webhooks\/\d+\/[\w\-]+$") {
+			GuiCtrl.Text := ""
+			return
+		}
+		SaveConf(GuiCtrl)
+	}
+	CommunicationBotTokenEdit(GuiCtrl, *) {
+		if !(GuiCtrl.Text ~= "^[\w\.]+$") {
 			GuiCtrl.Text := ""
 			return
 		}
