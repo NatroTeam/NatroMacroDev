@@ -18538,12 +18538,28 @@ nm_VBCheck() {
 }
 ;//todo: make it work if someone has chat disabled
 ; open roblox chat
-nm_OpenChat(msg:="") {
-    PrevKeyDelay := A_KeyDelay
-    SetKeyDelay 50
-	Send "{" SC_Slash "}" msg "`n"
-    SetKeyDelay PrevKeyDelay
+nm_OpenChat() {
+    static BaselineHex := 0xffF7F7F8
+    GetRobloxClientPos()
+
+	;14w bitmap to avoid mistaking a notification for the chat color being filled.
+	;20lvl of variation allowed, what else could match bro?
+    hBM := Gdip_BitmapFromScreen(windowX + 120 "|" windowY + GetYOffset() - 20 "|250|50")
+    nOpen := Gdip_CreateBitmap(14, 3), G := Gdip_GraphicsFromImage(nOpen), Gdip_GraphicsClear(G, BaselineHex), Gdip_DeleteGraphics(G)
+    nClosed := Gdip_CloneBitmapArea(nOpen, 0, 0, 1, 3)
+
+    isOpen := Gdip_ImageSearch(hBM, nOpen, , , , , , 20)
+    isClosed := Gdip_ImageSearch(hBM, nClosed, &out, , , , , 0)
+
+    Gdip_DisposeImage(nOpen), Gdip_DisposeImage(nClosed), Gdip_DisposeImage(hBM)
+
+    if (!isOpen && isClosed)
+	{
+        coords := StrSplit(out, ",")
+        Click(windowX + 120 + coords[1], windowY + GetYOffset() - 20 + coords[2])
+    }
 }
+
 nm_IncrementStat(stat, amount:=1){ ; //todo: add to Quests/Bugrun when they are rewritten
 	global TotalBossKills, SessionBossKills
 	, TotalViciousKills, SessionViciousKills
