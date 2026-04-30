@@ -112,7 +112,7 @@ OnMessage(0x5560, nm_copyDebugLog)
 OnMessage(0x0020, nm_WM_SETCURSOR)
 
 ; set version identifier
-VersionID := "1.1.1"
+VersionID := "1.1.2"
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
@@ -18539,24 +18539,32 @@ nm_VBCheck() {
 ;//todo: make it work if someone has chat disabled
 ; open roblox chat
 nm_OpenChat() {
-    static BaselineHex := 0xffF7F7F8
+	static BaselineHex := 0xffF7F7F8
+	static nClosed
+	static nOpen
+
+	if (!IsSet(nOpen) && !IsSet(nClosed))
+	{
+		nOpen := Gdip_CreateBitmap(14, 3), G := Gdip_GraphicsFromImage(nOpen), Gdip_GraphicsClear(G, BaselineHex), Gdip_DeleteGraphics(G)
+		nClosed := Gdip_CloneBitmapArea(nOpen, 0, 0, 1, 3)
+	}
+
     GetRobloxClientPos()
+	yOffset := GetYOffset()
 
 	;14w bitmap to avoid mistaking a notification for the chat color being filled.
 	;20lvl of variation allowed, what else could match bro?
-    hBM := Gdip_BitmapFromScreen(windowX + 120 "|" windowY + GetYOffset() - 20 "|250|50")
-    nOpen := Gdip_CreateBitmap(14, 3), G := Gdip_GraphicsFromImage(nOpen), Gdip_GraphicsClear(G, BaselineHex), Gdip_DeleteGraphics(G)
-    nClosed := Gdip_CloneBitmapArea(nOpen, 0, 0, 1, 3)
+    pBMHaystack := Gdip_BitmapFromScreen(windowX + 120 "|" windowY + yOffset - 20 "|250|50")
 
-    isOpen := Gdip_ImageSearch(hBM, nOpen, , , , , , 20)
-    isClosed := Gdip_ImageSearch(hBM, nClosed, &out, , , , , 0)
+    isOpen := (Gdip_ImageSearch(pBMHaystack, nOpen, , , , , , 20) > 0)
+    isClosed := (Gdip_ImageSearch(pBMHaystack, nClosed, &out, , , , , 0) > 0)
 
-    Gdip_DisposeImage(nOpen), Gdip_DisposeImage(nClosed), Gdip_DisposeImage(hBM)
+	Gdip_DisposeImage(pBMHaystack)
 
     if (!isOpen && isClosed)
 	{
         coords := StrSplit(out, ",")
-        Click(windowX + 120 + coords[1], windowY + GetYOffset() - 20 + coords[2])
+        Click(windowX + 120 + coords[1], windowY + yOffset - 20 + coords[2])
     }
 }
 
