@@ -1,0 +1,28 @@
+#Requires AutoHotkey v2.0
+
+global statusConfigLoc := "features\All\Quests\nm_status_config.ini"
+
+nm_StatusTab(*) {
+	global
+	TabCtrl.UseTab("Status")
+	MainGui.SetFont("w700")
+	MainGui.Add("GroupBox", "x5 y23 w240 h210", "Status Log")
+	MainGui.Add("GroupBox", "x250 y23 w245 h160", "Stats")
+	MainGui.Add("GroupBox", "x250 y185 w245 h48", "Discord Integration")
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+
+	MainGui.Add("CheckBox", "x85 y23 Disabled vStatusLogReverse Checked" StatusLogReverse, "Reverse Order").OnEvent("Click", nm_StatusLogReverseCheck)
+	MainGui.Add("Text", "x10 y37 w230 r15 +BackgroundTrans -Wrap vstatuslog")
+
+	MainGui.SetFont("w700")
+	MainGui.Add("Text", "x255 y40", "Total")
+	MainGui.Add("Text", "x375 y40", "Session")
+
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+	MainGui.Add("Text", "x255 y55 w119 h120 -Wrap vTotalStats")
+	MainGui.Add("Text", "x375 y55 w119 h120 -Wrap vSessionStats")
+	MainGui.Add("Button", "x290 y39 w50 h15 vResetTotalStats Disabled", "Reset").OnEvent("Click", nm_ResetTotalStats)
+	MainGui.Add("Button", "x265 y202 w215 h24 vWebhookGUI Disabled", "Change Discord Settings").OnEvent("Click", nm_WebhookGUI)
+	nm_setStats()
+	SetLoadingProgress(28)
+}

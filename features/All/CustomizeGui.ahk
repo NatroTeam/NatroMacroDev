@@ -1,0 +1,83 @@
+;this file is intended to dictate which features are enabled and loaded by the macro.  Future  additions can simply be appended here for quick and simple inclusion.
+
+;default all features to enabled.  These will be overwritten with the values in the ini
+GatherFeature:=1
+CollectKillFeature:=1
+BoostFeature:=1
+QuestsFeature:=1
+PlantersFeature:=1
+StatusFeature:=1
+MiscFeature:=1
+CreditsFeature:=1
+SettingsFeature:=1
+
+;this is used to set the loading progress %.  Each macro feature will have a 'loading volume' equal to the number of GUI lines of code.  Upon macro loading, the percent loaded will be calculated based on the total amount of CurrentLoadProgress / LoadingProgressVolume [total]
+LoadingProgressVolume:=0
+CurrentLoadProgress:=0
+
+
+if FileExist(A_WorkingDir "\..\features\All\CustomizeGui.ini")
+	nm_ReadIni(A_WorkingDir "\..\features\All\CustomizeGui.ini")
+
+;create association between feature-name and associated config file section name(s). This is necessary for global variable loading
+;GatherFeature, CollectKillFeature, BoostFeature, QuestsFeature, PlantersFeature, StatusFeature, MiscFeature, CreditsFeature
+global MacroFeatureConfigSections:=Map()
+MacroFeatureConfigSections["SettingsFeature"] := ["Settings"]
+MacroFeatureConfigSections["GatherFeature"] := ["Gather"]
+MacroFeatureConfigSections["CollectKillFeature"] := ["Collect", "Blender"]
+MacroFeatureConfigSections["BoostFeature"] := ["Boost", "Shrine"]
+MacroFeatureConfigSections["QuestsFeature"] := ["Quests"]
+MacroFeatureConfigSections["PlantersFeature"] := ["Planters"]
+MacroFeatureConfigSections["StatusFeature"] := ["Status"]
+;MacroFeatureConfigSections["MiscFeature"] := [""] ;placeholder - currently no configuration settings associated with this feature
+;MacroFeatureConfigSections["CreditsFeature"] := [""] ;placeholder - currently no configuration settings associated with this feature
+MacroFeatureConfigSections["PersonalFeature"] := ["Personal"]
+
+;create association between feature-name and associated function name(s). This is necessary for priorityList ordering
+global MacroFeatureFunctions:=Map()
+MacroFeatureFunctions["GatherFeature"] := ["GoGather"]
+MacroFeatureFunctions["CollectKillFeature"] := ["Collect", "Night", "Mondo", "Bugrun"]
+MacroFeatureFunctions["BoostFeature"] := ["Boost"]
+MacroFeatureFunctions["QuestsFeature"] := ["QuestRotate"]
+MacroFeatureFunctions["PlantersFeature"] := ["Planter"]
+MacroFeatureFunctions["PersonalFeature"] := ["Personal"]
+
+
+nm_customizeGui(*){
+	global
+	if (IsSet(CustomizeGui) && IsObject(CustomizeGui))
+		CustomizeGui.Destroy(), CustomizeGui := ""
+
+	CustomizeGui := Gui("+AlwaysOnTop +Border +Owner" MainGui.Hwnd " -MinimizeBox", "Customize Macro Features")
+	CustomizeGui.Show("x10 y10 h160 w250")
+	CustomizeGui.SetFont("w700")
+	CustomizeGui.Add("GroupBox", "x5 y2 w244 h160 Section", "Enable/Disable Features")
+	CustomizeGui.SetFont("s8 cDefault Norm", "Tahoma")
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 y17 w244 h15 vGatherFeature Checked" GatherFeature, "Gather")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 yp+15 w244 h15 vCollectKillFeature Checked" CollectKillFeature, "Collect/Kill")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 yp+15 w244 h15 vBoostFeature Checked" BoostFeature, "Boost")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 yp+15 w244 h15 vQuestsFeature Checked" QuestsFeature, "Quests")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 yp+15 w244 h15 vPlantersFeature Checked" PlantersFeature, "Planters")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 yp+15 w244 h15 vStatusFeature Checked" StatusFeature, "Status")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 yp+15 w244 h15 vMiscFeature Checked" MiscFeature, "Misc")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 yp+15 w244 h15 vCreditsFeature Checked" CreditsFeature, "Credits")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 yp+15 w244 h15 vAdvancedFeature Checked" AdvancedFeature, "Advanced")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+	(GuiCtrl := CustomizeGui.Add("CheckBox", "x10 yp+15 w244 h15 vPersonalFeature Checked" PersonalFeature, "Personal")).Section := "Features", GuiCtrl.OnEvent("Click", nm_saveCustomizeGui)
+}
+
+nm_saveCustomizeGui(GuiCtrl, *) {
+	global
+	switch GuiCtrl.Type, 0 {
+		case "DDL":
+		%GuiCtrl.Name% := GuiCtrl.Text
+		default: ; "CheckBox", "Edit", "UpDown", "Slider"
+		%GuiCtrl.Name% := GuiCtrl.Value
+	}
+	IniWrite %GuiCtrl.Name%, A_WorkingDir "\features\All\CustomizeGui.ini", GuiCtrl.Section, GuiCtrl.Name
+	nm_setDefaultPriorityList()
+	nm_savePriorityList()
+
+	if ProcessExist(PGUIPID) {
+		nm_priorityListGui(0)
+	}
+}

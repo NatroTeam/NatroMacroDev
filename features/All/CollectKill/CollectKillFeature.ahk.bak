@@ -1,0 +1,5301 @@
+#Requires AutoHotkey v2.0
+
+global collectKillConfigLoc := "features\All\CollectKill\nm_collectkill_config.ini"
+
+;this is this features GUI lines-of-code used to calculate loading progress
+CollectKillFeatureProgressVolume := (CollectKillFeature) ? 218 : 0
+;this is the running total of all macro features included in the load progress metric
+LoadingProgressVolume := (CollectKillFeature) ? LoadingProgressVolume+CollectKillFeatureProgressVolume : LoadingProgressVolume
+
+
+nm_includeCollectKillFeature(*){
+	global
+	nm_importCollectKillConfig()
+}
+
+nm_importCollectKillConfig()
+{
+	global
+	local config := Map() ; store default values, these are loaded initially
+
+	config["Collect"] := Map("ClockCheck", 1
+		, "LastClock", 1
+		, "MondoBuffCheck", 0
+		, "MondoAction", "Buff"
+		, "MondoLootDirection", "Random"
+		, "LastMondoBuff", 1
+		, "AntPassCheck", 0
+		, "AntPassBuyCheck", 0
+		, "AntPassAction", "Pass"
+		, "LastAntPass", 1
+		, "RoboPassCheck", 0
+		, "LastRoboPass", 1
+		, "HoneystormCheck", 0
+		, "LastHoneystorm", 1
+		, "HoneyDisCheck", 0
+		, "LastHoneyDis", 1
+		, "TreatDisCheck", 0
+		, "LastTreatDis", 1
+		, "BlueberryDisCheck", 0
+		, "LastBlueberryDis", 1
+		, "StrawberryDisCheck", 0
+		, "LastStrawberryDis", 1
+		, "CoconutDisCheck", 0
+		, "LastCoconutDis", 1
+		, "RoyalJellyDisCheck", 0
+		, "LastRoyalJellyDis", 1
+		, "GlueDisCheck", 0
+		, "LastGlueDis", 1
+		, "LastBlueBoost", 1
+		, "LastRedBoost", 1
+		, "LastMountainBoost", 1
+		, "BeesmasGatherInterruptCheck", 0
+		, "StockingsCheck", 0
+		, "LastStockings", 1
+		, "WreathCheck", 0
+		, "LastWreath", 1
+		, "FeastCheck", 0
+		, "LastFeast", 1
+		, "RBPDelevelCheck", 0
+		, "LastRBPDelevel", 1
+		, "GingerbreadCheck", 0
+		, "LastGingerbread", 1
+		, "SnowMachineCheck", 0
+		, "LastSnowMachine", 1
+		, "CandlesCheck", 0
+		, "LastCandles", 1
+		, "SamovarCheck", 0
+		, "LastSamovar", 1
+		, "LidArtCheck", 0
+		, "LastLidArt", 1
+		, "GummyBeaconCheck", 0
+		, "LastGummyBeacon", 1
+		, "MonsterRespawnTime", 0
+		, "BugrunInterruptCheck", 0
+		, "BugrunLadybugsCheck", 0
+		, "BugrunLadybugsLoot", 0
+		, "LastBugrunLadybugs", 1
+		, "BugrunRhinoBeetlesCheck", 0
+		, "BugrunRhinoBeetlesLoot", 0
+		, "LastBugrunRhinoBeetles", 1
+		, "BugrunSpiderCheck", 0
+		, "BugrunSpiderLoot", 0
+		, "LastBugrunSpider", 1
+		, "BugrunMantisCheck", 0
+		, "BugrunMantisLoot", 0
+		, "LastBugrunMantis", 1
+		, "BugrunScorpionsCheck", 0
+		, "BugrunScorpionsLoot", 0
+		, "LastBugrunScorpions", 1
+		, "BugrunWerewolfCheck", 0
+		, "BugrunWerewolfLoot", 0
+		, "LastBugrunWerewolf", 1
+		, "TunnelBearCheck", 0
+		, "TunnelBearBabyCheck", 0
+		, "LastTunnelBear", 1
+		, "KingBeetleCheck", 0
+		, "KingBeetleBabyCheck", 0
+		, "KingBeetleAmuletMode", 1
+		, "LastKingBeetle", 1
+		, "InputSnailHealth", 100.00
+		, "SnailTime", 15
+		, "InputChickHealth", 100.00
+		, "ChickLevel", 10
+		, "ChickTime", 15
+		, "StumpSnailCheck", 0
+		, "ShellAmuletMode", 1
+		, "LastStumpSnail", 1
+		, "CommandoCheck", 0
+		, "LastCommando", 1
+		, "CocoCrabCheck", 0
+		, "LastCocoCrab", 1
+		, "StingerCheck", 0
+		, "StingerPepperCheck", 1
+		, "StingerMountainTopCheck", 1
+		, "StingerRoseCheck", 1
+		, "StingerCactusCheck", 1
+		, "StingerSpiderCheck", 1
+		, "StingerCloverCheck", 1
+		, "StingerDailyBonusCheck", 0
+		, "VBLastKilled", 1
+		, "MondoSecs", 120
+		, "NormalMemoryMatchCheck", 0
+		, "LastNormalMemoryMatch", 1
+		, "MegaMemoryMatchCheck", 0
+		, "LastMegaMemoryMatch", 1
+		, "ExtremeMemoryMatchCheck", 0
+		, "LastExtremeMemoryMatch", 1
+		, "NightMemoryMatchCheck", 0
+		, "LastNightMemoryMatch", 1
+		, "WinterMemoryMatchCheck", 0
+		, "LastWinterMemoryMatch", 1
+		, "MicroConverterMatchIgnore", 0
+		, "SunflowerSeedMatchIgnore", 0
+		, "JellyBeanMatchIgnore", 0
+		, "RoyalJellyMatchIgnore", 0
+		, "TicketMatchIgnore", 0
+		, "CyanTrimMatchIgnore", 0
+		, "OilMatchIgnore", 0
+		, "StrawberryMatchIgnore", 0
+		, "CoconutMatchIgnore", 0
+		, "TropicalDrinkMatchIgnore", 0
+		, "RedExtractMatchIgnore", 0
+		, "MagicBeanMatchIgnore", 0
+		, "PineappleMatchIgnore", 0
+		, "StarJellyMatchIgnore", 0
+		, "EnzymeMatchIgnore", 0
+		, "BlueExtractMatchIgnore", 0
+		, "GumdropMatchIgnore", 0
+		, "FieldDiceMatchIgnore", 0
+		, "MoonCharmMatchIgnore", 0
+		, "BlueberryMatchIgnore", 0
+		, "GlitterMatchIgnore", 0
+		, "StingerMatchIgnore", 0
+		, "TreatMatchIgnore", 0
+		, "GlueMatchIgnore", 0
+		, "CloudVialMatchIgnore", 0
+		, "SoftWaxMatchIgnore", 0
+		, "HardWaxMatchIgnore", 0
+		, "SwirledWaxMatchIgnore", 0
+		, "NightBellMatchIgnore", 0
+		, "HoneysuckleMatchIgnore", 0
+		, "SuperSmoothieMatchIgnore", 0
+		, "SmoothDiceMatchIgnore", 0
+		, "NeonberryMatchIgnore", 0
+		, "GingerbreadMatchIgnore", 0
+		, "SilverEggMatchIgnore", 0
+		, "GoldEggMatchIgnore", 0
+		, "DiamondEggMatchIgnore", 0
+		, "MemoryMatchInterruptCheck", 0
+		, "StickerPrinterCheck", 0
+		, "LastStickerPrinter", 1
+		, "StickerPrinterEgg", "Basic")
+
+        config["Blender"] := Map("BlenderRot", 1
+		, "BlenderCheck", 1
+		, "TimerInterval", 0
+		, "BlenderItem1", "None"
+		, "BlenderItem2", "None"
+		, "BlenderItem3", "None"
+		, "BlenderAmount1", 0
+		, "BlenderAmount2", 0
+		, "BlenderAmount3", 0
+		, "BlenderIndex1", 1
+		, "BlenderIndex2", 1
+		, "BlenderIndex3", 1
+		, "BlenderTime1", 0
+		, "BlenderTime2", 0
+		, "BlenderTime3", 0
+		, "BlenderEnd",  0
+		, "LastBlenderRot", 1
+		, "BlenderCount1", 0
+		, "BlenderCount2", 0
+		, "BlenderCount3", 0)
+
+
+	local k, v, i, j
+	for k,v in config ; load the default values as globals, will be overwritten if a new value exists when reading
+		for i,j in v
+			%i% := j
+
+	;update default values with new ones read from any existing .ini
+	;look for new modular files first.  For backwards compatibility: If they dont exist, look for original nm_config.ini file instead.
+	local inipath := A_WorkingDir "\" collectKillConfigLoc
+	local defaultinipath := A_WorkingDir "\settings\nm_config.ini"
+
+	if FileExist(inipath) {
+		nm_ReadIni(inipath)
+	} else { ;look for original nm_config.ini file instead
+		if FileExist(defaultinipath) { ; update default values with new ones read from original nm_config.ini
+			for k,v in config
+				nm_ReadIniSection(defaultinipath, k)
+		}
+	}
+
+	local ini := ""
+	for k,v in config ; overwrite any existing .ini with updated one with all new keys and old values
+	{
+		ini .= "[" k "]`r`n"
+		for i in v
+			ini .= i "=" %i% "`r`n"
+		ini .= "`r`n"
+	}
+
+	local file := FileOpen(inipath, "w-d")
+	file.Write(ini), file.Close()
+
+}
+
+
+nm_CollectKillTab(*) {
+    global
+    TabCtrl.UseTab("Collect/Kill")
+    ;sub-tabs
+    MainGui.Add("Button", "x4 y21 w246 h18 vCollectSubTab Disabled", "Collect").OnEvent("Click", nm_CollectKillButton)
+    MainGui.Add("Button", "x250 y21 w246 h18 vKillSubTab", "Kill").OnEvent("Click", nm_CollectKillButton)
+    ;collect
+    MainGui.SetFont("w700")
+    MainGui.Add("GroupBox", "x5 y42 w125 h124 vCollectGroupBox", "Collect")
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    (GuiCtrl := MainGui.Add("CheckBox", "x10 y57 vClockCheck Disabled Checked" ClockCheck, "Clock (tickets)")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "x10 yp+18 w50 vMondoBuffCheck Disabled Checked" MondoBuffCheck, "Mondo")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    MondoActionList := ["Buff", "Kill"], PMondoGuid && MondoActionList.Push("Tag", "Guid"), MondoActionList.Default := "", MondoActionList.Length := 4
+    MainGui.Add("Text", "x75 yp w40 vMondoAction +Center +BackgroundTrans", MondoAction)
+    MainGui.Add("Button", "xp-12 yp-1 w12 h16 vMALeft Disabled", "<").OnEvent("Click", nm_MondoAction)
+    MainGui.Add("Button", "xp+51 yp w12 h16 vMARight Disabled", ">").OnEvent("Click", nm_MondoAction)
+    MainGui.Add("Text", "x14 yp+15 w110 vMondoPointText +BackgroundTrans Section Hidden" (MondoAction != "Buff" && MondoAction != "Kill"), "\__")
+    (GuiCtrl := MainGui.Add("Edit", "xs+20 ys+3 w30 h18 number Limit3 vMondoSecs Disabled Hidden" (MondoAction != "Buff"), ValidateInt(&MondoSecs, 120))).Section := "Collect", GuiCtrl.OnEvent("Change", nm_saveCollectKillConfig)
+    MainGui.Add("Text", "x+4 yp+2 vMondoSecsText Hidden" (MondoAction != "Buff"), "Secs")
+    MainGui.Add("Text", "xs+18 ys+4 vMondoLootText Hidden" (MondoAction != "Kill"), "Loot:")
+    MainGui.Add("Text", "x+13 yp w45 vMondoLootDirection +Center +BackgroundTrans Hidden" (MondoAction != "Kill"), MondoLootDirection)
+    MainGui.Add("Button", "xp-12 yp-1 w12 h16 vMLDLeft Disabled Hidden" (MondoAction != "Kill"), "<").OnEvent("Click", nm_MondoLootDirection)
+    MainGui.Add("Button", "xp+56 yp w12 h16 vMLDRight Disabled Hidden" (MondoAction != "Kill"), ">").OnEvent("Click", nm_MondoLootDirection)
+    (GuiCtrl := MainGui.Add("CheckBox", "x10 y112 w35 vAntPassCheck Disabled Checked" AntPassCheck, "Ant")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    MainGui.Add("Text", "x60 yp w55 vAntPassAction +Center +BackgroundTrans", AntPassAction)
+    MainGui.Add("Button", "xp-12 yp-1 w12 h16 vAPALeft Disabled", "<").OnEvent("Click", nm_AntPassAction)
+    MainGui.Add("Button", "xp+66 yp w12 h16 vAPARight Disabled", ">").OnEvent("Click", nm_AntPassAction)
+    MainGui.Add("Text", "x14 yp+15 vAntPassPointText +BackgroundTrans", "\__")
+    MainGui.Add("CheckBox", "x+4 yp+5 vAntPassBuyCheck Disabled Checked" AntPassBuyCheck, "Use Tickets").OnEvent("Click", nm_AntPassBuyCheck)
+    (GuiCtrl := MainGui.Add("CheckBox", "x10 yp+17 vHoneystormCheck Disabled Checked" HoneystormCheck, "Honeystorm")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    ;memory match
+    MainGui.SetFont("w700")
+    MainGui.Add("GroupBox", "x5 y168 w125 h68 vMemoryMatchGroupBox", "Memory Match")
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    (GuiCtrl := MainGui.Add("CheckBox", "x10 yp+15 w58 vNormalMemoryMatchCheck Disabled Checked" NormalMemoryMatchCheck, "Normal")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    MainGui.Add("CheckBox", "xp yp+18 wp vNightMemoryMatchCheck Disabled Checked" NightMemoryMatchCheck, "Night").OnEvent("Click", nm_NightMemoryMatchCheck)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp+58 yp-18 wp vMegaMemoryMatchCheck Disabled Checked" MegaMemoryMatchCheck, "Mega")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 wp vExtremeMemoryMatchCheck Disabled Checked" ExtremeMemoryMatchCheck, "Extreme")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    MainGui.Add("Button", "x43 yp+16 w49 h16 vMemoryMatchOptions Disabled", "Options").OnEvent("Click", nm_MemoryMatchOptions)
+    SetLoadingProgress(floor((CurrentLoadProgress+37)/LoadingProgressVolume*100))
+	;dispensers
+    MainGui.SetFont("w700")
+    MainGui.Add("GroupBox", "x135 y42 w165 h105 vDispensersGroupBox", "Dispensers")
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    (GuiCtrl := MainGui.Add("CheckBox", "x140 y57 vHoneyDisCheck Disabled Checked" HoneyDisCheck, "Honey")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vTreatDisCheck Disabled Checked" TreatDisCheck, "Treat")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vBlueberryDisCheck Disabled Checked" BlueberryDisCheck, "Blueberry")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vStrawberryDisCheck Disabled Checked" StrawberryDisCheck, "Strawberry")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vCoconutDisCheck Disabled Checked" CoconutDisCheck, "Coconut")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp+85 y57 vRoyalJellyDisCheck Disabled Checked" RoyalJellyDisCheck, "Royal Jelly")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vGlueDisCheck Disabled Checked" GlueDisCheck, "Glue")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vRoboPassCheck Disabled Checked" RoboPassCheck, "Robo Pass")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    ;beesmas
+    beesmasActive := 0
+    MainGui.SetFont("w700")
+    MainGui.Add("GroupBox", "x135 y149 w360 h87 vBeesmasGroupBox", "Beesmas (Inactive)")
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["warninggui"])
+    MainGui.Add("Picture", "+BackgroundTrans x261 yp w14 h14 vBeesmasFailImage", "HBITMAP:*" hBM).OnEvent("Click", BeesmasActiveFail)
+    DllCall("DeleteObject", "ptr", hBM)
+    MainGui.Add("Picture", "+BackgroundTrans x247 yp-3 w20 h20 vBeesmasImage")
+    (GuiCtrl := MainGui.Add("CheckBox", "x350 yp+4 vBeesmasGatherInterruptCheck Disabled", "Allow Gather Interrupt")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "x140 yp+14 Section vStockingsCheck Disabled", "Stockings")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vWreathCheck Disabled", "Honey Wreath")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vFeastCheck Disabled", "Feast")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vRBPDelevelCheck Disabled", "Robo Party De-level")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp+120 ys vGingerbreadCheck Disabled", "Gingerbread")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vSnowMachineCheck Disabled", "Snow Machine")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vCandlesCheck Disabled", "Candles")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vWinterMemoryMatchCheck Disabled", "Winter Memory Match")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp+130 ys+6 vSamovarCheck Disabled", "Samovar")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vLidArtCheck Disabled", "Lid Art")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vGummyBeaconCheck Disabled", "Gummy Beacon")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    ;if (EnableBeesmasTime > nowUnix())
+    ;    nm_EnableBeesmas(1)
+    ;else
+    ;    try AsyncHttpRequest("GET", "https://raw.githubusercontent.com/NatroTeam/.github/main/data/beesmas.txt", nm_BeesmasHandler
+    ;, Map("accept", "application/vnd.github.v3.raw", "X-GitHub-Api-Version", "2022-11-28"))
+	SetLoadingProgress(floor((CurrentLoadProgress+76)/LoadingProgressVolume*100))
+    ;Blender
+    MainGui.SetFont("w700")
+    MainGui.Add("GroupBox", "x305 y42 w190 h105 vBlenderGroupBox", "Blender")
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    loop 3 {
+        xCoords := 256 + (62 * A_index)
+        MainGui.Add("Button", "x" xCoords " y124 w40 h15 vBlenderAdd" A_index " Disabled", (BlenderItem%A_index% = "None") ? "Add" : "Clear").OnEvent("Click", nm_setBlenderData)
+        MainGui.Add("Picture", "x" xCoords " y78 h40 w40 vBlenderItem" A_index "Picture +BackgroundTrans +0xE"
+            , (BlenderItem%A_index% = "None") ? "" : hBitmapsSB[BlenderItem%A_index%] ? ("HBITMAP:*" hBitmapsSB[BlenderItem%A_index%]) : "")
+        MainGui.Add("Text", "x" (247 + (62 * A_index)) " y58 w60 +Center vBlenderData" A_index, "(" BlenderAmount%A_Index% ") [" ((BlenderIndex%A_index% = "Infinite") ? "∞" : BlenderIndex%A_index%) "]")
+    }
+    BlenderAdd := 0 ;setup BlenderAdd for later use in the GUI
+
+    MainGui.Add("Text", "x431 y125 w41 h16 +Center +0x200 vBlenderAmountNum Hidden")
+    MainGui.Add("UpDown", "vBlenderAmount Range1-999 Hidden", 1)
+    MainGui.Add("Text", "x435 y106 vBlenderAmountText Hidden", "Amount")
+    MainGui.Add("Text", "x435 y50 h13 vBlenderRepeatText Hidden", "Repeat")
+    MainGui.SetFont("w700 underline")
+    MainGui.Add("Text", "x332 y58 w80 vblendertitle1 Hidden", "Add Item")
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    MainGui.Add("Text", "x307 y74 w103 h1 vblenderline1 Hidden 0x7")
+    MainGui.Add("Text", "x409 y49 w1 h97 vblenderline2 Hidden 0x7")
+    MainGui.Add("Text", "x410 y64 w83 h1 vblenderline3 Hidden 0x7")
+    MainGui.Add("Text", "x410 y121 w83 h1 vblenderline4 Hidden 0x7")
+    MainGui.Add("Text", "x431 y86 w41 h16 +Center +0x200 vBlenderIndexNum Hidden")
+    MainGui.Add("UpDown", "vBlenderIndex Range1-999 Hidden", 1)
+    MainGui.Add("CheckBox", "x427 y69 w60 vBlenderIndexOption Hidden", "Infinite").OnEvent("Click", nm_BlenderIndexOption)
+    MainGui.Add("Picture", "x336 y80 w40 h40 vBlenderItem Hidden +0xE")
+    MainGui.SetFont("s8 cDefault Bold", "Tahoma")
+    MainGui.Add("Button", "x312 y95 w18 h18 vBlenderLeft Hidden", "<").OnEvent("Click", ba_AddBlenderItemButton)
+    MainGui.Add("Button", "x385 y95 w18 h18 vBlenderRight Hidden", ">").OnEvent("Click", ba_AddBlenderItemButton)
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    MainGui.Add("Button", "x318 y125 w80 h16 +Center vBlenderAddSlot Hidden").OnEvent("Click", ba_AddBlenderItem)
+
+    ;KILL
+    ;bugrun
+    MainGui.SetFont("w700")
+    MainGui.Add("GroupBox", "x10 y42 w134 h188 vBugRunGroupBox Hidden", "Bug Run")
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    MainGui.Add("CheckBox", "x76 y43 vBugRunCheck Disabled Hidden", "Select All").OnEvent("Click", nm_BugRunCheck)
+    MainGui.Add("Text", "x16 y62 +BackgroundTrans Hidden vTextMonsterRespawnPercent", "–       %")
+    MainGui.Add("Text", "x52 y55 w80 +BackgroundTrans +Center vTextMonsterRespawn Hidden", "Monster Respawn Time")
+    MainGui.Add("Edit", "x24 y61 w18 h16 Limit2 number vMonsterRespawnTime Disabled Hidden", ValidateNumber(&MonsterRespawnTime)).OnEvent("Change", nm_MonsterRespawnTime)
+    MainGui.Add("Button", "x128 y63 w12 h14 vMonsterRespawnTimeHelp Disabled Hidden", "?").OnEvent("Click", nm_MonsterRespawnTimeHelp)
+    GuiCtrl := MainGui.Add("CheckBox", "x16 y82 w125 h15 vBugrunInterruptCheck Disabled Hidden Checked" BugrunInterruptCheck, "Allow Gather Interrupt")
+    GuiCtrl.Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+
+    MainGui.Add("Text", "x16 y100 +BackgroundTrans Hidden vTextLoot", "Loot")
+    MainGui.Add("Text", "x49 y100 +BackgroundTrans Hidden vTextKill", "Kill")
+    MainGui.Add("Text", "x15 y114 w114 h1 0x7 Hidden vTextLineBugRun1")
+    MainGui.Add("Text", "x40 y100 w1 h124 0x7 Hidden vTextLineBugRun2")
+    (GuiCtrl := MainGui.Add("CheckBox", "x20 y120 w13 h13 vBugrunLadybugsLoot Disabled Hidden Checked" BugrunLadybugsLoot)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 w13 h13 vBugrunRhinoBeetlesLoot Disabled Hidden Checked" BugrunRhinoBeetlesLoot)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 w13 h13 vBugrunSpiderLoot Disabled Hidden Checked" BugrunSpiderLoot)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 w13 h13 vBugrunMantisLoot Disabled Hidden Checked" BugrunMantisLoot)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 w13 h13 vBugrunScorpionsLoot Disabled Hidden Checked" BugrunScorpionsLoot)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 w13 h13 vBugrunWerewolfLoot Disabled Hidden Checked" BugrunWerewolfLoot)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "x48 y120 vBugrunLadybugsCheck Disabled Hidden Checked" BugrunLadybugsCheck, "Ladybugs")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vBugrunRhinoBeetlesCheck Disabled Hidden Checked" BugrunRhinoBeetlesCheck, "Rhino Beetles")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vBugrunSpiderCheck Disabled Hidden Checked" BugrunSpiderCheck, "Spider")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vBugrunMantisCheck Disabled Hidden Checked" BugrunMantisCheck, "Mantis")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vBugrunScorpionsCheck Disabled Hidden Checked" BugrunScorpionsCheck, "Scorpions")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+18 vBugrunWerewolfCheck Disabled Hidden Checked" BugrunWerewolfCheck, "Werewolf")).Section := "Collect", GuiCtrl.OnEvent("Click", nnm_saveCollectKillConfig)
+	SetLoadingProgress(floor((CurrentLoadProgress+140)/LoadingProgressVolume*100))
+
+    ;stingers
+    MainGui.SetFont("w700")
+    MainGui.Add("GroupBox", "x149 y42 w341 h60 vStingersGroupBox Hidden", "Stingers")
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    MainGui.Add("CheckBox", "x217 y43 vStingerCheck Disabled Hidden Checked" StingerCheck, "Kill Vicious Bee").OnEvent("Click", nm_saveStingers)
+    (GuiCtrl := MainGui.Add("CheckBox", "x315 y43 vStingerDailyBonusCheck Disabled Hidden Checked" StingerDailyBonusCheck, "Only Daily Bonus")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    MainGui.Add("Text", "x168 y69 +BackgroundTrans Hidden vTextFields", "Fields:")
+    (GuiCtrl := MainGui.Add("CheckBox", "x220 y62 vStingerCloverCheck Disabled Hidden Checked" StingerCloverCheck, "Clover")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Clover", ctrl, info))
+    (GuiCtrl := MainGui.Add("CheckBox", "x220 y80 vStingerSpiderCheck Disabled Hidden Checked" StingerSpiderCheck, "Spider")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Spider", ctrl, info))
+    (GuiCtrl := MainGui.Add("CheckBox", "x305 y62 vStingerCactusCheck Disabled Hidden Checked" StingerCactusCheck, "Cactus")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Cactus", ctrl, info))
+    (GuiCtrl := MainGui.Add("CheckBox", "x305 y80 vStingerRoseCheck Disabled Hidden Checked" StingerRoseCheck, "Rose")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Rose", ctrl, info))
+    (GuiCtrl := MainGui.Add("CheckBox", "x390 y62 vStingerMountainTopCheck Disabled Hidden Checked" StingerMountainTopCheck, "Mountain Top")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Mountain Top", ctrl, info))
+    (GuiCtrl := MainGui.Add("CheckBox", "x390 y80 vStingerPepperCheck Disabled Hidden Checked" StingerPepperCheck, "Pepper")).Section := "Collect", GuiCtrl.OnEvent("Click", (ctrl, info) => lowBees("Pepper", ctrl, info))
+    lowBees(fieldName, ctrl, info) {
+        static beeAmount := Map("Clover", 0, "Spider", 5, "Cactus", 15, "Rose", 15, "Mountain Top", 25, "Pepper", 35)
+        if (HiveBees >= beeAmount[fieldName] || !ctrl.Value) {
+            nm_saveConfig(ctrl, info)
+            return
+        }
+
+        result := MsgBox("Are you sure you want to enable " fieldName "?`nYou currently have " HiveBees " bees, but this field requires at least " beeAmount[fieldName] " bees.`n`nPress 'Yes' to enable anyway, or 'No' to keep it disabled.", "Low Bee Warning", 0x40044)
+        if (result != "Yes") {
+            ctrl.Value := 0  ; Revert change if user cancels
+            return
+        }
+
+        nm_saveConfig(ctrl, info)
+    }
+
+    ;bosses
+    MainGui.SetFont("w700")
+    MainGui.Add("GroupBox", "x149 y104 w341 h126 vBossesGroupBox Hidden", "Bosses")
+    MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+    MainGui.Add("Button", "x209 y104 w12 h14 vBossConfigHelp Disabled Hidden", "?").OnEvent("Click", nm_BossConfigHelp)
+    (GuiCtrl := MainGui.Add("CheckBox", "x152 y123 vKingBeetleCheck Disabled Hidden Checked" KingBeetleCheck, "King Beetle")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+21 vTunnelBearCheck Disabled Hidden Checked" TunnelBearCheck, "Tunnel Bear")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    MainGui.Add("CheckBox", "xp yp+21 vCocoCrabCheck Disabled Hidden Checked" CocoCrabCheck, "Coco Crab").OnEvent("Click", nm_CocoCrabCheck)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+21 vStumpSnailCheck Disabled Hidden Checked" StumpSnailCheck, "Stump Snail")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+21 vCommandoCheck Disabled Hidden Checked" CommandoCheck, "Commando")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "x270 y123 w13 h13 vKingBeetleBabyCheck Disabled Hidden Checked" KingBeetleBabyCheck)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    (GuiCtrl := MainGui.Add("CheckBox", "xp yp+21 w13 h13 vTunnelBearBabyCheck Disabled Hidden Checked" TunnelBearBabyCheck)).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+    hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["babylovegui"])
+    MainGui.Add("Picture", "+BackgroundTrans vBabyLovePicture1 x286 y120 w18 h18 Hidden", "HBITMAP:*" hBM)
+    MainGui.Add("Picture", "+BackgroundTrans vBabyLovePicture2 xp yp+21 w18 h18 Hidden", "HBITMAP:*" hBM)
+    DllCall("DeleteObject", "ptr", hBM)
+    Gdip_DisposeImage(bitmaps["babylovegui"])
+    MainGui.Add("CheckBox", "x370 y123 w13 h13 vKingBeetleAmuletMode Disabled Hidden Checked" KingBeetleAmuletMode).OnEvent("Click", nm_saveAmulet)
+    MainGui.Add("CheckBox", "x229 y186 w13 h13 vShellAmuletMode Disabled Hidden Checked" ShellAmuletMode).OnEvent("Click", nm_saveAmulet)
+    hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["kingbeetleamu"])
+    MainGui.Add("Picture", "+BackgroundTrans vKingBeetleAmuPicture x386 y119 w20 h20 Hidden", "HBITMAP:*" hBM)
+    DllCall("DeleteObject", "ptr", hBM)
+    Gdip_DisposeImage(bitmaps["kingbeetleamu"])
+    MainGui.Add("Text", "x226 y180 w261 h1 0x7 Hidden vTextLineBosses1")
+    MainGui.Add("Text", "x322 yp-10 w1 h57 0x7 Hidden vTextLineBosses2")
+    MainGui.Add("Text", "x446 yp w1 h57 0x7 Hidden vTextLineBosses3")
+    MainGui.Add("Text", "x255.5 yp-3 w37 h13 Hidden vTextBosses1", "Options")
+    MainGui.Add("Text", "x369 yp w30 h13 Hidden vTextBosses2", "Health")
+    MainGui.Add("Text", "x456 yp w22 h13 Hidden vTextBosses3", "Time")
+    hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["supremeshellamu"])
+    MainGui.Add("Picture", "+BackgroundTrans vShellAmuPicture x245 y182 w20 h20 Hidden", "HBITMAP:*" hBM)
+    DllCall("DeleteObject", "ptr", hBM)
+    Gdip_DisposeImage(bitmaps["supremeshellamu"])
+    MainGui.Add("Text", "x410 y123 w56 vKingBeetleAmuletModeText Hidden", (KingBeetleAmuletMode = 1) ? " Keep Old" : "Do Nothing")
+    MainGui.Add("Text", "x269 y186 w53 vShellAmuletModeText Hidden", (ShellAmuletMode = 1) ? " Keep Old" : "Do Nothing")
+    MainGui.Add("Text", "x242 y207 h16 vChickLevelTextLabel Hidden", "Level:")
+    MainGui.Add("Text", "x272 yp-1 w34 h16 0x200 vChickLevelText +Center Hidden", "?")
+    MainGui.Add("UpDown", "w10 h16 vChickLevel Range3-25 Disabled Hidden", ChickLevel).OnEvent("Change", nm_setChickHealth)
+    MainGui.Add("Text", "x325 y186 vSnailHPText Hidden", "HP:")
+    MainGui.Add("Text", "xp yp+21 vChickHPText Hidden", "HP:")
+    MainGui.Add("Edit", "x343 y184 w60 h18 Number Limit8 vSnailHealthEdit Disabled Hidden", Round(30000000*ValidateNumber(&InputSnailHealth)/100)).OnEvent("Change", nm_setSnailHealth)
+    MainGui.Add("Edit", "xp yp+21 w60 h18 Number Limit8 vChickHealthEdit Disabled Hidden", Round(CommandoChickHealth[ValidateInt(&ChickLevel, 7)]*ValidateNumber(&InputChickHealth)/100)).OnEvent("Change", nm_setChickHealth)
+    MainGui.SetFont("s7")
+    MainGui.Add("Text", "x405 y188 w40 vSnailHealthText Hidden c" Format("0x{1:02x}{2:02x}{3:02x}", Round(Min(3*(100-InputSnailHealth), 150)), Round(Min(3*InputSnailHealth, 150)), 0), InputSnailHealth "%")
+    MainGui.Add("Text", "xp yp+21 w40 vChickHealthText Hidden c" Format("0x{1:02x}{2:02x}{3:02x}", Round(Min(3*(100-InputChickHealth), 150)), Round(Min(3*InputChickHealth, 150)), 0), InputChickHealth "%")
+    MainGui.SetFont("s8")
+    MainGui.Add("Text", "x448 y186 w22 vSnailTimeText +Center Hidden", (SnailTime = "Kill") ? SnailTime : SnailTime "m")
+    MainGui.Add("UpDown", "xp+22 yp-1 w10 h16 -16 Range1-4 vSnailTimeUpDown Disabled Hidden", (SnailTime = "Kill") ? 4 : SnailTime//5).OnEvent("Change", nm_SnailTime)
+    MainGui.Add("Text", "x448 y207 w22 vChickTimeText +Center Hidden", (ChickTime = "Kill") ? ChickTime : ChickTime "m")
+    MainGui.Add("UpDown", "xp+22 yp-1 w10 h16 -16 Range1-4 vChickTimeUpDown Disabled Hidden", (ChickTime = "Kill") ? 4 : ChickTime//5).OnEvent("Change", nm_ChickTime)
+	CurrentLoadProgress:=CurrentLoadProgress+CollectKillFeatureProgressVolume
+	SetLoadingProgress(floor(CurrentLoadProgress/LoadingProgressVolume*100))
+}
+
+nm_CollectKillButton(GuiCtrl, *){
+	global
+	static CollectControls := ["CollectGroupBox","DispensersGroupBox","BeesmasGroupBox","BlenderGroupBox","BeesmasFailImage","BeesmasImage"
+		,"ClockCheck","MondoBuffCheck","MondoAction","AntPassCheck","AntPassPointText","AntPassBuyCheck","AntPassAction","RoboPassCheck","HoneystormCheck"
+		,"HoneyDisCheck","TreatDisCheck","BlueberryDisCheck","StrawberryDisCheck","CoconutDisCheck","RoyalJellyDisCheck","GlueDisCheck"
+		,"MALeft","MARight","APALeft","APARight"
+		,"BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"
+		,"MemoryMatchGroupBox","NormalMemoryMatchCheck","MegaMemoryMatchCheck","NightMemoryMatchCheck","ExtremeMemoryMatchCheck","MemoryMatchOptions"]
+	, KillControls := ["BugRunGroupBox","BugRunCheck","MonsterRespawnTime","TextMonsterRespawnPercent","TextMonsterRespawn","MonsterRespawnTimeHelp"
+		,"BugrunInterruptCheck","TextLoot","TextKill","TextLineBugRun1","TextLineBugRun2"
+		,"BugrunLadybugsLoot","BugrunRhinoBeetlesLoot","BugrunSpiderLoot","BugrunMantisLoot","BugrunScorpionsLoot","BugrunWerewolfLoot"
+		,"BugrunLadybugsCheck","BugrunRhinoBeetlesCheck","BugrunSpiderCheck","BugrunMantisCheck","BugrunScorpionsCheck","BugrunWerewolfCheck"
+		,"StingersGroupBox","StingerCheck","StingerDailyBonusCheck","TextFields","StingerCloverCheck","StingerSpiderCheck","StingerCactusCheck","StingerRoseCheck","StingerMountainTopCheck","StingerPepperCheck"
+		,"BossesGroupBox","TunnelBearCheck","KingBeetleCheck","CocoCrabCheck","StumpSnailCheck","CommandoCheck","TunnelBearBabyCheck","KingBeetleBabyCheck"
+		,"BabyLovePicture1","BabyLovePicture2","KingBeetleAmuletMode","ShellAmuletMode","KingBeetleAmuPicture","ShellAmuPicture","KingBeetleAmuletModeText","ShellAmuletModeText"
+		,"ChickLevelTextLabel","ChickLevelText","ChickLevel","SnailHPText","SnailHealthEdit","SnailHealthText","ChickHPText","ChickHealthEdit","ChickHealthText","SnailTimeText","SnailTimeUpDown","ChickTimeText","ChickTimeUpDown"
+		,"BossConfigHelp","TextLineBosses1","TextLineBosses2","TextLineBosses3","TextBosses1","TextBosses2","TextBosses3"]
+	, BlenderMain := ["BlenderItem1Picture", "BlenderItem2Picture", "BlenderItem3Picture", "BlenderAdd1", "BlenderAdd2", "BlenderAdd3", "BlenderData1", "BlenderData2", "BlenderData3"]
+	, BlenderSide := ["BlenderAmount", "BlenderAmountNum", "BlenderAmountText"
+		, "BlenderRepeatText", "BlenderIndex", "BlenderIndexNum"
+		, "BlenderItem", "BlenderLeft", "BlenderRight", "BlenderAddSlot", "BlenderIndexOption"
+		, "blenderline1", "blenderline2", "blenderline3", "blenderline4", "blendertitle1"]
+	, MondoKillControls := ["MondoLootText", "MondoLootDirection", "MLDLeft", "MLDRight"]
+	, MondoBuffControls := ["MondoSecs", "MondoSecsText"]
+
+	local p, i, c, k, v, arr
+
+	p := (GuiCtrl.Name = "KillSubTab")
+	MainGui["CollectSubTab"].Enabled := p
+	MainGui["KillSubTab"].Enabled := !p
+
+	for i,c in [0,1] ; hide first, then show
+	{
+		if (((i = 1) && (p = 1)) || ((i = 2) && (p = 0))) ; hide/show all collect controls
+		{
+			for k,v in CollectControls
+				MainGui[v].Visible := c
+			if ((MondoAction = "Buff") || (MondoAction = "Kill"))
+			{
+				MainGui["MondoPointText"].Visible := c
+				for k,v in Mondo%MondoAction%Controls
+					MainGui[v].Visible := c
+			}
+			arr := (BlenderAdd > 0) ? "BlenderSide" : "BlenderMain"
+			for k,v in %arr%
+				MainGui[v].Visible := c
+		}
+
+		if (((i = 1) && (p = 0)) || ((i = 2) && (p = 1))) ; hide/show all kill controls
+		{
+			for k,v in KillControls
+				MainGui[v].Visible := c
+		}
+	}
+}
+nm_MondoAction(GuiCtrl?, *){
+	global MondoAction, MondoActionList
+
+	for v in MondoActionList
+		if IsSet(v)
+			l := A_Index
+	switch MondoAction, 0
+	{
+		case MondoActionList[1]:
+		i := 1
+		case MondoActionList[2]:
+		i := 2
+		case MondoActionList[3]:
+		i := 3
+		default:
+		i := 4
+	}
+
+	MainGui["MondoAction"].Text := MondoAction := MondoActionList[(GuiCtrl.Name = "MARight") ? (Mod(i, l) + 1) : (GuiCtrl.Name = "MALeft") ? (Mod(l + i - 2, l) + 1) : i]
+	MainGui["MondoPointText"].Visible := (MondoAction = "Buff") || (MondoAction = "Kill")
+	MainGui["MondoSecs"].Visible := MainGui["MondoSecsText"].Visible := (MondoAction = "Buff")
+	MainGui["MondoLootText"].Visible := MainGui["MondoLootDirection"].Visible := MainGui["MLDLeft"].Visible := MainGui["MLDRight"].Visible := (MondoAction = "Kill")
+	IniWrite MondoAction, "settings\nm_config.ini", "Collect", "MondoAction"
+}
+nm_MondoLootDirection(GuiCtrl, *){
+	global MondoLootDirection
+	static val := ["Left", "Right", "Random", "Ignore"], l := val.Length
+
+	i := (MondoLootDirection = "Left") ? 1 : (MondoLootDirection = "Right") ? 2 : (MondoLootDirection = "Random") ? 3 : 4
+
+	MainGui["MondoLootDirection"].Text := MondoLootDirection := val[(GuiCtrl.Name = "MLDRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	IniWrite MondoLootDirection, "settings\nm_config.ini", "Collect", "MondoLootDirection"
+}
+nm_AntPassAction(GuiCtrl, *){
+	global AntPassAction
+	static val := ["Pass", "Challenge"], l := val.Length
+
+	i := (AntPassAction = "Pass") ? 1 : 2
+
+	MainGui["AntPassAction"].Text := AntPassAction := val[(GuiCtrl.Name = "APARight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	IniWrite AntPassAction, "settings\nm_config.ini", "Collect", "AntPassAction"
+}
+nm_AntPassBuyCheck(*){
+	global
+	AntPassBuyCheck := MainGui["AntPassBuyCheck"].Value
+	IniWrite AntPassBuyCheck, "settings\nm_config.ini", "Collect", "AntPassBuyCheck"
+	if AntPassBuyCheck
+		msgbox "
+		(
+		This option will make the macro buy Ant Passes with Tickets when:
+		 1. You have no Ant Passes in your inventory.
+		 2. The Free Ant Pass Dispenser is under cooldown.
+		 3. You have a quest that requires you to kill ants.
+		)", "Ant Pass", "Owner" MainGui.Hwnd
+}
+nm_BlenderIndexOption(*) {
+	global BlenderIndexOption, BlenderIndex
+	BlenderIndexOption := MainGui["BlenderIndexOption"].Value
+	if (BlenderIndexOption)
+		MainGui["BlenderIndex"].Enabled := 0
+	else
+		MainGui["BlenderIndex"].Enabled := 1
+}
+nm_setBlenderData(GuiCtrl, *){
+	global
+	local i := SubStr(GuiCtrl.Name, -1)
+	static uiList := ["BlenderItem", "BlenderLeft", "BlenderRight", "BlenderAddSlot", "BlenderAmountText", "BlenderAmount"
+		, "BlenderAmountNum", "BlenderRepeatText", "BlenderIndexOption", "BlenderIndexNum", "BlenderIndex"
+		, "blenderline1", "blendertitle1", "blenderline2", "blenderline3", "blenderline4"]
+
+	if (BlenderItem%i% = "None") {
+		BlenderaddIndex := i, BlenderAdd := i
+		loop 3 {
+			MainGui["BlenderAdd" A_Index].Visible := 0
+			MainGui["BlenderData" A_Index].Visible := 0
+			MainGui["BlenderItem" A_Index "Picture"].Visible := 0
+		}
+
+		MainGui["BlenderAmount"].Value := BlenderAmount%i%
+		MainGui["BlenderIndex"].Value := ((BlenderIndex%i% != "Infinite" && BlenderIndex%i% != "∞") ? BlenderIndex%i% : 1)
+		ba_AddBlenderItemButton()
+		MainGui["BlenderIndexOption"].Value := 0
+		MainGui["BlenderIndex"].Enabled := 1
+		MainGui["BlenderAddSlot"].Text := "Add to Slot " BlenderaddIndex
+
+		For ui in uiList
+			MainGui[ui].Visible := 1
+	} else {
+		BlenderItem%i% := "None", BlenderAmount%i% := 0, BlenderIndex%i% := 1, BlenderTime%i% := 0
+
+		IniWrite "None", "settings\nm_config.ini", "Blender", "BlenderItem" i
+		IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderAmount" i
+		IniWrite 1, "settings\nm_config.ini", "Blender", "BlenderIndex" i
+		IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderTime" i
+
+		MainGui["BlenderAdd" i].Text := ((BlenderItem%i% = "None" || BlenderItem%i% = "") ? "Add" : "Clear")
+		MainGui["BlenderData" i].Text := "(" BlenderAmount%i% ") [" ((BlenderIndex%i% = "Infinite") ? "∞" : BlenderIndex%i%) "]"
+
+		MainGui["BlenderItem" i "Picture"].Value := ""
+	}
+}
+ba_AddBlenderItemButton(GuiCtrl?, *){
+	global AddBlenderItem, BlenderAdd, hBitmapsSB
+	static items := ["RedExtract", "BlueExtract", "Enzymes", "Oil", "Glue", "TropicalDrink", "Gumdrops"
+		, "MoonCharms", "Glitter", "StarJelly", "PurplePotion", "SoftWax", "HardWax", "SwirledWax"
+		, "CausticWax", "FieldDice", "SmoothDice", "LoadedDice", "SuperSmoothie", "Turpentine"], i := 0, h := 0
+
+	if (h != BlenderAdd)
+		i := 0, h := BlenderAdd
+	i := Mod(items.Length + i + (IsSet(GuiCtrl) ? ((GuiCtrl.Name = "BlenderLeft") ? -1 : 1) : 0), items.Length), AddBlenderItem := items[i+1]
+	SetImage(MainGui["BlenderItem"].Hwnd, hBitmapsSB[AddBlenderItem])
+}
+ba_AddBlenderItem(*){
+	global
+	local BlenderIndex, BlenderAmount, BlenderIndexOption, BlenderIndex
+	static uiList := ["BlenderItem", "BlenderLeft", "BlenderRight", "BlenderAddSlot", "BlenderAmountText", "BlenderAmount"
+		, "BlenderAmountNum", "BlenderRepeatText", "BlenderIndexOption", "BlenderIndex", "BlenderIndexNum"
+		, "blenderline1", "blenderline2", "blenderline3", "blenderline4", "blendertitle1"]
+
+	BlenderIndex := MainGui["BlenderIndex"].Value
+	BlenderAmount := MainGui["BlenderAmount"].Value
+	BlenderIndexOption := MainGui["BlenderIndexOption"].Value
+	BlenderIndex := ((BlenderIndexOption) ? "Infinite" : BlenderIndex)
+
+	IniWrite (BlenderItem%BlenderaddIndex% := AddBlenderItem), "settings\nm_config.ini", "Blender", "BlenderItem" BlenderaddIndex
+	IniWrite (BlenderIndex%BlenderaddIndex% := BlenderIndex), "settings\nm_config.ini", "Blender", "BlenderIndex" BlenderaddIndex
+	IniWrite (BlenderAmount%BlenderaddIndex% := BlenderAmount), "settings\nm_config.ini", "Blender", "BlenderAmount" BlenderaddIndex
+
+	MainGui["BlenderItem" BlenderaddIndex "Picture"].Value := hBitmapsSB[BlenderItem%BlenderaddIndex%] ? ("HBITMAP:*" hBitmapsSB[BlenderItem%BlenderaddIndex%]) : ""
+	MainGui["BlenderData" BlenderaddIndex].Text := "(" BlenderAmount%BlenderaddIndex% ") [" ((BlenderIndex%BlenderaddIndex% = "Infinite") ? "∞" : BlenderIndex%BlenderaddIndex%) "]"
+	MainGui["BlenderAdd" BlenderaddIndex].Text := ((AddBlenderItem = "None" || AddBlenderItem = "") ? "Add" : "Clear")
+
+	For ui in uiList
+		MainGui[ui].Visible := 0
+	loop 3 {
+		MainGui["BlenderAdd" A_Index].Visible := 1
+		MainGui["BlenderData" A_Index].Visible := 1
+		MainGui["BlenderItem" A_Index "Picture"].Visible := 1
+	}
+	BlenderAdd := 0
+}
+/*
+nm_BeesmasHandler(req)
+{
+	if (req.readyState != 4)
+		return
+
+	if (req.status = 200)
+		nm_EnableBeesmas(Trim(req.responseText, " `t`r`n"))
+}
+*/
+/*
+nm_EnableBeesmas(toggle){
+	global beesmasActive
+	if toggle {
+		beesmasActive := 1
+
+		MainGui["BeesmasGroupBox"].Text := "Beesmas (Active)"
+
+		hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["beesmas"])
+		MainGui["BeesmasImage"].Value := "HBITMAP:*" hBM
+		DllCall("DeleteObject", "ptr", hBM)
+
+		for ctrl in ["BeesmasGatherInterruptCheck","StockingsCheck","WreathCheck","FeastCheck","RBPDelevelCheck","GingerbreadCheck","SnowMachineCheck","CandlesCheck","WinterMemoryMatchCheck","SamovarCheck","LidArtCheck","GummyBeaconCheck"]
+			MainGui[ctrl].Enabled := 1, MainGui[ctrl].Value := %ctrl%
+
+		sprinklerImages.Push("saturatorWS")
+		MainGui["BeesmasFailImage"].Value := ""
+	}
+	else MainGui["BeesmasFailImage"].Value := ""
+}
+*/
+/*
+BeesmasActiveFail(*){
+	if MsgBox('
+		(
+		Could not fetch Beesmas data from GitHub!
+		To enable Beesmas features automatically, make sure you have a working internet connection and then reload the macro!
+
+		If you would like to enable Beesmas manually, select "Yes". This will open a menu where you can specifiy the amount of days you would like to manually enable beesmas for.
+		)', "Error", 0x1134 " Owner" MainGui.Hwnd) != "Yes"
+			return
+	loop {
+		input := InputBox("How many days would you like to enable beesmas for?`r`n1 = 1 day`r`n7 = 1 week`r`n14 = 2 weeks`r`n...`r`nMake sure to round the days up.", "Manual Beesmas Enable", "T30")
+		if (input.Result != "OK")
+			return
+		if (input.Value > 0 && input.Value < 90){
+			IniWrite nowUnix()+Round(input.Value)*86400, "settings\nm_config.ini", "Settings", "EnableBeesmasTime" ; divied by seconds in a day (result is now unix in days)
+			nm_EnableBeesmas(1)
+			return Msgbox("Success! Beesmas is manually enabled for " Round(input.Value) " days.", "Manual Beesmas Enable", "Iconi")
+		}
+		if (input.Value > 90) {
+			if MsgBox("You set the value to be higher than 90, which could be unnecessary. Make sure to set the value according to the beesmas timer on the right of the screen.",  "Manual Beesmas Enable", "IconX 0x5") == "Cancel"
+				return
+		}
+		else if MsgBox("That input doesn't seem right, make sure you're entering a number between 1 and 90.",  "Manual Beesmas Enable", "IconX 0x5") == "Cancel"
+			return
+	}
+}
+*/
+nm_NightMemoryMatchCheck(*){
+	global NightMemoryMatchCheck
+	PostSubmacroMessage("background", 0x5554, 7, NightMemoryMatchCheck := MainGui["NightMemoryMatchCheck"].Value)
+	IniWrite NightMemoryMatchCheck, "settings\nm_config.ini", "Collect", "NightMemoryMatchCheck"
+	if (NightMemoryMatchCheck = 1)
+		MsgBox "The night memory match path is heavily affected by lag and haste! This is because there are no good anchor points to align to. It works best at standard movespeeds and without haste. If it doesn't work for you, we recommend disabling it.", "Night Memory Match", 0x1030 " Owner" MainGui.Hwnd
+}
+nm_MemoryMatchOptions(*){
+	global MMGui, MicroConverterMatchIgnore, SunflowerSeedMatchIgnore, JellyBeanMatchIgnore, RoyalJellyMatchIgnore, TicketMatchIgnore
+		, CyanTrimMatchIgnore, OilMatchIgnore, StrawberryMatchIgnore, CoconutMatchIgnore, TropicalDrinkMatchIgnore, RedExtractMatchIgnore
+		, MagicBeanMatchIgnore, PineappleMatchIgnore, StarJellyMatchIgnore, EnzymeMatchIgnore, BlueExtractMatchIgnore, GumdropMatchIgnore
+		, FieldDiceMatchIgnore, MoonCharmMatchIgnore, BlueberryMatchIgnore, GlitterMatchIgnore, StingerMatchIgnore, TreatMatchIgnore, GlueMatchIgnore
+		, CloudVialMatchIgnore, SoftWaxMatchIgnore, HardWaxMatchIgnore, SwirledWaxMatchIgnore, NightBellMatchIgnore, HoneysuckleMatchIgnore
+		, SuperSmoothieMatchIgnore, SmoothDiceMatchIgnore, NeonberryMatchIgnore, GingerbreadMatchIgnore
+		, SilverEggMatchIgnore, GoldEggMatchIgnore, DiamondEggMatchIgnore
+	local MatchIgnoreGui := ""
+
+	GuiClose(*){
+		if (IsSet(MMGui) && IsObject(MMGui))
+			MMGui.Destroy(), MMGui := ""
+	}
+	GuiClose()
+
+	MMGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Memory Match Options")
+	MMGui.OnEvent("Close", GuiClose)
+	MMGui.SetFont("s8 cDefault Norm", "Tahoma")
+	MMGui.Add("Text", "x6 y6 w360 Center Section", "
+	(
+	Enable the option below to stop gathering when a Memory Match is ready.
+	Night Memory Match will always interrupt gathering, even if this option is disabled, so that it jumps on the Moons during nighttime.
+	)")
+	(GuiCtrl := MMGui.Add("CheckBox", "x122 y+3 vMemoryMatchInterruptCheck Checked" MemoryMatchInterruptCheck, "Allow Gather Interrupt")).Section := "Collect", GuiCtrl.OnEvent("Click", nm_saveCollectKillConfig)
+	TextCtrl := MMGui.Add("Text", "x6 y+8 w360 Center Section", "
+	(
+	Pick the items you do NOT want to match in Memory Match games below!
+	The macro will IGNORE these items and look for every other item.
+	Rare items like Mythic Egg that aren't on this list will always be looked for.
+	Click on the item names to configure settings for each Memory Match!
+	)")
+	for item, data in MemoryMatch {
+		MMGui.Add("CheckBox", "xs+" 8+(A_Index-1)//13*120 " ys+" 57+Mod(A_Index-1,13)*16 " w13 h13 v" item " Check3 Checked" ((%item%MatchIgnore = 0) ? 0 : (%item%MatchIgnore = data.games) ? 1 : -1)).OnEvent("Click", MatchIgnoreCheck)
+		MMGui.Add("Button", "x+2 yp-1 w" TextExtent(data.name, TextCtrl)+8 " h15 v" item "Button", data.name).OnEvent("Click", MatchIgnoreButton)
+	}
+	MMGui.Show("w360 h330")
+
+	MatchIgnoreCheck(GuiCtrl, *) {
+		item := GuiCtrl.Name, %item%MatchIgnore := (GuiCtrl.Value := (%item%MatchIgnore = 0)) ? MemoryMatch[item].games : 0
+		if (IsObject(MatchIgnoreGui) && (MatchIgnoreGui.Item = item))
+			for ctrl in MatchIgnoreGui
+				if (ctrl.Type = "CheckBox")
+					ctrl.Value := (%item%MatchIgnore & MemoryMatchGames[ctrl.Name].bit > 0)
+		IniWrite %item%MatchIgnore, "settings\nm_config.ini", "Collect", item "MatchIgnore"
+	}
+
+	MatchIgnoreButton(GuiCtrl, *) {
+		item := StrReplace(GuiCtrl.Name, "Button")
+		if IsObject(MatchIgnoreGui) {
+			prevItem := MatchIgnoreGui.Item
+			MatchIgnoreGui.Destroy(), MatchIgnoreGui := ""
+			if (item = prevItem)
+				return
+		}
+
+		(MatchIgnoreGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MMGui.Hwnd, "Ignore " MemoryMatch[item].name)).Item := item
+		MatchIgnoreGui.OnEvent("Close", (*) => (MatchIgnoreGui.Destroy(), MatchIgnoreGui := ""))
+		MatchIgnoreGui.SetFont("s8 cDefault Norm", "Tahoma")
+		for game in ["Normal", "Mega", "Night", "Extreme", "Winter"]
+			bit := MemoryMatchGames[game].bit, MatchIgnoreGui.Add("CheckBox", "x+1 y36 v" game " Disabled" (MemoryMatch[item].games & bit = 0) " Checked" (%item%MatchIgnore & bit > 0), game).OnEvent("Click", MatchIgnoreGameCheck)
+		MatchIgnoreGui.Add("Text", "x6 y4 w275 Center", "Choose the Memory Match games you want to ignore " MemoryMatch[item].name " for:")
+		WinGetPos(&x, &y, , , GuiCtrl)
+		MatchIgnoreGui.Show("x" x-112 " y" y-82 " w275 h44")
+
+		MatchIgnoreGameCheck(GuiCtrl, *) {
+			bit := MemoryMatchGames[GuiCtrl.Name].bit, %item%MatchIgnore := (GuiCtrl.Value = 0) ? (%item%MatchIgnore & ~bit) : (%item%MatchIgnore | bit)
+			MMGui[item].Value := (%item%MatchIgnore = 0) ? 0 : (%item%MatchIgnore = MemoryMatch[item].games) ? 1 : -1
+			IniWrite %item%MatchIgnore, "settings\nm_config.ini", "Collect", item "MatchIgnore"
+		}
+	}
+}
+;kill
+nm_BugrunCheck(*){
+	global
+	local ctrl
+	static ctrlList := ["BugrunInterruptCheck", "BugrunLadybugsCheck", "BugrunRhinoBeetlesCheck", "BugrunSpiderCheck", "BugrunMantisCheck", "BugrunScorpionsCheck", "BugrunWerewolfCheck"
+		, "BugrunLadybugsLoot", "BugrunRhinoBeetlesLoot", "BugrunSpiderLoot", "BugrunMantisLoot", "BugrunScorpionsLoot", "BugrunWerewolfLoot"]
+
+	for ctrl in ctrlList {
+		MainGui[ctrl].Value := %ctrl% := MainGui["BugrunCheck"].Value
+		IniWrite %ctrl%, "settings\nm_config.ini", "Collect", ctrl
+	}
+}
+nm_MonsterRespawnTime(GuiCtrl, *){
+	global MonsterRespawnTime
+	p := EditGetCurrentCol(GuiCtrl)
+	NewMonsterRespawnTime := GuiCtrl.Value
+
+	if (IsInteger(NewMonsterRespawnTime) && (NewMonsterRespawnTime > 40)) ; integer and more than 40
+	{
+		GuiCtrl.Value := MonsterRespawnTime
+		SendMessage 0xB1, p-2, p-2, GuiCtrl
+		nm_ShowErrorBalloonTip(GuiCtrl, "Unacceptable Number", "You cannot enter a number above 40!")
+	}
+	else
+	{
+		MonsterRespawnTime := NewMonsterRespawnTime
+		IniWrite MonsterRespawnTime, "settings\nm_config.ini", "Collect", "MonsterRespawnTime"
+	}
+}
+nm_MonsterRespawnTimeHelp(*){ ; monster respawn time information
+	MsgBox "
+	(
+	DESCRIPTION:
+	Enter the sum of all of your Monster Respawn Time buffs here. These can come from:
+	- Gifted Vicious Bee (-15%)
+	- Stick Bug Amulet (up to -10%)
+	- Icicles Beequip (-1% to -5%)
+
+	EXAMPLE:
+	I have a Gifted Vicious Bee (-15%), a Stick Bug Amulet with -8% Monster Respawn Time, and 2 Icicles Beequips with -2% Monster Respawn Time each.
+	I will enter '27' in the input box.
+	)", "Monster Respawn Time", 0x40000
+}
+nm_saveStingers(*){
+	global
+	static fields := ["Pepper","MountainTop","Rose","Cactus","Spider","Clover"]
+	local field
+	IniWrite (StingerCheck := MainGui["StingerCheck"].Value), "settings\nm_config.ini", "Collect", "StingerCheck"
+	for field in fields
+		MainGui["Stinger" field "Check"].Enabled := StingerCheck
+	MainGui["StingerDailyBonusCheck"].Enabled := StingerCheck
+}
+nm_BossConfigHelp(*){ ; monster respawn time information
+	MsgBox "
+	(
+	DESCRIPTION:
+	The Bosses menu allows for you to customize whether to wait for baby love, to keep your old amulet or keep it on the screen for manual input and to configure the health and time interval for Snail and chick.
+
+	Baby Love:
+	The baby love option will allow for the macro to wait a certain amount of time to try to get a baby love token to increase loot luck. This option is only for king beetle and tunnel bear.
+
+	Boss Amulet options:
+	Enabling the checkbox will allow for the macro to automatically keep your old amulet so that you don't lose your perfect amulet.
+	Unchecking this box will allow for the amulet prompt to stay on screen for manual input whether to keep or replace.
+	The only bosses with this feature are Stump Snail and King beetle
+
+	Boss health/time settings:
+	Enter the boss's health in the text box.
+	The health needs to be written in without commas separating the health and it will automatically be converted into a percentage.
+	As for the time, the time options are in 5,10,15 minutes with another option being the kill option.
+	The Kill option will basically attack the boss until the boss dies or if you die.
+	The only bosses with this feature are Stump Snail and Commando Chick.
+	)", "Boss configuration", 0x40000
+}
+nm_saveAmulet(GuiCtrl, *){
+	global
+	MainGui[GuiCtrl.Name "Text"].Text := ((%GuiCtrl.Name% := GuiCtrl.Value) = 1) ? " Keep Old" : "Do Nothing"
+	IniWrite GuiCtrl.Value, "settings\nm_config.ini", "Collect", GuiCtrl.Name
+}
+nm_CocoCrabCheck(*){
+	global
+	IniWrite (CocoCrabCheck := MainGui["CocoCrabCheck"].Value), "settings\nm_config.ini", "Collect", "CocoCrabCheck"
+	if (CocoCrabCheck = 1)
+		MsgBox "Being able to kill Coco Crab with the macro depends heavily on your hive level, attack, number of bees, and server lag!", "Coconut Crab", 0x1030 " Owner" MainGui.Hwnd
+}
+nm_setSnailHealth(GuiCtrl, *)
+{
+	global InputSnailHealth
+	p := EditGetCurrentCol(GuiCtrl)
+	inputHP := MainGui["SnailHealthEdit"].Value
+
+	if (IsInteger(inputHP) && (inputHP > 30000000)) ; invalid HP
+	{
+		MainGui["SnailHealthEdit"].Value := Round(30000000*InputSnailHealth/100)
+		SendMessage 0xB1, p-2, p-2, GuiCtrl
+		nm_ShowErrorBalloonTip(GuiCtrl, "Unacceptable Number", "You cannot enter a number above 30M!")
+	}
+	else
+	{
+		InputSnailHealth := Round(((inputHP || 0) / 30000000) * 100, 2)
+		MainGui["SnailHealthText"].Opt("+c" Format("0x{1:02x}{2:02x}{3:02x}", Round(Min(3*(100-InputSnailHealth), 150)), Round(Min(3*InputSnailHealth, 150)), 0) " +Redraw")
+		MainGui["SnailHealthText"].Text := InputSnailHealth "%"
+		IniWrite InputSnailHealth, "settings\nm_config.ini", "Collect", "InputSnailHealth"
+	}
+}
+nm_setChickHealth(GuiCtrl, *)
+{
+	global InputChickHealth, CommandoChickHealth
+
+	inputHP := MainGui["ChickHealthEdit"].Value
+	ChickLevel := MainGui["ChickLevel"].Value
+	MaxHealth := CommandoChickHealth.Has(ChickLevel) ? CommandoChickHealth[ChickLevel] : 10000000
+
+	if (GuiCtrl.Name = "ChickHealthEdit")
+	{
+		if (IsInteger(inputHP) && (inputHP > MaxHealth))
+		{
+			p := EditGetCurrentCol(GuiCtrl)
+			GuiCtrl.Value := MaxHealth
+			SendMessage 0xB1, p-2, p-2, GuiCtrl
+			nm_ShowErrorBalloonTip(GuiCtrl, "Unacceptable Number", "You cannot enter a number above " MaxHealth " for this level!")
+		}
+	}
+	else if (inputHP > MaxHealth)
+		MainGui["ChickHealthEdit"].Value := (inputHP := MaxHealth)
+	MainGui["ChickLevelText"].Text := ChickLevel
+
+	InputChickHealth := Round(Min(100, ((inputHP || 0) / (CommandoChickHealth.Has(ChickLevel) ? CommandoChickHealth[ChickLevel] : 10000000)) * 100), 2)
+	MainGui["ChickHealthText"].Opt("+c" Format("0x{1:02x}{2:02x}{3:02x}", Round(Min(3*(100-InputChickHealth), 150)), Round(Min(3*InputChickHealth, 150)), 0) " +Redraw")
+	MainGui["ChickHealthText"].Text := InputChickHealth "%"
+	IniWrite ChickLevel, "settings\nm_config.ini", "Collect", "ChickLevel"
+	IniWrite InputChickHealth, "settings\nm_config.ini", "Collect", "InputChickHealth"
+}
+nm_SnailTime(*){
+	global SnailTime
+	static arr := [5,10,15,"Kill"]
+	SnailTimeUpDown := MainGui["SnailTimeUpDown"].Value
+	MainGui["SnailTimeText"].Text := ((SnailTime := arr[SnailTimeUpDown]) = "Kill") ? SnailTime : SnailTime "m"
+	IniWrite SnailTime, "settings\nm_config.ini", "Collect", "SnailTime"
+}
+nm_ChickTime(*){
+	global ChickTime
+	static arr := [5,10,15,"Kill"]
+	ChickTimeUpDown := MainGui["ChickTimeUpDown"].Value
+	MainGui["ChickTimeText"].Text := ((ChickTime := arr[ChickTimeUpDown]) = "Kill") ? ChickTime : ChickTime "m"
+	IniWrite ChickTime, "settings\nm_config.ini", "Collect", "ChickTime"
+}
+
+nm_saveCollectKillConfig(GuiCtrl, *){
+	global
+	switch GuiCtrl.Type, 0 {
+		case "DDL":
+		%GuiCtrl.Name% := GuiCtrl.Text
+		default: ; "CheckBox", "Edit", "UpDown", "Slider"
+		%GuiCtrl.Name% := GuiCtrl.Value
+	}
+	IniWrite %GuiCtrl.Name%, collectKillConfigLoc, GuiCtrl.Section, GuiCtrl.Name
+}
+
+nm_HealthDetection(w:=0)
+{
+	static pBMHealth, pBMDamage
+	HealthBars := []
+	if !(IsSet(pBMHealth) && IsSet(pBMDamage))
+	{
+		pBMHealth := Gdip_CreateBitmap(1,4)
+		pGraphics := Gdip_GraphicsFromImage(pBMHealth), Gdip_GraphicsClear(pGraphics, 0xff1fe744), Gdip_DeleteGraphics(pGraphics)
+		pBMDamage := Gdip_CreateBitmap(1,4)
+		pGraphics := Gdip_GraphicsFromImage(pBMDamage), Gdip_GraphicsClear(pGraphics, 0xff6b131a), Gdip_DeleteGraphics(pGraphics)
+	}
+	ActivateRoblox()
+	GetRobloxClientPos()
+	if w = 1 ; king beetle, right half search only to avoid false detections
+		pBMScreen := Gdip_BitmapFromScreen((windowX + windowWidth//2) "|" windowY "|" windowWidth//2 "|" windowHeight)
+	else
+		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight)
+	G := Gdip_GraphicsFromImage(pBMScreen)
+	pBrush := Gdip_BrushCreateSolid(0xff000000)
+	while ((Gdip_ImageSearch(pBMScreen, pBMHealth, &HPStart, , , , , , , 5) > 0) || (Gdip_ImageSearch(pBMScreen, pBMDamage, &HPStart, , , , , , , 5) > 0))
+	{
+		x := SubStr(HPStart, 1, InStr(HPStart, ",")-1), y := SubStr(HPStart, InStr(HPStart, ",")+1)
+		x1 := x, y1 := y
+		Loop (windowWidth - x)
+		{
+			i := x + A_Index - 1
+			switch Gdip_GetPixel(pBMScreen, i, y)
+			{
+				case 4280280900:
+				x1++
+
+				case 4285207322:
+				x2 := i
+
+				default:
+				Break
+			}
+		}
+		Loop (windowHeight - y)
+		{
+			switch Gdip_GetPixel(pBMScreen, x, y1)
+			{
+				case 4280280900, 4285207322:
+				y1++
+
+				default:
+				Break
+			}
+		}
+		HealthBarPercent := (x1 > x) ? ((IsSet(x2) && (x2 > x)) ? Round((x1-x)/(x2-x)*100, 2) : 100.00) : 0.00
+		Gdip_FillRectangle(G, pBrush, x, y, i-x, y1-y)
+		HealthBars.Push(HealthBarPercent)
+		if (A_Index > 100)
+		{
+			Break
+		}
+	}
+	Gdip_DeleteBrush(pBrush), Gdip_DisposeImage(pBMScreen), Gdip_DeleteGraphics(G)
+	Return HealthBars
+}
+;;Time interval in minutes
+nm_KillTimeEstimation(bossName, bossTimer)
+{
+	global InputSnailHealth, SnailTime, InputChickHealth, ChickTime, intialHealthCheck
+	static bosses := Map()
+	confidenceArray := []
+	confidenceTotal := 0
+	if (!IsSet(intialHealthCheck) || (intialHealthCheck = 0) || !bosses.Has(bossName "Health"))
+	{
+		bosses[bossName "Health"] := (Input%bossName%Health > 0) ? Input%bossName%Health : 100
+		intialHealthCheck := 1
+	}
+	bosses[bossName "TimeInterval"] := bossTimer
+	loop 5
+	{
+		HealthBars := nm_HealthDetection()
+		for i, v in HealthBars
+		{
+			if (v = 100.00) ;Not enough damage was dealt or there is a planter detected
+			{
+				continue
+			}
+			else if (!IsSet(healthDiff) || Abs(bosses[bossName "Health"] - v) < healthDiff)
+			{
+				healthDiff := Abs(bosses[bossName "Health"] - v)
+				lastHealth := v
+				confidenceArray.Push(v)
+			}
+		}
+	}
+	if (!IsSet(lastHealth) || (confidenceArray.Length = 0))
+		return 0
+	for index, value in confidenceArray
+	{
+		confidenceTotal += value
+	}
+	confidenceMean := confidenceTotal / confidenceArray.Length
+	if ((confidenceMean >= lastHealth - 1) && (confidenceMean <= lastHealth + 1))
+	{
+		dmgDealt := round((bosses[bossName "Health"]-lastHealth)/(bosses[bossName "TimeInterval"]/60000), 4)
+		if ((dmgDealt > 0) && ((abs(bosses[bossName "Health"]-lastHealth) >= 2.5) && lastHealth > 0))
+		{
+			timeEstimation := round(lastHealth/abs(dmgDealt), 2)
+			elapsedMins := floor(bossTimer/60000)
+			elapsedSecs := Mod(bossTimer, 60)
+			if (timeEstimation > 60)
+			{
+				sHours := Floor(timeEstimation/60)
+				sMinutes := Mod(timeEstimation, 60)
+				nm_setStatus("Detected",
+					(
+					"Health
+					Boss: " bossName "
+					Est Previous Health: " round(bosses[bossName "Health"], 2) "%
+					Est Current Health: " lastHealth "%
+					Est Change of health: " round(abs(dmgDealt), 2) "% Per minute
+					Est Time until dead: " round(sHours) " Hours " round(sMinutes) " Minutes
+					Time Elasped: " elapsedMins " Minutes " elapsedSecs " Seconds"
+					)
+				)
+			}
+			else
+			{
+				sMinutes := Floor(timeEstimation)
+				Sseconds := Round((timeEstimation - sMinutes) * 60)
+				nm_setStatus("Detected",
+					(
+					"Health
+					Boss: " bossName "
+					Est Previous Health: " round(bosses[bossName "Health"], 2) "%
+					Est Current Health: " lastHealth "%
+					Est Change of health: " round(abs(dmgDealt), 2) "% Per minute
+					Est Time until dead: " round(sMinutes) " Minutes " round(sSeconds) " Seconds
+					Time Elasped: " elapsedMins " Minutes " elapsedSecs " Seconds"
+					)
+				)
+			}
+			IniWrite lastHealth, "settings\nm_config.ini", "Collect", "Input" bossName "Health"
+			bosses[bossName "Health"] := lastHealth
+		}
+		else
+		{
+			Return 0
+		}
+	}
+}
+
+nm_Blender(){
+	global BlenderCheck, BlenderRot, LastBlenderRot, BlenderEnd, TimerInterval
+	, BlenderIndex1, BlenderIndex2, BlenderIndex3
+	, BlenderItem1, BlenderItem2, BlenderItem3
+	, BlenderTime1, BlenderTime2, BlenderTime3
+	, BlenderAmount1, BlenderAmount2, BlenderAmount3
+	, BlenderCount1, BlenderCount2, BlenderCount3
+
+	nm_BlenderRotation()
+	TimeForBlender := BlenderTime%LastBlenderRot% - TimerInterval ; due to BlenderTime being calcuted with TimerInterval integrated to fix that we simply subtract it before
+
+	if (BlenderCheck && (nowUnix() - TimeForBlender) > TimerInterval) {
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			z := A_Index ;Set variable for fail safe
+			nm_Reset()
+			nm_setStatus("Traveling", "Blender" ((A_Index > 1) ? " (Attempt 2)" : ""))
+			nm_gotoCollect("Blender")
+
+			searchRet := nm_imgSearch("e_button.png", 30, "high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 500
+
+				SearchX := windowX+windowWidth//2 - 275, SearchY := windowY+Floor(0.48*windowHeight) - 220, BlenderSS := Gdip_BitmapFromScreen(SearchX "|" SearchY "|550|400")
+
+				if (Gdip_ImageSearch(BlenderSS, bitmaps["CancelCraft"], , , , , , 2, , 7) > 0) {
+					MouseMove windowX+windowWidth//2 + 230, windowY+Floor(0.48*windowHeight) + 130 ; click cancel button
+					Sleep 150
+					Click
+				}
+
+				if (!BlenderEnd && Gdip_ImageSearch(BlenderSS, bitmaps["EndCraftR"], , , , , , 3, , 6) > 0)
+				{
+					nm_setStatus("Confirmed", "Blender is already in use")
+					MouseMove windowX+windowwidth//2 - 250, windowY+Floor(0.48*windowHeight) - 200
+					Gdip_disposeimage(BlenderSS) ;Close GUI and dispose of bitmap
+					Sleep 150
+					Click
+					break
+				} else if (BlenderEnd && Gdip_ImageSearch(BlenderSS, bitmaps["EndCraftR"], , , , , , 3, , 6) > 0) {
+					IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderEnd"
+					BlenderEnd := 0
+					MouseMove windowX+windowWidth//2 - 120, windowY+Floor(0.48*windowHeight) + 120 ; close red craft button
+					Sleep 150
+					Click
+				}
+
+				if (Gdip_ImageSearch(BlenderSS, bitmaps["EndCraftG"], , , , , , 4, , 6) > 0) {
+					MouseMove windowX+WindowWidth//2 - 120, windowY+Floor(0.48*windowHeight) + 120 ; close green craft button
+					Sleep 150
+					Click
+				}
+				gdip_disposeimage(BlenderSS)
+				Sleep 800
+				loop
+				{
+					BlenderSS := Gdip_BitmapFromScreen(SearchX "|" SearchY "|170|245")
+
+					Blender := %("BlenderItem" BlenderRot)%
+					BlenderIMG := Blender "B"
+
+					if (Gdip_ImageSearch(BlenderSS, bitmaps[BlenderIMG], , , , , , 2, , 4) > 0)
+					{
+						gdip_disposeimage(BlenderSS)  ; Dispose of the bitmap
+						Sleep 200
+						BlenderSS := Gdip_BitmapFromScreen(SearchX "|" SearchY "|553|400")
+						if (Gdip_ImageSearch(BlenderSS, bitmaps["NoItems"], , , , , , 2) > 0) {
+							BlenderItem%BlenderRot% := "None", BlenderAmount%BlenderRot% := 0, BlenderIndex%BlenderRot% := 1, BlenderTime%BlenderRot% := 0
+
+							IniWrite "None", "settings\nm_config.ini", "Blender", "BlenderItem" BlenderRot
+							IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderAmount" BlenderRot
+							IniWrite 1, "settings\nm_config.ini", "Blender", "BlenderIndex" BlenderRot
+							IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderTime" BlenderRot
+
+							MainGui["BlenderAdd" BlenderRot].Text := ((BlenderItem%BlenderRot% = "None" || BlenderItem%BlenderRot% = "") ? "Add" : "Clear")
+							MainGui["BlenderData" BlenderRot].Text := "(" BlenderAmount%BlenderRot% ") [" ((BlenderIndex%BlenderRot% = "Infinite") ? "∞" : BlenderIndex%BlenderRot%) "]"
+
+							MainGui["BlenderItem" BlenderRot "Picture"].Value := ""
+							gdip_disposeimage(BlenderSS)
+							nm_BlenderRotation()
+							if !(BlenderCheck)
+								break 2
+							break
+						}
+						gdip_disposeimage(BlenderSS)
+						MouseMove windowX+windowWidth//2, windowY+Floor(0.48*windowHeight) + 130 ;Open item menu
+						Sleep 150
+						click
+						Sleep 150
+						MouseMove windowX+windowWidth//2 - 60, windowY+Floor(0.48*windowHeight) + 140 ;Add more of x item
+						Sleep 150
+						While (A_Index < BlenderAmount%BlenderRot%) {
+							Click
+							Sleep 30
+						}
+						Sleep 200
+						IniWrite 0, "settings\nm_config.ini", "Blender", "BlenderCount" LastBlenderRot ; reset GUI counter
+
+						nm_setStatus("Collected", "Blender")
+
+						BlenderTime%BlenderRot% := BlenderAmount%BlenderRot% * 300 ;calculate first time variable
+						BlenderTimeTemp := BlenderTime%BlenderRot% ;set up a temporary varible to hold time
+						TempBlenderRot := BlenderRot ; save a temporary rotation holder
+
+						BlenderTime%TempBlenderRot% := BlenderTime%TempBlenderRot% + nowUnix() ;add nowunix for time after temporoary varible has been created
+						IniWrite BlenderTime%TempBlenderRot%, "settings\nm_config.ini", "Blender", "BlenderTime" TempBlenderRot ; save timer to config
+
+						loop {
+							TempBlenderRot := Mod(TempBlenderRot, 3) + 1
+							if (TempBlenderRot = BlenderRot) ;makes sure it doesnt do the already calculated time again
+								break
+
+							if ((BlenderIndex%TempBlenderRot% = "Infinite" || BlenderIndex%TempBlenderRot% > 0) && (BlenderItem%TempBlenderRot% != "None" && BlenderItem%TempBlenderRot% != "")) { ;start time calculation process
+								BlenderTime%TempBlenderRot% := (BlenderAmount%TempBlenderRot% * 300) + BlenderTimeTemp ;add previous time to this one after to show time until its done
+								BlenderTimeTemp := BlenderTime%TempBlenderRot% ;create a new temp for next
+								BlenderTime%TempBlenderRot% := BlenderTime%TempBlenderRot% + nowUnix() ;add now unix to it for the counter
+								IniWrite BlenderTime%TempBlenderRot%, "settings\nm_config.ini", "Blender", "BlenderTime" TempBlenderRot ;save the value to the config for GUI use and Remote control
+							}
+						}
+						TimerInterval := BlenderAmount%BlenderRot% * 300 ;set up time
+						IniWrite BlenderRot, "settings\nm_config.ini", "Blender", "LastBlenderRot" ; define this for GUI and to reset counter as used above
+
+						BlenderRot := Mod(BlenderRot, 3) + 1
+						nm_BlenderRotation()
+						if (BlenderIndex%BlenderRot% != "Infinite") {
+							BlenderIndex%BlenderRot%-- ;subtract from blenderindex for looping only if its a number
+							MainGui["BlenderData" BlenderRot].Text := "(" BlenderAmount%BlenderRot% ") [" ((BlenderIndex%BlenderRot% = "Infinite") ? "∞" : BlenderIndex%BlenderRot%) "]"
+							IniWrite BlenderIndex%BlenderRot%, "settings\nm_config.ini", "Blender", "BlenderIndex" BlenderRot
+						}
+						Sleep 100
+						MouseMove windowX+windowWidth//2 + 70, windowY+Floor(0.48*windowHeight) + 130 ;Click Confirm
+						Sleep 150
+						Click
+						Sleep 100
+						MouseMove windowX+windowWidth//2 - 250, windowY+Floor(0.48*windowHeight) - 200 ;Close GUI
+						Sleep 150
+						Click
+						break 2
+					} else {
+						Sleep 50
+						MouseMove windowX+windowWidth//2 + 230, windowY+Floor(0.48*windowHeight) + 110 ;not found go next item
+						Sleep 150
+						Click
+						Sleep 100
+						if (A_Index = 60) {
+							if (z = 2) {
+								nm_setStatus("Failed", "Blender")
+								MouseMove windowX+windowWidth//2 - 250, windowY+Floor(0.48*windowHeight) - 200 ;Close GUI
+								Sleep 150
+								Click
+
+								BlenderTime%BlenderRot% := BlenderAmount%BlenderRot% * 300 ;calculate first time variable
+								BlenderTimeTemp := BlenderTime%BlenderRot% ;set up a temporary varible to hold time
+								TempBlenderRot := BlenderRot ; save a temporary rotation holder
+
+								BlenderTime%TempBlenderRot% := BlenderTime%TempBlenderRot% + nowUnix() ;add nowunix for time after temporoary varible has been created
+								IniWrite BlenderTime%TempBlenderRot%, "settings\nm_config.ini", "Blender", "BlenderTime" TempBlenderRot ; save timer to config
+
+								loop {
+									TempBlenderRot := Mod(TempBlenderRot, 3) + 1
+									if (TempBlenderRot = BlenderRot) ;makes sure it doesnt do the already calculated time again
+										break
+
+									if ((BlenderIndex%TempBlenderRot% = "Infinite" || BlenderIndex%TempBlenderRot% > 0) && (BlenderItem%TempBlenderRot% != "None" && BlenderItem%TempBlenderRot% != "")) { ;start time calculation process
+										BlenderTime%TempBlenderRot% := (BlenderAmount%TempBlenderRot% * 300) + BlenderTimeTemp ;add previous time to this one after to show time until its done
+										BlenderTimeTemp := BlenderTime%TempBlenderRot% ;create a new temp for next
+										BlenderTime%TempBlenderRot% := BlenderTime%TempBlenderRot% + nowUnix() ;add now unix to it for the counter
+										IniWrite BlenderTime%TempBlenderRot%, "settings\nm_config.ini", "Blender", "BlenderTime" TempBlenderRot ;save the value to the config for GUI use and Remote control
+									}
+								}
+							}
+							break
+						}
+					}
+				}
+			}
+		}
+		IniWrite TimerInterval, "settings\nm_config.ini", "Blender", "TimerInterval"
+		IniWrite BlenderRot, "settings\nm_config.ini", "Blender", "BlenderRot"
+		IniWrite BlenderIndex%BlenderRot%, "settings\nm_config.ini", "Blender", "BlenderIndex" BlenderRot
+	}
+}
+nm_BlenderRotation() {
+	global BlenderRot, BlenderItem1, BlenderItem2, BlenderItem3, BlenderIndex1, BlenderIndex2, BlenderIndex3, BlenderCheck
+	loop {
+		if ((BlenderIndex%BlenderRot% = "Infinite" || BlenderIndex%BlenderRot% > 0) && (BlenderItem%BlenderRot% != "None" && BlenderItem%BlenderRot% != "")) {
+			BlenderCheck := 1
+			IniWrite BlenderCheck, "settings\nm_config.ini", "Blender", "BlenderCheck"
+			break
+		} else {
+			BlenderRot := Mod(BlenderRot, 3) + 1
+			if (A_Index = 4) {
+				if (BlenderCheck) {
+					BlenderCheck := 0
+					IniWrite BlenderCheck, "settings\nm_config.ini", "Blender", "BlenderCheck"
+					nm_setStatus("Confirmed", "No more items to rotate through. Turning blender off")
+				}
+				break
+			}
+		}
+	}
+}
+nm_Ant() { ;collect Ant Pass then do Challenge
+	global AntPassCheck, AntPassBuyCheck, AntPassAction, QuestAnt, LastAntPass
+	static AntPassNum:=2
+
+	if(((AntPassCheck && ((AntPassNum<10) || (AntPassAction="challenge"))) && (nowUnix()-LastAntPass>7200)) || (QuestAnt && ((AntPassNum>0) || (AntPassBuyCheck = 1)))){ ;2 hours OR ant quest
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset(1, (QuestAnt || (AntPassAction = "challenge")) ? 20000 : 2000)
+			nm_setStatus("Traveling", (QuestAnt ? "Ant Challenge" : ("Ant " . AntPassAction)) ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("antpass")
+
+			If (nm_imgSearch("e_button.png",30,"high")[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				updateConfig()
+				Sleep 500
+				nm_setStatus("Collected", "Ant Pass")
+				++AntPassNum
+				break
+			}
+			else {
+				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["passfull"], , , , , , 2, , 2) = 1) {
+					(AntPassNum < 10) && nm_setStatus("Confirmed", "10/10 Ant Passes")
+					AntPassNum:=10
+					Gdip_DisposeImage(pBMScreen)
+					break
+				}
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["passcooldown"], , , , , , 2, , 2) = 1) {
+					updateConfig()
+					Gdip_DisposeImage(pBMScreen)
+					break
+				}
+				Gdip_DisposeImage(pBMScreen)
+			}
+		}
+
+		;do ant challenge
+		if(QuestAnt || AntPassAction="challenge"){
+			QuestAnt:=0
+			movement :=
+			(
+			nm_Walk(12, FwdKey, RightKey) '
+			' nm_Walk(4, FwdKey)
+			)
+			nm_createWalk(movement)
+			KeyWait "F14", "D T5 L"
+			KeyWait "F14", "T30 L"
+			nm_endWalk()
+			Sleep 500
+			Loop 2 {
+				If (nm_imgSearch("e_button.png",30,"high")[1] = 0) {
+					sendinput "{" SC_E " down}"
+					Sleep 100
+					sendinput "{" SC_E " up}"
+					--AntPassNum
+					nm_setStatus("Attacking", "Ant Challenge")
+					Sleep 500
+					send "{" SC_1 "}"
+					movement :=
+					(
+					nm_Walk(9, BackKey) "
+					" nm_Walk(3, RightKey, FwdKey) "
+					" nm_Walk(1, FwdKey)
+					)
+					nm_createWalk(movement)
+					KeyWait "F14", "D T5 L"
+					KeyWait "F14", "T30 L"
+					nm_endWalk()
+					click "down"
+					loop 300 {
+						if (Mod(A_Index, 10) = 1)
+							PostSubmacroMessage("background", 0x5554, 1, nowUnix())
+						if nm_AmuletPrompt(1, "Ant") {
+							MouseMove windowX+350, windowY+offsetY+100
+							break 2
+						}
+						sleep 1000
+					}
+					click "up"
+				}
+				else {
+					pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["passnone"], , , , , , 2, , 2) = 1) {
+						Gdip_DisposeImage(pBMScreen)
+						AntPassNum:=0
+						if ((AntPassBuyCheck = 1) && (A_Index = 1)) {
+							movement :=
+							(
+							nm_Walk(6, LeftKey) "
+							" nm_Walk(10, BackKey, LeftKey)
+							)
+							nm_createWalk(movement)
+							KeyWait "F14", "D T5 L"
+							KeyWait "F14", "T30 L"
+							nm_endWalk()
+							Sleep 200
+
+							If (nm_imgSearch("e_button.png",30,"high")[1] = 0) {
+								sendinput "{" SC_E " down}"
+								Sleep 100
+								sendinput "{" SC_E " up}"
+								Sleep 500
+								nm_setStatus("Bought", "Ant Pass")
+								++AntPassNum
+							} else {
+								nm_setStatus("Aborting", "Cannot buy Ant Pass")
+								break
+							}
+
+							movement :=
+							(
+							nm_Walk(10, FwdKey, RightKey) "
+							" nm_Walk(6, RightKey)
+							)
+							nm_createWalk(movement)
+							KeyWait "F14", "D T5 L"
+							KeyWait "F14", "T30 L"
+							nm_endWalk()
+							Sleep 200
+							continue
+						} else {
+							nm_setStatus("Aborting", "No Ant Pass in Inventory")
+							break
+						}
+					}
+					Gdip_DisposeImage(pBMScreen)
+				}
+			}
+		}
+	}
+
+	updateConfig() {
+		LastAntPass:=nowUnix()
+		IniWrite LastAntPass, "settings\nm_config.ini", "Collect", "LastAntPass"
+	}
+}
+nm_RoboPass(){
+	global RoboPassCheck, LastRoboPass
+	static RoboPassNum:=1
+
+	if (RoboPassCheck && (RoboPassNum < 10) && (nowUnix()-LastRoboPass)>79200) { ;22 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Robo Pass" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("robopass")
+
+			if (nm_imgSearch("e_button.png",30,"high")[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				updateConfig()
+				Sleep 500
+				nm_setStatus("Collected", "Robo Pass")
+				++RoboPassNum
+				break
+			}
+			else {
+				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["passfull"], , , , , , 2, , 2) = 1) {
+					(RoboPassNum < 10) && nm_setStatus("Confirmed", "10/10 Robo Passes")
+					RoboPassNum:=10
+					Gdip_DisposeImage(pBMScreen)
+					break
+				}
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["passcooldown"], , , , , , 2, , 2) = 1) {
+					updateConfig()
+					Gdip_DisposeImage(pBMScreen)
+					break
+				}
+				Gdip_DisposeImage(pBMScreen)
+			}
+		}
+	}
+
+	updateConfig() {
+		LastRoboPass:=nowUnix()
+		IniWrite LastRoboPass, "settings\nm_config.ini", "Collect", "LastRoboPass"
+	}
+}
+nm_HoneyDis(){
+	global HoneyDisCheck, LastHoneyDis
+	if (HoneyDisCheck && (nowUnix()-LastHoneyDis)>3600) { ;1 hour
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Honey Dispenser" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("honeydis")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 500
+				nm_setStatus("Collected", "Honey Dispenser")
+				break
+			}
+		}
+		LastHoneyDis:=nowUnix()
+		IniWrite LastHoneyDis, "settings\nm_config.ini", "Collect", "LastHoneyDis"
+	}
+}
+nm_TreatDis(){
+	global TreatDisCheck, LastTreatDis
+	if (TreatDisCheck && (nowUnix()-LastTreatDis)>3600) { ;1 hour
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Treat Dispenser" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("treatdis")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 500
+				nm_setStatus("Collected", "Treat Dispenser")
+				break
+			}
+		}
+		LastTreatDis:=nowUnix()
+		IniWrite LastTreatDis, "settings\nm_config.ini", "Collect", "LastTreatDis"
+	}
+}
+nm_BlueberryDis(){
+	global BlueberryDisCheck, LastBlueberryDis
+	if (BlueberryDisCheck && (nowUnix()-LastBlueberryDis)>14400) { ;4 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Blueberry Dispenser" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("blueberrydis")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				sleep 500
+				nm_setStatus("Collected", "Blueberry Dispenser")
+				break
+			}
+		}
+		LastBlueberryDis:=nowUnix()
+		IniWrite LastBlueberryDis, "settings\nm_config.ini", "Collect", "LastBlueberryDis"
+	}
+}
+nm_StrawberryDis(){
+	global StrawberryDisCheck, LastStrawberryDis
+	if (StrawberryDisCheck && (nowUnix()-LastStrawberryDis)>14400) { ;4 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Strawberry Dispenser" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("strawberrydis")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				sleep 500
+				nm_setStatus("Collected", "Strawberry Dispenser")
+				break
+			}
+		}
+		LastStrawberryDis:=nowUnix()
+		IniWrite LastStrawberryDis, "settings\nm_config.ini", "Collect", "LastStrawberryDis"
+	}
+}
+nm_CoconutDis(){
+	global CoconutDisCheck, LastCoconutDis, CoconutBoosterCheck, BoostChaserCheck
+	if (CoconutDisCheck && (nowUnix()-LastCoconutDis)>14400 && !(CoconutBoosterCheck && BoostChaserCheck)) { ;4 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Coconut Dispenser" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("coconutdis")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				sleep 500
+				nm_setStatus("Collected", "Coconut Dispenser")
+				break
+			}
+		}
+		LastCoconutDis:=nowUnix()
+		IniWrite LastCoconutDis, "settings\nm_config.ini", "Collect", "LastCoconutDis"
+	}
+}
+nm_GlueDis(){
+	global GlueDisCheck, LastGlueDis
+	if (GlueDisCheck && (nowUnix()-LastGlueDis)>(79200)) { ;22 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_OpenMenu("itemmenu")
+
+			nm_setStatus("Traveling", "Glue Dispenser" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("gluedis", 0) ; do not wait for end
+
+			;locate gumdrops
+			if ((gumdropPos := nm_InventorySearch("gumdrops")) = 0) { ;~ new function
+				nm_OpenMenu()
+				continue
+			}
+			MouseMove windowX+gumdropPos[1], windowY+gumdropPos[2]
+			KeyWait "F14", "T120 L"
+			nm_endWalk()
+
+			MouseClickDrag "Left", windowX+gumdropPos[1], windowY+gumdropPos[2], windowX+(windowWidth//2), windowY+(windowHeight//2), 5
+			;close inventory
+			nm_OpenMenu()
+			Sleep 500
+			;inside gummy lair
+			movement := nm_Walk(6, FwdKey)
+			nm_createWalk(movement)
+			KeyWait "F14", "D T5 L"
+			KeyWait "F14", "T20 L"
+			nm_endWalk()
+			Sleep 500
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 1000
+				nm_setStatus("Collected", "Glue Dispenser")
+				break
+			}
+		}
+		LastGlueDis:=nowUnix()
+		IniWrite LastGlueDis, "settings\nm_config.ini", "Collect", "LastGlueDis"
+	}
+}
+nm_RoyalJellyDis(){
+	global RoyalJellyDisCheck, LastRoyalJellyDis
+	if (RoyalJellyDisCheck && (nowUnix()-LastRoyalJellyDis)>(79200) && (MoveMethod != "Walk")) { ;22 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Royal Jelly Dispenser" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("royaljellydis")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 500
+				nm_setStatus("Collected", "Royal Jelly Dispenser")
+				sleep 10000
+				break
+			}
+		}
+		LastRoyalJellyDis:=nowUnix()
+		IniWrite LastRoyalJellyDis, "settings\nm_config.ini", "Collect", "LastRoyalJellyDis"
+	}
+}
+nm_Wreath(){
+	global LastWreath, WreathCheck
+	if (WreathCheck && (nowUnix()-LastWreath)>1800) { ;0.5 hours
+		nm_setStatus("Traveling", "Honey Wreath")
+		nm_gotoCollect("wreath")
+
+		searchRet := nm_imgSearch("e_button.png",30,"high")
+		if (searchRet[1] = 0) {
+			SendInput "{" SC_E " down}"
+			Sleep 100
+			SendInput "{" SC_E " up}"
+
+			LastWreath:=nowUnix()
+			IniWrite LastWreath, "settings\nm_config.ini", "Collect", "LastWreath"
+
+			Sleep 4000
+
+			;loot
+			movement :=
+			(
+			nm_Walk(1, BackKey) "
+			" nm_Walk(4.5, BackKey, LeftKey) "
+			" nm_Walk(1, LeftKey) "
+			Loop 3 {
+				" nm_Walk(6, FwdKey) "
+				" nm_Walk(1.25, RightKey) "
+				" nm_Walk(6, BackKey) "
+				" nm_Walk(1.25, RightKey) "
+			}
+			" nm_Walk(6, FwdKey)
+			)
+			nm_createWalk(movement)
+			KeyWait "F14", "D T5 L"
+			KeyWait "F14", "T60 L"
+			nm_endWalk()
+
+			nm_setStatus("Collected", "Honey Wreath")
+		}
+
+		;walk back
+		movement :=
+		(
+		nm_Walk(4, BackKey) "
+		" nm_Walk(12, FwdKey, RightKey) "
+		" nm_Walk(24, LeftKey) "
+		" nm_Walk(6, BackKey, LeftKey)
+		)
+		nm_createWalk(movement)
+		KeyWait "F14", "D T5 L"
+		KeyWait "F14", "T60 L"
+		nm_endWalk()
+	}
+}
+nm_Stockings(fromClock:=0){
+	global StockingsCheck, LastStockings
+	if (StockingsCheck && (nowUnix()-LastStockings)>(fromClock ? 3580 : 3600)) { ;1 hour
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			if (fromClock && (A_Index = 1)) {
+				Sleep 500
+				nm_setStatus("Traveling", "Stockings (Clock)")
+
+				movement :=
+				(
+				'
+				Send "{' FwdKey ' down}"
+				Walk(6.5)
+				Send "{' SC_Space ' down}"
+				Sleep 100
+				Send "{' SC_Space ' up}"
+				Walk(6.5)
+				Send "{' FwdKey ' up}"
+				' nm_Walk(24.5, RightKey) '
+				' nm_Walk(3, FwdKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+			} else {
+				nm_Reset()
+				nm_setStatus("Traveling", "Stockings" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+				nm_gotoCollect("stockings")
+			}
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 500
+
+				movement :=
+				(
+				nm_Walk(8, FwdKey) '
+				' nm_Walk(2.5, BackKey) '
+				' nm_Walk(3, RightKey) '
+				Send "{' SC_Space ' down}"
+				HyperSleep(500)
+				Send "{' SC_Space ' up}"
+				DllCall("GetSystemTimeAsFileTime", "int64p", &s:=0)
+				' nm_Walk(3, RightKey) '
+				DllCall("GetSystemTimeAsFileTime", "int64p", &t:=0)
+				Sleep 600-(t-s)//10000
+				' nm_Walk(9, LeftKey) '
+				Send "{' SC_Space ' down}"
+				HyperSleep(500)
+				Send "{' SC_Space ' up}"
+				DllCall("GetSystemTimeAsFileTime", "int64p", &s:=0)
+				' nm_Walk(3, LeftKey) '
+				DllCall("GetSystemTimeAsFileTime", "int64p", &t:=0)
+				Sleep 600-(t-s)//10000
+				' nm_Walk(6, RightKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+
+				nm_setStatus("Collected", "Stockings")
+				break
+			}
+		}
+		LastStockings:=nowUnix()
+		IniWrite LastStockings, "settings\nm_config.ini", "Collect", "LastStockings"
+	}
+}
+nm_Feast(){ ; Beesmas Feast
+	global FeastCheck, LastFeast
+	if (FeastCheck && (nowUnix()-LastFeast)>5400) { ;1.5 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Beesmas Feast" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("feast")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 3000
+				sendinput "{" RotLeft "}"
+
+				movement :=
+				(
+				nm_Walk(3, FwdKey, RightKey) '
+				' nm_Walk(1, RightKey) '
+				Loop 2 {
+					' nm_Walk(5, BackKey) '
+					' nm_Walk(1.5, LeftKey) '
+					' nm_Walk(5, FwdKey) '
+					' nm_Walk(1.5, LeftKey) '
+				}
+				' nm_Walk(5, BackKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+
+				nm_setStatus("Collected", "Beesmas Feast")
+				break
+			}
+		}
+		LastFeast:=nowUnix()
+		IniWrite LastFeast, "settings\nm_config.ini", "Collect", "LastFeast"
+	}
+}
+nm_GingerbreadHouse(){
+	global GingerbreadCheck, LastGingerbread
+	if (GingerbreadCheck && (nowUnix()-LastGingerbread)>7200) { ;2 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Gingerbread House" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("gingerbread")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 3000
+				nm_setStatus("Collected", "Gingerbread House")
+				break
+			}
+		}
+		LastGingerbread:=nowUnix()
+		IniWrite LastGingerbread, "settings\nm_config.ini", "Collect", "LastGingerbread"
+	}
+}
+nm_SnowMachine(){
+	global SnowMachineCheck, LastSnowMachine
+	if (SnowMachineCheck && (nowUnix()-LastSnowMachine)>7200) { ;2 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Snow Machine" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("snowmachine")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				nm_setStatus("Collected", "Snow Machine")
+				updateConfig()
+				nm_Honeystorm(1) ;collect Honeystorm on the way, then loot
+				return
+			}
+		}
+		updateConfig()
+	}
+	updateConfig() {
+		LastSnowMachine:=nowUnix()
+		IniWrite LastSnowMachine, "settings\nm_config.ini", "Collect", "LastSnowMachine"
+	}
+}
+nm_Candles(){
+	global CandlesCheck, LastCandles
+	if (CandlesCheck && (nowUnix()-LastCandles)>14400) { ;4 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Candles" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("candles")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 4000
+
+				movement :=
+				(
+				nm_Walk(4, FwdKey) "
+				" nm_Walk(6, RightKey) "
+				" nm_Walk(10, LeftKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+
+				nm_setStatus("Collected", "Candles")
+				break
+			}
+		}
+		LastCandles:=nowUnix()
+		IniWrite LastCandles, "settings\nm_config.ini", "Collect", "LastCandles"
+	}
+}
+nm_Samovar(){
+	global SamovarCheck, LastSamovar
+	if (SamovarCheck && (nowUnix()-LastSamovar)>21600) { ;6 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Samovar" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("samovar")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 5000
+
+				movement :=
+				(
+				nm_Walk(4, FwdKey, RightKey) "
+				" nm_Walk(1, RightKey) "
+				Loop 3 {
+					" nm_Walk(6, BackKey) "
+					" nm_Walk(1.25, LeftKey) "
+					" nm_Walk(6, FwdKey) "
+					" nm_Walk(1.25, LeftKey) "
+				}
+				" nm_Walk(6, BackKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+
+				nm_setStatus("Collected", "Samovar")
+				break
+			}
+		}
+		LastSamovar:=nowUnix()
+		IniWrite LastSamovar, "settings\nm_config.ini", "Collect", "LastSamovar"
+	}
+}
+nm_LidArt(){
+	global LidArtCheck, LastLidArt
+	if (LidArtCheck && (nowUnix()-LastLidArt)>28800) { ;8 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Lid Art" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("lidart")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 5000
+
+				movement :=
+				(
+				nm_Walk(3, FwdKey, RightKey) "
+				Loop 2 {
+					" nm_Walk(4.5, BackKey) "
+					" nm_Walk(1.25, LeftKey) "
+					" nm_Walk(4.5, FwdKey) "
+					" nm_Walk(1.25, LeftKey) "
+				}
+				" nm_Walk(4.5, BackKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+
+				nm_setStatus("Collected", "Lid Art")
+				break
+			}
+		}
+		LastLidArt:=nowUnix()
+		IniWrite LastLidArt, "settings\nm_config.ini", "Collect", "LastLidArt"
+	}
+}
+nm_GummyBeacon(){
+	global GummyBeaconCheck, LastGummyBeacon
+	if (GummyBeaconCheck && (nowUnix()-LastGummyBeacon)>28800 && (MoveMethod != "Walk")) { ;8 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Gummy Beacon" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("gummybeacon")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 500
+				nm_setStatus("Collected", "Gummy Beacon")
+				break
+			}
+		}
+		LastGummyBeacon:=nowUnix()
+		IniWrite LastGummyBeacon, "settings\nm_config.ini", "Collect", "LastGummyBeacon"
+	}
+}
+nm_RBPDelevel(){ ;Robo Bear Party De-level
+	global RBPDelevelCheck, LastRBPDelevel
+	if (RBPDelevelCheck && (nowUnix()-LastRBPDelevel)>10800 && (MoveMethod != "Walk")) { ;3 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "RBP De-Level" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("rbpdelevel")
+
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 500
+				nm_setStatus("Collected", "RBP De-Level")
+				break
+			}
+		}
+		LastRBPDelevel:=nowUnix()
+		IniWrite LastRBPDelevel, "settings\nm_config.ini", "Collect", "LastRBPDelevel"
+	}
+}
+; Memory Match code written by OfficerAC
+nm_MemoryMatch(MemoryMatchGame) {
+
+	global NormalMemoryMatchCheck, MegaMemoryMatchCheck, ExtremeMemoryMatchCheck, NightMemoryMatchCheck, WinterMemoryMatchCheck
+		, LastNormalMemoryMatch, LastMegaMemoryMatch, LastExtremeMemoryMatch, LastNightMemoryMatch, LastWinterMemoryMatch
+
+	if !(%MemoryMatchGame%MemoryMatchCheck && (nowUnix()-Last%MemoryMatchGame%MemoryMatch)>MemoryMatchGames[MemoryMatchGame].cooldown) || nm_AmuletPrompt()
+		return
+
+	success := deaths := 0
+	loop 2 {
+		nm_reset(MemoryMatchGame = "Night" ? 0 : 1, 0, 0)
+		nm_SetStatus("Traveling", MemoryMatchGame " Memory Match" ((A_Index > 1) ? " (Attempt 2)" : "" ))
+		nm_GoToCollect(MemoryMatchGame "mm", 0)
+		loop 720 { ; 3 min timeout
+			Sleep 250
+			if ((!GetKeyState("F14") && success := 1) || (youDied && ++deaths))
+				break
+		}
+		nm_endWalk()
+
+		If ((success = 1) && nm_imgSearch("e_button.png",30,"high")[1] = 0) {
+			nm_setStatus("Found", MemoryMatchGame " Memory Match")
+			sendinput "{" SC_E " down}"
+			Sleep 100
+			sendinput "{" SC_E " up}"
+			UpdateConfig()
+			sleep 1500
+			Break
+		} else if (A_Index = 2) {
+			(MemoryMatchGame != "Night") && UpdateConfig()
+			return
+		}
+	} ;  close Try twice to find MM
+
+	nm_SolveMemoryMatch(MemoryMatchGame)
+
+	UpdateConfig() {
+		IniWrite Last%MemoryMatchGame%MemoryMatch:=nowUnix(), "settings\nm_config.ini", "Collect", "Last" MemoryMatchGame "MemoryMatch"
+	}
+}
+nm_SolveMemoryMatch(MemoryMatchGame:="") {
+
+	; initialize variables
+	GetRobloxClientPos()
+	middleX := windowX+(windowWidth//2)
+	middleY := windowY+(windowHeight//2)
+
+	switch MemoryMatchGame {
+		case "Extreme","Winter":
+		Xoffset := 40, Tiles := 20
+
+		case "Normal","Mega","Night":
+		Xoffset := 0, Tiles := 16
+
+		default:
+		pBMScreen := Gdip_BitmapFromScreen(middleX-250 "|" middleY-210 "|500|50")
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitleWide"], , , , , , 8) = 1)
+			Xoffset := 40, Tiles := 20
+		else if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitle"], , , , , , 8) = 1)
+			Xoffset := 0, Tiles := 16
+		else {
+			Gdip_DisposeImage(pBMScreen)
+			return
+		}
+		Gdip_DisposeImage(pBMScreen)
+	}
+
+	StoreItemOAC := [], StoreItemOAC.Default := "", StoreItemOAC.Length := 20
+	IgnoreItemOAC := [], IgnoreItemOAC.Default := 0, IgnoreItemOAC.Length := 20
+
+	GridOAC:= [] ;Define MM Tile Coordinates
+	Loop 5 {
+		Xcord:=middleX-200+80*A_Index
+		x:=A_index
+		Loop 4 {
+			row := []
+			Ycord:=middleY-200+80*A_Index
+			R:=A_index+(x-1)*4
+			Row.push(Xcord)
+			Row.push(Ycord)
+			GridOAC.push(row)
+		}
+	}
+	Tile:=0
+	PriorityClaimedOAC:=0
+	MMTempTile1OAC:=0
+	MMTempTile2OAC:=0
+	PairFoundOAC:=0
+	MatchFoundOAC:=0
+	ClickNum:=0
+	Chances:=8
+	LastChance:=0
+
+	Loop 10 { ; Numer of available Chances.
+		if(Chances=2) {
+			Loop 1000 {
+				pBMScreen := Gdip_BitmapFromScreen(middleX-275-Xoffset "|" middleY-146 "|100|100") ; Detect Number of Chances
+				if(Gdip_ImageSearch(pBMScreen, bitmaps["Chances1"], , , , , , 10, , 2) = 1)  {
+					LastChance := 1
+					Gdip_DisposeImage(pBMScreen)
+					break
+				}
+				Gdip_DisposeImage(pBMScreen)
+				sleep 10
+			}
+		}
+		loop 2 { ;Click tile, store item and compare
+			if(A_Index=1) {
+				; Compare Tiles before Click 1
+				loop Tiles {
+					i:=A_index
+					loop Tiles {
+						j := A_index
+
+						if (i = j)
+							continue ; Skip self-comparison
+
+						; Check if either variable is Null or Ignored
+						if(StoreitemOAC[i] = 0 || StoreitemOAC[j] = 0 || IgnoreitemOAC[i] = 1 || IgnoreitemOAC[j] = 1 || StoreitemOAC[i] = "" || StoreitemOAC[j] = "")
+							continue ; Skip the comparison if either Item is Null or Not Priority
+
+						; Check if variables have the same value
+						if (Gdip_ImageSearch(StoreitemOAC[i], StoreitemOAC[j], , , , , , 10, , 2)=1) {
+							MMTempTile1OAC:=i
+							MMTempTile2OAC:=j
+							Gdip_DisposeImage(StoreitemOAC[i]), StoreitemOAC[i]:=0	;claimed
+							Gdip_DisposeImage(StoreitemOAC[j]), StoreitemOAC[j]:=0	;claimed
+							PairFoundOAC:=1
+							Break 2
+						} else {
+							PairFoundOAC:=0
+						}
+					}
+				}
+				;end compare1
+				if(PairFoundOAC) {
+					LastTile:=Tile
+					Tile:=MMTempTile1OAC ;-1
+				}
+			} else {
+				if(PairFoundOAC=0 || LastChance=1) {
+					; Compare all other tiles to click 1
+					j:=Tile
+
+					loop Tiles {
+						i:=A_index
+
+						if (i = Tile)
+							continue ; Skip self-comparison
+
+						; Check if either variable is Null or Ignored
+						if(StoreitemOAC[i] = 0 || StoreitemOAC[j] = 0 || (IgnoreitemOAC[i] = 1 && LastChance!=1) || StoreitemOAC[i] = "" || StoreitemOAC[j] = "")
+							continue ; Skip the comparison if either Item is Null or Not Priority
+
+						; Check if Items are the same.
+						if (Gdip_ImageSearch(StoreitemOAC[j], StoreitemOAC[i], , , , , , 10, , 2)=1) {
+							MMTempTile2OAC:=i
+							Gdip_DisposeImage(StoreitemOAC[i]), StoreitemOAC[i]:=0	;claimed
+							Gdip_DisposeImage(StoreitemOAC[j]), StoreitemOAC[j]:=0	;claimed
+							MatchFoundOAC:=1
+							Break
+						} else {
+							MatchFoundOAC:=0
+						}
+					}
+					;end compare2
+					if(MatchFoundOAC) {
+						LastTile:=Tile
+						Tile:=MMTempTile2OAC
+					}
+				}
+				if(PairFoundOAC)
+					Tile:=MMTempTile2OAC
+			}
+
+			if(!MatchFoundOAC && !PairFoundOAC) {
+				Loop 20 {
+					Tile := Random(1, Tiles)
+					If(StoreItemOAC[Tile]="")
+						break
+				}
+			}
+			;tile:=1
+			TileXCordOAC:=GridOAC[Tile][1]-Xoffset ; Determine click coordinates
+			TileYCordOAC:=GridOAC[Tile][2]
+			ClickNum++
+			MMItemOAC:=0
+
+			MouseMove TileXCordOAC, TileYCordOAC
+			sleep 400 ; I know this looks excessive, but it is to compensate for lag.
+			sendinput "{click down}"
+			sleep 100
+			sendinput "{click up}"
+			DllCall("GetSystemTimeAsFileTime", "int64p", &s:=0)
+			sleep 100
+			MouseMove middleX, middleY-190
+			DllCall("GetSystemTimeAsFileTime", "int64p", &f:=s)
+			Sleep Max(500 - (f - s)//10000, -1) ; match previous version's total sleep 500
+
+			Loop 300 {
+				pBMScreen := Gdip_BitmapFromScreen(TileXCordOAC-35 "|" TileYCordOAC-20 "|45|30") ; Detect Clicked Item
+				;Gdip_SaveBitmapToFile(pBMScreen, "empty" A_index ".png")
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["MMBorder"], , , , 8, 20, 1, , 2) = 1) {
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["MMEmptyTile"], , 25, 10, , , 1, , 2) != 1) {
+						MMItemOAC := 1
+						Gdip_DisposeImage(pBMScreen)
+						break
+					}
+				}
+				Gdip_DisposeImage(pBMScreen)
+				sleep 10
+			}
+			Sleep 300
+
+			if(MMItemOAC=1 && PairFoundOAC!=1 && (A_Index=1 || (A_Index=2 && MatchFoundOAC!=1))) {
+				StoreItemOAC[Tile] := Gdip_BitmapFromScreen(TileXCordOAC-25 "|" TileYCordOAC-25 "|50|50") ; Detect Clicked Item
+				;nm_CreateFolder(path := A_WorkingDir "\MMScreenshots"), Gdip_SaveBitmapToFile(StoreItemOAC[Tile], path "\image" Tile ".png") ; comment out this line for public release
+				for item, data in MemoryMatch {
+  					if ((MemoryMatchGame && (%item%MatchIgnore & MemoryMatchGames[MemoryMatchGame].bit)) || (!MemoryMatchGame && (%item%MatchIgnore = data.games))) {
+						loop 2 {
+							bitmap:="MM" . item . A_index
+							if (Gdip_ImageSearch(StoreItemOAC[Tile], bitmaps[bitmap], , , , , , 10, , 2) = 1 && LastChance!=1) {
+								IgnoreitemOAC[Tile]:=1
+								Break 2
+							}
+						}
+					}
+				}
+			}
+
+			if(A_index=1) {
+				pBMScreen := Gdip_BitmapFromScreen(middleX-275-Xoffset "|" middleY-146 "|100|100") ; Detect Number of Chances
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["Chances2"], , , , , , 10, , 2) = 1)
+				Chances:=2
+				Gdip_DisposeImage(pBMScreen)
+			}
+
+			if(A_Index=1) {
+				Click1Tile:=Tile
+				if(PairFoundOAC) {
+					Tile:=MMTempTile2OAC
+				}
+			} else {
+				if((Gdip_ImageSearch(StoreitemOAC[Click1Tile], StoreitemOAC[Tile], , , , , , 10, , 2) = 1) && PairFoundOAC!=1 && MatchFoundOAC!=1) {
+					Gdip_DisposeImage(StoreitemOAC[Click1Tile]), StoreitemOAC[Click1Tile]:=0 ;"claimed"
+					Gdip_DisposeImage(StoreitemOAC[Tile]), StoreitemOAC[Tile]:=0 ;"claimed"
+					Continue
+				}
+				if(PairFoundOAC || MatchFoundOAC) {
+					Tile:=LastTile
+					if(PairFoundOAC)
+						PairFoundOAC:=0
+					if(MatchFoundOAC)
+						MatchFoundOAC:=0
+				}
+			}
+
+			if(A_Index=2 && LastChance=1)
+				break 2
+		} ;Close loop 2 Click tile, store item, and compare
+	} ;close Chances Loop
+
+	; dispose remnant bitmaps
+	for pBM in StoreitemOAC
+		IsSet(pBM) && IsInteger(pBM) && (pBM > 0) && Gdip_DisposeImage(pBM)
+
+	MouseMove windowX+350, windowY+GetYOffset()+100
+	Sleep 1200
+	nm_setStatus("Collected", (MemoryMatchGame ? (MemoryMatchGame " ") : "") "Memory Match")
+
+	; wait for window to close
+	Loop 50 {
+		pBMScreen := Gdip_BitmapFromScreen(middleX-250 "|" middleY-210 "|500|50")
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitle"], , , , , , 8) = 0) {
+			Gdip_DisposeImage(pBMScreen)
+			break
+		}
+		Gdip_DisposeImage(pBMScreen)
+		Sleep 250
+	}
+}
+nm_Honeystorm(fromSnowMachine:=0){
+	global HoneystormCheck, LastHoneyStorm
+	if (fromSnowMachine || (HoneystormCheck && (nowUnix()-LastHoneystorm)>14400)) { ;4 hours
+		Loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			if (fromSnowMachine && (A_Index = 1)) {
+				movement :=
+				(
+				nm_Walk(18, LeftKey) '
+				' nm_Walk(7, RightKey) '
+				' nm_Walk(11, FwdKey) '
+				' nm_Walk(2, LeftKey) '
+				Sleep 1000
+				'
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T30 L"
+				nm_endWalk()
+			} else {
+				nm_Reset()
+				nm_setStatus("Traveling", "Honeystorm" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+				nm_gotoCollect("honeystorm")
+			}
+
+			collected := 0
+			If (HoneystormCheck && (nm_imgSearch("e_button.png",30,"high")[1] = 0)) {
+				collected := 1
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				nm_setStatus("Collected", "Honeystorm")
+				updateConfig()
+			}
+
+			if (fromSnowMachine || collected) {
+				movement :=
+				(
+				nm_Walk(11, FwdKey) '
+				loop 2 {
+					loop 3 {
+					' nm_Walk(20, LeftKey) '
+					' nm_Walk(3, FwdKey) '
+					' nm_Walk(20, RightKey) '
+					' nm_Walk(3, FwdKey) '
+					}
+					' nm_Walk(1.5, FwdKey) '
+					loop 3 {
+					' nm_Walk(20, LeftKey) '
+					' nm_Walk(3, BackKey) '
+					' nm_Walk(20, RightKey) '
+					' nm_Walk(3, BackKey) '
+					}
+				}'
+				)
+
+				if(!DisableToolUse)
+					Click "Down"
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T35 L"
+				nm_endWalk()
+				Click "Up"
+
+				if (!collected && HoneystormCheck) ;try again if Honeystorm collection failed but enabled
+					continue
+				else
+					break
+			}
+		}
+		(HoneystormCheck) && updateConfig()
+	}
+	updateConfig() {
+		LastHoneystorm:=nowUnix()
+		IniWrite LastHoneystorm, "settings\nm_config.ini", "Collect", "LastHoneystorm"
+	}
+}
+nm_HoneyLB(){ ;Daily Honey LB
+	global HoneySSCheck
+	static LastHoneyLB:=1
+	if (HoneySSCheck) {
+		utc_hour := FormatTime(A_NowUTC, "H")
+		if ((utc_hour = 4) && (nowUnix()-LastHoneyLB)>3600) {
+			nm_Reset()
+			nm_setStatus("Traveling", "Daily Honey LB")
+			nm_gotoCollect("honeylb")
+			FormatStr := Buffer(256), DllCall("GetLocaleInfoEx", "Ptr",0, "UInt",0x20, "Ptr",FormatStr.Ptr, "Int",256)
+			DateStr := Buffer(512), DllCall("GetDateFormatEx", "Ptr",0, "UInt",0, "Ptr",0, "Ptr",FormatStr.Ptr, "Ptr",DateStr.Ptr, "Int",512, "Ptr",0)
+			nm_setStatus("Reporting", "Daily Honey LB`nDate: " StrGet(DateStr))
+			LastHoneyLB:=nowUnix()
+		}
+	}
+}
+nm_StickerPrinter(){
+	global StickerPrinterCheck, LastStickerPrinter, StickerPrinterEgg
+
+	If (StickerPrinterCheck && (nowUnix()-LastStickerPrinter)>3600) { ;1 hour
+		loop 2 {
+			hwnd := GetRobloxHWND()
+			offsetY := GetYOffset(hwnd)
+			GetRobloxClientPos(hwnd)
+			nm_updateAction("Collect")
+
+			nm_Reset()
+			nm_setStatus("Traveling", "Sticker Printer" ((A_Index > 1) ? " (Attempt 2)" : ""))
+
+			nm_gotoCollect("stickerprinter")
+			searchRet := nm_imgSearch("e_button.png",30,"high")
+			If (searchRet[1] = 0) {
+				sendinput "{" SC_E " down}"
+				Sleep 100
+				sendinput "{" SC_E " up}"
+				Sleep 500 ;//todo: wait for GUI with timeout instead of fixed time
+				GetRobloxClientPos()
+				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterCD"], , , , , , 10) = 1) {
+					Gdip_DisposeImage(pBMScreen)
+					nm_setStatus("Detected", "Sticker Printer on Cooldown")
+					Sleep 500
+					sendinput "{" SC_E " down}"
+					Sleep 100
+					sendinput "{" SC_E " up}"
+					break
+				}
+				Gdip_DisposeImage(pBMScreen)
+				pos := Map("basic",-95, "silver",-40, "gold",15, "diamond",70, "mythic",125)
+				MouseMove windowX+windowWidth//2+pos[StrLower(StickerPrinterEgg)], windowY+4*windowHeight//10-20
+				Sleep 200
+				Click
+				Sleep 200
+				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
+				if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterConfirm"], , , , , , 10) != 1) {
+					Gdip_DisposeImage(pBMScreen)
+					nm_setStatus("Error", "No Eggs left in inventory!`nSticker Printer has been disabled.")
+					StickerPrinterCheck := 0
+					Sleep 500
+					sendinput "{" SC_E " down}"
+					Sleep 100
+					sendinput "{" SC_E " up}"
+					break
+				}
+				Gdip_DisposeImage(pBMScreen)
+				MouseMove windowX+windowWidth//2+225, windowY+4*windowHeight//10+195
+				Sleep 200
+				Click
+				i := 0
+				loop 16 {
+					sleep 250
+					pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-52 "|500|150")
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1) {
+						MouseMove windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1)-50, windowY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1)
+						sleep 150
+						Click
+						sleep 100
+						i++
+					} else if (i > 0) {
+						Gdip_DisposeImage(pBMScreen)
+						break
+					}
+					Gdip_DisposeImage(pBMScreen)
+					if (A_Index = 16)
+						break
+				}
+				Sleep 8000 ; wait for printer to print
+				nm_setStatus("Collected", "Sticker Printer (" StickerPrinterEgg " Egg)")
+				break
+			}
+		}
+		if (StickerPrinterCheck = 1) {
+			LastStickerPrinter:=nowUnix()
+			IniWrite LastStickerPrinter, "settings\nm_config.ini", "Collect", "LastStickerPrinter"
+		}
+	}
+}
+;//todo: pending rewrite! health detection bugs, generally inefficient
+nm_Bugrun(){
+	global youDied, MoveMethod, MoveSpeedNum, currentWalk, objective, HiveBees, MonsterRespawnTime, DisableToolUse
+		, QuestLadybugs, QuestRhinoBeetles, QuestSpider, QuestMantis, QuestScorpions, QuestWerewolf
+		, BuckoRhinoBeetles, BuckoMantis, RileyLadybugs, RileyScorpions, RileyAll
+		, GatherFieldBoostedStart, LastGlitter
+		, MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff
+		, BugrunSpiderCheck, BugrunSpiderLoot, LastBugrunSpider
+		, BugrunLadybugsCheck, BugrunLadybugsLoot, LastBugrunLadybugs
+		, BugrunRhinoBeetlesCheck, BugrunRhinoBeetlesLoot, LastBugrunRhinoBeetles
+		, BugrunMantisCheck, BugrunMantisLoot, LastBugrunMantis
+		, BugrunWerewolfCheck, BugrunWerewolfLoot, LastBugrunWerewolf
+		, BugrunScorpionsCheck, BugrunScorpionsLoot, LastBugrunScorpions
+		, intialHealthCheck
+		, CocoCrabCheck, LastCocoCrab
+		, StumpSnailCheck, LastStumpSnail
+		, CommandoCheck, LastCommando
+		, TunnelBearCheck, TunnelBearBabyCheck
+		, KingBeetleCheck, KingBeetleBabyCheck
+		, LastTunnelBear, LastKingBeetle
+		, InputSnailHealth, SnailTime
+		, InputChickHealth, ChickTime
+		, SprinklerType
+		, TotalBossKills, SessionBossKills, TotalBugKills, SessionBugKills
+		, KingBeetleAmuletMode, ShellAmuletMode
+
+	;interrupts
+	if (nm_NightInterrupt() || nm_MondoInterrupt() || nm_GatherBoostInterrupt() || nm_BeesmasInterrupt() || nm_MemoryMatchInterrupt())
+		return
+
+	nm_setShiftLock(0)
+	bypass:=0
+	MoveSpeedFactor := round(18/MoveSpeedNum, 2)
+	if(((BugrunSpiderCheck || QuestSpider || RileyAll) && (nowUnix()-LastBugrunSpider)>floor(1830*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) && HiveBees>=5){ ;30 minutes
+		nm_updateAction("Bugrun")
+		loop 1 {
+			if nm_NightInterrupt()
+				return
+			;spider
+			BugRunField:="Spider"
+			success:=0
+			while (not success){
+				if(A_Index>=3)
+					break
+				wait:=min(20000, (50-HiveBees)*1000)
+				nm_Reset(1, wait)
+				nm_setStatus("Traveling", "Spider")
+				nm_gotoField(BugRunField)
+				found:=0
+				Loop 20
+				{
+					spiderBug:=nm_HealthDetection()
+					if(spiderBug.Length > 0)
+					{
+						found:= 1
+						break
+					}
+					Sleep 150
+				}
+				if (found)
+				{
+					nm_setStatus("Attacking", "Spider")
+					;Send "{" SC_1 "}"
+					SendInput "{" RotUp " 4}"
+					if(!DisableToolUse)
+						Click "Down"
+					r := 0
+					Loop 30
+					{ ;wait to kill
+						if(A_Index=30)
+							success:=1
+						Loop 20
+						{
+							spiderDead:=nm_HealthDetection()
+							if(spiderDead.Length > 0)
+								Break
+							if (A_Index=10)
+							{
+								SendInput "{" RotLeft " 2}"
+								r := 1
+							}
+							SendInput "{" ZoomOut "}"
+							Sleep 100
+							if (A_Index=20)
+							{
+								success:=1
+								break 2
+							}
+						}
+						if(youDied)
+							break
+					}
+					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
+					Sleep 500
+					Click "Up"
+					if nm_NightInterrupt()
+						return
+				}
+			}
+			LastBugrunSpider:=nowUnix()
+			IniWrite LastBugrunSpider, "settings\nm_config.ini", "Collect", "LastBugrunSpider"
+			TotalBugKills:=TotalBugKills+1
+			SessionBugKills:=SessionBugKills+1
+			PostSubmacroMessage("StatMonitor", 0x5555, 3, 1)
+			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+			if(BugrunSpiderLoot){
+				if(!DisableToolUse)
+					Click "Down"
+				nm_setStatus("Looting", "Spider")
+				movement :=
+				(
+				nm_Walk(3, RightKey) "
+				loop 3 {
+					" nm_Walk(9, FwdKey) "
+					" nm_Walk(1.5, LeftKey) "
+					" nm_Walk(9, BackKey) "
+					" nm_Walk(1.5, LeftKey) "
+				}
+				" nm_Walk(6, BackKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+				Click "Up"
+			}
+			if nm_NightInterrupt()
+				return
+			;head to ladybugs?
+			if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) {
+				bypass:=1
+				nm_setStatus("Traveling", "Ladybugs (Strawberry)")
+				movement :=
+				(
+				((BugrunSpiderLoot=0) ? (nm_Walk(4.5, BackKey) "`r`n" nm_Walk(4.5, LeftKey)) : "") "
+				" nm_Walk(30, LeftKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+				SendInput "{" RotLeft " 2}"
+			} else {
+				bypass:=0
+			}
+		}
+	}
+	;Ladybugs
+	if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll)  && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;5 minutes
+		loop 1 {
+			if nm_NightInterrupt()
+				return
+			if(HiveBees>=5) {
+				;strawberry
+				BugRunField:="strawberry"
+				success:=0
+				while (not success){
+					if(A_Index>=3)
+						break
+					if(not bypass){
+						wait:=min(5000, (50-HiveBees)*1000)
+						nm_Reset(1,wait)
+						nm_setStatus("Traveling", "Ladybugs (Strawberry)")
+						nm_gotoField(BugRunField)
+						Sleep 1000
+					}
+					bypass:=0
+					;(+) new detection
+					found:=0
+					loop 20
+					{
+						strawBug:=nm_HealthDetection()
+						if(strawBug.Length > 0)
+						{
+							found:= 1
+							break
+						}
+						Sleep 150
+					}
+					if (found)
+					{
+						nm_setStatus("Attacking", "Ladybugs (Strawberry)")
+						SendInput "{" RotUp " 4}"
+						;Send "{" SC_1 "}"
+						if(!DisableToolUse)
+							Click "Down"
+						r := 0
+						loop 10
+						{ ;wait to kill
+							if(A_Index=10)
+								success:=1
+							Loop 10
+							{
+								ladybugDead:=nm_HealthDetection()
+								if(ladybugDead.Length > 0)
+									Break
+								if (A_Index=5)
+								{
+									SendInput "{" RotLeft " 2}"
+									r := 1
+								}
+								Sleep 100
+								SendInput "{" ZoomOut "}"
+								if (A_Index=10)
+								{
+									success:=1
+									break 2
+								}
+							}
+							if(youDied)
+								break
+						}
+						sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
+						Sleep 500
+						Click "Up"
+						if nm_NightInterrupt()
+							return
+					}
+				}
+				TotalBugKills:=TotalBugKills+2
+				SessionBugKills:=SessionBugKills+2
+				PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
+				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+				if(BugrunLadybugsLoot){
+					if(!DisableToolUse)
+						Click "Down"
+					nm_setStatus("Looting", "Ladybugs (Strawberry)")
+					movement :=
+					(
+					nm_Walk(2, BackKey) "
+					" nm_Walk(8, RightKey, BackKey) "
+					loop 2 {
+						" nm_Walk(14, FwdKey) "
+						" nm_Walk(1.5, LeftKey) "
+						" nm_Walk(14, BackKey) "
+						" nm_Walk(1.5, LeftKey) "
+					}
+					" nm_Walk(14, FwdKey)
+					)
+					nm_createWalk(movement)
+					KeyWait "F14", "D T5 L"
+					KeyWait "F14", "T60 L"
+					nm_endWalk()
+					Click "Up"
+				}
+				if nm_NightInterrupt()
+					return
+				;mushroom
+				BugRunField:="mushroom"
+				success:=0
+				bypass:=1
+				nm_setStatus("Traveling", "Ladybugs (Mushroom)")
+				movement :=
+				(
+				nm_Walk(12, LeftKey) "
+				" nm_Walk(16, BackKey) "
+				" nm_Walk(16, BackKey, LeftKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+			} else { ;HiveBees<5
+				success:=0
+				bypass:=0
+			}
+			BugRunField:="mushroom"
+			while (not success){
+				if(A_Index>=3)
+					break
+				if(not bypass){
+					wait:=min(5000, (50-HiveBees)*1000)
+					nm_Reset(1, wait)
+					nm_setStatus("Traveling", "Ladybugs (Mushroom)")
+					nm_gotoField(BugRunField)
+					SendInput "{" RotLeft " 2}"
+				}
+				bypass:=0
+				found:=0
+				loop 20
+				{
+					mushBug:=nm_HealthDetection()
+					if(mushBug.Length > 0)
+					{
+						found:= 1
+						break
+					}
+					Sleep 150
+				}
+				if(found)
+				{
+					nm_setStatus("Attacking", "Ladybugs (Mushroom)")
+					;Send "{" SC_1 "}"
+					SendInput "{" RotUp " 4}"
+					if(!DisableToolUse)
+						Click "Down"
+					r := 0
+					loop 10 { ;wait to kill
+						if(A_Index=10)
+							success:=1
+						Loop 20
+						{
+							ladybugDead:=nm_HealthDetection()
+							if(ladybugDead.Length > 0)
+								Break
+							if (A_Index=10)
+							{
+								SendInput "{" RotLeft " 2}"
+								r := 1
+							}
+							Sleep 100
+							SendInput "{" ZoomOut "}"
+							if (A_Index=20)
+							{
+								success:=1
+								break 2
+							}
+						}
+						if(youDied)
+							break
+					}
+					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
+					Sleep 500
+					Click "Up"
+					if nm_NightInterrupt()
+						return
+				}
+			}
+			TotalBugKills:=TotalBugKills+1
+			SessionBugKills:=SessionBugKills+1
+			PostSubmacroMessage("StatMonitor", 0x5555, 3, 1)
+			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+			if(BugrunLadybugsLoot){
+				if(!DisableToolUse)
+					Click "Down"
+				nm_setStatus("Looting", "Ladybugs (Mushroom)")
+				movement :=
+				(
+				nm_Walk(5, RightKey, BackKey) "
+				" nm_Walk(2, RightKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T20 L"
+				nm_endWalk()
+				nm_loot(9, 4, "left", 1)
+				Click "Up"
+			}
+		}
+	}
+	if nm_NightInterrupt()
+		return
+	nm_Mondo()
+	;Ladybugs and/or Rhino Beetles
+	if(((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && (nowUnix()-LastBugrunLadybugs)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))
+		|| ((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)  && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))){ ;5 minutes
+		loop 1 {
+			if nm_NightInterrupt()
+				return
+			;clover
+			success:=0
+			bypass:=0
+			BugRunField:="clover"
+			while (not success){
+				if(A_Index>=3)
+					break
+				if(not bypass){
+					wait:=min(10000, (50-HiveBees)*1000)
+					nm_Reset(1, wait)
+					if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && not (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles)){
+						nm_setStatus("Traveling", "Ladybugs (Clover)")
+					}
+					else if(not (BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
+						nm_setStatus("Traveling", "Rhino Beetles (Clover)")
+					}
+					else if((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
+						nm_setStatus("Traveling", "Ladybugs / Rhino Beetles (Clover)")
+					}
+					nm_gotoField(BugRunField)
+				}
+				bypass:=0
+				found:=0
+				loop 20
+				{
+					cloverBug:=nm_HealthDetection()
+					if(cloverBug.Length > 0)
+					{
+						found:= 1
+						break
+					}
+					Sleep 150
+				}
+				if (found)
+				{
+					nm_setStatus("Attacking")
+					;Send "{" SC_1 "}"
+					SendInput "{" RotUp " 4}"
+					if(!DisableToolUse)
+						Click "Down"
+					loop 10 { ;wait to kill
+						if(A_Index=10)
+							success:=1
+						Loop 10
+						{
+							cloverDead:=nm_HealthDetection()
+							if(cloverDead.Length > 0)
+								Break
+							else if (A_Index=10)
+							{
+								success:=1
+								break 2
+							}
+							Sleep 250
+						}
+						if(youDied)
+							break
+					}
+					SendInput "{" RotDown " 4}"
+					click "up"
+					if nm_NightInterrupt()
+						return
+				}
+
+			}
+			;done with ladybugs
+			LastBugrunLadybugs:=nowUnix()
+			IniWrite LastBugrunLadybugs, "settings\nm_config.ini", "Collect", "LastBugrunLadybugs"
+			TotalBugKills:=TotalBugKills+2
+			SessionBugKills:=SessionBugKills+2
+			PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
+			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+			;loot
+			if(((BugrunLadybugsCheck || QuestLadybugs || RileyLadybugs || RileyAll) && BugrunLadybugsLoot) || ((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll) && BugrunRhinoBeetlesLoot)){
+				if(!DisableToolUse)
+					Click "Down"
+				nm_setStatus("Looting")
+				movement :=
+				(
+				nm_Walk(4, RightKey) "
+				" nm_Walk(8, FwdKey) "
+				" nm_Walk(1.5, LeftKey) "
+				" nm_Walk(8, BackKey) "
+				" nm_Walk(1.5, LeftKey) "
+				" nm_Walk(8, FwdKey) "
+				" nm_Walk(1.5, LeftKey) "
+				" nm_Walk(16, BackKey) "
+				loop 2 {
+					" nm_Walk(1.5, LeftKey) "
+					" nm_Walk(8, FwdKey) "
+					" nm_Walk(1.5, LeftKey) "
+					" nm_Walk(8, BackKey) "
+				}"
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+				Click "Up"
+			}
+		}
+	}
+	if nm_NightInterrupt()
+		Return
+	;Rhino Beetles
+	if((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll) && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;5 minutes
+		loop 1 {
+			if nm_NightInterrupt()
+				return
+			;blue flower
+			success:=0
+			if (BugRunField="clover") {
+				Sleep 5000
+				BugRunField:="blue flower"
+				nm_setStatus("Traveling", "Rhino Beetles (Blue Flower)")
+				movement :=
+				(
+				nm_Walk(22, BackKey) '
+				send "{' RotLeft ' 2}"
+				' nm_Walk(10, BackKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T30 L"
+				nm_endWalk()
+			}
+			else {
+				BugRunField:="blue flower"
+				wait:=min(5000, (50-HiveBees)*1000)
+				nm_Reset(1,wait)
+				nm_setStatus("Traveling", "Rhino Beetles (Blue Flower)")
+				nm_gotoField(BugRunField)
+			}
+			while (not success){
+				if(A_Index>=3)
+					break
+				found:=0
+				loop 20
+				{
+					blufBug:=nm_HealthDetection()
+					if(blufBug.Length > 0)
+					{
+						found:= 1
+						break
+					}
+					Sleep 150
+				}
+				if (found)
+				{
+					nm_setStatus("Attacking")
+					;Send "{" SC_1 "}"
+					SendInput "{" RotUp " 4}"
+					if(!DisableToolUse)
+						Click "Down"
+					r := 0
+					loop 12 { ;wait to kill
+						if(A_Index=12)
+							success:=1
+						Loop 20
+						{
+							blufDead:=nm_HealthDetection()
+							if(blufDead.Length > 0)
+								Break
+							if (A_Index=10)
+							{
+								SendInput "{" RotLeft " 2}"
+								r := 1
+							}
+							Sleep 100
+							SendInput "{" ZoomOut "}"
+							if (A_Index=20)
+							{
+								success:=1
+								break 2
+							}
+						}
+						if(youDied)
+							break
+					}
+					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
+					Sleep 500
+					Click "Up"
+					if nm_NightInterrupt()
+						return
+				}
+			}
+			;done with Rhino Beetles if Hive has less than 5 bees
+			if(HiveBees<5){
+				LastBugrunRhinoBeetles:=nowUnix()
+				IniWrite LastBugrunRhinoBeetles, "settings\nm_config.ini", "Collect", "LastBugrunRhinoBeetles"
+			}
+			TotalBugKills:=TotalBugKills+1
+			SessionBugKills:=SessionBugKills+1
+			PostSubmacroMessage("StatMonitor", 0x5555, 3, 1)
+			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+			;loot
+			if(BugrunRhinoBeetlesLoot){
+				if(!DisableToolUse)
+					Click "Down"
+				nm_setStatus("Looting")
+				movement :=
+				(
+				nm_Walk(2, BackKey) "
+				" nm_Walk(5, RightKey, BackKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T30 L"
+				nm_endWalk()
+				nm_loot(8, 3, "left", 1)
+				Click "Up"
+			}
+			if(HiveBees>=5) {
+				;bamboo
+				BugRunField:="bamboo"
+				success:=0
+				bypass:=0
+				while (not success){
+					if(A_Index>=3)
+						break
+					if(not bypass){
+						wait:=min(10000, (50-HiveBees)*1000)
+						nm_Reset(1, wait)
+						nm_setStatus("Traveling", "Rhino Beetles (Bamboo)")
+						nm_gotoField(BugRunField)
+					}
+					bypass:=0
+					found:=0
+					loop 20
+					{
+						bambBug:=nm_HealthDetection()
+						if(bambBug.Length > 0)
+						{
+							found:= 1
+							break
+						}
+						Sleep 150
+					}
+					if (found)
+					{
+						nm_setStatus("Attacking")
+						;Send "{" SC_1 "}"
+						SendInput "{" RotUp " 4}"
+						if(!DisableToolUse)
+							Click "Down"
+						r := 0
+						loop 15 { ;wait to kill
+							if(A_Index=15)
+								success:=1
+							Loop 20
+							{
+								bambDead:=nm_HealthDetection()
+								if(bambDead.Length > 0)
+									Break
+								if (A_Index=10)
+								{
+									SendInput "{" RotLeft " 2}"
+									r := 1
+								}
+								Sleep 100
+								SendInput "{" ZoomOut "}"
+								if (A_Index=20)
+								{
+									success:=1
+									break 2
+								}
+							}
+							if(youDied)
+								break
+						}
+						sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
+						Sleep 500
+						Click "Up"
+						if nm_NightInterrupt()
+							return
+					}
+				}
+				;done with Rhino Beetles if Hive has less than 10 bees
+				if(HiveBees<10){
+					LastBugrunRhinoBeetles:=nowUnix()
+					IniWrite LastBugrunRhinoBeetles, "settings\nm_config.ini", "Collect", "LastBugrunRhinoBeetles"
+				}
+				TotalBugKills:=TotalBugKills+2
+				SessionBugKills:=SessionBugKills+2
+				PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
+				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+				;loot
+				if(BugrunRhinoBeetlesLoot){
+					if(!DisableToolUse)
+						Click "Down"
+					nm_setStatus("Looting")
+					movement :=
+					(
+					nm_Walk(9, BackKey) "
+					" nm_Walk(1.5, RightKey) "
+					loop 2 {
+						" nm_Walk(18, FwdKey) "
+						" nm_Walk(1.5, LeftKey) "
+						" nm_Walk(18, BackKey) "
+						" nm_Walk(1.5, LeftKey) "
+					}
+					" nm_Walk(18, FwdKey)
+					)
+					nm_createWalk(movement)
+					KeyWait "F14", "D T5 L"
+					KeyWait "F14", "T60 L"
+					nm_endWalk()
+					Click "Up"
+				}
+			}
+		}
+	}
+	if nm_NightInterrupt()
+		Return
+	;Rhino Beetles and/or Mantis
+	if(((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))
+		|| ((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)  && (nowUnix()-LastBugrunRhinoBeetles)>floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))){ ;5 min Rhino 20min Mantis
+		if(HiveBees>=10) {
+			;pineapple
+			BugRunField:="pineapple"
+			if((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll) && MoveMethod="walk") {
+				success:=0
+				bypass:=1
+				;walk from bamboo to pineapple
+				if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && not (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles)){
+					nm_setStatus("Traveling", "Mantis (Pineapple)")
+				}
+				else if(not (BugrunMantisCheck || QuestMantis || BuckoMantis) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
+					nm_setStatus("Traveling", "Rhino Beetles (Pineapple)")
+				}
+				else if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
+					nm_setStatus("Traveling", "Rhino Beetles / Mantis (Pineapple)")
+				}
+				if(BugrunRhinoBeetlesLoot){
+					nm_Move(1000*MoveSpeedFactor, FwdKey, RightKey)
+					nm_Move(8500*MoveSpeedFactor, FwdKey)
+					nm_Move(2500*MoveSpeedFactor, LeftKey)
+					nm_Move(5500*MoveSpeedFactor, RightKey)
+				} else {
+					nm_Move(8000*MoveSpeedFactor, FwdKey)
+					nm_Move(4000*MoveSpeedFactor, RightKey)
+				}
+				PrevKeyDelay := A_KeyDelay
+				SetKeyDelay 5
+				Send "{" FwdKey " down}"
+				DllCall("Sleep","UInt",200)
+				Send "{" SC_Space " down}"
+				DllCall("Sleep","UInt",100)
+				Send "{" SC_Space " up}"
+				DllCall("Sleep","UInt",800)
+				Send "{" FwdKey " up}"
+				SendInput "{" RotLeft " 2}"
+				SetKeyDelay PrevKeyDelay
+				nm_Move(14000*MoveSpeedFactor, FwdKey)
+			} else {
+				success:=0
+				bypass:=0
+			}
+			;start pineapple
+			while (not success){
+				if(A_Index>=3)
+					break
+				if(not bypass){
+					wait:=min(20000, (50-HiveBees)*1000)
+					nm_Reset(1, wait)
+					if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && not (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles)){
+						nm_setStatus("Traveling", "Mantis (Pineapple)")
+					}
+					else if(not (BugrunMantisCheck || QuestMantis || BuckoMantis) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
+						nm_setStatus("Traveling", "Rhino Beetles (Pineapple)")
+					}
+					else if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles || RileyAll)){
+						nm_setStatus("Traveling", "Rhino Beetles / Mantis (Pineapple)")
+					}
+					nm_gotoField(BugRunField)
+				}
+				bypass:=0
+				found:=0
+				loop 20
+				{
+					pineappleBug:=nm_HealthDetection()
+					if(pineappleBug.Length > 0)
+					{
+						found:= 1
+						break
+					}
+					Sleep 150
+				}
+				if (found)
+				{
+					nm_setStatus("Attacking")
+					;Send "{" SC_1 "}"
+					SendInput "{" RotUp " 4}"
+					if(!DisableToolUse)
+						Click "Down"
+					;disableDayOrNight:=1
+					r := 0
+					loop 20 { ;wait to kill
+						if(A_Index=20)
+							success:=1
+						Loop 20
+						{
+							pineappleDead:=nm_HealthDetection()
+							if(pineappleDead.Length > 0)
+								Break
+							if (A_Index=10)
+							{
+								SendInput "{" RotLeft " 2}"
+								r := 1
+							}
+							Sleep 100
+							SendInput "{" ZoomOut "}"
+							if (A_Index=20)
+							{
+								success:=1
+								break 2
+							}
+						}
+						if(youDied)
+							break
+						Sleep 250
+					}
+					sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
+					Sleep 500
+					Click "Up"
+					;disableDayOrNight:=0
+					if nm_NightInterrupt()
+						return
+				}
+			}
+			;done with Rhino Beetles
+			LastBugrunRhinoBeetles:=nowUnix()
+			IniWrite LastBugrunRhinoBeetles, "settings\nm_config.ini", "Collect", "LastBugrunRhinoBeetles"
+			;done with Mantis if Hive is smaller than 15 bees
+			if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && HiveBees<15){
+				LastBugrunMantis:=nowUnix()
+				IniWrite LastBugrunMantis, "settings\nm_config.ini", "Collect", "LastBugrunMantis"
+			}
+			TotalBugKills:=TotalBugKills+2
+			SessionBugKills:=SessionBugKills+2
+			PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
+			IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+			IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+			;loot
+			if(((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && BugrunMantisLoot) || ((BugrunRhinoBeetlesCheck || QuestRhinoBeetles || BuckoRhinoBeetles) && BugrunRhinoBeetlesLoot || RileyAll)){
+				if(!DisableToolUse)
+					Click "Down"
+				nm_setStatus("Looting")
+				nm_Move(1000*MoveSpeedFactor, BackKey, RightKey)
+				nm_loot(13.5, 5, "left")
+				Click "Up"
+			}
+		}
+	}
+	if nm_NightInterrupt()
+		Return
+	if(HiveBees>=15) {
+		nm_Mondo()
+		;werewolf
+		if((BugrunWerewolfCheck || QuestWerewolf || RileyAll)  && (nowUnix()-LastBugrunWerewolf)>floor(3630*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;60 minutes
+			loop 1 {
+				if nm_NightInterrupt()
+					return
+				;pumpkin
+				BugRunField:="pumpkin"
+				success:=0
+				bypass:=0
+				i:=0
+				while (not success){
+					if(A_Index>=3)
+						break
+					wait:=min(20000, (50-HiveBees)*1000)
+					nm_Reset(1, wait)
+					nm_setStatus("Traveling", "Werewolf (Pumpkin)")
+					nm_gotoField(BugRunField)
+					found:=0
+					loop 20
+					{
+						wereBug:=nm_HealthDetection()
+						if(wereBug.Length > 0)
+						{
+							found:= 1
+							break
+						}
+						Sleep 150
+					}
+					if (found)
+					{
+						nm_setStatus("Attacking", "Werewolf (Pumpkin)")
+						;Send "{" SC_1 "}"
+						SendInput "{" RotUp " 4}"
+						if(!DisableToolUse)
+							Click "Down"
+						loop 25 { ;wait to kill
+							i:=A_Index
+							if(mod(A_Index,4)=1){
+								nm_Move(1500*MoveSpeedFactor, FwdKey)
+								loop 5
+								{
+									wereDead:=nm_HealthDetection()
+									if(wereDead.Length > 0)
+									{
+										Break
+									}
+									if (A_Index=5)
+									{
+										Success:=1
+										Break 2
+									}
+									SendInput "{" ZoomOut "}"
+									Sleep 250
+								}
+							} else if(mod(A_Index,4)=2){
+								nm_Move(1500*MoveSpeedFactor, LeftKey)
+								loop 5
+								{
+									wereDead:=nm_HealthDetection()
+									if(wereDead.Length > 0)
+									{
+										Break
+									}
+									if (A_Index=5)
+									{
+										Success:=1
+										Break 2
+									}
+									SendInput "{" ZoomOut "}"
+									Sleep 250
+								}
+							} else if(mod(A_Index,4)=3){
+								nm_Move(1500*MoveSpeedFactor, BackKey)
+								loop 5
+								{
+									wereDead:=nm_HealthDetection()
+									if(wereDead.Length > 0)
+									{
+										Break
+									}
+									if (A_Index=5)
+									{
+										Success:=1
+										Break 2
+									}
+									SendInput "{" ZoomOut "}"
+									Sleep 250
+								}
+							} else if(mod(A_Index,4)=0){
+								nm_Move(1500*MoveSpeedFactor, RightKey)
+								loop 5
+								{
+									wereDead:=nm_HealthDetection()
+									if(wereDead.Length > 0)
+									{
+										Break
+									}
+									if (A_Index=5)
+									{
+										Success:=1
+										Break 2
+									}
+									SendInput "{" ZoomOut "}"
+									Sleep 250
+								}
+							}
+							if(A_Index=25)
+								success:=1
+							if(youDied)
+								break
+						}
+						SendInput "{" RotDown " 4}"
+						Sleep 500
+						Click "Up"
+						if nm_NightInterrupt()
+							return
+					}
+				}
+				LastBugrunWerewolf:=nowUnix()
+				IniWrite LastBugrunWerewolf, "settings\nm_config.ini", "Collect", "LastBugrunWerewolf"
+				TotalBugKills:=TotalBugKills+1
+				SessionBugKills:=SessionBugKills+1
+				PostSubmacroMessage("StatMonitor", 0x5555, 3, 1)
+				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+				if(BugrunWerewolfLoot){
+					if(!DisableToolUse)
+						Click "Down"
+					nm_setStatus("Looting", "Werewolf (Pumpkin)")
+					movement :=
+					(
+					(((Mod(i, 4) = 1) || (Mod(i, 4) = 2)) ? nm_Walk(4.5, BackKey) : nm_Walk(4.5, FwdKey)) "
+					" (((Mod(i, 4) = 0) || (Mod(i, 4) = 1)) ? nm_Walk(4.5, LeftKey) : nm_Walk(4.5, RightKey)) "
+					" nm_Walk(4, BackKey) "
+					" nm_Walk(6, BackKey, LeftKey) "
+					loop 4 {
+						" nm_Walk(14, FwdKey) "
+						" nm_Walk(1.5, RightKey) "
+						" nm_Walk(14, BackKey) "
+						" nm_Walk(1.5, RightKey) "
+					}
+					" nm_Walk(14, FwdKey)
+					)
+					nm_createWalk(movement)
+					KeyWait "F14", "D T5 L"
+					KeyWait "F14", "T60 L"
+					nm_endWalk()
+					Click "Up"
+				}
+			}
+		}
+		if nm_NightInterrupt()
+			Return
+		;mantis
+		if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;20 minutes
+			loop 1 {
+				if nm_NightInterrupt()
+					return
+				;pine tree
+				BugRunField:="pine tree"
+				;walk to pine tree from pumpkin if just killed werewolf
+				if((BugrunWerewolfCheck || QuestWerewolf || RileyAll) && (nowUnix()-LastBugrunWerewolf)>floor(3630*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){
+					success:=0
+					bypass:=1
+					nm_setStatus("Traveling", "Mantis (Pine Tree)")
+					nm_Move(1500*MoveSpeedFactor, FwdKey, LeftKey)
+					nm_Move(6000*MoveSpeedFactor, LeftKey)
+				} else {
+					success:=0
+					bypass:=0
+				}
+				while (not success){
+					if(A_Index>=3)
+						break
+					if(not bypass){
+						wait:=min(20000, (60-HiveBees)*1000)
+						nm_Reset(1, wait)
+						nm_setStatus("Traveling", "Mantis (Pine Tree)")
+						nm_gotoField(BugRunField)
+					}
+					bypass:=0
+					found:=0
+					loop 20
+					{
+						pineBug:=nm_HealthDetection()
+						if(pineBug.Length > 0)
+						{
+							found:= 1
+							break
+						}
+						Sleep 200
+					}
+					if (found)
+					{
+						nm_setStatus("Attacking")
+						;Send "{" SC_1 "}"
+						SendInput "{" RotUp " 4}"
+						if(!DisableToolUse)
+							Click "Down"
+						r := 0
+						loop 20 { ;wait to kill
+							if(A_Index=20)
+								success:=1
+							Loop 10
+							{
+								pineDead:=nm_HealthDetection()
+								if(pineDead.Length > 0)
+									Break
+								if (A_Index=5)
+								{
+									SendInput "{" RotLeft " 2}"
+									r := 1
+								}
+								Sleep 100
+								SendInput "{" ZoomOut "}"
+								if (A_Index=10)
+								{
+									success:=1
+									break 2
+								}
+							}
+							if(youDied)
+								break
+						}
+						sendinput "{" RotDown " 4}" ((r = 1) ? "{" RotRight " 2}" : "")
+						Sleep 500
+						Click "Up"
+						if nm_NightInterrupt()
+							return
+					}
+				}
+				;done with Mantis
+				LastBugrunMantis:=nowUnix()
+				IniWrite LastBugrunMantis, "settings\nm_config.ini", "Collect", "LastBugrunMantis"
+				TotalBugKills:=TotalBugKills+2
+				SessionBugKills:=SessionBugKills+2
+				PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
+				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+				;loot
+				if(BugrunMantisLoot){
+					if(!DisableToolUse)
+						Click "Down"
+					nm_setStatus("Looting")
+					movement :=
+					(
+					nm_Walk(10, BackKey) "
+					" nm_Walk(1.5, LeftKey) "
+					loop 3 {
+						" nm_Walk(10, FwdKey) "
+						" nm_Walk(1.5, LeftKey) "
+						" nm_Walk(10, BackKey) "
+						" nm_Walk(1.5, LeftKey) "
+					}
+					" nm_Walk(20, FwdKey) "
+					" nm_Walk(1.5, RightKey) "
+					" nm_Walk(10, BackKey) "
+					loop 3 {
+						" nm_Walk(1.5, RightKey) "
+						" nm_Walk(10, FwdKey) "
+						" nm_Walk(1.5, RightKey) "
+						" nm_Walk(10, BackKey) "
+					}"
+					)
+					nm_createWalk(movement)
+					KeyWait "F14", "D T5 L"
+					KeyWait "F14", "T90 L"
+					nm_endWalk()
+					Click "Up"
+				}
+			}
+		}
+		if nm_NightInterrupt()
+			return
+		;scorpions
+		if((BugrunScorpionsCheck || QuestScorpions || RileyScorpions || RileyAll)  && (nowUnix()-LastBugrunScorpions)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;20 minutes
+			loop 1 {
+				if nm_NightInterrupt()
+					return
+				;rose
+				BugRunField:="rose"
+				;walk to rose from pine tree if just killed mantis
+				if((BugrunMantisCheck || QuestMantis || BuckoMantis || RileyAll) && (nowUnix()-LastBugrunMantis)>floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)) && MoveMethod="walk"){
+					success:=0
+					bypass:=1
+					nm_setStatus("Traveling", "Scorpions (Rose)")
+					loop 4 {
+						Send "{" RotLeft "}"
+					}
+					nm_Move(4000*MoveSpeedFactor, RightKey)
+					nm_Move(2000*MoveSpeedFactor, LeftKey)
+					nm_Move(17500*MoveSpeedFactor, FwdKey)
+					loop 2 {
+						Send "{" RotRight "}"
+					}
+				} else {
+					success:=0
+					bypass:=0
+				}
+				i:=0
+				while (not success){
+					if(A_Index>=3)
+						break
+					if(not bypass){
+						wait:=min(20000, (60-HiveBees)*1000)
+						nm_Reset(1, wait)
+						nm_setStatus("Traveling", "Scorpions (Rose)")
+						nm_gotoField(BugRunField)
+						nm_Move(1000*MoveSpeedFactor, BackKey)
+						nm_Move(1500*MoveSpeedFactor, RightKey)
+					}
+					bypass:=0
+					found:=0
+					loop 20
+					{
+						roseBug:=nm_HealthDetection()
+						if(roseBug.Length > 0)
+						{
+							found:= 1
+							break
+						}
+						Sleep 150
+					}
+					if (found)
+					{
+						nm_setStatus("Attacking")
+						SendInput "{" RotUp " 4}"
+						SendInput "{" RotLeft " 4}"
+						;Send "{" SC_1 "}"
+						if(!DisableToolUse)
+							Click "Down"
+						loop 17 { ;wait to kill
+							i:=A_Index
+							if(mod(A_Index,4)=1){
+								nm_Move(1500*MoveSpeedFactor, BackKey)
+								loop 5
+								{
+									roseDead:=nm_HealthDetection()
+									if(roseDead.Length > 0)
+									{
+										Break
+									}
+									SendInput "{" ZoomOut "}"
+									if (A_Index=5)
+									{
+										Success:=1
+										Break 2
+									}
+									Sleep 250
+								}
+							} else if(mod(A_Index,4)=2){
+								nm_Move(1500*MoveSpeedFactor, RightKey)
+								loop 5
+								{
+									roseDead:=nm_HealthDetection()
+									if(roseDead.Length > 0)
+									{
+										Break
+									}
+									if (A_Index=5)
+									{
+										Success:=1
+										Break 2
+									}
+									Sleep 250
+								}
+							} else if(mod(A_Index,4)=3){
+								nm_Move(1500*MoveSpeedFactor, FwdKey)
+								loop 5
+								{
+									roseDead:=nm_HealthDetection()
+									if(roseDead.Length > 0)
+									{
+										Break
+									}
+									SendInput "{" ZoomOut "}"
+									if (A_Index=5)
+									{
+										Success:=1
+										Break 2
+									}
+									Sleep 250
+								}
+							} else if(mod(A_Index,4)=0){
+								nm_Move(1500*MoveSpeedFactor, LeftKey)
+								loop 5
+								{
+									roseDead:=nm_HealthDetection()
+									if(roseDead.Length > 0)
+									{
+										Break
+									}
+									SendInput "{" ZoomOut "}"
+									if (A_Index=5)
+									{
+										Success:=1
+										Break 2
+									}
+									Sleep 250
+								}
+							}
+							if(A_Index=17)
+								success:=1
+							if(youDied)
+								break
+						}
+						SendInput "{" RotDown " 4}"
+						Sleep 500
+						Click "Up"
+						if nm_NightInterrupt()
+							return
+					}
+				}
+				;done with Scorpions
+				LastBugrunScorpions:=nowUnix()
+				IniWrite LastBugrunScorpions, "settings\nm_config.ini", "Collect", "LastBugrunScorpions"
+				TotalBugKills:=TotalBugKills+2
+				SessionBugKills:=SessionBugKills+2
+				PostSubmacroMessage("StatMonitor", 0x5555, 3, 2)
+				IniWrite TotalBugKills, "settings\nm_config.ini", "Status", "TotalBugKills"
+				IniWrite SessionBugKills, "settings\nm_config.ini", "Status", "SessionBugKills"
+				;loot
+				if(BugrunScorpionsLoot){
+					if(!DisableToolUse)
+						Click "Down"
+					nm_setStatus("Looting")
+					movement :=
+					(
+					(((Mod(i, 4) = 1) || (Mod(i, 4) = 2)) ? nm_Walk(4.5, FwdKey) : nm_Walk(4.5, BackKey)) "
+					" (((Mod(i, 4) = 0) || (Mod(i, 4) = 1)) ? nm_Walk(4.5, RightKey) : nm_Walk(4.5, LeftKey)) "
+					" nm_Walk(2, FwdKey) "
+					" nm_Walk(10, FwdKey, LeftKey) "
+					loop 4 {
+						" nm_Walk(16, BackKey) "
+						" nm_Walk(1.5, RightKey) "
+						" nm_Walk(16, FwdKey) "
+						" nm_Walk(1.5, RightKey) "
+					}
+					" nm_Walk(16, BackKey) "
+					" nm_Walk(6, FwdKey, LeftKey)
+					)
+					nm_createWalk(movement)
+					KeyWait "F14", "D T5 L"
+					KeyWait "F14", "T90 L"
+					nm_endWalk()
+					Click "Up"
+				} else {
+					sleep 4000
+				}
+			}
+		}
+		if nm_NightInterrupt()
+			return
+		;tunnel bear
+		if((TunnelBearCheck)  && (nowUnix()-LastTunnelBear)>floor(172800*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;48 hours
+			loop 2 {
+				wait:=min(20000, (50-HiveBees)*1000)
+				nm_Reset(1, wait)
+				nm_setStatus("Traveling", "Tunnel Bear")
+				nm_gotoRamp()
+				if (MoveMethod = "walk") {
+					nm_gotoramp()
+
+					movement :=
+					(
+					nm_Walk(67.5, BackKey, LeftKey) "
+					send '{" RotRight " 4}'
+					" nm_Walk(23.5, FwdKey) "
+					" nm_Walk(31.5, FwdKey, RightKey) "
+					" nm_Walk(10, RightKey) "
+					send '{" RotRight " 2}'
+					" nm_Walk(28, FwdKey) "
+					" nm_Walk(13, LeftKey) "
+					" nm_Walk(25, RightKey) "
+					send '{" SC_Space " down}{" FwdKey " down}'
+					Walk(12)
+					send '{" SC_Space " up}{" FwdKey " up}{" RotLeft " 2}'
+					" nm_Walk(35, FwdKey) "
+					" nm_Walk(25, RightKey) "
+					" nm_Walk(12, FwdKey) "
+					" nm_Walk(3.5, RightKey) "
+					send '{" RotRight " 4}'
+					" nm_Walk(37, Fwdkey) "
+					" nm_Walk(10, FwdKey, LeftKey) "
+					" nm_Walk(5, Backkey) "
+					" nm_Walk(15, RightKey) "
+					" nm_Walk(10, BackKey) "
+					Sleep(3000)
+					send '{" RotRight " 4}{" RotUp " 3}' "
+					)
+				} else {
+					nm_gotoramp()
+					nm_gotocannon()
+
+					movement :=
+					(
+					" send '{" SC_E " down}'
+					sleep 100
+					send '{" SC_E " up}'
+					HyperSleep(1000)
+					send '{" LeftKey " down}'
+					HyperSleep(100)
+					send '{" SC_space " 2}'
+					HyperSleep(900)
+					send '{" LeftKey " up}'
+					HyperSleep(6000)
+					" nm_Walk(10, FwdKey, LeftKey) "
+					" nm_Walk(5, Backkey) "
+					" nm_Walk(15, RightKey) "
+					" nm_Walk(10, BackKey) "
+					Sleep(3000)
+					send '{" RotRight " 4}{" RotUp " 3}' "
+					)
+				}
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T90 L"
+				nm_endWalk()
+				;confirm tunnel
+				GetRobloxClientPos()
+				pBM := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//2)
+				for , value in bitmaps["tunnelbearconfirm"] {
+					if (Gdip_ImageSearch(pBM, value, , , , , , 15) = 1)
+						break
+					if A_Index = bitmaps["tunnelbearconfirm"].Count {
+						Gdip_DisposeImage(pBM)
+						continue 2 ;retry
+					}
+				}
+				Gdip_DisposeImage(pBM)
+				Send "{" RotLeft " 2}{" RotDown " 3}"
+				;wait for baby love
+				DllCall("Sleep","UInt",2000)
+				if (TunnelBearBabyCheck){
+					nm_setStatus("Waiting", "BabyLove Buff")
+					DllCall("Sleep","UInt",1500)
+					loop 30{
+						if (nm_imgSearch("blove.png",25,"buff")[1] = 0){
+							break
+						}
+						DllCall("Sleep","UInt",1000)
+					}
+				}
+				;search for tunnel bear
+				nm_setStatus("Searching", "Tunnel Bear")
+				nm_Move(6000*MoveSpeedFactor, BackKey)
+				nm_Move(550*MoveSpeedFactor, LeftKey)
+				found:=0
+				;(+) new detection here
+				loop 20
+				{
+					tBear:= nm_HealthDetection()
+					if(tBear.Length > 0)
+					{
+						found:=1
+						break
+					}
+					DllCall("Sleep","UInt",250)
+				}
+				;attack tunnel bear
+				TBdead:=0
+				if(found) {
+					SendInput "{" RotUp " 3}"
+					nm_setStatus("Attacking", "Tunnel Bear")
+					loop 120 {
+						loop 15 {
+							if (nm_imgSearch("tunnelbear.png",5,"high")[1] = 0)
+								nm_Move(200*MoveSpeedFactor, BackKey)
+							else
+								break
+						}
+						if(nm_imgSearch("tunnelbeardead.png",25,"lowright")[1] = 0){
+							TBdead:=1
+							SendInput "{" RotDown " 3}"
+							break
+						}
+						if(youDied)
+							break
+						Sleep 1000
+					}
+				} else { ;No TunnelBear here...try again in 2 hours
+					LastTunnelBear:=nowUnix()-floor(172800*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+7200
+					IniWrite LastTunnelBear, "settings\nm_config.ini", "Collect", "LastTunnelBear"
+				}
+				;loot
+				if(TBdead) {
+					TotalBossKills:=TotalBossKills+1
+					SessionBossKills:=SessionBossKills+1
+					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
+					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
+					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
+					nm_setStatus("Looting")
+					nm_Move(12000*MoveSpeedFactor, FwdKey)
+					nm_Move(18000*MoveSpeedFactor, BackKey)
+					LastTunnelBear:=nowUnix()
+					IniWrite LastTunnelBear, "settings\nm_config.ini", "Collect", "LastTunnelBear"
+					break
+				}
+			}
+		}
+		if nm_NightInterrupt()
+			return
+		;king beetle
+		if((KingBeetleCheck) && (nowUnix()-LastKingBeetle)>floor(86400*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;24 hours
+			loop 2 {
+				wait:=min(20000, (50-HiveBees)*1000)
+				nm_Reset(1, wait)
+				nm_setStatus("Traveling", "King Beetle")
+				nm_gotoField("Blue Flower")
+				nm_Move(5000*MoveSpeedFactor, RightKey, FwdKey)
+				nm_Move(4000*MoveSpeedFactor, FwdKey)
+				Send "{" RotRight " 2}"
+				;wait for baby love
+				DllCall("Sleep","UInt",1000)
+				if (KingBeetleBabyCheck){
+					nm_setStatus("Waiting", "BabyLove Buff")
+					nm_Move(2000*MoveSpeedFactor, BackKey)
+					DllCall("Sleep","UInt",1500)
+					loop 30{
+						if (nm_imgSearch("blove.png",25,"buff")[1] = 0){
+							break
+						}
+						DllCall("Sleep","UInt",1000)
+					}
+					nm_Move(1500*MoveSpeedFactor, FwdKey)
+					nm_Move(1500*MoveSpeedFactor, LeftKey)
+				}
+				lairConfirmed:=0
+				;Go inside
+				movement :=
+				(
+				nm_Walk(5, RightKey) '
+				Send "{' SC_Space ' down}"
+				Sleep 200
+				Send "{' SC_Space ' up}"
+				' nm_Walk(3, RightKey) '
+				' nm_Walk(5, RightKey, FwdKey)
+				)
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T30 L"
+				nm_endWalk()
+				loop 2 {
+					Send "{" RotLeft "}"
+				}
+				loop 5 {
+					if (nm_imgSearch("kingfloor.png",10,"low")[1] = 0){
+						lairConfirmed:=1
+						break
+					}
+					sleep 200
+				}
+				if(!lairConfirmed)
+					continue
+				;search for king beetle
+				nm_setStatus("Searching", "King Beetle")
+				found:=0
+				;(+) new detection here
+				;(+) Update health detection
+				loop 20
+				{
+					kBeetle:= nm_HealthDetection(1)
+					if(kBeetle.Length > 0)
+					{
+						found:=1
+						break
+					}
+					Sleep 250
+				}
+				if(!found) { ;No King Beetle here...try again in 2 hours
+					if(A_Index=2){
+						LastKingBeetle:=nowUnix()-floor(79200*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+7200
+						IniWrite LastKingBeetle, "settings\nm_config.ini", "Collect", "LastKingBeetle"
+					}
+					continue
+				}
+				nm_setStatus("Attacking", "King Beetle")
+				kingdead:=0
+				Sleep 2000
+				loop 1 {
+					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
+						kingdead:=1
+						nm_Move(1000*MoveSpeedFactor, BackKey, RightKey)
+						nm_Move(2500*MoveSpeedFactor, BackKey)
+						nm_Move(500*MoveSpeedFactor, RightKey)
+						break
+					}
+					nm_Move(2000*MoveSpeedFactor, BackKey)
+					Sleep 1000
+					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
+						kingdead:=1
+						nm_Move(1000*MoveSpeedFactor, BackKey, RightKey)
+						nm_Move(1000*MoveSpeedFactor, BackKey)
+						nm_Move(500*MoveSpeedFactor, RightKey)
+						break
+					}
+					nm_Move(2000*MoveSpeedFactor, RightKey)
+					Sleep 100
+					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
+						kingdead:=1
+						nm_Move(1500*MoveSpeedFactor, BackKey)
+						nm_Move(1000*MoveSpeedFactor, LeftKey)
+						break
+					}
+					nm_Move(2000*MoveSpeedFactor, BackKey)
+					Sleep 1000
+					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
+						kingdead:=1
+						nm_Move(1250*MoveSpeedFactor, FwdKey)
+						nm_Move(1000*MoveSpeedFactor, LeftKey)
+						break
+					}
+					nm_Move(2000*MoveSpeedFactor, RightKey)
+					Sleep 1000
+					if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
+						kingdead:=1
+						nm_Move(1250*MoveSpeedFactor, FwdKey)
+						nm_Move(2000*MoveSpeedFactor, LeftKey)
+						break
+					}
+					loop 2 {
+						nm_Move(2000*MoveSpeedFactor, BackKey, RightKey)
+						if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
+							kingdead:=1
+							nm_Move(2500*MoveSpeedFactor, FwdKey, LeftKey)
+							nm_Move(2500*MoveSpeedFactor, LeftKey)
+							break
+						}
+					}
+					if(kingdead)
+						break
+					Sleep 500
+					Send "{" RotLeft "}"
+					loop 300 {
+						if(nm_imgSearch("king.png",25,"lowright")[1] = 0){
+							kingdead:=1
+							Send "{" RotRight "}"
+							nm_Move(3500*MoveSpeedFactor, FwdKey, LeftKey)
+							nm_Move(2500*MoveSpeedFactor, LeftKey)
+							break
+						}
+						sleep 1000
+					}
+				}
+				if(kingdead) {
+					;check for amulet
+					if !nm_AmuletPrompt(((KingBeetleAmuletMode = 1) ? 1 : 3), "King Beetle")
+						nm_setStatus("Looting", "King Beetle"), nm_loot(13.5, 7, "right", 1)
+					TotalBossKills:=TotalBossKills+1
+					SessionBossKills:=SessionBossKills+1
+					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
+					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
+					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
+					LastKingBeetle:=nowUnix()
+					IniWrite LastKingBeetle, "settings\nm_config.ini", "Collect", "LastKingBeetle"
+					break
+				}
+			}
+		}
+		if nm_NightInterrupt()
+			return
+		;Snail
+		if((StumpSnailCheck) && (nowUnix()-LastStumpSnail)>floor(345600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;4 days
+			loop 2 {
+				wait:=min(20000, (50-HiveBees)*1000)
+				nm_Reset(1, wait)
+				nm_setStatus("Traveling", "Stump Snail")
+				nm_gotoField("stump")
+
+				;search for Stump snail
+				nm_setStatus("Searching", "Stump Snail")
+				found:=0
+				loop 20
+				{
+					sSnail:= nm_HealthDetection()
+					if(sSnail.Length > 0)
+					{
+						found:=1
+						break
+					}
+					Sleep 150
+				}
+				;attack Snail
+				movement := nm_Walk(1, FwdKey)
+				nm_createWalk(movement, "snailWalk")
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T60 L"
+				nm_endWalk()
+
+				movement :=
+				(
+				nm_Walk(2.5, RightKey) "
+				" nm_Walk(2.5, FwdKey) "
+				" nm_Walk(2.5, Leftkey) "
+				" nm_Walk(5, BackKey) "
+				" nm_Walk(2.5, Leftkey) "
+				" nm_Walk(2.5, FwdKey) "
+				" nm_Walk(5, RightKey) "
+				" nm_Walk(2.5, BackKey) "
+				" nm_Walk(2.5, Leftkey) "
+				" nm_Walk(5, FwdKey) "
+				" nm_Walk(2.5, Leftkey) "
+				" nm_Walk(2.5, BackKey) "
+				" nm_Walk(2.5, Rightkey)
+				)
+
+				Ssdead:=0
+				if(found) {
+					nm_setStatus("Attacking", "Stump Snail")
+					DllCall("GetSystemTimeAsFileTime", "int64p", &SnailStartTime:=0)
+					KillCheck := SnailStartTime
+					UpdateTimer := SnailStartTime
+					Send "{" SC_1 "}"
+					loop 2
+					{
+						Send "{" RotUp "}"
+					}
+					inactiveHoney:=0
+					loop ;Custom Stump timer to keep blessings, Will rehunt in an hour
+					{
+						if (SprinklerType = "Supreme")
+						{
+							if (currentWalk.name != "snail")
+							{
+								nm_createWalk(movement, "snail") ; create cycled walk script for this snail session
+							}
+							else
+							{
+								Send "{F13}" ; start new cycle
+							}
+							KeyWait "F14", "D T5 L" ; wait for pattern start
+						}
+						Click "Down"
+						Loop 600
+						{
+							Sleep 50
+							If ((nm_AmuletPrompt(((ShellAmuletMode = 1) ? 1 : 3), "Shell")) = 1)
+							{
+								Ssdead := 1
+								Send "{" RotDown " 2}"
+								break 2
+							}
+							if((Mod(A_Index, 10) = 0) && (not nm_activeHoney())){
+								inactiveHoney++
+								if (inactiveHoney>=10)
+									break 2
+							}
+							if(Mod(A_Index, 20) = 0){
+								if (disconnectCheck())
+									break
+								if nm_MondoInterrupt()
+									break
+							}
+							if(youDied)
+								break 2
+							if nm_NightInterrupt() {
+								nm_endWalk()
+								Click "Up"
+								return
+							}
+							if (SprinklerType = "Supreme")
+							{
+								if (!GetKeyState("F14") || A_Index = 600)
+								{
+									nm_fieldDriftCompensation()
+									Break
+								}
+							}
+						}
+						Click "Up"
+						;(+) New detection system for snail
+						DllCall("GetSystemTimeAsFileTime", "int64p", &currentTime:=0)
+						ElaspedSnailTime :=  (currentTime - SnailStartTime)//10000
+						LastHealthCheck := (currentTime - KillCheck)//10000
+						LastUpdate := (currentTime - UpdateTimer)//10000
+						If(SnailTime != "Kill" && ElaspedSnailTime > SnailTime*60000)
+						{
+							nm_setStatus("Time Limit", "Stump Snail")
+							LastStumpSnail:=nowUnix()-floor(345600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
+							break
+						}
+						if (LastUpdate > 60000)
+						{
+							if (nm_KillTimeEstimation("Snail", LastHealthCheck) != 0)
+							{
+								KillCheck := currentTime
+							}
+							UpdateTimer := currentTime
+						}
+					}
+					nm_endWalk()
+				}
+				else { ;No Stump Snail try again in 2 hours
+					LastStumpSnail:=nowUnix()-floor(345600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+7200
+					IniWrite LastStumpSnail, "settings\nm_config.ini", "Collect", "LastStumpSnail"
+					nm_setStatus("Missing", "Stump Snail")
+				}
+
+				;loot
+				if(SSdead) {
+					TotalBossKills:=TotalBossKills+1
+					SessionBossKills:=SessionBossKills+1
+					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
+					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
+					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
+					LastStumpSnail:=nowUnix()
+					IniWrite LastStumpSnail, "settings\nm_config.ini", "Collect", "LastStumpSnail"
+					InputSnailHealth := 100.00
+					IniWrite InputSnailHealth, "settings\nm_config.ini", "Collect", "InputSnailHealth"
+					intialHealthCheck:=0
+					break
+				}
+				else if (A_Index = 2){ ;stump snail not dead, come again in 30 mins
+					LastStumpSnail:=nowUnix()-floor(345600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
+					IniWrite LastStumpSnail, "settings\nm_config.ini", "Collect", "LastStumpSnail"
+				}
+			}
+		}
+		if nm_NightInterrupt()
+			return
+
+		;Commando
+		if((CommandoCheck) && (nowUnix()-LastCommando)>floor(1800*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;30 minutes
+			Loop 2 {
+				nm_Reset()
+				;Go to Commando tunnel
+				nm_setStatus("Traveling", "Commando")
+				nm_gotoRamp()
+				if (MoveMethod = "Walk")
+				{
+					movement :=
+					(
+					nm_Walk(44.75, BackKey, LeftKey) '
+					' nm_Walk(42.5, LeftKey) '
+					' nm_Walk(8.5, BackKey) '
+					' nm_Walk(22.5, LeftKey) '
+					send "{' RotLeft ' 2}"
+					' nm_Walk(27, FwdKey) '
+					' nm_Walk(12, LeftKey, FwdKey) '
+					' nm_Walk(11, FwdKey)
+					)
+				}
+				else
+				{
+					nm_gotoCannon()
+					movement :=
+					(
+					'
+					send "{' SC_E ' down}"
+					HyperSleep(100)
+					send "{' SC_E ' up}"
+					HyperSleep(400)
+					send "{' LeftKey ' down}{' FwdKey ' down}"
+					HyperSleep(1050)
+					send "{' SC_Space ' 2}"
+					HyperSleep(5850)
+					send "{' FwdKey ' up}"
+					HyperSleep(750)
+					send "{' SC_Space '}{' RotLeft ' 2}"
+					HyperSleep(1500)
+					send "{' LeftKey ' up}"
+					' nm_Walk(4, BackKey) '
+					' nm_Walk(4.5, LeftKey)
+					)
+				}
+
+				if (MoveSpeedNum < 34)
+				{
+					movement .=
+					(
+					'
+					' nm_Walk(10, LeftKey) '
+					HyperSleep(50)
+					' nm_Walk(6, RightKey) '
+					HyperSleep(50)
+					' nm_Walk(2, LeftKey) '
+					HyperSleep(50)
+					' nm_Walk(7, FwdKey) '
+					HyperSleep(750)
+					send "{' SC_Space ' down}"
+					HyperSleep(50)
+					send "{' SC_Space ' up}"
+					' nm_Walk(5.5, FwdKey) '
+					HyperSleep(750)
+					Loop 3
+					{
+						send "{' SC_Space ' down}"
+						HyperSleep(50)
+						send "{' SC_Space ' up}"
+						' nm_Walk(6, FwdKey) '
+						HyperSleep(750)
+					}
+					' nm_Walk(1, FwdKey) '
+					send "{' SC_Space ' down}"
+					HyperSleep(50)
+					send "{' SC_Space ' up}"
+					' nm_Walk(6, FwdKey) '
+					HyperSleep(750)
+					' nm_Walk(5, FwdKey) '
+					HyperSleep(50)
+					' nm_Walk(9, BackKey) '
+					Sleep 4000
+					send "{' SC_Space ' down}"
+					HyperSleep(50)
+					send "{' SC_Space ' up}"
+					' nm_Walk(0.5, BackKey) '
+					HyperSleep(1500)'
+					)
+				}
+				else
+				{
+					movement .=
+					(
+					'
+					' nm_Walk(10, LeftKey) '
+					HyperSleep(50)
+					' nm_Walk(6, RightKey) '
+					HyperSleep(50)
+					' nm_Walk(2, LeftKey) '
+					HyperSleep(50)
+					' nm_Walk(7, FwdKey) '
+					HyperSleep(750)
+					send "{' SC_Space ' down}"
+					HyperSleep(50)
+					send "{' SC_Space ' up}"
+					' nm_Walk(4.5, FwdKey) '
+					HyperSleep(750)
+					Loop 3
+					{
+						send "{' SC_Space ' down}"
+						HyperSleep(50)
+						send "{' SC_Space ' up}"
+						' nm_Walk(5, FwdKey) '
+						HyperSleep(750)
+					}
+					' nm_Walk(1, FwdKey) '
+					send "{' SC_Space ' down}"
+					HyperSleep(50)
+					send "{' SC_Space ' up}"
+					' nm_Walk(6, FwdKey) '
+					HyperSleep(750)
+					' nm_Walk(5, FwdKey) '
+					HyperSleep(50)
+					' nm_Walk(9, BackKey) '
+					Sleep 4000
+					send "{' SC_Space ' down}"
+					HyperSleep(50)
+					send "{' SC_Space ' up}"
+					' nm_Walk(0.5, BackKey) '
+					HyperSleep(1500)'
+					)
+				}
+
+				nm_createWalk(movement)
+				KeyWait "F14", "D T5 L"
+				KeyWait "F14", "T90 L"
+				nm_endWalk()
+
+				if (youDied)
+					continue
+
+				while (nm_imgSearch("ChickFled.png",50,"lowright")[1] = 0)
+				{
+					if (A_Index = 5)
+					{
+						nm_endWalk()
+						continue 2
+					}
+					if ((A_Index = 1) || (currentWalk.name != "commando"))
+					{
+						movement :=
+						(
+						nm_Walk(5, FwdKey) '
+						HyperSleep(50)
+						' nm_Walk(9, BackKey) '
+						Sleep 4000
+						send "{' SC_Space ' down}"
+						HyperSleep(50)
+						send "{' SC_Space ' up}"
+						' nm_Walk(0.5, BackKey) '
+						HyperSleep(1500)'
+						)
+						nm_createWalk(movement, "commando")
+					}
+					else
+						Send "{F13}"
+
+					KeyWait "F14", "D T5 L"
+					KeyWait "F14", "T20 L"
+				}
+				nm_endWalk()
+
+				nm_setStatus("Searching", "Commando Chick")
+				found:=0
+				loop 4 {
+					Send "{" ZoomIn "}"
+				}
+				;(+) Update health detection
+				loop 20
+				{
+					cChick:= nm_HealthDetection()
+					if(cChick.Length > 0)
+					{
+						found:=1
+						break
+					}
+					Sleep 250
+				}
+				Global ChickStartTime
+				Global ElaspedChickTime
+				Ccdead:=0
+				if(found) {
+					nm_setStatus("Attacking", "Commando Chick")
+
+					DllCall("GetSystemTimeAsFileTime", "int64p", &ChickStartTime:=0)
+					KillCheck := ChickStartTime
+					UpdateTimer := ChickStartTime
+					chickStrikes := 0
+					loop { ;10 minute chick timer to keep blessings, Will rehunt in an hour
+						click
+						sleep 100
+						;do later
+						if(nm_imgSearch("ChickDead.png",50,"lowright")[1] = 0){
+							CCdead:=1
+							break
+						}
+						if(youDied)
+							break
+						if (Mod(A_Index, 20) = 0){
+							if (disconnectCheck())
+								break
+							if nm_MondoInterrupt()
+								break
+						}
+						;(+) New detection system for Chick
+						DllCall("GetSystemTimeAsFileTime", "int64p", &currentTime:=0)
+						LastHealthCheck := (currentTime - KillCheck)//10000
+						ElaspedChickTime := (currentTime-ChickStartTime)//10000
+						LastUpdate := (currentTime - UpdateTimer)//10000
+						If(ChickTime != "Kill" && ElaspedChickTime > ChickTime*60000)
+						{
+							nm_setStatus("Time Limit", "Commando Chick")
+							LastCommando:=nowUnix()-floor(1800*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
+							Break
+						}
+						if (LastUpdate > 60000)
+						{
+							if (nm_KillTimeEstimation("Chick", LastHealthCheck) != 0)
+							{
+								KillCheck := currentTime
+							}
+							UpdateTimer := currentTime
+						}
+						loop 20
+						{
+							comChick:= nm_HealthDetection()
+							if(comChick.Length > 0)
+								break
+							if(A_Index=20)
+							{
+								if (chickStrikes <= 10)
+								{
+									chickStrikes += 1
+								}
+								else
+								{
+									CCdead:=1
+									break 2
+								}
+							}
+							if(nm_imgSearch("ChickDead.png",50,"lowright")[1] = 0){
+								CCdead:=1
+								break 2
+							}
+							Sleep 250
+						}
+					}
+				}
+				else { ;No Commando chick try again in 30 mins
+					LastCommando:=nowUnix()
+					IniWrite LastCommando, "settings\nm_config.ini", "Collect", "LastCommando"
+					nm_setStatus("Missing", "Commando Chick")
+				}
+
+				;loot
+				if(CCdead) {
+					nm_setStatus("Defeated", "Commando Chick")
+					TotalBossKills:=TotalBossKills+1
+					SessionBossKills:=SessionBossKills+1
+					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
+					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
+					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
+					LastCommando:=nowUnix()
+					IniWrite LastCommando, "settings\nm_config.ini", "Collect", "LastCommando"
+					InputChickHealth:=100.00
+					IniWrite InputChickHealth, "settings\nm_config.ini", "Collect", "InputChickHealth"
+					intialHealthCheck:=0
+					break
+				}
+			}
+		}
+		if nm_NightInterrupt()
+			return
+		;crab
+		if((CocoCrabCheck) && (nowUnix()-LastCocoCrab)>floor(129600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))){ ;1.5 days
+			loop 6 {
+				wait:=min(20000, (50-HiveBees)*1000)
+				nm_Reset(1, wait)
+				nm_setStatus("Traveling", "Coco Crab")
+				nm_gotoField("coconut")
+				Send "{" SC_1 "}"
+				nm_Move(1400, RightKey)
+				nm_Move(1000, BackKey)
+
+				;search for Crab
+				nm_setStatus("Searching", "Coco Crab")
+				found:=0
+
+				;(+) new detection here
+				loop 20
+				{
+					cCrab:= nm_HealthDetection()
+					if(cCrab.Length > 0)
+					{
+						found:=1
+						break
+					}
+					Sleep 250
+				}
+				;attack Crab
+
+				Global CrabStartTime
+				Global ElaspedCrabTime
+
+				;CRAB TIMERS
+				;timers in ms
+				leftright_start := 500
+				leftright_end := 19000
+				cycle_end := 24000
+
+				;left-right movement
+				moves := 14
+				move_delay := 310
+
+				movement :=
+				(
+				'
+				DllCall("GetSystemTimeAsFileTime", "int64p", &start_time:=0)
+				' nm_Walk(4, FwdKey) '
+				DllCall("GetSystemTimeAsFileTime", "int64p", &time:=0)
+				Sleep ' leftright_start ' -(time-start_time)//10000
+				loop 2 {
+					i := A_Index
+					' nm_Walk(1, FwdKey) '
+					Loop ' moves ' {
+						' nm_Walk(2, LeftKey) '
+						DllCall("GetSystemTimeAsFileTime", "int64p", &time)
+						Sleep i*' 2*move_delay*moves '-' 2*move_delay*moves-leftright_start '+A_Index*' move_delay '-(time-start_time)//10000
+					}
+					' nm_Walk(1, BackKey) '
+					Loop ' moves ' {
+						' nm_Walk(2, RightKey) '
+						DllCall("GetSystemTimeAsFileTime", "int64p", &time)
+						Sleep i*' 2*move_delay*moves '-' move_delay*moves-leftright_start '+A_Index*' move_delay '-(time-start_time)//10000
+					}
+				}
+				DllCall("GetSystemTimeAsFileTime", "int64p", &time)
+				Sleep ' leftright_end '-(time-start_time)//10000
+				' nm_Walk(6.5, BackKey) '
+				DllCall("GetSystemTimeAsFileTime", "int64p", &time)
+				Sleep ' cycle_end '-(time-start_time)//10000
+				'
+				)
+
+				Crdead:=0
+				if(found) {
+
+					nm_setStatus("Attacking", "Coco Crab")
+					DllCall("GetSystemTimeAsFileTime", "int64p", &CrabStartTime:=0)
+					inactiveHoney:=0
+					loop { ;30 minute crab timer to keep blessings, Will rehunt in an hour
+						DllCall("GetSystemTimeAsFileTime", "int64p", &PatternStartTime:=0)
+						if (currentWalk.name != "crab")
+							nm_createWalk(movement, "crab") ; create cycled walk script for this gather session
+						else
+							Send "{F13}" ; start new cycle
+
+						KeyWait "F14", "D T5 L" ; wait for pattern start
+
+						Loop 600
+						{
+							if(!DisableToolUse) {
+								sendinput "{click down}"
+								sleep 50
+								sendinput "{click up}"
+							}
+							if(nm_imgSearch("crab.png",70,"lowright")[1] = 0){
+								Crdead:=1
+								Send "{" RotUp " 2}"
+								break 2
+							}
+							if((Mod(A_Index, 10) = 0) && (not nm_activeHoney())){
+								inactiveHoney++
+								if (inactiveHoney>=10)
+									break 2
+							}
+							if(youDied)
+								break 2
+							if((A_Index = 600) || !GetKeyState("F14"))
+								break
+							Sleep 50
+						}
+						DllCall("GetSystemTimeAsFileTime", "int64p", &time:=0)
+						ElaspedCrabTime := (time-CrabStartTime)//10000
+						If (ElaspedCrabTime > 900000){
+							nm_setStatus("Time Limit", "Coco Crab")
+							LastCocoCrab:=nowUnix()-floor(129600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
+							IniWrite LastCocoCrab, "settings\nm_config.ini", "Collect", "LastCocoCrab"
+							nm_endWalk()
+							Return
+						}
+					}
+					nm_endWalk()
+				}
+				else { ;No Crab try again in 2 hours
+					LastCocoCrab:=nowUnix()-floor(129600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+7200
+					IniWrite LastCocoCrab, "settings\nm_config.ini", "Collect", "LastCocoCrab"
+					nm_setStatus("Missing", "Coco Crab")
+				}
+
+				;loot
+				if(Crdead) {
+					DllCall("GetSystemTimeAsFileTime", "int64p", &time:=0)
+					duration := DurationFromSeconds((time-CrabStartTime)//10000000, "mm:ss")
+					nm_setStatus("Defeated", "Coco Crab`nTime: " duration)
+					ElapsedPatternTime := (time-PatternStartTime)//10000
+					movement :=
+					(
+					nm_Walk(((ElapsedPatternTime > leftright_start) && (ElapsedPatternTime < leftright_start+4*moves*move_delay)) ? Abs(Abs(Mod((ElapsedPatternTime-moves*move_delay-leftright_start)*2/move_delay, moves*4)-moves*2)-moves*3/2) : moves*3/2, (((ElapsedPatternTime > leftright_start+moves/2*move_delay) && (ElapsedPatternTime < leftright_start+3*moves/2*move_delay)) || ((ElapsedPatternTime > leftright_start+5*moves/2*move_delay) && (ElapsedPatternTime < leftright_start+7*moves/2*move_delay))) ? RightKey : LeftKey) "
+					" (((ElapsedPatternTime < leftright_start) || (ElapsedPatternTime > leftright_end)) ? nm_Walk(4, FwdKey) : "")
+					)
+					nm_createWalk(movement)
+					KeyWait "F14", "D T5 L"
+					KeyWait "F14", "T20 L"
+					nm_endWalk()
+					TotalBossKills:=TotalBossKills+1
+					SessionBossKills:=SessionBossKills+1
+					PostSubmacroMessage("StatMonitor", 0x5555, 1, 1)
+					IniWrite TotalBossKills, "settings\nm_config.ini", "Status", "TotalBossKills"
+					IniWrite SessionBossKills, "settings\nm_config.ini", "Status", "SessionBossKills"
+					nm_setStatus("Looting", "Coco Crab")
+					nm_loot(9, 4, "right")
+					nm_loot(9, 4, "left")
+					nm_loot(9, 4, "right")
+					nm_loot(9, 4, "left")
+					nm_loot(9, 4, "right")
+					nm_loot(9, 4, "left")
+					LastCocoCrab:=nowUnix()
+					IniWrite LastCocoCrab, "settings\nm_config.ini", "Collect", "LastCocoCrab"
+					break
+				}
+				else if (A_Index = 2) { ;crab kill failed, try again in 30 mins
+					LastCocoCrab:=nowUnix()-floor(129600*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))+1800
+					IniWrite LastCocoCrab, "settings\nm_config.ini", "Collect", "LastCocoCrab"
+					nm_setStatus("Failed", "Coco Crab")
+				}
+			}
+		}
+	}
+}
+nm_Mondo(){
+	global youDied
+	;mondo buff
+	global MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter
+	if nm_NightInterrupt()
+		return
+	if nm_MondoInterrupt(){
+		mondobuff := nm_imgSearch("mondobuff.png",50,"buff")
+		If (mondobuff[1] = 0) {
+			LastMondoBuff:=nowUnix()
+			IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
+			return
+		}
+		repeat:=1
+		global FwdKey, LeftKey, BackKey, RightKey, RotLeft, RotRight, SC_E, DisableToolUse
+		global KeyDelay
+		global MoveMethod
+		global MoveSpeedNum
+		global AFBrollingDice
+		global AFBuseGlitter
+		global AFBuseBooster
+		global CurrentField
+		global MondoSecs, MondoLootDirection
+		nm_updateAction("Mondo")
+		MoveSpeedFactor:=round(18/MoveSpeedNum, 2)
+		while(repeat){
+			nm_Reset(0, 2000, 0)
+			nm_setStatus("Traveling", ("Mondo (" . MondoAction . ")"))
+			nm_gotoPlanter("mountain top")
+			nm_createWalk(nm_Walk(14, RightKey) "`nsend '{" RotLeft "}'")
+			KeyWait "F14", "D T5 L"
+			KeyWait "F14", "T30 L"
+			nm_endWalk()
+			;;; (+) new conditions probably
+			found := 0
+			mondoChick := 0
+			loop 20
+			{
+				mChick:= nm_HealthDetection()
+				if(mChick.Length > 0)
+				{
+					found:=1
+					break
+				}
+				Sleep 250
+			}
+			if (found)
+			{
+				nm_setStatus("Found", "Mondo")
+				for index, value in mChick ;Mondo is already dmging itself before we get there
+				{
+					if (value = 100.00) ;Planter detected since mondo will already have taken dmg by the time you come up
+					{
+						continue
+					}
+					else
+					{
+						mondoChick:=1
+					}
+				}
+				if (mondoChick)
+				{
+					nm_setStatus("Attacking", "Mondo")
+					if(MondoAction="Buff"){
+						repeat:=0
+						loop MondoSecs { ;2 mins
+							nm_autoFieldBoost(CurrentField)
+							if(youDied || AFBrollingDice || AFBuseGlitter || AFBuseBooster)
+								break
+							Sleep 1000
+						}
+					}
+					else if(MondoAction="Tag"){
+						repeat:=0
+						;zaappiix5
+						nm_Move(2000*MoveSpeedFactor, LeftKey)
+						nm_Move(2000*MoveSpeedFactor, BackKey)
+						nm_Move(1000*MoveSpeedFactor, LeftKey)
+						nm_Move(3500*MoveSpeedFactor, FwdKey)
+						loop 25 { ;25 sec
+							if(youDied)
+								break
+							Sleep 1000
+						}
+					}
+					else if(MondoAction="Guid" && PMondoGuid=1 && PMondoGuidComplete=0){
+						repeat:=0
+						PMondoGuidComplete:=1
+						while ((nowUnix()-LastGuid)<=210 && utc_min<15 && A_Index<210) { ;3.5 mins since guid
+							if(youDied)
+								break
+							;check for mondo death here
+							mondo := nm_imgSearch("mondo3.png",50,"lowright")
+							If (mondo[1] = 0) {
+								break
+							}
+							Sleep 1000
+							utc_min := FormatTime(A_NowUTC, "m")
+						}
+					} else if(MondoAction="Kill"){
+						repeat:=1
+						success:=count:=0
+						loop 3600 { ;15 mins
+							mondoDead:=nm_HealthDetection()
+							if ((mondoDead.Length = 0) || (mondoDead.Length = 1 && mondoDead[1] = 100.00)) {
+								if (++count >= 60) { ; Changed from 5 seconds to 15 seconds for when mondo goes off screen
+									success := 1
+									break
+								}
+							}
+							else ; one health bar < 100 or multiple health bars (assumed Mondo is one of them)
+								count := 0
+							if(Mod(A_Index, 4)=0) { ; 1 second
+								nm_autoFieldBoost(CurrentField)
+								if(nm_NightInterrupt() || AFBrollingDice || AFBuseGlitter || AFBuseBooster) {
+									return
+								}
+								if(youDied)
+									break
+								if(FormatTime(A_NowUTC, "m")>14) {
+									repeat:=0
+									break
+								}
+								If (nm_imgSearch("mondo3.png",50,"lowright")[1] = 0) { ;check for mondo death here
+									success := 1
+									break
+								}
+							}
+							if(Mod(A_Index, 40)=0) ; 10 seconds
+								nm_OpenMenu()
+							if(Mod(A_Index, 240)=0) ; 1 minute
+								click
+							if(A_Index=3600) {
+								repeat:=0
+								break
+							}
+							sleep 250
+						}
+						if (success = 1) {
+							nm_setStatus("Defeated", "Mondo")
+							repeat := 0
+							if !(MondoLootDirection = "Ignore") {
+								;loot mondo after death
+								if (MondoLootDirection = "Random")
+									dir := Random(0, 1)
+								else
+									dir := (MondoLootDirection = "Right")
+
+								if (dir = 0)
+									tc := "left", afc := "right"
+								else
+									tc := "right", afc := "left"
+
+								nm_setStatus("Looting", "Mondo")
+								movement :=
+								(
+								"send '{" RotLeft "}'
+								" nm_Walk(7.5, FwdKey, RightKey) "
+								" nm_Walk(7.5, %tc%Key)
+								)
+								nm_createWalk(movement)
+								KeyWait "F14", "D T5 L"
+								KeyWait "F14", "T30 L"
+								nm_endWalk()
+
+								if(!DisableToolUse)
+									click "down"
+								DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
+								n := s, f := s+450000000 ; 45 seconds loot timeout
+								while ((n < f) && (A_Index <= 12)) {
+									nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
+									DllCall("GetSystemTimeAsFileTime","int64p",&n)
+								}
+								click "up"
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				Break
+			}
+
+		}
+		LastMondoBuff:=nowUnix()
+		IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
+	}
+}
+nm_NightMemoryMatch(){
+	; night (general) + no amulet + nightmm ready + night confirmed (last b/c reset)
+	if (!nm_NightInterrupt() || nm_AmuletPrompt() || !(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800))
+			return
+	nm_MemoryMatch("Night")
+}
+
+nm_ViciousBee(){
+	if nm_locateVB() = 0
+		VBEnd({ result: VBResults.notfound, reason: "All fields checked" })
+}
+/**
+ * Check each enabled field for vicious
+ * @returns {x < 0} if not enabled
+ * @returns {x = 0} if all fields checked
+ * @returns {x = 1} if success
+ */
+nm_locateVB(){
+	global VBfieldStart, VBStart := nowUnix(), fieldsChecked := 0, attackingVB := 0
+	; don't run if disabled or only daily bonus
+	if (StingerCheck=0) || (StingerDailyBonusCheck=1 && (VBStart-VBLastKilled)<79200) {
+		return -1
+	}
+
+	static VBData := [
+		{ field: "Pepper", enabled: StingerPepperCheck
+		, bees: 35
+		, reps: 1
+		, lrdist: 20
+		, fbdist: 7
+		, initRight: 10
+		, initFwd: 7 },
+
+		{ field: "MountainTop", enabled: StingerMountainTopCheck
+		, bees: 25
+		, reps: 2
+		, lrdist: 17
+		, fbdist: 5.5
+		, initRight: 8.5
+		, initFwd: 10.5 },
+
+		{ field: "Rose", enabled: StingerRoseCheck
+		, bees: 15
+		, reps: 2
+		, lrdist: 13
+		, fbdist: 6
+		, initRight: 6.5
+		, initFwd: 12 },
+
+		{ field: "Cactus", enabled: StingerCactusCheck
+		, bees: 15
+		, reps: 1
+		, lrdist: 26
+		, fbdist: 5.5
+		, initRight: 13
+		, initFwd: 3.7 },
+
+		{ field: "Spider", enabled: StingerSpiderCheck
+		, bees: 5
+		, reps: 2
+		, lrdist: 21
+		, fbdist: 5.7
+		, initRight: 10.5
+		, initFwd: 9.5 },
+
+		{ field: "Clover", enabled: StingerCloverCheck
+		, bees: 0
+		, reps: 2
+		, lrdist: 22
+		, fbdist: 5.7
+		, initRight: 11
+		, initFwd: 10 }
+	]
+
+	for data in VBData { ; if no fields enabled, return
+		if data.enabled
+			break
+		if A_Index = VBData.Length
+			return -2
+	}
+
+
+	nm_setStatus("Starting", "Vicious Bee Cycle")
+	nm_updateAction("Stingers")
+
+	for data in VBData
+	{
+		if !data.enabled || data.bees >= HiveBees
+			continue
+		; This is built into the game
+		if (nowUnix() - VBStart) > 300
+			return VBEnd('Timeout - 5 minute limit')
+
+		fieldsChecked++
+		global VBfieldStart := nowUnix()
+
+		fieldloop:
+		while (A_Index < 4) || attackingVB ; keep going to field if attacking vb, max 3 loops otherwise
+		{
+			nm_Reset(0, 2000, 0)
+			nm_setStatus("Traveling", "Vicious Bee (" data.field ")" ((A_Index > 1) ? " — Attempt " A_Index : ""))
+			nm_gotoField(data.field)
+
+			if attackingVB {
+				switch (vic := nm_killVB(data.field)).result {
+					case VBResults.success, VBResults.failed: ; death message or timeout
+						return VBEnd(vic)
+					case VBResults.retry: ; return to field
+						continue fieldloop
+				}
+			}
+			nm_setStatus("Searching", "Vicious Bee (" data.field ")")
+
+			if !DisableToolUse
+				Click "Down"
+
+			patterns := [
+				nm_Walk(data.initRight, RightKey) "`n" nm_Walk(data.initFwd, FwdKey),
+				nm_Walk(data.lrdist, LeftKey) "`n" nm_Walk(data.fbdist, BackKey) "`n" nm_Walk(data.lrdist, RightKey) "`n" nm_Walk(data.fbdist, BackKey),
+				nm_Walk(data.lrdist, LeftKey)
+			]
+
+			Loop 3 { ; 1 alignment, 2 search
+				i := A_Index
+				Loop (i = 2 ? data.reps : 1) { ; only repeat for search pattern
+					switch (vic := SearchforVB(patterns[i], data.field)).result {
+						case VBResults.success, VBResults.failed, VBResults.dead: ; end loop
+							return VBEnd(vic)
+						case VBResults.retry: ; return to field
+							continue fieldloop
+					}
+				}
+			}
+
+			; nothing found, no issues
+			Click "Up"
+			break fieldloop
+		}
+	}
+	; vb not found
+	return 0
+}
+/**
+ * End cycle and send status message using vic Obj
+ */
+VBEnd(vic){
+	global VBLastKilled
+	Click "Up"
+
+	nm_setStatus("Completed"
+	, "Vicious Bee — " vic.result  " — " vic.reason
+	. "`nTime: " DurationFromSeconds(nowUnix() - VBStart, "mm:ss")
+	. "`nFields Checked: " fieldsChecked)
+
+	if vic.result = VBResults.success {
+		nm_IncrementStat("ViciousKills")
+
+		IniWrite((VBLastKilled:=nowUnix()), "settings\nm_config.ini", "Collect", "VBLastKilled")
+		return 1
+	}
+}
+/**
+ * Create a movement with vicious bee detection. Used in both find and attack VB
+ * @returns {{result: found/dead/retry/0, reason?: youDied/inactivehoney}}
+ */
+WalkwithVBCheck(movement, search:=true){
+    local inactiveHoney := 0
+    nm_OpenChat() ; just to ensure that chat is open 😭
+    start := nowUnix()
+    nm_createWalk(movement)
+    KeyWait "F14", "D T5 L"
+    while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
+    {
+        vic := nm_VBCheck()
+		switch {
+			case vic.result:
+				if (!search && vic.result = VBResults.found) ; we dont care if VB is detected during atk phase
+					continue
+
+				nm_endWalk()
+				return vic
+			case !nm_activeHoney():
+				if (inactiveHoney++ >= 10) { ; just increase inactive honey counter, break on 10
+					nm_endWalk()
+					return {result: VBResults.retry, reason: VBReasons.inactivehoney}
+            	}
+			case youDied: ; retry field
+				nm_endWalk()
+            	return {result: VBResults.retry, reason: VBReasons.youDied}
+		}
+    }
+    nm_endWalk()
+    return { result: 0 }
+}
+/**
+ * Search for vicious bee
+ *  @returns {{result: found | dead | retry | 0 , reason?: otherplayer | inactivehoney | youDied}}
+ *  @returns {{result: success | failed | retry , reason?: killed | timeout}} VB found
+ */
+SearchforVB(movement, field){
+	static inactiveHoney := 0
+	vic := WalkwithVBCheck(movement)
+	switch vic.result {
+		case VBResults.found: ; VB found bitmap found
+			return nm_killVB(field)
+		case VBResults.dead: ; VB dead bitmap found BEFORE VB found bitmap
+			nm_setStatus("Detected", "Vicious Bee - Killed")
+			vic.reason := VBReasons.otherPlayer
+		case VBResults.retry: ; retry field: inactive honey/died
+			if (vic.reason = VBReasons.inactivehoney) {
+				if (++inactiveHoney < 5) {
+					inactiveHoney := 0
+					nm_setStatus("Warning", "Vicious Bee — Inactive Honey — Retrying")
+				} else {
+					; don't retry yet: not enough inactive honey triggers
+					vic.result := 0
+				}
+			}
+	}
+
+	return vic
+}
+/**
+ * Kill vicious bee using battle pattern
+ * @returns {{result: retry | success | failed}}
+ */
+nm_killVB(field) {
+	global state:="Attacking", attackingVB := 1
+	nm_setStatus("Attacking", "Vicious Bee (" field ")")
+
+	battlepattern :=
+	(
+		nm_Walk(4, FwdKey) "
+		Sleep 1000
+		" nm_Walk(4, RightKey) "
+		Sleep 1000
+		" nm_Walk(4, BackKey) "
+		Sleep 1000
+		" nm_Walk(4, LeftKey)
+	)
+
+	while nowUnix()-VBfieldStart <= 300 { ; 5 minute timeout
+		switch (vic := WalkwithVBCheck(battlepattern, false)).result {
+			case VBResults.retry:
+				nm_setStatus("Retrying", "Vicious Bee (" field ")")
+				return vic
+			case VBResults.dead:
+				nm_setStatus("Killed", "Vicious Bee (" field ")")
+				attackingVB := 0
+				return {result: VBResults.success, reason: VBReasons.killed}
+		}
+	}
+	nm_setStatus("Aborting", "Vicious Bee - Timeout")
+	attackingVB := 0
+	return {result: VBResults.failed, reason: VBReasons.timeout}
+}
+/**
+ * Vicious bee detection using chat
+ * @returns {{result: found/dead/0}}
+ */
+nm_VBCheck() {
+	static LastRan := 0
+	GetRobloxClientPos()
+	offsetY := GetYOffset()
+	if (nowUnix()-LastRan>=40) { ; chat translucent after 3 seconds, text dissapears after 40 seconds
+		if !GetKeyState("F14")
+			nm_OpenChat()
+		else
+			MouseMove(windowX + windowWidth - 22, windowY + offsetY + 60), MouseMove(windowX+350, windowY+offsetY+100)
+		sleep 50
+		LastRan := nowUnix()
+	}
+
+	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth - 8 - (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" windowY+offsetY+40 "|" (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" (windowHeight>=1156 ? 334 : windowHeight/3.464))
+
+	for , bitmap in bitmaps["viciousbee"]["dead"] {
+        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
+            Gdip_DisposeImage(pBMScreen)
+            return { result: VBResults.dead }
+        }
+    }
+    for , bitmap in bitmaps["viciousbee"]["found"] {
+        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
+            Gdip_DisposeImage(pBMScreen)
+            return { result: VBResults.found }
+        }
+    }
+    Gdip_DisposeImage(pBMScreen)
+    return { result: 0 }
+}
+;//todo: make it work if someone has chat disabled
+; open roblox chat
+nm_OpenChat(msg:="") {
+    PrevKeyDelay := A_KeyDelay
+    SetKeyDelay 50
+	Send "{" SC_Slash "}" msg "`n"
+    SetKeyDelay PrevKeyDelay
+}
+nm_IncrementStat(stat, amount:=1){ ; //todo: add to Quests/Bugrun when they are rewritten
+	global TotalBossKills, SessionBossKills
+	, TotalViciousKills, SessionViciousKills
+	, TotalBugKills, SessionBugKills
+	, TotalPlanters, SessionPlanters
+	, TotalQuestsDone, SessionQuestsDone
+	, TotalDisconnects, SessionDisconnects
+	StatEnum := Map("BossKills",1
+		,"ViciousKills",2
+		,"BugKills",3
+		,"Planters",4
+		,"QuestsDone",5
+		,"Disconnects",6
+	)
+	IniWrite (++Total%stat%), "settings\nm_config.ini", "Status", "Total" stat
+	IniWrite (++Session%stat%), "settings\nm_config.ini", "Status", "Session" stat
+	PostSubmacroMessage("StatMonitor", 0x5555, StatEnum[stat], amount)
+}

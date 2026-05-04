@@ -1,0 +1,108 @@
+#Requires AutoHotkey v2.0
+
+global questsConfigLoc := "features\All\Quests\nm_quests_config.ini"
+
+;this is this features GUI lines-of-code used to calculate loading progress
+QuestsFeatureProgressVolume := (QuestsFeature) ? 48 : 0
+;this is the running total of all macro features included in the load progress metric
+LoadingProgressVolume := (QuestsFeature) ? LoadingProgressVolume+QuestsFeatureProgressVolume : LoadingProgressVolume
+
+nm_QuestsTab(*) {
+	global
+	TabCtrl.UseTab("Quests")
+	MainGui.SetFont("w700")
+	MainGui.Add("GroupBox", "x5 y23 w150 h108", "Polar Bear")
+	MainGui.Add("GroupBox", "x5 y131 w150 h38", "Honey Bee")
+	MainGui.Add("GroupBox", "x5 y170 w150 h68", "Settings")
+	MainGui.Add("GroupBox", "x160 y23 w165 h108", "Black Bear")
+	MainGui.Add("GroupBox", "x160 y131 w165 h108", "Brown Bear")
+	MainGui.Add("GroupBox", "x330 y23 w165 h108", "Bucko Bee")
+	MainGui.Add("GroupBox", "x330 y131 w165 h108", "Riley Bee")
+
+	petalQuestDisclaimer := Msgbox.Bind(
+		"As of version 1.1.0, petal quests have been added to detection, but the macro will simply gather in the corresponding field, or the field with the highest concenctration of a specific petal color."
+		. "`n`nIT IS EXPECTED THAT PETAL QUESTS TAKE A LONG TIME, especially high-tier quests like Riley/Bucko at 250+ quests completed"
+		, "Petal Quest Warning", "Owner" MainGui.Hwnd)
+
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+	(GuiCtrl := MainGui.Add("CheckBox", "x80 y23 vPolarQuestCheck Disabled Checked" PolarQuestCheck, "Enable")).Section := "Quests", GuiCtrl.OnEvent("Click", nm_PolarQuestCheck)
+	(GuiCtrl := MainGui.Add("CheckBox", "x15 y37 vPolarQuestGatherInterruptCheck Disabled Checked" PolarQuestGatherInterruptCheck, "Allow Gather Interrupt")).Section := "Quests", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	MainGui.Add("Text", "x8 y51 w145 h78 vPolarQuestProgress", StrReplace(PolarQuestProgress, "|", "`n"))
+
+	(GuiCtrl := MainGui.Add("CheckBox", "x80 y131 vHoneyQuestCheck Disabled Checked" HoneyQuestCheck, "Enable")).Section := "Quests", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	MainGui.Add("Text", "x8 y145 w143 h20 vHoneyQuestProgress", StrReplace(HoneyQuestProgress, "|", "`n"))
+
+	MainGui.Add("Text", "x8 y184 +BackgroundTrans", "Gather Limit:")
+	MainGui.Add("Text", "x+4 y183 w36 h16 0x201 +Center")
+	(GuiCtrl := MainGui.Add("UpDown", "Range1-999 vQuestGatherMins Disabled", QuestGatherMins)).Section := "Quests", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	MainGui.Add("Text", "x+4 y184 +BackgroundTrans", "Mins")
+	MainGui.Add("Text", "x8 y201 +BackgroundTrans", "To Hive By:")
+	MainGui.Add("Text", "x+18 yp w34 vQuestGatherReturnBy +Center +BackgroundTrans", QuestGatherReturnBy)
+	MainGui.Add("Button", "xp-12 yp-1 w12 h16 vQGRBLeft Disabled", "<").OnEvent("Click", nm_QuestGatherReturnBy)
+	MainGui.Add("Button", "xp+45 yp w12 h16 vQGRBRight Disabled", ">").OnEvent("Click", nm_QuestGatherReturnBy)
+	(GuiCtrl := MainGui.Add("CheckBox", "x8 yp+18 vQuestBoostCheck Disabled Checked" QuestBoostCheck, "Use Boost Tab for Quests")).Section := "Quests", GuiCtrl.OnEvent("Click", nm_saveConfig)
+
+	MainGui.Add("CheckBox", "x240 y23 vBlackQuestCheck Disabled Checked" BlackQuestCheck, "Enable").OnEvent("Click", nm_BlackQuestCheck)
+	MainGui.Add("Text", "x163 y38 w158 h92 vBlackQuestProgress", StrReplace(BlackQuestProgress, "|", "`n"))
+
+	(GuiCtrl := MainGui.Add("CheckBox", "x240 y131 vBrownQuestCheck Disabled Checked" BrownQuestCheck, "Enable")).Section := "Quests", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	MainGui.Add("Text", "x163 y146 w158 h92 vBrownQuestProgress", StrReplace(BrownQuestProgress, "|", "`n"))
+
+	MainGui.Add("CheckBox", "x410 y23 vBuckoQuestCheck Disabled Checked" BuckoQuestCheck, "Enable").OnEvent("Click", nm_BuckoQuestCheck)
+	MainGui.Add("CheckBox", "x340 y37 vBuckoQuestGatherInterruptCheck Disabled Checked" BuckoQuestGatherInterruptCheck, "Allow Gather Interrupt").OnEvent("Click", nm_BuckoQuestCheck)
+	MainGui.Add("Text", "x333 y51 w158 h78 vBuckoQuestProgress", StrReplace(BuckoQuestProgress, "|", "`n"))
+
+	MainGui.Add("CheckBox", "x410 y131 vRileyQuestCheck Disabled Checked" RileyQuestCheck, "Enable").OnEvent("Click", nm_RileyQuestCheck)
+	MainGui.Add("CheckBox", "x340 y145 vRileyQuestGatherInterruptCheck Disabled Checked" RileyQuestGatherInterruptCheck, "Allow Gather Interrupt").OnEvent("Click", nm_RileyQuestCheck)
+	MainGui.Add("Text", "x333 y159 w158 h78 vRileyQuestProgress", StrReplace(RileyQuestProgress, "|", "`n"))
+
+	MainGui.SetFont("w700")
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+	CurrentLoadProgress:=CurrentLoadProgress+QuestsFeatureProgressVolume
+	SetLoadingProgress(floor(CurrentLoadProgress/LoadingProgressVolume*100))
+}
+nm_BlackQuestCheck(*){
+	global
+	IniWrite (BlackQuestCheck := MainGui["BlackQuestCheck"].Value), "settings\nm_config.ini", "Quests", "BlackQuestCheck"
+	if (BlackQuestCheck = 1)
+		MsgBox "This option only works for the repeatable quests. You must first complete the main questline before this option will work properly.", "Black Bear Quest", "Owner" MainGui.Hwnd
+}
+nm_BuckoQuestCheck(*){
+	global
+	IniWrite (BuckoQuestCheck := MainGui["BuckoQuestCheck"].Value), "settings\nm_config.ini", "Quests", "BuckoQuestCheck"
+	IniWrite (BuckoQuestGatherInterruptCheck := MainGui["BuckoQuestGatherInterruptCheck"].Value), "settings\nm_config.ini", "Quests", "BuckoQuestGatherInterruptCheck"
+	if ((BuckoQuestCheck = 1) && (AntPassCheck = 0)) {
+		IniWrite (MainGui["AntPassCheck"].Value := AntPassCheck := 1), "settings\nm_config.ini", "Collect", "AntPassCheck"
+		IniWrite (MainGui["AntPassAction"].Text := AntPassAction := "Pass"), "settings\nm_config.ini", "Collect", "AntPassAction"
+		MsgBox 'Ant Pass collection has been automatically enabled so the passes can be stockpiled for the "Picnic" quest.', "Bucko Bee Quest", "Owner" MainGui.Hwnd
+	}
+	if BuckoQuestCheck
+		petalQuestDisclaimer()
+}
+nm_RileyQuestCheck(*){
+	global
+	IniWrite (RileyQuestCheck := MainGui["RileyQuestCheck"].Value), "settings\nm_config.ini", "Quests", "RileyQuestCheck"
+	IniWrite (RileyQuestGatherInterruptCheck := MainGui["RileyQuestGatherInterruptCheck"].Value), "settings\nm_config.ini", "Quests", "RileyQuestGatherInterruptCheck"
+	if ((RileyQuestCheck = 1) && (AntPassCheck = 0)) {
+		IniWrite (MainGui["AntPassCheck"].Value := AntPassCheck := 1), "settings\nm_config.ini", "Collect", "AntPassCheck"
+		IniWrite (MainGui["AntPassAction"].Text := AntPassAction := "Pass"), "settings\nm_config.ini", "Collect", "AntPassAction"
+		MsgBox 'Ant Pass collection has been automatically enabled so the passes can be stockpiled for the "Picnic" quest.', "Riley Bee Quest", "Owner" MainGui.Hwnd
+	}
+	if RileyQuestCheck
+		petalQuestDisclaimer()
+}
+nm_PolarQuestCheck(*){
+	global
+	IniWrite (PolarQuestCheck := MainGui["PolarQuestCheck"].Value), "settings\nm_config.ini", "Quests", "PolarQuestCheck"
+	if (PolarQuestCheck = 1)
+		petalQuestDisclaimer()
+}
+nm_QuestGatherReturnBy(GuiCtrl, *){
+	global QuestGatherReturnBy
+	static val := ["Walk", "Reset"], l := val.Length
+
+	i := (QuestGatherReturnBy = "Walk") ? 1 : 2
+
+	MainGui["QuestGatherReturnBy"].Text := QuestGatherReturnBy := val[(GuiCtrl.Name = "QGRBRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	IniWrite QuestGatherReturnBy, "settings\nm_config.ini", "Quests", "QuestGatherReturnBy"
+}

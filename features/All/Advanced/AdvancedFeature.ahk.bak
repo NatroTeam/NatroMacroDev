@@ -1,0 +1,9 @@
+#Requires AutoHotkey v2.0
+
+global advancedConfigLoc := "features\All\Quests\nm_advanced_config.ini"
+
+;this is this features GUI lines-of-code used to calculate loading progress
+MiscFeatureProgressVolume := (AdvancedFeature) ? 20 : 0
+;this is the running total of all macro features included in the load progress metric
+LoadingProgressVolume := (AdvancedFeature) ? LoadingProgressVolume+AdvancedFeatureProgressVolume : LoadingProgressVolume
+

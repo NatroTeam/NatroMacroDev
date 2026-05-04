@@ -1,0 +1,558 @@
+#Requires AutoHotkey v2.0
+
+global statusConfigLoc := "features\All\Quests\nm_status_config.ini"
+
+;this is this features GUI lines-of-code used to calculate loading progress
+StatusFeatureProgressVolume := (StatusFeature) ? 20 : 0
+;this is the running total of all macro features included in the load progress metric
+LoadingProgressVolume := (StatusFeature) ? LoadingProgressVolume+StatusFeatureProgressVolume : LoadingProgressVolume
+
+
+nm_StatusTab(*) {
+	global
+	TabCtrl.UseTab("Status")
+	MainGui.SetFont("w700")
+	MainGui.Add("GroupBox", "x5 y23 w240 h210", "Status Log")
+	MainGui.Add("GroupBox", "x250 y23 w245 h160", "Stats")
+	MainGui.Add("GroupBox", "x250 y185 w245 h48", "Discord Integration")
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+
+	MainGui.Add("CheckBox", "x85 y23 Disabled vStatusLogReverse Checked" StatusLogReverse, "Reverse Order").OnEvent("Click", nm_StatusLogReverseCheck)
+	MainGui.Add("Text", "x10 y37 w230 r15 +BackgroundTrans -Wrap vstatuslog")
+
+	MainGui.SetFont("w700")
+	MainGui.Add("Text", "x255 y40", "Total")
+	MainGui.Add("Text", "x375 y40", "Session")
+
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+	MainGui.Add("Text", "x255 y55 w119 h120 -Wrap vTotalStats")
+	MainGui.Add("Text", "x375 y55 w119 h120 -Wrap vSessionStats")
+	MainGui.Add("Button", "x290 y39 w50 h15 vResetTotalStats Disabled", "Reset").OnEvent("Click", nm_ResetTotalStats)
+	MainGui.Add("Button", "x265 y202 w215 h24 vWebhookGUI Disabled", "Change Discord Settings").OnEvent("Click", nm_WebhookGUI)
+	nm_setStats()
+	CurrentLoadProgress:=CurrentLoadProgress+StatusFeatureProgressVolume
+	SetLoadingProgress(floor(CurrentLoadProgress/LoadingProgressVolume*100))
+msgbox floor(CurrentLoadProgress/LoadingProgressVolume*100)
+	;SetLoadingProgress(28)
+}
+nm_StatusLogReverseCheck(*){
+	global StatusLogReverse
+	StatusLogReverse := MainGui["StatusLogReverse"].Value
+	MainGui["StatusLogReverse"].Enabled := 0
+	IniWrite StatusLogReverse, "settings\nm_config.ini", "Status", "StatusLogReverse"
+	if (StatusLogReverse) {
+		nm_setStatus("GUI", "Status Log Reversed")
+	} else {
+		nm_setStatus("GUI", "Status Log NOT Reversed")
+	}
+	MainGui["StatusLogReverse"].Enabled := 1
+}
+nm_ResetTotalStats(*){
+	global
+	IniWrite TotalRuntime:=0, "settings\nm_config.ini", "Status", "TotalRuntime"
+	IniWrite TotalGatherTime:=0, "settings\nm_config.ini", "Status", "TotalGatherTime"
+	IniWrite TotalConvertTime:=0, "settings\nm_config.ini", "Status", "TotalConvertTime"
+	IniWrite TotalViciousKills:=0, "settings\nm_config.ini", "Status", "TotalViciousKills"
+	IniWrite TotalBossKills:=0, "settings\nm_config.ini", "Status", "TotalBossKills"
+	IniWrite TotalBugKills:=0, "settings\nm_config.ini", "Status", "TotalBugKills"
+	IniWrite TotalPlantersCollected:=0, "settings\nm_config.ini", "Status", "TotalPlantersCollected"
+	IniWrite TotalQuestsComplete:=0, "settings\nm_config.ini", "Status", "TotalQuestsComplete"
+	IniWrite TotalDisconnects:=0, "settings\nm_config.ini", "Status", "TotalDisconnects"
+	nm_setStats()
+}
+nm_ResetSessionStats(*){
+	global
+	IniWrite SessionRuntime:=0, "settings\nm_config.ini", "Status", "SessionRuntime"
+	IniWrite SessionGatherTime:=0, "settings\nm_config.ini", "Status", "SessionGatherTime"
+	IniWrite SessionConvertTime:=0, "settings\nm_config.ini", "Status", "SessionConvertTime"
+	IniWrite SessionViciousKills:=0, "settings\nm_config.ini", "Status", "SessionViciousKills"
+	IniWrite SessionBossKills:=0, "settings\nm_config.ini", "Status", "SessionBossKills"
+	IniWrite SessionBugKills:=0, "settings\nm_config.ini", "Status", "SessionBugKills"
+	IniWrite SessionPlantersCollected:=0, "settings\nm_config.ini", "Status", "SessionPlantersCollected"
+	IniWrite SessionQuestsComplete:=0, "settings\nm_config.ini", "Status", "SessionQuestsComplete"
+	IniWrite SessionDisconnects:=0, "settings\nm_config.ini", "Status", "SessionDisconnects"
+	nm_setStats()
+}
+nm_WebhookGUI(*){
+	global
+	local script, exec, shell
+
+	try ProcessClose WGUIPID
+
+	script :=
+	(
+	'
+	#NoTrayIcon
+	#SingleInstance Force
+	#MaxThreads 255
+	#Include "%A_ScriptDir%\lib"
+	#Include "Gdip_All.ahk"
+	#Include "Gdip_ImageSearch.ahk"
+
+	DetectHiddenWindows 1
+
+	pToken := Gdip_Startup()
+
+	(bitmaps := Map()).CaseSense := 0
+	#Include "%A_ScriptDir%\nm_image_assets\webhook_gui\bitmaps.ahk"
+
+	; config
+	discordMode := ' discordMode '
+	discordCheck := ' discordCheck '
+
+	webhook := "' webhook '"
+	bottoken := "' bottoken '"
+
+	MainChannelCheck := ' MainChannelCheck '
+	MainChannelID := "' MainChannelID '"
+	ReportChannelCheck := ' ReportChannelCheck '
+	ReportChannelID := "' ReportChannelID '"
+
+	ssCheck := ' ssCheck '
+	CriticalSSCheck := ' CriticalSSCheck '
+	AmuletSSCheck := ' AmuletSSCheck '
+	MachineSSCheck := ' MachineSSCheck '
+	BalloonSSCheck := ' BalloonSSCheck '
+	ViciousSSCheck := ' ViciousSSCheck '
+	DeathSSCheck := ' DeathSSCheck '
+	PlanterSSCheck := ' PlanterSSCheck '
+	HoneySSCheck := ' HoneySSCheck '
+
+	criticalCheck := ' criticalCheck '
+	discordUID := "' discordUID '"
+	discordUIDCommands := "' discordUIDCommands  '"
+	CriticalErrorPingCheck := ' CriticalErrorPingCheck '
+	DisconnectPingCheck := ' DisconnectPingCheck '
+	GameFrozenPingCheck := ' GameFrozenPingCheck '
+	PhantomPingCheck := ' PhantomPingCheck '
+	UnexpectedDeathPingCheck := ' UnexpectedDeathPingCheck '
+	EmergencyBalloonPingCheck := ' EmergencyBalloonPingCheck '
+	HoneyUpdateSSCheck := ' HoneyUpdateSSCheck '
+
+	enum := Map("discordMode", 1
+		, "discordCheck", 2
+		, "MainChannelCheck", 3
+		, "ReportChannelCheck", 4
+		, "ssCheck", 6
+		, "CriticalSSCheck", 8
+		, "AmuletSSCheck", 9
+		, "MachineSSCheck", 10
+		, "BalloonSSCheck", 11
+		, "ViciousSSCheck", 12
+		, "DeathSSCheck", 13
+		, "PlanterSSCheck", 14
+		, "HoneySSCheck", 15
+		, "criticalCheck", 16
+		, "CriticalErrorPingCheck", 17
+		, "DisconnectPingCheck", 18
+		, "GameFrozenPingCheck", 19
+		, "PhantomPingCheck", 20
+		, "UnexpectedDeathPingCheck", 21
+		, "EmergencyBalloonPingCheck", 22
+		, "HoneyUpdateSSCheck", 363)
+
+	str_enum := Map("webhook", 1
+		, "bottoken", 2
+		, "MainChannelID", 3
+		, "ReportChannelID", 4
+		, "discordUID", 5
+		, "discordUIDCommands", 80)
+
+	w := 500, h := 577
+	DiscordGui := Gui("-Caption +E0x80000 +E0x8000000 +LastFound +AlwaysOnTop +ToolWindow +OwnDialogs -DPIScale")
+	hMain := DiscordGui.Hwnd
+	DiscordGui.OnEvent("Close", (*) => ExitApp()), DiscordGui.OnEvent("Escape", (*) => ExitApp())
+	DiscordGui.Show("NA")
+	DiscordGui.Add("Text", "x8 y0 w" w-16 " h32 vTitle")
+	DiscordGui.Add("Text", "x18 y5 w32 h24 vChangeMode")
+	DiscordGui.Add("Text", "x" w-42 " y4 w26 h26 vClose")
+
+	for k,v in enum
+		if (v != 1)
+			DiscordGui.Add("Text", "Hidden v" k)
+	DiscordGui.Add("Text", "Hidden vCopyDiscord")
+	DiscordGui.Add("Text", "Hidden vPasteDiscord")
+	DiscordGui.Add("Text", "Hidden vPasteMainID")
+	DiscordGui.Add("Text", "Hidden vPasteReportID")
+	DiscordGui.Add("Text", "Hidden vPasteUserID")
+	DiscordGui.Add("Text", "Hidden vPasteUserID2")
+
+	; setup
+	hbm := CreateDIBSection(w, h)
+	hdc := CreateCompatibleDC()
+	obm := SelectObject(hdc, hbm)
+	G := Gdip_GraphicsFromHDC(hdc)
+	Gdip_SetSmoothingMode(G, 2)
+	Gdip_SetInterpolationMode(G, 2)
+	UpdateLayeredWindow(hMain, hdc, (A_ScreenWidth-w)//2, (A_ScreenHeight-h+80*(!discordMode))//2, w, h-80*(!discordMode))
+	nm_WebhookGUI()
+	return
+
+	nm_WebhookGUI()
+	{
+		global
+		local k,v,x,y,w,h,str
+		static ss_list := ["critical","amulet","machine","balloon","vicious","death","planter","honey", "honeyUpdate"]
+		static ping_list := ["criticalerror","disconnect","gamefrozen","phantom","unexpecteddeath","emergencyballoon"]
+
+		Gdip_GraphicsClear(G)
+		w := 500, h := 420 + discordMode * 157
+
+		; edge shadow
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_CreateLineBrushFromRect(0, 0, w, h, 0x00000000, 0x78000000), 14, 6, w-16, h-16, 12), Gdip_DeleteBrush(pBrush)
+
+		; title bar and control
+		pBrush := Gdip_BrushCreateSolid(0xff5865f2), Gdip_FillRoundedRectanglePath(G, pBrush, 8, 0, w-16, 30, 12), Gdip_FillRectangle(G, pBrush, 8, 13, w-16, 20), Gdip_DeleteBrush(pBrush)
+		Gdip_DrawImage(G, bitmaps["logo_mode" discordMode], 18, 5)
+		Gdip_DrawImage(G, bitmaps["text_mode" discordMode], w//2 - Gdip_GetImageWidth(bitmaps["text_mode" discordMode])//2, 9)
+		Gdip_DrawImage(G, bitmaps["close"], w-42, 4)
+
+		; main background
+		pBrush := Gdip_BrushCreateSolid(0xff131416)
+		Gdip_FillRectangle(G, pBrush, 8, 32, w-16, h-80), Gdip_FillRoundedRectanglePath(G, pBrush, 8, h-100, w-16, 84, 12)
+		Gdip_DeleteBrush(pBrush)
+
+		; webhook url / bot token
+		Gdip_DrawImage(G, bitmaps[(discordMode = 0) ? "text_webhookurl" : "text_bottoken"], 22, 47)
+		x := 30 + Gdip_GetImageWidth(bitmaps[(discordMode = 0) ? "text_webhookurl" : "text_bottoken"])
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(discordCheck ? 0xff4bb543 : 0xffff3333), x, 42, 40, 24, 12), Gdip_DeleteBrush(pBrush)
+		Gdip_FillEllipse(G, pBrush := Gdip_BrushCreateSolid(0xffffffff), x + (discordCheck ? 19 : 3), 45, 18, 18), Gdip_DeleteBrush(pBrush)
+		DiscordGui["DiscordCheck"].Move(x, 42, 40, 24), DiscordGui["DiscordCheck"].Visible := 1
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff323942), 20, 72, w-40, 50, 20), Gdip_DeleteBrush(pBrush)
+		pBrush := Gdip_BrushCreateSolid(0xff222932)
+		Gdip_FillRoundedRectanglePath(G, pBrush, 20, 72, w-136, 50, 20), Gdip_FillRectangle(G, pBrush, w-148, 72, 32, 50)
+		Gdip_DeleteBrush(pBrush)
+		Gdip_DrawOrientedString(G, str := (discordMode = 0) ? webhook : bottoken, "Calibri", (StrLen(str) < 56) ? 19 : (StrLen(str) < 84) ? 17 : 13, 1, 32,
+			72 + 3 * ((StrLen(str) >= 56) && (StrLen(str) < 84)), w-160, 50 - 6 * ((StrLen(str) >= 56) && (StrLen(str) < 84)), 0, pBrush := Gdip_BrushCreateSolid(0xffffffff), 0, 1), Gdip_DeleteBrush(pBrush)
+		Gdip_DrawImage(G, bitmaps["copy"], w-110, 72)
+		DiscordGui["CopyDiscord"].Move(w-106, 72, 32, 50), DiscordGui["CopyDiscord"].Visible := discordCheck
+		Gdip_DrawImage(G, bitmaps["paste"], w-65, 72)
+		DiscordGui["PasteDiscord"].Move(w-61, 72, 32, 50), DiscordGui["PasteDiscord"].Visible := discordCheck
+
+
+		; channel ids
+		if (discordMode = 1)
+		{
+			if MainChannelCheck
+				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), 24, 130, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], 25, 131)
+			else
+				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), 25, 131, 18, 18, 4), Gdip_DeletePen(pPen)
+			DiscordGui["MainChannelCheck"].Move(25, 131, 18, 18), DiscordGui["MainChannelCheck"].Visible := discordCheck
+			Gdip_DrawImage(G, bitmaps["text_mainchannelid"], 52, 134)
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff323942), 22, 158, w//2-36, 40, 15), Gdip_DeleteBrush(pBrush)
+			pBrush := Gdip_BrushCreateSolid(0xff222932)
+			Gdip_FillRoundedRectanglePath(G, pBrush, 22, 158, w//2-76, 40, 15), Gdip_FillRectangle(G, pBrush, w//2-86, 158, 32, 40)
+			Gdip_DeleteBrush(pBrush)
+			Gdip_DrawOrientedString(G, MainChannelID, "Calibri", 16, 1, 22, 168, w//2-74, 40, 0, pBrush := Gdip_BrushCreateSolid(0xffffffff), 0, 1), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawImage(G, bitmaps["paste"], w//2-50, 158, 32, 40)
+			DiscordGui["PasteMainID"].Move(w//2-47, 158, 26, 40), DiscordGui["PasteMainID"].Visible := discordCheck
+
+			if ReportChannelCheck
+				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), w//2+16, 130, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], w//2+17, 131)
+			else
+				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), w//2+17, 131, 18, 18, 4), Gdip_DeletePen(pPen)
+			DiscordGui["ReportChannelCheck"].Move(w//2+17, 131, 18, 18), DiscordGui["ReportChannelCheck"].Visible := discordCheck
+			Gdip_DrawImage(G, bitmaps["text_reportchannelid"], w//2+44, 134)
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff323942), w//2+14, 158, w//2-36, 40, 15), Gdip_DeleteBrush(pBrush)
+			pBrush := Gdip_BrushCreateSolid(0xff222932)
+			Gdip_FillRoundedRectanglePath(G, pBrush, w//2+14, 158, w//2-76, 40, 15), Gdip_FillRectangle(G, pBrush, w-94, 158, 32, 40)
+			Gdip_DeleteBrush(pBrush)
+			Gdip_DrawOrientedString(G, ReportChannelID, "Calibri", 16, 1, w//2+14, 168, w//2-74, 40, 0, pBrush := Gdip_BrushCreateSolid(0xffffffff), 0, 1), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawImage(G, bitmaps["paste"], w-58, 158, 32, 40)
+			DiscordGui["PasteReportID"].Move(w-55, 158, 26, 40), DiscordGui["PasteReportID"].Visible := discordCheck
+		}
+		else
+		{
+			DiscordGui["MainChannelCheck"].Move(0, 0, 0, 0)
+			DiscordGui["ReportChannelCheck"].Move(0, 0, 0, 0)
+			DiscordGui["PasteMainID"].Move(0, 0, 0, 0)
+			DiscordGui["PasteReportID"].Move(0, 0, 0, 0)
+			DiscordGui["MainChannelCheck"].Visible := 0
+			DiscordGui["ReportChannelCheck"].Visible := 0
+			DiscordGui["PasteMainID"].Visible := 0
+			DiscordGui["PasteReportID"].Visible := 0
+      		DiscordGui["PasteUserID2"].Visible := 0
+		}
+
+		; screenshots
+		Gdip_DrawImage(G, bitmaps["text_screenshots"], 22, h-282-discordMode*77)
+		x := 30 + Gdip_GetImageWidth(bitmaps["text_screenshots"])
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(ssCheck ? 0xff4bb543 : 0xffff3333), x, h-286-discordMode*77, 40, 24, 12), Gdip_DeleteBrush(pBrush)
+		Gdip_FillEllipse(G, pBrush := Gdip_BrushCreateSolid(0xffffffff), x + (ssCheck ? 19 : 3), h-283-discordMode*77, 18, 18), Gdip_DeleteBrush(pBrush)
+		DiscordGui["SSCheck"].Move(x, h-286-discordMode*77, 40, 24), DiscordGui["SSCheck"].Visible := discordCheck
+		for k,v in ss_list
+		{
+			if (%v%SSCheck = 1)
+				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), 24, h-283-discordMode*77 + k * 26, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], 25, h-282-discordMode*77 + k * 26)
+			else
+				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), 25, h-282-discordMode*77 + k * 26, 18, 18, 4), Gdip_DeletePen(pPen)
+			DiscordGui[v "SSCheck"].Move(25, h-282-discordMode*77 + k * 26, 18, 18), DiscordGui[v "SSCheck"].Visible := (discordCheck && ssCheck)
+			Gdip_DrawImage(G, bitmaps["text_" v], 52, h-278-discordMode*77 + k * 26)
+		}
+		if (discordMode == 1) {
+			; User ID (Commands)
+			Gdip_DrawImage(G, bitmaps["text_userid2"], w//2+16, h-360)
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff323942), w//2+14, h-333, w//2-36, 40, 15), Gdip_DeleteBrush(pBrush)
+			pBrush := Gdip_BrushCreateSolid(0xff222932)
+			Gdip_FillRoundedRectanglePath(G, pBrush, w//2+14, h-333, w//2-76, 40, 15), Gdip_FillRectangle(G, pBrush, w-94, h-333, 32, 40)
+			Gdip_DrawOrientedString(G, discordUIDCommands, "Calibri", 16, 1, w//2+14, h-323, w//2-74, 40, 0, pBrush := Gdip_BrushCreateSolid(0xffffffff), 0, 1), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawImage(G, bitmaps["paste"], w-58, h-333, 32, 40)
+			DiscordGui["PasteUserID2"].Move(w-55, h-333, 26, 40), DiscordGui["PasteUserID2"].Visible := true
+		}
+
+		; pings
+		Gdip_DrawImage(G, bitmaps["text_userid"], w//2+16, h-283)
+		x := w//2+24 + Gdip_GetImageWidth(bitmaps["text_userid"])
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(criticalCheck ? 0xff4bb543 : 0xffff3333), x, h-286, 40, 24, 12), Gdip_DeleteBrush(pBrush)
+		Gdip_FillEllipse(G, pBrush := Gdip_BrushCreateSolid(0xffffffff), x + (criticalCheck ? 19 : 3), h-283, 18, 18), Gdip_DeleteBrush(pBrush)
+		DiscordGui["CriticalCheck"].Move(x, h-286, 40, 24), DiscordGui["CriticalCheck"].Visible := discordCheck
+		Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff323942), w//2+14, h-256, w//2-36, 40, 15), Gdip_DeleteBrush(pBrush)
+		pBrush := Gdip_BrushCreateSolid(0xff222932)
+		Gdip_FillRoundedRectanglePath(G, pBrush, w//2+14, h-256, w//2-76, 40, 15), Gdip_FillRectangle(G, pBrush, w-94, h-256, 32, 40)
+		Gdip_DeleteBrush(pBrush)
+		Gdip_DrawOrientedString(G, discordUID, "Calibri", 16, 1, w//2+14, h-246, w//2-74, 40, 0, pBrush := Gdip_BrushCreateSolid(0xffffffff), 0, 1), Gdip_DeleteBrush(pBrush)
+		Gdip_DrawImage(G, bitmaps["paste"], w-58, h-256, 32, 40)
+		DiscordGui["PasteUserID"].Move(w-55, h-256, 26, 40), DiscordGui["PasteUserID"].Visible := (discordCheck && criticalCheck)
+		for k,v in ping_list
+		{
+			if (%v%PingCheck = 1)
+				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), w//2+18, h-231 + k * 26, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], w//2+19, h-230 + k * 26)
+			else
+				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), w//2+19, h-230 + k * 26, 18, 18, 4), Gdip_DeletePen(pPen)
+			DiscordGui[v "PingCheck"].Move(w//2+19, h-230 + k * 26, 18, 18), DiscordGui[v "PingCheck"].Visible := (discordCheck && criticalCheck)
+			Gdip_DrawImage(G, bitmaps["text_" v], w//2+46, h-226 + k * 26)
+		}
+
+		; grey out disabled options
+		if (discordCheck = 0)
+			Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), 16, 70, w-32, h-90), Gdip_DeleteBrush(pBrush)
+		else
+		{
+			if (ssCheck = 0)
+				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), 16, h-260-discordMode*77, w//2-24, 235), Gdip_DeleteBrush(pBrush)
+			if (criticalCheck = 0)
+				Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x80131416), w//2+8, h-260, w//2-24, 235), Gdip_DeleteBrush(pBrush)
+		}
+
+		UpdateLayeredWindow(hMain, hdc, , , w, h)
+		OnMessage(0x201, WM_LBUTTONDOWN)
+		OnMessage(0x200, WM_MOUSEMOVE)
+		OnExit(ExitFunc)
+	}
+
+	WM_LBUTTONDOWN(*)
+	{
+		global
+		local hCtrl, k, pBrush, pPen, ctrl_x, ctrl_y, ctrl_w, ctrl_h, s, str
+		MouseGetPos , , , &hCtrl, 2
+		if !hCtrl
+			return
+
+		name := DiscordGui[hCtrl].Name
+		switch name, 0
+		{
+			case "Title":
+			PostMessage 0xA1, 2
+
+			case "ChangeMode":
+			discordMode := !discordMode
+			nm_WebhookGUI()
+			UpdateInt("discordMode")
+
+			case "Close":
+			ReplaceSystemCursors()
+			ExitApp
+
+			case "DiscordCheck":
+			discordCheck := !discordCheck
+			nm_WebhookGUI()
+			UpdateInt("discordCheck")
+
+			case "SSCheck":
+			ssCheck := !ssCheck
+			nm_WebhookGUI()
+			UpdateInt("ssCheck")
+
+			case "CriticalCheck":
+			criticalCheck := !criticalCheck
+			nm_WebhookGUI()
+			UpdateInt("criticalCheck")
+
+			case "MainChannelCheck", "ReportChannelCheck", "CriticalSSCheck", "AmuletSSCheck", "MachineSSCheck", "BalloonSSCheck", "ViciousSSCheck", "DeathSSCheck", "PlanterSSCheck", "HoneySSCheck"
+				, "CriticalErrorPingCheck", "DisconnectPingCheck", "GameFrozenPingCheck", "PhantomPingCheck", "UnexpectedDeathPingCheck", "EmergencyBalloonPingCheck", "HoneyUpdateSSCheck":
+			k := name
+			ControlGetPos &ctrl_x, &ctrl_y, &ctrl_w, &ctrl_h, hCtrl
+			%k% := !%k%
+			Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0xff131416), ctrl_x-3, ctrl_y-3, ctrl_w+6, ctrl_h+6), Gdip_DeleteBrush(pBrush)
+			if (%k% = 1)
+				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), ctrl_x-1, ctrl_y-1, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], ctrl_x, ctrl_y)
+			else
+				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), ctrl_x, ctrl_y, 18, 18, 4), Gdip_DeletePen(pPen)
+			Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x40131416), ctrl_x-2, ctrl_y-2, ctrl_w+4, ctrl_h+4), Gdip_DeleteBrush(pBrush)
+			UpdateLayeredWindow(hMain, hdc)
+			UpdateInt(k)
+
+			case "CopyDiscord":
+			ControlGetPos , &ctrl_y, , &ctrl_h, hCtrl
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff222932), 21, ctrl_y+1, w-138, ctrl_h-2, 20), Gdip_FillRectangle(G, pBrush, w-148, ctrl_y+1, 28, ctrl_h-2), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawOrientedString(G, "Copied to Clipboard!", "Calibri", 22, 1, 32, ctrl_y+11, w-160, ctrl_h-11, 0, pBrush := Gdip_BrushCreateSolid(0xff00a000), 0, 1), Gdip_DeleteBrush(pBrush)
+			UpdateLayeredWindow(hMain, hdc)
+			A_Clipboard := (discordMode = 0) ? webhook : bottoken
+			SetTimer nm_WebhookGUI, -1000, 1
+
+			case "PasteDiscord":
+			ControlGetPos , &ctrl_y, , &ctrl_h, hCtrl
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff222932), 21, ctrl_y+1, w-138, ctrl_h-2, 20), Gdip_FillRectangle(G, pBrush, w-148, ctrl_y+1, 28, ctrl_h-2), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawOrientedString(G, (s := (((discordMode = 0) && RegExMatch(A_Clipboard, "i)https:\/\/(canary\.|ptb\.)?(discord|discordapp)\.com\/api\/webhooks\/([\d]+)\/([a-z0-9_-]+)", &str) && (str := str[0])) || ((discordMode = 1) && RegExMatch(A_Clipboard, "i)^[\w-.]{50,83}$", &str) && (str := str[0])))) ? (((discordMode = 0) ? webhook : bottoken) := str) : ("No valid " ((discordMode = 0) ? "Webhook URL" : "Bot Token") " found``nin Clipboard!"), "Calibri", (s = 0) ? 20 : ((StrLen(str) < 56) ? 19 : (StrLen(str) < 84) ? 17 : 13), 1, 32, ctrl_y + 3 * ((StrLen(str) >= 56) && (StrLen(str) < 84)), w-160, ctrl_h - 6 * ((StrLen(str) >= 56) && (StrLen(str) < 84)), 0, pBrush := Gdip_BrushCreateSolid((s = 0) ? 0xffff3030 : 0xffffa500), 0, 1), Gdip_DeleteBrush(pBrush)
+			UpdateLayeredWindow(hMain, hdc)
+			SetTimer nm_WebhookGUI, -1000, 1
+			(s != 0) && UpdateStr((discordMode = 0) ? "webhook" : "bottoken")
+
+			case "PasteMainID":
+			ControlGetPos , &ctrl_y, , &ctrl_h, hCtrl
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff222932), 23, ctrl_y+1, w//2-78, ctrl_h-2, 15), Gdip_FillRectangle(G, pBrush, w//2-86, ctrl_y+1, 28, ctrl_h-2), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawOrientedString(G, ((s := RegExMatch(A_Clipboard, "i)^\d{17,20}$", &str)) && (str := str[0])) ? (MainChannelID := str) : "Invalid Channel ID!", "Calibri", 16, 1, 22, ctrl_y+10, w//2-74, ctrl_h, 0, pBrush := Gdip_BrushCreateSolid((s = 0) ? 0xffff3030 : 0xffffa500), 0, 1), Gdip_DeleteBrush(pBrush)
+			UpdateLayeredWindow(hMain, hdc)
+			SetTimer nm_WebhookGUI, -1000, 1
+			(s != 0) && UpdateStr("MainChannelID")
+
+			case "PasteReportID":
+			ControlGetPos , &ctrl_y, , &ctrl_h, hCtrl
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff222932), w//2+15, ctrl_y+1, w//2-78, ctrl_h-2, 15), Gdip_FillRectangle(G, pBrush, w-94, ctrl_y+1, 28, ctrl_h-2), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawOrientedString(G, ((s := RegExMatch(A_Clipboard, "i)^\d{17,20}$", &str)) && (str := str[0])) ? (ReportChannelID := str) : "Invalid Channel ID!", "Calibri", 16, 1, w//2+14, ctrl_y+10, w//2-74, ctrl_h, 0, pBrush := Gdip_BrushCreateSolid((s = 0) ? 0xffff3030 : 0xffffa500), 0, 1), Gdip_DeleteBrush(pBrush)
+			UpdateLayeredWindow(hMain, hdc)
+			SetTimer nm_WebhookGUI, -1000, 1
+			(s != 0) && UpdateStr("ReportChannelID")
+
+			case "PasteUserID":
+			ControlGetPos , &ctrl_y, , &ctrl_h, hCtrl
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff222932), w//2+15, ctrl_y+1, w//2-78, ctrl_h-2, 15), Gdip_FillRectangle(G, pBrush, w-94, ctrl_y+1, 28, ctrl_h-2), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawOrientedString(G, ((s := RegExMatch(A_Clipboard, "i)^&?\d{17,20}$", &str)) && (str := str[0])) ? (discordUID := str) : "Invalid User ID!", "Calibri", 16, 1, w//2+14, ctrl_y+10, w//2-74, ctrl_h, 0, pBrush := Gdip_BrushCreateSolid((s = 0) ? 0xffff3030 : 0xffffa500), 0, 1), Gdip_DeleteBrush(pBrush)
+			UpdateLayeredWindow(hMain, hdc)
+			SetTimer nm_WebhookGUI, -1000, 1
+			(s != 0) && UpdateStr("discordUID")
+
+			case "PasteUserID2":
+			ControlGetPos , &ctrl_y, , &ctrl_h, hCtrl
+			Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff222932), w//2+15, ctrl_y+1, w//2-78, ctrl_h-2, 15), Gdip_FillRectangle(G, pBrush, w-94, ctrl_y+1, 28, ctrl_h-2), Gdip_DeleteBrush(pBrush)
+			Gdip_DrawOrientedString(G, ((s := RegExMatch(A_Clipboard, "i)^&?\d{17,20}$", &str)) && (str := str[0])) ? (discordUIDCommands := str) : "Invalid User ID!", "Calibri", 16, 1, w//2+14, ctrl_y+10, w//2-74, ctrl_h, 0, pBrush := Gdip_BrushCreateSolid((s = 0) ? 0xffff3030 : 0xffffa500), 0, 1), Gdip_DeleteBrush(pBrush)
+			UpdateLayeredWindow(hMain, hdc)
+			SetTimer nm_WebhookGUI, -1000, 1
+			(s != 0) && UpdateStr("discordUIDCommands")
+		}
+	}
+
+	WM_MOUSEMOVE(*)
+	{
+		global
+		local hCtrl, pBrush, pPen, k, hover_x, hover_y, hover_w, hover_h
+		MouseGetPos , , , &hCtrl, 2
+
+		if (!hCtrl || (hCtrl = DiscordGui["Title"].Hwnd))
+			return 0
+
+		name := DiscordGui[hCtrl].Name
+		switch name, 0
+		{
+			case "ChangeMode", "Close", "DiscordCheck", "SSCheck", "CriticalCheck", "CopyDiscord", "PasteDiscord", "PasteMainID", "PasteReportID", "PasteUserID", "PasteUserID2":
+			hover_ctrl := hCtrl
+			ReplaceSystemCursors("IDC_HAND")
+			while (hCtrl = hover_ctrl)
+			{
+				Sleep 20
+				MouseGetPos , , , &hCtrl, 2
+			}
+			ReplaceSystemCursors()
+
+			case "MainChannelCheck", "ReportChannelCheck", "CriticalSSCheck", "AmuletSSCheck", "MachineSSCheck", "BalloonSSCheck", "ViciousSSCheck", "DeathSSCheck", "PlanterSSCheck", "HoneySSCheck", "CriticalErrorPingCheck", "DisconnectPingCheck", "GameFrozenPingCheck", "PhantomPingCheck", "UnexpectedDeathPingCheck", "EmergencyBalloonPingCheck", "HoneyUpdateSSCheck":
+			hover_ctrl := hCtrl
+			k := name
+			ControlGetPos &hover_x, &hover_y, &hover_w, &hover_h, hCtrl
+			Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x40131416), hover_x-2, hover_y-2, hover_w+4, hover_h+4), Gdip_DeleteBrush(pBrush)
+
+			ReplaceSystemCursors("IDC_HAND")
+			UpdateLayeredWindow(hMain, hdc)
+
+			while (hCtrl = hover_ctrl)
+			{
+				Sleep 20
+				MouseGetPos , , , &hCtrl, 2
+			}
+
+			Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0xff131416), hover_x-3, hover_y-3, hover_w+6, hover_h+6), Gdip_DeleteBrush(pBrush)
+			if (%k% = 1)
+				Gdip_FillRoundedRectanglePath(G, pBrush := Gdip_BrushCreateSolid(0xff4bb543), hover_x-1, hover_y-1, 20, 20, 4), Gdip_DeleteBrush(pBrush), Gdip_DrawImage(G, bitmaps["check"], hover_x, hover_y)
+			else
+				Gdip_DrawRoundedRectanglePath(G, pPen := Gdip_CreatePen(0xff808080, 4), hover_x, hover_y, 18, 18, 4), Gdip_DeletePen(pPen)
+
+			ReplaceSystemCursors()
+			UpdateLayeredWindow(hMain, hdc)
+		}
+	}
+
+	UpdateInt(var)
+	{
+		global
+		local v := %var%
+		IniWrite v, "settings\nm_config.ini", "Status", var
+		if WinExist("natro_macro.ahk ahk_class AutoHotkey")
+			PostMessage 0x5552, enum[var], v
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			PostMessage 0x5552, enum[var], v
+	}
+
+	UpdateStr(var)
+	{
+		global
+		IniWrite %var%, "settings\nm_config.ini", "Status", var
+		if WinExist("natro_macro.ahk ahk_class AutoHotkey")
+			PostMessage 0x5553, str_enum[var], 7
+		if WinExist("Status.ahk ahk_class AutoHotkey")
+			PostMessage 0x5553, str_enum[var], 7
+	}
+
+	ReplaceSystemCursors(IDC := "")
+	{
+		static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
+			, SysCursors := Map(  "IDC_APPSTARTING", 32650
+								, "IDC_ARROW"      , 32512
+								, "IDC_CROSS"      , 32515
+								, "IDC_HAND"       , 32649
+								, "IDC_HELP"       , 32651
+								, "IDC_IBEAM"      , 32513
+								, "IDC_NO"         , 32648
+								, "IDC_SIZEALL"    , 32646
+								, "IDC_SIZENESW"   , 32643
+								, "IDC_SIZENWSE"   , 32642
+								, "IDC_SIZEWE"     , 32644
+								, "IDC_SIZENS"     , 32645
+								, "IDC_UPARROW"    , 32516
+								, "IDC_WAIT"       , 32514 )
+		if !IDC
+			DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
+		else
+		{
+			hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[IDC], "Ptr")
+			for k, v in SysCursors
+			{
+				hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")
+				DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", v)
+			}
+		}
+	}
+
+	ExitFunc(*)
+	{
+		DiscordGui.Destroy()
+		try Gdip_Shutdown(pToken)
+		ReplaceSystemCursors()
+	}
+	'
+	)
+
+	shell := ComObject("WScript.Shell")
+	exec := shell.Exec('"' exe_path64 '" /script /force *')
+	exec.StdIn.Write(script), exec.StdIn.Close()
+
+	return (WGUIPID := exec.ProcessID)
+}

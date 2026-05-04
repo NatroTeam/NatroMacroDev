@@ -159,6 +159,7 @@ nm_importManualPlanters() ;in PlantersFeature.ahk
 ; DECLARE GLOBALS AND PREPARE GUI
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; RUN STATUS HANDLER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -208,6 +209,7 @@ for x,y in hBitmapsSBT
 	hBitmapsSB[x] := Gdip_CreateHBITMAPFromBitmap(y), Gdip_DisposeImage(y)
 hBitmapsSB["None"] := 0
 
+
 #Include "%A_ScriptDir%\..\features\All\MainGUI.ahk"
 
 SetTimer Background, 2000
@@ -215,6 +217,7 @@ if (A_Args.Has(1) && (A_Args[1] = 1)){
 	ForceStart := 1
 	SetTimer start, -1000
 }
+
 return
 
 

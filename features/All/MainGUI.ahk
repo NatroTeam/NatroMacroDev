@@ -1,0 +1,286 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DECLARE GLOBALS AND PREPARE GUI
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+try Hotkey StopHotkey, stop, "On"
+
+pToken := Gdip_Startup()
+currentWalk := {pid:"", name:""} ; stores "pid" (script process ID) and "name" (pattern/movement name)
+
+nm_readPriorityList()
+;check priorityList integrity
+if IsSet(priorityList) {
+	for x,v in priorityList {
+		if v=""
+			priorityList:=[]
+	}
+}
+if (not IsSet(priorityList)) || (priorityList.length=0) {
+	nm_setDefaultPriorityList()
+	nm_savePriorityList()
+}
+
+CheckNight:=0
+LostPlanters:=""
+QuestFields:=""
+youDied:=0
+GameFrozenCounter:=0
+AFBrollingDice:=0
+AFBuseGlitter:=0
+AFBuseBooster:=0
+MacroState:=0 ; 0=stopped, 1=paused, 2=running
+resetTime := MacroStartTime:=MacroReloadTime:=nowUnix()
+PausedRuntime:=0
+FieldGuidDetected:=0
+HasPopStar:=0
+PopStarActive:=0
+PreviousAction:="None"
+CurrentAction:="Startup"
+fieldnamelist := ["Bamboo","Blue Flower","Cactus","Clover","Coconut","Dandelion","Mountain Top","Mushroom","Pepper","Pine Tree","Pineapple","Pumpkin","Rose","Spider","Strawberry","Stump","Sunflower"]
+hotbarwhilelist := ["Never","Always","At Hive","Gathering","Attacking","Microconverter","Whirligig","Enzymes","GatherStart","Snowflake"]
+sprinklerImages := ["saturator"]
+ReconnectDelay:=0
+GatherStartTime := ConvertStartTime := 0
+QuestAnt := 0
+QuestBlueBoost := 0
+QuestRedBoost := 0
+HiveConfirmed := 0
+ShiftLockEnabled := 0
+VBStart := 0
+VBResults := {
+	; status states
+	success: "Killed",
+	failed: "Failed",
+	retry: "Retrying field",
+	notfound: "Not Found",
+	; detection states
+	found: "Found",
+	dead: "Dead"
+}
+VBReasons := {
+	inactiveHoney: "Inactive honey",
+	youDied: "You Died",
+	otherPlayer: "Killed by other player",
+	timeout: "Timeout",
+	killed: "Killed"
+}
+CUSTOM_CURSOR := 1
+nm_WM_SETCURSOR(*) => CUSTOM_CURSOR
+
+ForceStart := 0
+RemoteStart := 0
+
+;ensure Gui will be visible
+if (GuiX && GuiY)
+{
+	Loop (MonitorCount := MonitorGetCount())
+	{
+		MonitorGetWorkArea A_Index, &MonLeft, &MonTop, &MonRight, &MonBottom
+		if(GuiX>MonLeft && GuiX<MonRight && GuiY>MonTop && GuiY<MonBottom)
+			break
+		if(A_Index=MonitorCount)
+			guiX:=guiY:=0
+	}
+}
+else
+	guiX:=guiY:=0
+
+
+
+BackpackPercent:=BackpackPercentFiltered:=0
+ActiveHotkeys:=[]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; SYSTEM TRAY
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+TraySetIcon "nm_image_assets\auryn.ico"
+A_TrayMenu.Delete()
+A_TrayMenu.Add()
+A_TrayMenu.Add("Open Logs", (*) => ListLines())
+A_TrayMenu.Add("Copy Logs", nm_copyDebugLog)
+A_TrayMenu.Add()
+A_TrayMenu.Add("Edit Roblox FPS", robloxFPSGui)
+A_TrayMenu.Add()
+A_TrayMenu.Add("Edit This Script", (*) => Edit())
+A_TrayMenu.Add("Suspend Hotkeys", (*) => (A_TrayMenu.ToggleCheck("Suspend Hotkeys"), Suspend()))
+A_TrayMenu.Add()
+A_TrayMenu.Add("Start Macro", start)
+A_TrayMenu.Add("Pause Macro", nm_pause)
+A_TrayMenu.Add("Stop Macro", stop)
+A_TrayMenu.Add()
+A_TrayMenu.Add("Show Timers", timers)
+A_TrayMenu.Add()
+A_TrayMenu.Add("Close", (*) => ExitApp())
+A_TrayMenu.Add()
+A_TrayMenu.Default := "Start Macro"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GUI SKINNING
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;https://www.autohotkey.com/boards/viewtopic.php?f=6&t=5841&hilit=gui+skin
+DllCall(DllCall("GetProcAddress"
+		, "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
+		, "AStr","USkinInit", "Ptr")
+	, "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DEFAULT ROBLOX TYPE/PATH DETECTION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+nm_GetRobloxWebPath() => RegRead("HKCR\roblox\shell\open\command")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DETECT INCORRECT ROBLOX SETTINGS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; AUTO-UPDATE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CREATE GUI
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+OnExit(GetOut)
+MainGui := Gui((AlwaysOnTop ? "+AlwaysOnTop " : "") "+Border +OwnDialogs", "Natro Macro (Loading 0%)")
+WinSetTransparent 255-floor(GuiTransparency*2.55), MainGui
+MainGui.Show("x" GuiX " y" GuiY " w490 h275")
+SetLoadingProgress(percent) => MainGui.Title := "Natro Macro (Loading " Round(percent) "%)"
+MainGui.OnEvent("Close", (*) => ExitApp())
+MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+MainGui.SetFont("w700")
+MainGui.Add("Text", "x5 y241 w80 -Wrap +BackgroundTrans", "Current Field:")
+MainGui.Add("Text", "x177 y241 w30 +BackgroundTrans", "Status:")
+MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+MainGui.Add("Button", "x82 y240 w10 h15 vcurrentFieldUp Disabled", "<").OnEvent("Click", nm_currentFieldUp)
+MainGui.Add("Button", "x165 y240 w10 h15 vcurrentFieldDown Disabled", ">").OnEvent("Click", nm_currentFieldDown)
+MainGui.Add("Text", "x92 y240 w73 +center +BackgroundTrans +border vCurrentField", CurrentField:=FieldName%CurrentFieldNum%)
+MainGui.Add("Text", "x220 y240 w275 +BackgroundTrans +border vstate", "Startup: UI")
+
+; version label and links
+(GuiCtrl := MainGui.Add("Text", "x435 y264 vVersionText", "v" versionID)).OnEvent("Click", nm_showAdvancedSettings), GuiCtrl.Move(494 - (VersionWidth := TextExtent("v" VersionID, GuiCtrl)))
+hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["warninggui"])
+MainGui.Add("Picture", "+BackgroundTrans x482 y264 w14 h14 Hidden vImageUpdateLink", "HBITMAP:*" hBM).OnEvent("Click", nm_AutoUpdateGUI)
+DllCall("DeleteObject", "Ptr", hBM)
+hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["githubgui"])
+MainGui.Add("Picture", "+BackgroundTrans x" 494-VersionWidth-23 " y262 w18 h18 vImageGitHubLink", "HBITMAP:*" hBM)
+DllCall("DeleteObject", "Ptr", hBM)
+pBM := Gdip_BitmapConvertGray(bitmaps["discordgui"]), hBM := Gdip_CreateHBITMAPFromBitmap(pBM)
+MainGui.Add("Picture", "+BackgroundTrans x" 494-VersionWidth-48 " y263 w21 h16 vImageDiscordLink", "HBITMAP:*" hBM)
+Gdip_DisposeImage(pBM), DllCall("DeleteObject", "Ptr", hBM)
+hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["paypalgui"])
+MainGui.Add("Picture", "+BackgroundTrans x" 494-VersionWidth-67 " y262 w14 h16 vImageDonateLink", "HBITMAP:*" hBM).OnEvent("Click", nm_DonateLink)
+DllCall("DeleteObject", "Ptr", hBM)
+
+; control buttons
+MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+MainGui.Add("Button", "x5 y260 w65 h20 -Wrap Disabled vStartButton", " Start (" StartHotkey ")").OnEvent("Click", nm_StartButton)
+MainGui.Add("Button", "x75 y260 w65 h20 -Wrap Disabled vPauseButton", " Pause (" PauseHotkey ")").OnEvent("Click", nm_PauseButton)
+MainGui.Add("Button", "x145 y260 w65 h20 -Wrap Disabled vStopButton", " Stop (" StopHotkey ")").OnEvent("Click", nm_StopButton)
+MainGui.Add("Button", "x215 y260 w55 h20 -Wrap Disabled vCustomizeButton", "Customize").OnEvent("Click", nm_CustomizeButton)
+
+for k,v in ["PMondoGuid","PMondoGuidComplete","PFieldBoosted","PFieldGuidExtend","PFieldGuidExtendMins","PFieldBoostExtend","PPopStarExtend"]
+	%v%:=0
+#include "*i %A_ScriptDir%\..\settings\personal.ahk"
+
+
+; add tabs
+TabArr := []
+(GatherFeature) && TabArr.Push("Gather")
+(CollectKillFeature) && TabArr.Push("Collect/Kill")
+(BoostFeature) && TabArr.Push("Boost")
+(QuestsFeature) && TabArr.Push("Quests")
+(PlantersFeature) && TabArr.Push("Planters")
+(StatusFeature) && TabArr.Push("Status")
+(MiscFeature) && TabArr.Push("Misc")
+TabArr.Push("Settings")
+(BuffDetectReset = 1 && AdvancedFeature) && TabArr.Push("Advanced")
+(CreditsFeature) && TabArr.Push("Credits")
+(PersonalFeature) && TabArr.Push("Personal")
+(TabCtrl := MainGui.Add("Tab", "x0 y-1 w500 h240 -Wrap", TabArr)).OnEvent("Change", (*) => TabCtrl.Focus())
+SendMessage 0x1331, 0, 20, , TabCtrl ; set minimum tab width
+; check for update
+try AsyncHttpRequest("GET", "https://api.github.com/repos/NatroTeam/NatroMacro/releases", nm_AutoUpdateHandler
+, Map("accept", "application/vnd.github+json", "X-GitHub-Api-Version", "2022-11-28"))
+; open Timers
+if (TimersOpen = 1)
+	run '"' exe_path32 '" /script "' A_WorkingDir '\submacros\PlanterTimers.ahk"'
+
+; GATHER TAB
+; ------------------------
+if(GatherFeature) {
+ nm_GatherTab()
+}
+
+; CREDITS TAB
+; ------------------------
+if(CreditsFeature) {
+ nm_CreditsTab()
+}
+
+; PERSONAL TAB
+; ------------------------
+if(PersonalFeature) {
+ nm_PersonalTab()
+}
+
+; MISC TAB
+; ------------------------
+if(MiscFeature) {
+ nm_MiscTab()
+}
+
+; STATUS TAB
+; ------------------------
+if(StatusFeature) {
+ nm_StatusTab()
+}
+
+; SETTINGS TAB
+; ------------------------
+nm_SettingsTab()
+
+;COLLECT/Kill TAB
+;------------------------
+if(CollectKillFeature) {
+ nm_CollectKillTab()
+}
+
+;BOOST TAB
+;------------------------
+if(BoostFeature) {
+ nm_BoostTab()
+}
+
+;QUESTS TAB
+;------------------------
+if(QuestsFeature) {
+ nm_QuestsTab()
+}
+
+;PLANTERS TAB
+;------------------------
+if(PlantersFeature) {
+ nm_PlantersTab()
+}
+
+;ADVANCED TAB
+;------------------------
+if (BuffDetectReset = 1 && AdvancedFeature)
+	nm_AdvancedGUI()
+SetCursor(0)
+SetLoadingProgress(100)
+
+;unlock tabs
+nm_LockTabs(0)
+nm_setStatus("Startup", "UI")
+TabCtrl.Focus()
+MainGui.Title := "Natro Macro"
+MainGui["StartButton"].Enabled := 1
+MainGui["PauseButton"].Enabled := 1
+MainGui["StopButton"].Enabled := 1
+MainGui["CustomizeButton"].Enabled := 1
+
+;enable hotkeys
+try {
+	Hotkey StartHotkey, start, "On"
+	Hotkey PauseHotkey, nm_pause, "On"
+	Hotkey AutoClickerHotkey, autoclicker, "On T2"
+	Hotkey TimersHotkey, timers, "On"
+	Hotkey DebugHotkey, nm_copyDebugLog, "On"
+}

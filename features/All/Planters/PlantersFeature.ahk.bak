@@ -1,0 +1,1159 @@
+#Requires AutoHotkey v2.0
+
+global plantersConfigLoc := "features\All\Quests\nm_planters_config.ini"
+
+;this is this features GUI lines-of-code used to calculate loading progress
+PlantersFeatureProgressVolume := (PlantersFeature) ? 197 : 0
+;this is the running total of all macro features included in the load progress metric
+LoadingProgressVolume := (PlantersFeature) ? LoadingProgressVolume+PlantersFeatureProgressVolume : LoadingProgressVolume
+
+nm_PlantersTab(*) {
+	global
+	TabCtrl.UseTab("Planters")
+	MainGui.Add("Slider", "x364 y24 w130 h19 vPlanterMode Range0-2 AltSubmit Thick16 TickInterval1 Page1 Disabled", PlanterMode).OnEvent("Change", ba_PlanterSwitch)
+	MainGui.Add("Text", "x366 y43 h20 cRed +Center +BackgroundTrans", "OFF")
+	MainGui.Add("Text", "x410 y43 h20 c0xFF9200 +Center +BackgroundTrans", "MANUAL")
+	MainGui.Add("Text", "x478 y43 h20 cGreen +Center +BackgroundTrans", "+")
+
+	;Planters+
+	hidden := ((PlanterMode = 2) ? "" : " Hidden")
+
+	MainGui.Add("Text", "x23 y27 w40 h20 +BackgroundTrans vTextPresets" hidden, "Presets:")
+	MainGui.Add("Text", "x+14 yp w40 vNPreset +Center +BackgroundTrans" hidden, NPreset)
+	MainGui.Add("Button", "xp-12 yp-1 w12 h16 vNPLeft Disabled" hidden, "<").OnEvent("Click", nm_NectarPreset)
+	MainGui.Add("Button", "xp+51 yp w12 h16 vNPRight Disabled" hidden, ">").OnEvent("Click", nm_NectarPreset)
+
+	MainGui.Add("Text", "x18 y47 w80 h20 +center +BackgroundTrans vTextNP" hidden, "Nectar Priority")
+	MainGui.Add("Text", "x104 y47 w47 h30 +center +BackgroundTrans vTextMin" hidden, "Min %")
+	MainGui.Add("Text", "x10 y62 w137 h1 0x7 vTextLine1" hidden)
+	MainGui.Add("Text", "x10 y70 +BackgroundTrans vText1" hidden, 1)
+	MainGui.Add("Text", "x10 yp+20 +BackgroundTrans vText2" hidden, 2)
+	MainGui.Add("Text", "x10 yp+20 +BackgroundTrans vText3" hidden, 3)
+	MainGui.Add("Text", "x10 yp+20 +BackgroundTrans vText4" hidden, 4)
+	MainGui.Add("Text", "x10 yp+20 +BackgroundTrans vText5" hidden, 5)
+
+	MainGui.Add("Text", "x32 y70 w64 vN1priority +Center +BackgroundTrans Section" hidden, N1priority)
+	MainGui.Add("Button", "xp-12 yp-1 w12 h16 vNP1Left Disabled" hidden, "<").OnEvent("Click", nm_NectarPriority)
+	MainGui.Add("Button", "xp+75 yp w12 h16 vNP1Right Disabled" hidden, ">").OnEvent("Click", nm_NectarPriority)
+	MainGui.Add("Text", "xs ys+20 w64 vN2priority +Center +BackgroundTrans" hidden, N2priority)
+	MainGui.Add("Button", "xp-12 yp-1 w12 h16 vNP2Left Disabled" hidden, "<").OnEvent("Click", nm_NectarPriority)
+	MainGui.Add("Button", "xp+75 yp w12 h16 vNP2Right Disabled" hidden, ">").OnEvent("Click", nm_NectarPriority)
+	MainGui.Add("Text", "xs ys+40 w64 vN3priority +Center +BackgroundTrans" hidden, N3priority)
+	MainGui.Add("Button", "xp-12 yp-1 w12 h16 vNP3Left Disabled" hidden, "<").OnEvent("Click", nm_NectarPriority)
+	MainGui.Add("Button", "xp+75 yp w12 h16 vNP3Right Disabled" hidden, ">").OnEvent("Click", nm_NectarPriority)
+	MainGui.Add("Text", "xs ys+60 w64 vN4priority +Center +BackgroundTrans" hidden, N4priority)
+	MainGui.Add("Button", "xp-12 yp-1 w12 h16 vNP4Left Disabled" hidden, "<").OnEvent("Click", nm_NectarPriority)
+	MainGui.Add("Button", "xp+75 yp w12 h16 vNP4Right Disabled" hidden, ">").OnEvent("Click", nm_NectarPriority)
+	MainGui.Add("Text", "xs ys+80 w64 vN5priority +Center +BackgroundTrans" hidden, N5priority)
+	MainGui.Add("Button", "xp-12 yp-1 w12 h16 vNP5Left Disabled" hidden, "<").OnEvent("Click", nm_NectarPriority)
+	MainGui.Add("Button", "xp+75 yp w12 h16 vNP5Right Disabled" hidden, ">").OnEvent("Click", nm_NectarPriority)
+
+	MainGui.Add("Text", "x113 y70 w12 vN1minPercent +Center Section" hidden, N1minPercent)
+	MainGui.Add("UpDown", "xp+14 yp-1 h16 -16 Range1-9 vN1minPercentUpDown Disabled" hidden, N1minPercent//10).OnEvent("Change", nm_NectarMinPercent)
+	MainGui.Add("Text", "xs ys+20 w12 vN2minPercent +Center" hidden, N2minPercent)
+	MainGui.Add("UpDown", "xp+14 yp-1 h16 -16 Range1-9 vN2minPercentUpDown Disabled" hidden, N2minPercent//10).OnEvent("Change", nm_NectarMinPercent)
+	MainGui.Add("Text", "xs ys+40 w12 vN3minPercent +Center" hidden, N3minPercent)
+	MainGui.Add("UpDown", "xp+14 yp-1 h16 -16 Range1-9 vN3minPercentUpDown Disabled" hidden, N3minPercent//10).OnEvent("Change", nm_NectarMinPercent)
+	MainGui.Add("Text", "xs ys+60 w12 vN4minPercent +Center" hidden, N4minPercent)
+	MainGui.Add("UpDown", "xp+14 yp-1 h16 -16 Range1-9 vN4minPercentUpDown Disabled" hidden, N4minPercent//10).OnEvent("Change", nm_NectarMinPercent)
+	MainGui.Add("Text", "xs ys+80 w12 vN5minPercent +Center" hidden, N5minPercent)
+	MainGui.Add("UpDown", "xp+14 yp-1 h16 -16 Range1-9 vN5minPercentUpDown Disabled" hidden, N5minPercent//10).OnEvent("Change", nm_NectarMinPercent)
+	SetLoadingProgress(floor((CurrentLoadProgress+49)/LoadingProgressVolume*100))
+
+	MainGui.Add("Text", "x10 y171 w137 h1 0x7 vTextLine2" hidden)
+	MainGui.Add("Text", "x5 y178 w70 h20 +right +BackgroundTrans vTextHarvest" hidden, "Harvest Every")
+	MainGui.Add("CheckBox", "x103 y194 w40 vAutomaticHarvestInterval Disabled Checked" AutomaticHarvestInterval hidden, "Auto").OnEvent("Click", ba_AutoHarvestSwitch_)
+	MainGui.Add("CheckBox", "x28 y194 vHarvestFullGrown Disabled Checked" HarvestFullGrown hidden, "Full Grown").OnEvent("Click", ba_HarvestFullGrownSwitch_)
+	MainGui.Add("CheckBox", "x2 y211 w150 h13 vgotoPlanterField Disabled Checked" gotoPlanterField hidden, "Only Gather in Planter Field").OnEvent("Click", ba_gotoPlanterFieldSwitch_)
+	MainGui.Add("CheckBox", "x2 y224 w150 h13 vgatherFieldSipping Disabled Checked" gatherFieldSipping hidden, "Gather Field Nectar Sipping").OnEvent("Click", ba_gatherFieldSippingSwitch_)
+	MainGui.Add("Text", "x80 y178 w32 h20 cRed vAutoText +BackgroundTrans" (((PlanterMode = 2) && AutomaticHarvestInterval) ? "" : " Hidden"), "[Auto]")
+	MainGui.Add("Text", "x80 y178 w32 h20 cRed vFullText +BackgroundTrans" (((PlanterMode = 2) && HarvestFullGrown) ? "" : " Hidden"), "[Full]")
+	GuiCtrl := MainGui.Add("Edit", "x80 y174 w32 h20 limit2 Number vHarvestInterval Disabled" (((PlanterMode = 2) && !HarvestFullGrown && !AutomaticHarvestInterval) ? "" : " Hidden"), ValidateNumber(&HarvestInterval, 2))
+	GuiCtrl.OnEvent("Change", ba_harvestInterval)
+	MainGui.Add("Text", "x115 y178 w70 h20 +BackgroundTrans vTextHours" hidden, "Hours")
+	MainGui.Add("Text", "x10 y209 w137 h1 0x7 vTextLine3" hidden)
+	MainGui.Add("Button", "x261 y24 w96 h18 -Wrap vTimersButton Disabled" hidden, " Show Timers (" TimersHotkey ")").OnEvent("Click", ba_showPlanterTimers)
+	MainGui.Add("Text", "x147 y28 w1 h182 0x7 vTextLine4" hidden)
+	MainGui.Add("Text", "x147 y27 w108 h20 +Center +BackgroundTrans vTextAllowedPlanters" hidden, "Allowed Planters")
+	MainGui.Add("Text", "x255 y43 w100 h20 +Center +BackgroundTrans vTextAllowedFields" hidden, "Allowed Fields")
+	MainGui.Add("Text", "x147 y42 w108 h1 0x7 vTextLine5" hidden)
+
+	(GuiCtrl := MainGui.Add("CheckBox", "x152 y45 vPlasticPlanterCheck Disabled Checked" PlasticPlanterCheck hidden, "Plastic")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vCandyPlanterCheck Disabled Checked" CandyPlanterCheck hidden, "Candy")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vBlueClayPlanterCheck Disabled Checked" BlueClayPlanterCheck hidden, "Blue Clay")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vRedClayPlanterCheck Disabled Checked" RedClayPlanterCheck hidden, "Red Clay")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vTackyPlanterCheck Disabled Checked" TackyPlanterCheck hidden, "Tacky")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vPesticidePlanterCheck Disabled Checked" PesticidePlanterCheck hidden, "Pesticide")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vHeatTreatedPlanterCheck Disabled Checked" HeatTreatedPlanterCheck hidden, "Heat-Treated")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vHydroponicPlanterCheck Disabled Checked" HydroponicPlanterCheck hidden, "Hydroponic")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vPetalPlanterCheck Disabled Checked" PetalPlanterCheck hidden, "Petal")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 w100 h13 vPlanterOfPlentyCheck Disabled Checked" PlanterOfPlentyCheck hidden, "Planter of Plenty")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vPaperPlanterCheck Disabled Checked" PaperPlanterCheck hidden, "Paper")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp yp+14 vTicketPlanterCheck Disabled Checked" TicketPlanterCheck hidden, "Ticket")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+
+	MainGui.Add("Text", "x155 y217 w80 h20 +BackgroundTrans vTextMax" hidden, "Max Planters")
+	MainGui.Add("Text", "x222 y217 w24 vMaxAllowedPlantersText" hidden)
+	MainGui.Add("UpDown", "vMaxAllowedPlanters Range0-3 Disabled" hidden, MaxAllowedPlanters).OnEvent("Change", ba_maxAllowedPlantersSwitch)
+	MainGui.Add("Text", "x255 y28 w1 h204 0x7 vTextLine6" hidden)
+	MainGui.Add("Text", "x255 y58 w240 h1 0x7 vTextLine7" hidden)
+
+	MainGui.SetFont("s7")
+	MainGui.Add("Text", "x250 y61 w100 h20 +Center +BackgroundTrans vTextZone1" hidden, "-- starting zone --")
+	MainGui.Add("Text", "x250 y142 w100 h20 +Center +BackgroundTrans vTextZone2" hidden, "-- 5 bee zone --")
+	MainGui.Add("Text", "x250 y195 w100 h20 +Center +BackgroundTrans vTextZone3" hidden, "-- 10 bee zone --")
+	MainGui.Add("Text", "x375 y61 w100 h20 +Center +BackgroundTrans vTextZone4" hidden, "-- 15 bee zone --")
+	MainGui.Add("Text", "x375 y128 w100 h20 +Center +BackgroundTrans vTextZone5" hidden, "-- 25 bee zone --")
+	MainGui.Add("Text", "x375 y153 w100 h20 +Center +BackgroundTrans vTextZone6" hidden, "-- 35 bee zone --")
+
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+	(GuiCtrl := MainGui.Add("CheckBox", "x258 y72 vDandelionFieldCheck Disabled Checked" DandelionFieldCheck hidden, "Dandelion (COM)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y86 vSunflowerFieldCheck Disabled Checked" SunflowerFieldCheck hidden, "Sunflower (SAT)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y100 vMushroomFieldCheck Disabled Checked" MushroomFieldCheck hidden, "Mushroom (MOT)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y114 vBlueFlowerFieldCheck Disabled Checked" BlueFlowerFieldCheck hidden, "Blue Flower (REF)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y128 vCloverFieldCheck Disabled Checked" CloverFieldCheck hidden, "Clover (INV)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y153 vSpiderFieldCheck Disabled Checked" SpiderFieldCheck hidden, "Spider (MOT)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y167 vStrawberryFieldCheck Disabled Checked" StrawberryFieldCheck hidden, "Strawberry (REF)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y181 vBambooFieldCheck Disabled Checked" BambooFieldCheck hidden, "Bamboo (COM)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y206 w93 h13 vPineappleFieldCheck Disabled Checked" PineappleFieldCheck hidden, "Pineapple (SAT)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y220 vStumpFieldCheck Disabled Checked" StumpFieldCheck hidden, "Stump (MOT)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp+122 y72 vCactusFieldCheck Disabled Checked" CactusFieldCheck hidden, "Cactus (INV)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y86 vPumpkinFieldCheck Disabled Checked" PumpkinFieldCheck hidden, "Pumpkin (SAT)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y100 vPineTreeFieldCheck Disabled Checked" PineTreeFieldCheck hidden, "Pine Tree (COM)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y114 vRoseFieldCheck Disabled Checked" RoseFieldCheck hidden, "Rose (MOT)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y139 vMountainTopFieldCheck Disabled Checked" MountainTopFieldCheck hidden, "Mountain Top (INV)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y164 vCoconutFieldCheck Disabled Checked" CoconutFieldCheck hidden, "Coconut (REF)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "xp y178 vPepperFieldCheck Disabled Checked" PepperFieldCheck hidden, "Pepper (INV)")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+
+	MainGui.Add("Text", "x354 y196 w144 h36 0x7 vTextBox1" hidden)
+	(GuiCtrl := MainGui.Add("CheckBox", "x358 y200 w138 h13 vConvertFullBagHarvest Disabled Checked" ConvertFullBagHarvest hidden, "Convert Full Bag Harvest")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	(GuiCtrl := MainGui.Add("CheckBox", "x358 y216 w138 h13 vGatherPlanterLoot Disabled Checked" GatherPlanterLoot hidden, "Gather Planter Loot")).Section := "Planters", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	SetLoadingProgress(floor((CurrentLoadProgress+118)/LoadingProgressVolume*100))
+
+	;Manual Planters
+	MPlanterList := ["", "Plastic", "Candy", "Blue Clay", "Red Clay", "Tacky", "Pesticide", "Heat Treated", "Hydroponic", "Petal", "Planter of Plenty", "Paper", "Ticket"]
+	(MFieldList := [""]).Push(fieldnamelist*)
+	hidden := ((PlanterMode = 1) ? "" : " Hidden")
+
+	; Headers
+	MainGui.Add("Text", "x67 y23 w92 +BackgroundTrans +Center vMHeader1Text" hidden, "Cycle #1")
+	MainGui.Add("Text", "xp+96 yp wp +BackgroundTrans +Center vMHeader2Text" hidden, "Cycle #2")
+	MainGui.Add("Text", "xp+96 yp wp +BackgroundTrans +Center vMHeader3Text" hidden, "Cycle #3")
+
+	Loop 3 {
+		i := A_Index
+		MainGui.Add("Text", ((i = 1) ? "x5 y40" : "xs ys+29") " +Center Section vMSlot" i "PlanterText" hidden, "S" i " Planters:")
+		Loop 9 {
+			hiddenPlanter := (((PlanterMode == 1) && (A_Index < 4)) ? "" : " Hidden")
+			(GuiCtrl := MainGui.Add("DropDownList", "x" (x := (Mod(A_Index, 3) = 1) ? "s+62" : "p+50") " ys-3 w92 vMSlot" i "Cycle" A_Index "Planter Disabled" hiddenPlanter, MPlanterList)).OnEvent("Change", mp_SaveConfig)
+			if MSlot%i%Cycle%A_Index%Planter
+				GuiCtrl.Text := MSlot%i%Cycle%A_Index%Planter
+			x := (x = "p+50") ? "p" : x
+			(GuiCtrl := MainGui.Add("DropDownList", "x" x " ys+17 w92 vMSlot" i "Cycle" A_Index "Field Disabled" hiddenPlanter, MFieldList)).OnEvent("Change", mp_SaveConfig)
+			if MSlot%i%Cycle%A_Index%Field
+				GuiCtrl.Text := MSlot%i%Cycle%A_Index%Field
+			MainGui.Add("CheckBox", "x" x " ys+41 w46 vMSlot" i "Cycle" A_Index "Glitter Disabled" hiddenPlanter " Checked" MSlot%i%Cycle%A_Index%Glitter, "Glitter").OnEvent("Click", mp_SaveConfig)
+			x := (Mod(A_Index, 3) = 1) ? "s+108" : "p+46"
+			(GuiCtrl := MainGui.Add("DropDownList", "x" x " ys+38 w46 vMSlot" i "Cycle" A_Index "AutoFull Disabled" hiddenPlanter, ["Full", "Timed"])).OnEvent("Change", mp_SaveConfig)
+			GuiCtrl.Text := MSlot%i%Cycle%A_Index%AutoFull
+		}
+		MainGui.Add("Text", "xs ys+20 +Center Section vMSlot" i "FieldText" hidden, "S" i " Fields:")
+		MainGui.Add("Text", "xs ys+20 +Center Section vMSlot" i "SettingsText" hidden, "S" i " Settings:")
+		if (i < 3)
+			MainGui.Add("Text", "xs ys+22 w350 h1 0x7 vMSlot" i "SeparatorLine" hidden)
+	}
+
+	; page movement
+	MainGui.Add("Text", "x360 y63 vMPageNumberText" hidden, "Page " (MPageIndex := 1))
+	MainGui.Add("Button", "xp+36 y63 w11 h14 vMPageLeft Disabled" hidden, "<").OnEvent("Click", mp_UpdatePage)
+	MainGui.Add("Button", "xp+13 y63 w11 h14 vMPageRight Disabled" hidden, ">").OnEvent("Click", mp_UpdatePage)
+	MainGui.Add("Text", "x360 y80 h1 w60 0x7 vMPagesSeparatorLine" hidden)
+
+
+	MainGui.Add("Text", "x371 y82 +BackgroundTrans Section +center vMCurrentCycle" hidden, "Current`nCycle:")
+	Loop 3 {
+		MainGui.Add("Text", ((A_Index = 1) ? "x428 y63" : "x428 ys+16") " w200 +BackgroundTrans Section vMSlot" A_Index "CycleText" hidden, "Slot " A_Index ": ")
+		MainGui.Add("Text", ((A_Index = 1) ? "x476 y63" : "x476 ys") " w200 +BackgroundTrans Section vMSlot" A_Index "CycleNo" hidden, PlanterManualCycle%A_Index%)
+		MainGui.Add("Button", "x462 ys w11 h14 +Center vMSlot" A_Index "Left Disabled" hidden, "<").OnEvent("Click", mp_Slot%A_Index%ChangeLeft)
+		MainGui.Add("Button", "x484 ys w11 h14 +Center vMSlot" A_Index "Right Disabled" hidden, ">").OnEvent("Click", mp_Slot%A_Index%ChangeRight)
+	}
+
+	MainGui.Add("Text", "x355 y23 h215 w1 0x7 vMSectionSeparatorLine" hidden)
+	MainGui.Add("Text", "x355 y58 h1 w150 0x7 vMSliderSeparatorLine" hidden)
+	SetLoadingProgress(floor((CurrentLoadProgress+170)/LoadingProgressVolume*100))
+
+	; disable automatic harvest
+	MainGui.Add("Text", "x355 y112 h1 w150 0x7 Section vMPuffModeSeparatorLine" hidden)
+	MainGui.Add("CheckBox", "xs+5 ys+4 w150 h16 vMPuffModeA Section Disabled Checked" MPuffModeA hidden, "Disable Auto-Harvest").OnEvent("Click", mp_MPuffMode)
+	MainGui.Add("Text", "xs+16 ys+16 vMPuffModeText " hidden, "Slots:")
+	MainGui.Add("CheckBox", "xs+46 yp-1 w24 h16 vMPuffMode1 Disabled Checked" MPuffMode1 hidden, 1).OnEvent("Click", mp_SaveConfig)
+	MainGui.Add("CheckBox", "xs+70 yp w24 h16 vMPuffMode2 Disabled Checked" MPuffMode2 hidden, 2).OnEvent("Click", mp_SaveConfig)
+	MainGui.Add("CheckBox", "xs+95 yp w24 h16 vMPuffMode3 Disabled Checked" MPuffMode3 hidden, 3).OnEvent("Click", mp_SaveConfig)
+	MainGui.Add("Button", "x484 yp+1 w11 h14 vMPuffModeHelp Disabled" hidden, "?").OnEvent("Click", nm_MPuffModeHelp)
+
+	; gather in planter field and slots
+	MainGui.Add("Text", "x355 y149 h1 w156 0x7 Section vMGatherSeparatorLine" hidden)
+	MainGui.Add("CheckBox", "xs+5 ys+4 w150 h16 vMPlanterGatherA Section Disabled Checked" MPlanterGatherA hidden, "Gather in Planter Fields").OnEvent("Click", mp_MPlanterGatherSwitch_)
+	MainGui.Add("Text", "xs+16 ys+16 vMPlanterGatherText " hidden, "Slots:")
+	MainGui.Add("CheckBox", "xs+46 yp-1 w24 h16 vMPlanterGather1 Disabled Checked" MPlanterGather1 hidden, 1).OnEvent("Click", mp_SaveConfig)
+	MainGui.Add("CheckBox", "xs+70 yp w24 h16 vMPlanterGather2 Disabled Checked" MPlanterGather2 hidden, 2).OnEvent("Click", mp_SaveConfig)
+	MainGui.Add("CheckBox", "xs+95 yp w24 h16 vMPlanterGather3 Disabled Checked" MPlanterGather3 hidden, 3).OnEvent("Click", mp_SaveConfig)
+	MainGui.Add("Button", "x484 yp+1 w11 h14 vMPlanterGatherHelp Disabled" hidden, "?").OnEvent("Click", nm_MPlanterGatherHelp)
+
+	; harvest every interval
+	MainGui.Add("Text", "x355 y186 h1 w150 0x7 Section vMHarvestSeparatorLine" hidden)
+	MainGui.Add("CheckBox", "x360 ys+4 w138 h13 vMConvertFullBagHarvest Disabled Checked" MConvertFullBagHarvest hidden, "Convert Full Bag Harvest").OnEvent("Click", mp_SaveConfig)
+	MainGui.Add("CheckBox", "x373 ys+19 w138 h13 vMGatherPlanterLoot Disabled Checked" MGatherPlanterLoot hidden, "Gather Planter Loot").OnEvent("Click", mp_SaveConfig)
+	MainGui.Add("Text", "xs+6 ys+34 vMHarvestText Section" hidden, "Harvest every")
+	MainGui.Add("Text", "xs+65 ys w48 vMHarvestInterval +Center +BackgroundTrans " hidden, MHarvestInterval)
+	MainGui.Add("Button", "x471 ys w11 h14 vMHILeft Disabled" hidden, "<").OnEvent("Click", nm_MHarvestInterval)
+	MainGui.Add("Button", "x484 ys w11 h14 vMHIRight Disabled" hidden, ">").OnEvent("Click", nm_MHarvestInterval)
+	CurrentLoadProgress:=CurrentLoadProgress+PlantersFeatureProgressVolume
+	SetLoadingProgress(floor(CurrentLoadProgress/LoadingProgressVolume*100))
+}
+ba_planterSwitch(*){
+	global
+	static PlantersPlusControls := ["N1Priority","N2Priority","N3Priority","N4Priority","N5Priority"
+		,"N1MinPercent","N2MinPercent","N3MinPercent","N4MinPercent","N5MinPercent"
+		,"N1MinPercentUpDown","N2MinPercentUpDown","N3MinPercentUpDown","N4MinPercentUpDown","N5MinPercentUpDown"
+		,"DandelionFieldCheck","SunflowerFieldCheck","MushroomFieldCheck","BlueFlowerFieldCheck","CloverFieldCheck","SpiderFieldCheck","StrawberryFieldCheck","BambooFieldCheck"
+		,"PineappleFieldCheck","StumpFieldCheck","PumpkinFieldCheck","PineTreeFieldCheck","RoseFieldCheck","MountainTopFieldCheck","CactusFieldCheck","CoconutFieldCheck","PepperFieldCheck"
+		,"Text1","Text2","Text3","Text4","Text5"
+		,"TextLine1","TextLine2","TextLine3","TextLine4","TextLine5","TextLine6","TextLine7"
+		,"TextZone1","TextZone2","TextZone3","TextZone4","TextZone5","TextZone6"
+		,"NPreset","TextPresets","TextNp","TextMin"
+		,"PlasticPlanterCheck","CandyPlanterCheck","BlueClayPlanterCheck","RedClayPlanterCheck","TackyPlanterCheck","PesticidePlanterCheck"
+		,"HeatTreatedPlanterCheck","HydroponicPlanterCheck","PetalPlanterCheck","PlanterOfPlentyCheck","PaperPlanterCheck","TicketPlanterCheck"
+		,"TextHarvest","HarvestFullGrown","gotoPlanterField","gatherFieldSipping","TextHours","TextMax","MaxAllowedPlanters","MaxAllowedPlantersText"
+		,"TextAllowedPlanters","TextAllowedFields","TimersButton","AutomaticHarvestInterval","ConvertFullBagHarvest","GatherPlanterLoot","TextBox1"
+		,"NPLeft","NPRight","NP1Left","NP1Right","NP2Left","NP2Right","NP3Left","NP3Right","NP4Left","NP4Right","NP5Left","NP5Right"]
+	, ManualPlantersControls := ["MHeader1Text","MHeader2Text","MHeader3Text"
+		,"MSlot1PlanterText","MSlot1FieldText","MSlot1SettingsText","MSlot1SeparatorLine"
+		,"MSlot2PlanterText","MSlot2FieldText","MSlot2SettingsText","MSlot2SeparatorLine"
+		,"MSlot3PlanterText","MSlot3FieldText","MSlot3SettingsText"
+		,"MSectionSeparatorLine","MSliderSeparatorLine"
+		,"MSlot1CycleText","MSlot1CycleNo","MSlot1Left","MSlot1Right","MSlot2CycleText","MSlot2CycleNo","MSlot2Left","MSlot2Right","MSlot3CycleText","MSlot3CycleNo","MSlot3Left","MSlot3Right"
+		,"MCurrentCycle","MHarvestText","MHarvestInterval","MHarvestSeparatorLine","MPageLeft","MPageNumberText","MPageRight", "MPagesSeparatorLine"
+		,"MPuffModeSeparatorLine","MPuffModeHelp","MPuffModeText","MPuffModeA","MPuffMode1","MPuffMode2","MPuffMode3"
+		,"MGatherSeparatorLine","MPlanterGatherHelp","MPlanterGatherText","MPlanterGatherA","MPlanterGather1","MPlanterGather2","MPlanterGather3","MConvertFullBagHarvest","MGatherPlanterLoot"
+		,"MHILeft","MHIRight"]
+	, ManualPlantersOptions := ["Planter","Field","Glitter","AutoFull"]
+	local i, c, k, v
+
+	PlanterMode := MainGui["PlanterMode"].Value
+	MainGui["PlanterMode"].Enabled := 0
+
+	for i,c in [0,1] ; hide first, then show
+	{
+		if (((i = 1) && (PlanterMode != 2)) || ((i = 2) && (PlanterMode = 2))) ; hide/show all planters+ controls
+		{
+			for k,v in PlantersPlusControls
+				MainGui[v].Visible := c
+			MainGui[HarvestFullGrown ? "FullText" : AutomaticHarvestInterval ? "AutoText" : "HarvestInterval"].Visible := c
+		}
+
+		if (((i = 1) && (PlanterMode != 1)) || ((i = 2) && (PlanterMode = 1))) ; hide/show all manual planters controls
+		{
+			for k,v in ManualPlantersControls
+				MainGui[v].Visible := c
+			Loop 3
+			{
+				i := A_Index
+				for k,v in ManualPlantersOptions
+					Loop 3
+						MainGui["MSlot" A_Index "Cycle" (3 * (MPageIndex - 1) + i) v].Visible := c
+			}
+		}
+	}
+
+	; handle MaxAllowedPlanters
+	MaxAllowedPlanters := MainGui["MaxAllowedPlanters"].Value
+	if ((PlanterMode = 2) && (MaxAllowedPlanters = 0)) {
+		MaxAllowedPlanters:=3
+		IniWrite MaxAllowedPlanters, "settings\nm_config.ini", "Planters", "MaxAllowedPlanters"
+		MainGui["MaxAllowedPlanters"].Value := 3
+	}
+
+	; handle PlanterTimers window
+	if (PlanterMode = 0)
+	{
+		DetectHiddenWindows 1
+		if WinExist("PlanterTimers.ahk ahk_class AutoHotkey")
+			WinClose
+		DetectHiddenWindows 0
+	}
+
+	IniWrite PlanterMode, "settings\nm_config.ini", "Planters", "PlanterMode"
+	MainGui["PlanterMode"].Enabled := 1
+}
+ba_showPlanterTimers(*){
+	global TimerGuiTransparency, TimerX, TimerY
+	DetectHiddenWindows 1
+	if WinExist("PlanterTimers.ahk ahk_class AutoHotkey")
+		WinClose
+	else
+		Run '"' exe_path32 '" /script "' A_WorkingDir '\submacros\PlanterTimers.ahk"'
+	DetectHiddenWindows 0
+}
+;Manual Planters
+mp_UpdatePage(GuiCtrl?, *)
+{
+	Static ManualPlantersOptions := ["Planter","Field","Glitter","AutoFull"], LastPageIndex := 1
+
+	Global MPageIndex += IsSet(GuiCtrl) ? ((GuiCtrl.Name = "MPageLeft") ? -1 : 1) : 0
+
+	MainGui["MPageLeft"].Enabled := (MPageIndex != 1)
+	MainGui["MPageRight"].Enabled := (MPageIndex != 3)
+
+	If IsSet(GuiCtrl) {
+		MainGui["MPageNumberText"].Text := "Page " MPageIndex
+
+		Loop 3 {
+			MainGui["MHeader" A_Index "Text"].Text := "Cycle #" ((MPageIndex - 1) * 3 + A_Index)
+			i := A_Index
+			for v in ManualPlantersOptions {
+				Loop 3 {
+					MainGui["MSlot" A_Index "Cycle" (3 * (LastPageIndex - 1) + i) v].Visible := 0
+					MainGui["MSlot" A_Index "Cycle" (3 * (MPageIndex - 1) + i) v].Visible := 1
+				}
+			}
+		}
+
+		LastPageIndex := MPageIndex
+	}
+}
+
+mp_UpdateControls() {
+	global
+	local i, j
+
+	Loop 3 {
+		i := A_Index
+		Loop 9 {
+			MainGui["MSlot" i "Cycle" A_Index "Planter"].Text := (MSlot%i%Cycle%A_Index%Planter ? MSlot%i%Cycle%A_Index%Planter : "")
+			MainGui["MSlot" i "Cycle" A_Index "Field"].Text := (MSlot%i%Cycle%A_Index%Field ? MSlot%i%Cycle%A_Index%Field : "")
+			MainGui["MSlot" i "Cycle" A_Index "Glitter"].Value := MSlot%i%Cycle%A_Index%Glitter
+			MainGui["MSlot" i "Cycle" A_Index "AutoFull"].Text := MSlot%i%Cycle%A_Index%AutoFull
+		}
+	}
+
+	Loop 3 {
+		i := A_Index
+		Loop 9 {
+			j := A_Index - 1
+			If (A_Index != 1)
+				MainGui["MSlot" i "Cycle" A_Index "Planter"].Enabled := (MSlot%i%Cycle%j%Field ? 1 : 0)
+			MainGui["MSlot" i "Cycle" A_Index "Field"].Enabled := (MSlot%i%Cycle%A_Index%Planter ? 1 : 0)
+			MainGui["MSlot" i "Cycle" A_Index "Glitter"].Enabled := (MSlot%i%Cycle%A_Index%Field ? 1 : 0)
+			MainGui["MSlot" i "Cycle" A_Index "AutoFull"].Enabled := (MSlot%i%Cycle%A_Index%Field ? 1 : 0)
+		}
+		j := A_Index - 1
+		If (i > 1)
+			MainGui["MSlot" i "Cycle1Planter"].Enabled := (MSlot%j%Cycle1Field ? 1 : 0)
+	}
+
+	MainGui["MPlanterGather1"].Enabled := (MPlanterGatherA ? 1 : 0)
+	MainGui["MPlanterGather2"].Enabled := (MPlanterGatherA ? 1 : 0)
+	MainGui["MPlanterGather3"].Enabled := (MPlanterGatherA ? 1 : 0)
+
+	MainGui["MPuffMode1"].Enabled := (MPuffModeA ? 1 : 0)
+	MainGui["MPuffMode2"].Enabled := (MPuffModeA ? 1 : 0)
+	MainGui["MPuffMode3"].Enabled := (MPuffModeA ? 1 : 0)
+
+	mp_UpdateCycles()
+
+}
+
+mp_SaveConfig(*) {
+	global
+	local i, j
+	global MSlot1Cycle1Planter, MSlot1Cycle2Planter, MSlot1Cycle3Planter, MSlot1Cycle4Planter, MSlot1Cycle5Planter, MSlot1Cycle6Planter, MSlot1Cycle7Planter, MSlot1Cycle8Planter, MSlot1Cycle9Planter
+	, MSlot1Cycle1Field, MSlot1Cycle2Field, MSlot1Cycle3Field, MSlot1Cycle4Field, MSlot1Cycle5Field, MSlot1Cycle6Field, MSlot1Cycle7Field, MSlot1Cycle8Field, MSlot1Cycle9Field
+	, MSlot1Cycle1Glitter, MSlot1Cycle2Glitter, MSlot1Cycle3Glitter, MSlot1Cycle4Glitter, MSlot1Cycle5Glitter, MSlot1Cycle6Glitter, MSlot1Cycle7Glitter, MSlot1Cycle8Glitter, MSlot1Cycle9Glitter
+	, MSlot1Cycle1AutoFull, MSlot1Cycle2AutoFull, MSlot1Cycle3AutoFull, MSlot1Cycle4AutoFull, MSlot1Cycle5AutoFull, MSlot1Cycle6AutoFull, MSlot1Cycle7AutoFull, MSlot1Cycle8AutoFull, MSlot1Cycle9AutoFull
+	, MSlot2Cycle1Planter, MSlot2Cycle2Planter, MSlot2Cycle3Planter, MSlot2Cycle4Planter, MSlot2Cycle5Planter, MSlot2Cycle6Planter, MSlot2Cycle7Planter, MSlot2Cycle8Planter, MSlot2Cycle9Planter
+	, MSlot2Cycle1Field, MSlot2Cycle2Field, MSlot2Cycle3Field, MSlot2Cycle4Field, MSlot2Cycle5Field, MSlot2Cycle6Field, MSlot2Cycle7Field, MSlot2Cycle8Field, MSlot2Cycle9Field
+	, MSlot2Cycle1Glitter, MSlot2Cycle2Glitter, MSlot2Cycle3Glitter, MSlot2Cycle4Glitter, MSlot2Cycle5Glitter, MSlot2Cycle6Glitter, MSlot2Cycle7Glitter, MSlot2Cycle8Glitter, MSlot2Cycle9Glitter
+	, MSlot2Cycle1AutoFull, MSlot2Cycle2AutoFull, MSlot2Cycle3AutoFull, MSlot2Cycle4AutoFull, MSlot2Cycle5AutoFull, MSlot2Cycle6AutoFull, MSlot2Cycle7AutoFull, MSlot2Cycle8AutoFull, MSlot2Cycle9AutoFull
+	, MSlot3Cycle1Planter, MSlot3Cycle2Planter, MSlot3Cycle3Planter, MSlot3Cycle4Planter, MSlot3Cycle5Planter, MSlot3Cycle6Planter, MSlot3Cycle7Planter, MSlot3Cycle8Planter, MSlot3Cycle9Planter
+	, MSlot3Cycle1Field, MSlot3Cycle2Field, MSlot3Cycle3Field, MSlot3Cycle4Field, MSlot3Cycle5Field, MSlot3Cycle6Field, MSlot3Cycle7Field, MSlot3Cycle8Field, MSlot3Cycle9Field
+	, MSlot3Cycle1Glitter, MSlot3Cycle2Glitter, MSlot3Cycle3Glitter, MSlot3Cycle4Glitter, MSlot3Cycle5Glitter, MSlot3Cycle6Glitter, MSlot3Cycle7Glitter, MSlot3Cycle8Glitter, MSlot3Cycle9Glitter
+	, MSlot3Cycle1AutoFull, MSlot3Cycle2AutoFull, MSlot3Cycle3AutoFull, MSlot3Cycle4AutoFull, MSlot3Cycle5AutoFull, MSlot3Cycle6AutoFull, MSlot3Cycle7AutoFull, MSlot3Cycle8AutoFull, MSlot3Cycle9AutoFull
+
+	Loop 3 {
+		i := A_Index
+		Loop 9 {
+			MSlot%i%Cycle%A_Index%Planter := MainGui["MSlot" i "Cycle" A_Index "Planter"].Text
+			MSlot%i%Cycle%A_Index%Field := MainGui["MSlot" i "Cycle" A_Index "Field"].Text
+			MSlot%i%Cycle%A_Index%Glitter := MainGui["MSlot" i "Cycle" A_Index "Glitter"].Value
+			MSlot%i%Cycle%A_Index%AutoFull := MainGui["MSlot" i "Cycle" A_Index "AutoFull"].Text
+		}
+	}
+
+	MPuffModeA := MainGui["MPuffModeA"].Value
+	MPuffMode1 := MainGui["MPuffMode1"].Value
+	MPuffMode2 := MainGui["MPuffMode2"].Value
+	MPuffMode3 := MainGui["MPuffMode3"].Value
+
+	MPlanterGatherA := MainGui["MPlanterGatherA"].Value
+	MPlanterGather1 := MainGui["MPlanterGather1"].Value
+	MPlanterGather2 := MainGui["MPlanterGather2"].Value
+	MPlanterGather3 := MainGui["MPlanterGather3"].Value
+
+	MConvertFullBagHarvest := MainGui["MConvertFullBagHarvest"].Value
+	MGatherPlanterLoot := MainGui["MGatherPlanterLoot"].Value
+
+	Loop 3 {
+		i := A_Index
+		Loop 9 {
+			j := A_Index - 1
+			If (A_Index != 1)
+				MSlot%i%Cycle%A_Index%Planter := MSlot%i%Cycle%j%Field ? MSlot%i%Cycle%A_Index%Planter : ""
+			MSlot%i%Cycle%A_Index%Field := MSlot%i%Cycle%A_Index%Planter ? MSlot%i%Cycle%A_Index%Field : ""
+			MSlot%i%Cycle%A_Index%Glitter := MSlot%i%Cycle%A_Index%Field ? MSlot%i%Cycle%A_Index%Glitter : 0
+			MSlot%i%Cycle%A_Index%AutoFull := MSlot%i%Cycle%A_Index%Field ? MSlot%i%Cycle%A_Index%AutoFull : "Timed"
+		}
+		j := A_Index + 1
+		If (i < 3)
+			MSlot%j%Cycle1Planter := MSlot%i%Cycle1Field ? MSlot%j%Cycle1Planter : ""
+	}
+
+	Loop 3 {
+		i := A_Index
+		Loop 9 {
+			IniWrite MSlot%i%Cycle%A_Index%Planter, "settings\manual_planters.ini", "Slot " i, "MSlot" i "Cycle" A_Index "Planter"
+			IniWrite MSlot%i%Cycle%A_Index%Field, "settings\manual_planters.ini", "Slot " i, "MSlot" i "Cycle" A_Index "Field"
+			IniWrite MSlot%i%Cycle%A_Index%Glitter, "settings\manual_planters.ini", "Slot " i, "MSlot" i "Cycle" A_Index "Glitter"
+			IniWrite MSlot%i%Cycle%A_Index%AutoFull, "settings\manual_planters.ini", "Slot " i, "MSlot" i "Cycle" A_Index "AutoFull"
+		}
+	}
+
+	IniWrite MPuffModeA, "settings\nm_config.ini", "Planters", "MPuffModeA"
+	IniWrite MPuffMode1, "settings\nm_config.ini", "Planters", "MPuffMode1"
+	IniWrite MPuffMode2, "settings\nm_config.ini", "Planters", "MPuffMode2"
+	IniWrite MPuffMode3, "settings\nm_config.ini", "Planters", "MPuffMode3"
+	IniWrite MPlanterGatherA, "settings\nm_config.ini", "Planters", "MPlanterGatherA"
+	IniWrite MPlanterGather1, "settings\nm_config.ini", "Planters", "MPlanterGather1"
+	IniWrite MPlanterGather2, "settings\nm_config.ini", "Planters", "MPlanterGather2"
+	IniWrite MPlanterGather3, "settings\nm_config.ini", "Planters", "MPlanterGather3"
+	IniWrite MConvertFullBagHarvest, "settings\nm_config.ini", "Planters", "MConvertFullBagHarvest"
+	IniWrite MGatherPlanterLoot, "settings\nm_config.ini", "Planters", "MGatherPlanterLoot"
+
+	mp_UpdateControls()
+
+}
+
+mp_UpdateCycles() {
+	global
+	local i
+	global MSlot1MaxCycle, MSlot2MaxCycle, MSlot3MaxCycle
+
+	Loop 3 {
+		i := A_Index, MSlot%A_Index%MaxCycle := 9
+		Loop 9 {
+			If (!MSlot%i%Cycle%A_Index%Field) {
+				MSlot%i%MaxCycle := Max(A_Index - 1, 1)
+				break
+			}
+		}
+
+		PlanterManualCycle%i% := Min(MSlot%i%MaxCycle, PlanterManualCycle%i%)
+		IniWrite PlanterManualCycle%i%, "settings\nm_config.ini", "Planters", "PlanterManualCycle" i
+
+		MainGui["MSlot" i "Left"].Enabled := (PlanterManualCycle%i% != 1)
+		MainGui["MSlot" i "Right"].Enabled := (PlanterManualCycle%i% < MSlot%i%MaxCycle)
+		MainGui["MSlot" i "CycleNo"].Text := PlanterManualCycle%i%
+	}
+}
+
+mp_Slot1ChangeLeft(*) {
+	Global PlanterManualCycle1 -= 1
+	mp_UpdateCycles()
+}
+
+mp_Slot1ChangeRight(*) {
+	Global PlanterManualCycle1 += 1
+	mp_UpdateCycles()
+}
+
+mp_Slot2ChangeLeft(*) {
+	Global PlanterManualCycle2 -= 1
+	mp_UpdateCycles()
+}
+
+mp_Slot2ChangeRight(*) {
+	Global PlanterManualCycle2 += 1
+	mp_UpdateCycles()
+}
+
+mp_Slot3ChangeLeft(*) {
+	Global PlanterManualCycle3 -= 1
+	mp_UpdateCycles()
+}
+
+mp_Slot3ChangeRight(*) {
+	Global PlanterManualCycle3 += 1
+	mp_UpdateCycles()
+}
+mp_MPuffMode(*){
+	global
+	MPuffModeA := MainGui["MPuffModeA"].Value
+	if(MPuffModeA) {
+		MainGui["MPuffModeA"].Value := 0
+		if (MsgBox("
+		(
+		Enabling 'Disable auto harvest' will cause the macro NOT to harvest the planter when ready.
+
+		Instead, it will 'hold' the full-grown planter until you harvest it either manually or through remote control.
+		This option is designed for users trying to grow smoking planters for puffshroom runs, and allows you to check before harvesting.
+		More information on how to use this feature is available in the 'Disable auto harvest' ? Help button.
+
+		Do you wish to proceed with disabling auto harvest?
+		)", "WARNING!", 1) = "Ok")
+		{
+			MainGui["MPuffModeA"].Value := 1
+		} else {
+			MainGui["MPuffModeA"].Value := 0
+		}
+	}
+	mp_SaveConfig()
+}
+mp_MPlanterGatherSwitch_(*){
+	global MPlanterGatherA
+	MPlanterGatherA := MainGui["MPlanterGatherA"].Value
+	if(MPlanterGatherA) {
+		MainGui["MPlanterGatherA"].Value := 0
+		if (MsgBox("
+		(
+		You have selected to "Gather only in planter field".
+
+		Seleting this option will cause the macro to IGNORE the gathering fields specified in the Gather tab, and gather ONLY in planter fields for the slots you select using this option instead.
+
+		This option can result in faster planter growth depending on your polar power, but will also result in less pollen/honey collection overall.
+		More information on how to use this feature is available in the 'Gather in planter field' ? Help button.
+
+		Do you wish to proceed with gathering in planter field?
+		)", "WARNING!", 1) = "Ok")
+		{
+			MainGui["MPlanterGatherA"].Value := 1
+		} else {
+			MainGui["MPlanterGatherA"].Value := 0
+		}
+	}
+	mp_SaveConfig()
+}
+nm_MPuffModeHelp(*){ ; disable auto harvest information for manual planters
+	MsgBox "
+	(
+	DESCRIPTION:
+	This option is designed for users trying to grow smoking planters for puffshrooms.
+	Enabling it for a planter slot will cause the macro NOT to harvest the planter.
+	Instead, it will 'hold' the planter until you harvest and clear it either manually or through remote control.
+	This allows you to check whether it is smoking before harvesting.
+
+	To use this feature:
+	- Choose which slots to disable auto harvest for, depending on how many planters you wish to use for puffshrooms versus loot or nectar.
+	- If you have set up a Discord webhook and would like a ping and screenshot of the planter when full grown, select Planter Progress in Natro Status tab > Change Discord Settings.
+	- When ready, either:
+	 - harvest manually in game, clear the planter in the Planter Timers pop-up (F5), and move to next cycle by pressing + in the planter tab
+	 - or do nothing if the planter is smoking and you wish to keep holding it.
+	- If you turn off 'Disable Auto Harvest' or switch to Planters Plus mode, the macro will harvest any planters marked holding or smoking.
+
+	Advanced options:
+	If you have set up remote control, after receiving a ping you can also optionally set your planter to smoking to help you keep track, or release from hold and plant next using these commands:
+	- ?planter smoking [1][2][3]
+	- ?planter harvest [1][2][3]
+	See these planter commands and your planter status using ?planter
+
+	See our Discord server for more details on how to set up and use webhook or remote control!
+	)", "Disable auto harvest", 0x40000
+}
+nm_MPlanterGatherHelp(*){ ; gather in planter field information for manual planters
+	MsgBox "
+	(
+	DESCRIPTION:
+	Gather in planter field will enable you to gather only in the fields where planters are placed, instead of the fields selected in your gather tab.
+	You can choose which planter slots you wish to gather in. If you choose more than one planter slot to gather in, the macro will rotate between each selected slot.
+	If there are no slots available for planter gather (none selected, none with planters, or all 'holding' if 'disable auto harvest' mode is also selected), the macro will revert to gathering in the fields specified in the gather tab.
+	)", "Gather in planter field", 0x40000
+}
+nm_MHarvestInterval(GuiCtrl, *){
+	global MHarvestInterval
+	static val := ["30 mins", "1 hour", "2 hours", "3 hours", "4 hours", "5 hours", "6 hours"], l := val.Length
+
+	switch MHarvestInterval, 0
+	{
+		case "30 mins":
+		i := 1
+		case "1 hour":
+		i := 2
+		default:
+		i := 3
+		case "3 hours":
+		i := 4
+		case "4 hours":
+		i := 5
+		case "5 hours":
+		i := 6
+		case "6 hours":
+		i := 7
+	}
+
+	MainGui["MHarvestInterval"].Text := MHarvestInterval := val[(GuiCtrl.Name = "MHIRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	IniWrite MHarvestInterval, "settings\manual_planters.ini", "General", "MHarvestInterval"
+}
+;Planters~
+nm_NectarPreset(GuiCtrl, *){
+	global
+	static val := ["Custom", "Blue", "Red", "White"], l := val.Length
+	local i
+
+	i := (NPreset = "Custom") ? 1 : (NPreset = "Blue") ? 2 : (NPreset = "Red") ? 3 : 4
+
+	MainGui["NPreset"].Text := NPreset := val[(GuiCtrl.Name = "NPRight") ? (Mod(i, l) + 1) : (Mod(l + i - 2, l) + 1)]
+	IniWrite NPreset, "settings\nm_config.ini", "Planters", "NPreset"
+
+	switch NPreset, 0
+	{
+		case "Blue":
+		MainGui["n1Priority"].Text := n1Priority := "Comforting"
+		MainGui["n2Priority"].Text := n2Priority := "Motivating"
+		MainGui["n3Priority"].Text := n3Priority := "Satisfying"
+		MainGui["n4Priority"].Text := n4Priority := "Refreshing"
+		MainGui["n5Priority"].Text := n5Priority := "Invigorating"
+		nm_NectarPriority()
+		MainGui["n1minPercent"].Text := 70, MainGui["n1minPercentUpDown"].Value := 7 ;COM
+		MainGui["n2minPercent"].Text := 80, MainGui["n2minPercentUpDown"].Value := 8 ;MOT
+		MainGui["n3minPercent"].Text := 80, MainGui["n3minPercentUpDown"].Value := 8 ;SAT
+		MainGui["n4minPercent"].Text := 80, MainGui["n4minPercentUpDown"].Value := 8 ;REF
+		MainGui["n5minPercent"].Text := 40, MainGui["n5minPercentUpDown"].Value := 4 ;INV
+		;COM
+		MainGui["DandelionFieldCheck"].Value := 1
+		MainGui["BambooFieldCheck"].Value := 0
+		MainGui["PineTreeFieldCheck"].Value := 1
+		;MOT
+		MainGui["MushroomFieldCheck"].Value := 0
+		MainGui["SpiderFieldCheck"].Value := 1
+		MainGui["RoseFieldCheck"].Value := 1
+		MainGui["StumpFieldCheck"].Value := 0
+		;SAT
+		MainGui["SunflowerFieldCheck"].Value := 1
+		MainGui["PineappleFieldCheck"].Value := 1
+		MainGui["PumpkinFieldCheck"].Value := 0
+		;REF
+		MainGui["BlueFlowerFieldCheck"].Value := 1
+		MainGui["StrawberryFieldCheck"].Value := 1
+		MainGui["CoconutFieldCheck"].Value := 0
+		;INV
+		MainGui["CloverFieldCheck"].Value := 1
+		MainGui["CactusFieldCheck"].Value := 1
+		MainGui["MountainTopFieldCheck"].Value := 0
+		MainGui["PepperFieldCheck"].Value := 1
+
+		case "Red":
+		MainGui["n1Priority"].Text := n1Priority := "Invigorating"
+		MainGui["n2Priority"].Text := n2Priority := "Refreshing"
+		MainGui["n3Priority"].Text := n3Priority := "Motivating"
+		MainGui["n4Priority"].Text := n4Priority := "Satisfying"
+		MainGui["n5Priority"].Text := n5Priority := "Comforting"
+		nm_NectarPriority()
+		MainGui["n1minPercent"].Text := 70, MainGui["n1minPercentUpDown"].Value := 7 ;INV
+		MainGui["n2minPercent"].Text := 80, MainGui["n2minPercentUpDown"].Value := 8 ;REF
+		MainGui["n3minPercent"].Text := 80, MainGui["n3minPercentUpDown"].Value := 8 ;MOT
+		MainGui["n4minPercent"].Text := 80, MainGui["n4minPercentUpDown"].Value := 8 ;SAT
+		MainGui["n5minPercent"].Text := 40, MainGui["n5minPercentUpDown"].Value := 4 ;COM
+		;INV
+		MainGui["CloverFieldCheck"].Value := 0
+		MainGui["CactusFieldCheck"].Value := 1
+		MainGui["MountainTopFieldCheck"].Value := 0
+		MainGui["PepperFieldCheck"].Value := 1
+		;REF
+		MainGui["BlueFlowerFieldCheck"].Value := 1
+		MainGui["StrawberryFieldCheck"].Value := 1
+		MainGui["CoconutFieldCheck"].Value := 0
+		;MOT
+		MainGui["MushroomFieldCheck"].Value := 0
+		MainGui["SpiderFieldCheck"].Value := 1
+		MainGui["RoseFieldCheck"].Value := 1
+		MainGui["StumpFieldCheck"].Value := 0
+		;SAT
+		MainGui["SunflowerFieldCheck"].Value := 1
+		MainGui["PineappleFieldCheck"].Value := 1
+		MainGui["PumpkinFieldCheck"].Value := 1
+		;COM
+		MainGui["DandelionFieldCheck"].Value := 1
+		MainGui["BambooFieldCheck"].Value := 1
+		MainGui["PineTreeFieldCheck"].Value := 1
+
+		case "White":
+		MainGui["n1Priority"].Text := n1Priority := "Satisfying"
+		MainGui["n2Priority"].Text := n2Priority := "Motivating"
+		MainGui["n3Priority"].Text := n3Priority := "Refreshing"
+		MainGui["n4Priority"].Text := n4Priority := "Comforting"
+		MainGui["n5Priority"].Text := n5Priority := "Invigorating"
+		nm_NectarPriority()
+		MainGui["n1minPercent"].Text := 70, MainGui["n1minPercentUpDown"].Value := 7 ;SAT
+		MainGui["n2minPercent"].Text := 80, MainGui["n2minPercentUpDown"].Value := 8 ;MOT
+		MainGui["n3minPercent"].Text := 80, MainGui["n3minPercentUpDown"].Value := 8 ;REF
+		MainGui["n4minPercent"].Text := 80, MainGui["n4minPercentUpDown"].Value := 8 ;COM
+		MainGui["n5minPercent"].Text := 40, MainGui["n5minPercentUpDown"].Value := 4 ;INV
+		;SAT
+		MainGui["SunflowerFieldCheck"].Value := 1
+		MainGui["PineappleFieldCheck"].Value := 1
+		MainGui["PumpkinFieldCheck"].Value := 0
+		;MOT
+		MainGui["MushroomFieldCheck"].Value := 0
+		MainGui["SpiderFieldCheck"].Value := 1
+		MainGui["RoseFieldCheck"].Value := 1
+		MainGui["StumpFieldCheck"].Value := 0
+		;REF
+		MainGui["BlueFlowerFieldCheck"].Value := 1
+		MainGui["StrawberryFieldCheck"].Value := 1
+		MainGui["CoconutFieldCheck"].Value := 0
+		;COM
+		MainGui["DandelionFieldCheck"].Value := 1
+		MainGui["BambooFieldCheck"].Value := 1
+		MainGui["PineTreeFieldCheck"].Value := 1
+		;INV
+		MainGui["CloverFieldCheck"].Value := 1
+		MainGui["CactusFieldCheck"].Value := 1
+		MainGui["MountainTopFieldCheck"].Value := 0
+		MainGui["PepperFieldCheck"].Value := 1
+	}
+	ba_saveConfig_()
+}
+nm_NectarPriority(GuiCtrl?, *){
+	global
+	static val := ["None", "Comforting", "Refreshing", "Satisfying", "Motivating", "Invigorating"]
+	local i, l, index, n, j, arr := []
+
+	switch IsSet(GuiCtrl) ? GuiCtrl.Name : ""
+	{
+		case "NP2Left", "NP2Right":
+		index := 2
+		case "NP3Left", "NP3Right":
+		index := 3
+		case "NP4Left", "NP4Right":
+		index := 4
+		case "NP5Left", "NP5Right":
+		index := 5
+		default:
+		index := 1
+	}
+
+	for k,v in val
+	{
+		if (k > 1)
+			Loop (index - 1)
+				if (v = N%A_Index%priority)
+					continue 2
+		arr.Push(v)
+	}
+	l := arr.Length
+
+	switch N%index%priority, 0
+	{
+		case arr[1]:
+		i := 1
+		case arr[2]:
+		i := 2
+		case arr[3]:
+		i := 3
+		case arr[4]:
+		i := 4
+		case arr[5]:
+		i := 5
+		default:
+		i := l
+	}
+
+	MainGui["N" index "priority"].Text := N%index%priority := arr[IsSet(GuiCtrl) ? ((GuiCtrl.Name = "NP" index "Right") ? Mod(i, l) + 1 : Mod(l + i - 2, l) + 1) : i]
+
+	Loop 5 {
+		n := A_Index
+		Loop (n - 1) {
+			if (N%n%priority = N%A_Index%priority) {
+				MainGui["N" n "priority"].Text := N%n%priority := "None"
+				if IsSet(GuiCtrl)
+					IniWrite N%n%priority, "settings\nm_config.ini", "Planters", "N" n "priority"
+			}
+		}
+		if (N%n%priority = "None") {
+			Loop (5 - n) {
+				j := n + A_Index
+				MainGui["NP" j "Left"].Enabled := 0
+				MainGui["NP" j "Right"].Enabled := 0
+				MainGui["N" j "MinPercentUpDown"].Enabled := 0
+				if (N%j%priority != "None") {
+					MainGui["N" j "priority"].Text := N%j%priority := "None"
+					if IsSet(GuiCtrl)
+						IniWrite N%j%priority, "settings\nm_config.ini", "Planters", "N" j "priority"
+				}
+			}
+			break
+		} else if (A_Index < 5) {
+			j := n + 1
+			MainGui["NP" j "Left"].Enabled := 1
+			MainGui["NP" j "Right"].Enabled := 1
+			MainGui["N" j "MinPercentUpDown"].Enabled := 1
+		}
+	}
+
+	if IsSet(GuiCtrl) {
+		IniWrite N%index%priority, "settings\nm_config.ini", "Planters", "N" index "priority"
+		if (NPreset != "Custom") {
+			MainGui["NPreset"].Text := (NPreset := "Custom")
+			IniWrite NPreset, "settings\nm_config.ini", "Planters", "NPreset"
+		}
+	}
+}
+nm_NectarMinPercent(GuiCtrl, *){
+	global
+	local k
+	MainGui[k := StrReplace(GuiCtrl.Name, "UpDown")].Text := %k% := GuiCtrl.Value * 10
+	IniWrite %k%, "settings\nm_config.ini", "Planters", k
+	if (NPreset != "Custom") {
+		MainGui["NPreset"].Text := NPreset := "Custom"
+		IniWrite NPreset, "settings\nm_config.ini", "Planters", "NPreset"
+	}
+}
+ba_harvestInterval(*){
+	global HarvestInterval
+	HarvestInterval := MainGui["HarvestInterval"].Value
+	if HarvestInterval is number
+	{
+		if HarvestInterval>0
+		{
+			HarvestInterval:=HarvestInterval
+			ba_saveConfig_()
+		} else {
+			MainGui["HarvestInterval"].Value := HarvestInterval
+		}
+	} else {
+		MainGui["HarvestInterval"].Value := HarvestInterval
+	}
+}
+ba_HarvestFullGrownSwitch_(*){
+	global HarvestFullGrown
+	HarvestFullGrown := MainGui["HarvestFullGrown"].Value
+	if(HarvestFullGrown) {
+		MainGui["HarvestInterval"].Visible := 0
+		MainGui["AutoText"].Visible := 0
+		MainGui["FullText"].Visible := 1
+		MainGui["AutomaticHarvestInterval"].Value := 0
+	} else {
+		MainGui["HarvestInterval"].Visible := 1
+		MainGui["FullText"].Visible := 0
+		MainGui["AutoText"].Visible := 0
+	}
+	ba_saveConfig_()
+}
+ba_AutoHarvestSwitch_(*){
+	global AutomaticHarvestInterval
+	AutomaticHarvestInterval := MainGui["AutomaticHarvestInterval"].Value
+	if(AutomaticHarvestInterval) {
+		MainGui["HarvestInterval"].Visible := 0
+		MainGui["FullText"].Visible := 0
+		MainGui["AutoText"].Visible := 1
+		MainGui["HarvestFullGrown"].Value := 0
+	} else {
+		MainGui["HarvestInterval"].Visible := 1
+		MainGui["FullText"].Visible := 0
+		MainGui["AutoText"].Visible := 0
+	}
+	ba_saveConfig_()
+}
+ba_gotoPlanterFieldSwitch_(*){
+	global gotoPlanterField
+	GotoPlanterField := MainGui["GotoPlanterField"].Value
+	if(GotoPlanterField){
+		MainGui["GotoPlanterField"].Value := 0
+		if (MsgBox("
+		(
+		You have selected to "Only Gather in Planter Field".
+
+		I understand that by selecting this option will cause the macro to IGNORE the gathering fields specified in the Main tab.
+
+		Enabling this option will make you gather in a field that contains a planter as selected by Planters+ instead.
+
+		I understand that this option will result in gathering Nectar much faster but will also result in less pollen/honey collection overall.
+		)", "WARNING!!", 1) = "Ok")
+		{
+			MainGui["GotoPlanterField"].Value := 1
+		} else {
+			MainGui["GotoPlanterField"].Value := 0
+		}
+	}
+	ba_saveConfig_()
+}
+ba_gatherFieldSippingSwitch_(*){
+	global GatherFieldSipping
+	GatherFieldSipping := MainGui["GatherFieldSipping"].Value
+	if(GatherFieldSipping){
+		MainGui["GatherFieldSipping"].Value := 0
+		if (MsgBox("
+		(
+		You have selected to "Gather Field Nectar Sipping".
+
+		This option will force planters to always be placed in your current gathering field if you need the nectar type that field provides.
+		This is done regardless of the allowed field selections.
+		This will allow your bees to sip from the planter and greatly increase the amount of nectar gained.
+		)", "INFORMATION", 1) = "Ok")
+		{
+			MainGui["GatherFieldSipping"].Value := 1
+		} else {
+			MainGui["GatherFieldSipping"].Value := 0
+		}
+	}
+	ba_saveConfig_()
+}
+ba_maxAllowedPlantersSwitch(*){
+	global
+	MaxAllowedPlanters := MainGui["MaxAllowedPlanters"].Value
+	if(MaxAllowedPlanters=0){
+		MainGui["PlanterMode"].Value := 1
+		ba_planterSwitch()
+	} else {
+		MainGui["PlanterMode"].Value := 2
+	}
+	ba_saveConfig_()
+}
+ba_saveConfig_(*){ ;//todo: needs replacing!
+	global
+	nPreset := MainGui["nPreset"].Text
+	n1priority := MainGui["n1priority"].Text
+	n2priority := MainGui["n2priority"].Text
+	n3priority := MainGui["n3priority"].Text
+	n4priority := MainGui["n4priority"].Text
+	n5priority := MainGui["n5priority"].Text
+	n1minPercent := MainGui["n1minPercent"].Text
+	n2minPercent := MainGui["n2minPercent"].Text
+	n3minPercent := MainGui["n3minPercent"].Text
+	n4minPercent := MainGui["n4minPercent"].Text
+	n5minPercent := MainGui["n5minPercent"].Text
+	HarvestInterval := MainGui["HarvestInterval"].Value
+	AutomaticHarvestInterval := MainGui["AutomaticHarvestInterval"].Value
+	HarvestFullGrown := MainGui["HarvestFullGrown"].Value
+	GotoPlanterField := MainGui["GotoPlanterField"].Value
+	GatherFieldSipping := MainGui["GatherFieldSipping"].Value
+	ConvertFullBagHarvest := MainGui["ConvertFullBagHarvest"].Value
+	GatherPlanterLoot := MainGui["GatherPlanterLoot"].Value
+	PlasticPlanterCheck := MainGui["PlasticPlanterCheck"].Value
+	CandyPlanterCheck := MainGui["CandyPlanterCheck"].Value
+	BlueClayPlanterCheck := MainGui["BlueClayPlanterCheck"].Value
+	RedClayPlanterCheck := MainGui["RedClayPlanterCheck"].Value
+	TackyPlanterCheck := MainGui["TackyPlanterCheck"].Value
+	PesticidePlanterCheck := MainGui["PesticidePlanterCheck"].Value
+	HeatTreatedPlanterCheck := MainGui["HeatTreatedPlanterCheck"].Value
+	HydroponicPlanterCheck := MainGui["HydroponicPlanterCheck"].Value
+	PetalPlanterCheck := MainGui["PetalPlanterCheck"].Value
+	PaperPlanterCheck := MainGui["PaperPlanterCheck"].Value
+	TicketPlanterCheck := MainGui["TicketPlanterCheck"].Value
+	PlanterOfPlentyCheck := MainGui["PlanterOfPlentyCheck"].Value
+	BambooFieldCheck := MainGui["BambooFieldCheck"].Value
+	BlueFlowerFieldCheck := MainGui["BlueFlowerFieldCheck"].Value
+	CactusFieldCheck := MainGui["CactusFieldCheck"].Value
+	CloverFieldCheck := MainGui["CloverFieldCheck"].Value
+	CoconutFieldCheck := MainGui["CoconutFieldCheck"].Value
+	DandelionFieldCheck := MainGui["DandelionFieldCheck"].Value
+	MountainTopFieldCheck := MainGui["MountainTopFieldCheck"].Value
+	MushroomFieldCheck := MainGui["MushroomFieldCheck"].Value
+	PepperFieldCheck := MainGui["PepperFieldCheck"].Value
+	PineTreeFieldCheck := MainGui["PineTreeFieldCheck"].Value
+	PineappleFieldCheck := MainGui["PineappleFieldCheck"].Value
+	PumpkinFieldCheck := MainGui["PumpkinFieldCheck"].Value
+	RoseFieldCheck := MainGui["RoseFieldCheck"].Value
+	SpiderFieldCheck := MainGui["SpiderFieldCheck"].Value
+	StrawberryFieldCheck := MainGui["StrawberryFieldCheck"].Value
+	StumpFieldCheck := MainGui["StumpFieldCheck"].Value
+	SunflowerFieldCheck := MainGui["SunflowerFieldCheck"].Value
+	PlanterMode := MainGui["PlanterMode"].Value
+	MaxAllowedPlanters := MainGui["MaxAllowedPlanters"].Value
+	IniWrite nPreset, "settings\nm_config.ini", "Planters", "nPreset"
+	IniWrite n1priority, "settings\nm_config.ini", "Planters", "n1priority"
+	IniWrite n2priority, "settings\nm_config.ini", "Planters", "n2priority"
+	IniWrite n3priority, "settings\nm_config.ini", "Planters", "n3priority"
+	IniWrite n4priority, "settings\nm_config.ini", "Planters", "n4priority"
+	IniWrite n5priority, "settings\nm_config.ini", "Planters", "n5priority"
+	IniWrite n1minPercent, "settings\nm_config.ini", "Planters", "n1minPercent"
+	IniWrite n2minPercent, "settings\nm_config.ini", "Planters", "n2minPercent"
+	IniWrite n3minPercent, "settings\nm_config.ini", "Planters", "n3minPercent"
+	IniWrite n4minPercent, "settings\nm_config.ini", "Planters", "n4minPercent"
+	IniWrite n5minPercent, "settings\nm_config.ini", "Planters", "n5minPercent"
+	IniWrite PlasticPlanterCheck, "settings\nm_config.ini", "Planters", "PlasticPlanterCheck"
+	IniWrite CandyPlanterCheck, "settings\nm_config.ini", "Planters", "CandyPlanterCheck"
+	IniWrite BlueClayPlanterCheck, "settings\nm_config.ini", "Planters", "BlueClayPlanterCheck"
+	IniWrite RedClayPlanterCheck, "settings\nm_config.ini", "Planters", "RedClayPlanterCheck"
+	IniWrite TackyPlanterCheck, "settings\nm_config.ini", "Planters", "TackyPlanterCheck"
+	IniWrite PesticidePlanterCheck, "settings\nm_config.ini", "Planters", "PesticidePlanterCheck"
+	IniWrite HeatTreatedPlanterCheck, "settings\nm_config.ini", "Planters", "HeatTreatedPlanterCheck"
+	IniWrite HydroponicPlanterCheck, "settings\nm_config.ini", "Planters", "HydroponicPlanterCheck"
+	IniWrite PetalPlanterCheck, "settings\nm_config.ini", "Planters", "PetalPlanterCheck"
+	IniWrite PaperPlanterCheck, "settings\nm_config.ini", "Planters", "PaperPlanterCheck"
+	IniWrite TicketPlanterCheck, "settings\nm_config.ini", "Planters", "TicketPlanterCheck"
+	IniWrite PlanterOfPlentyCheck, "settings\nm_config.ini", "Planters", "PlanterOfPlentyCheck"
+	IniWrite BambooFieldCheck, "settings\nm_config.ini", "Planters", "BambooFieldCheck"
+	IniWrite BlueFlowerFieldCheck, "settings\nm_config.ini", "Planters", "BlueFlowerFieldCheck"
+	IniWrite CactusFieldCheck, "settings\nm_config.ini", "Planters", "CactusFieldCheck"
+	IniWrite CloverFieldCheck, "settings\nm_config.ini", "Planters", "CloverFieldCheck"
+	IniWrite CoconutFieldCheck, "settings\nm_config.ini", "Planters", "CoconutFieldCheck"
+	IniWrite DandelionFieldCheck, "settings\nm_config.ini", "Planters", "DandelionFieldCheck"
+	IniWrite MountainTopFieldCheck, "settings\nm_config.ini", "Planters", "MountainTopFieldCheck"
+	IniWrite MushroomFieldCheck, "settings\nm_config.ini", "Planters", "MushroomFieldCheck"
+	IniWrite PepperFieldCheck, "settings\nm_config.ini", "Planters", "PepperFieldCheck"
+	IniWrite PineTreeFieldCheck, "settings\nm_config.ini", "Planters", "PineTreeFieldCheck"
+	IniWrite PineappleFieldCheck, "settings\nm_config.ini", "Planters", "PineappleFieldCheck"
+	IniWrite PumpkinFieldCheck, "settings\nm_config.ini", "Planters", "PumpkinFieldCheck"
+	IniWrite RoseFieldCheck, "settings\nm_config.ini", "Planters", "RoseFieldCheck"
+	IniWrite SpiderFieldCheck, "settings\nm_config.ini", "Planters", "SpiderFieldCheck"
+	IniWrite StrawberryFieldCheck, "settings\nm_config.ini", "Planters", "StrawberryFieldCheck"
+	IniWrite StumpFieldCheck, "settings\nm_config.ini", "Planters", "StumpFieldCheck"
+	IniWrite SunflowerFieldCheck, "settings\nm_config.ini", "Planters", "SunflowerFieldCheck"
+	IniWrite PlanterMode, "settings\nm_config.ini", "Planters", "PlanterMode"
+	IniWrite MaxAllowedPlanters, "settings\nm_config.ini", "Planters", "MaxAllowedPlanters"
+	IniWrite HarvestInterval, "settings\nm_config.ini", "Planters", "HarvestInterval"
+	IniWrite AutomaticHarvestInterval, "settings\nm_config.ini", "Planters", "AutomaticHarvestInterval"
+	IniWrite HarvestFullGrown, "settings\nm_config.ini", "Planters", "HarvestFullGrown"
+	IniWrite GotoPlanterField, "settings\nm_config.ini", "Planters", "GotoPlanterField"
+	IniWrite GatherFieldSipping, "settings\nm_config.ini", "Planters", "GatherFieldSipping"
+	IniWrite ConvertFullBagHarvest, "settings\nm_config.ini", "Planters", "ConvertFullBagHarvest"
+	IniWrite GatherPlanterLoot, "settings\nm_config.ini", "Planters", "GatherPlanterLoot"
+}
+nm_importManualPlanters()
+{
+	global
+	local ManualPlanters := Map()
+
+	ManualPlanters["General"] := Map("MHarvestInterval", "2 hours")
+
+	ManualPlanters["Slot 1"] := Map("MSlot1Cycle1Planter", ""
+		, "MSlot1Cycle2Planter", ""
+		, "MSlot1Cycle3Planter", ""
+		, "MSlot1Cycle4Planter", ""
+		, "MSlot1Cycle5Planter", ""
+		, "MSlot1Cycle6Planter", ""
+		, "MSlot1Cycle7Planter", ""
+		, "MSlot1Cycle8Planter", ""
+		, "MSlot1Cycle9Planter", ""
+		, "MSlot1Cycle1Field", ""
+		, "MSlot1Cycle2Field", ""
+		, "MSlot1Cycle3Field", ""
+		, "MSlot1Cycle4Field", ""
+		, "MSlot1Cycle5Field", ""
+		, "MSlot1Cycle6Field", ""
+		, "MSlot1Cycle7Field", ""
+		, "MSlot1Cycle8Field", ""
+		, "MSlot1Cycle9Field", ""
+		, "MSlot1Cycle1Glitter", 0
+		, "MSlot1Cycle2Glitter", 0
+		, "MSlot1Cycle3Glitter", 0
+		, "MSlot1Cycle4Glitter", 0
+		, "MSlot1Cycle5Glitter", 0
+		, "MSlot1Cycle6Glitter", 0
+		, "MSlot1Cycle7Glitter", 0
+		, "MSlot1Cycle8Glitter", 0
+		, "MSlot1Cycle9Glitter", 0
+		, "MSlot1Cycle1AutoFull", "Timed"
+		, "MSlot1Cycle2AutoFull", "Timed"
+		, "MSlot1Cycle3AutoFull", "Timed"
+		, "MSlot1Cycle4AutoFull", "Timed"
+		, "MSlot1Cycle5AutoFull", "Timed"
+		, "MSlot1Cycle6AutoFull", "Timed"
+		, "MSlot1Cycle7AutoFull", "Timed"
+		, "MSlot1Cycle8AutoFull", "Timed"
+		, "MSlot1Cycle9AutoFull", "Timed")
+
+	ManualPlanters["Slot 2"] := Map("MSlot2Cycle1Planter", ""
+		, "MSlot2Cycle2Planter", ""
+		, "MSlot2Cycle3Planter", ""
+		, "MSlot2Cycle4Planter", ""
+		, "MSlot2Cycle5Planter", ""
+		, "MSlot2Cycle6Planter", ""
+		, "MSlot2Cycle7Planter", ""
+		, "MSlot2Cycle8Planter", ""
+		, "MSlot2Cycle9Planter", ""
+		, "MSlot2Cycle1Field", ""
+		, "MSlot2Cycle2Field", ""
+		, "MSlot2Cycle3Field", ""
+		, "MSlot2Cycle4Field", ""
+		, "MSlot2Cycle5Field", ""
+		, "MSlot2Cycle6Field", ""
+		, "MSlot2Cycle7Field", ""
+		, "MSlot2Cycle8Field", ""
+		, "MSlot2Cycle9Field", ""
+		, "MSlot2Cycle1Glitter", 0
+		, "MSlot2Cycle2Glitter", 0
+		, "MSlot2Cycle3Glitter", 0
+		, "MSlot2Cycle4Glitter", 0
+		, "MSlot2Cycle5Glitter", 0
+		, "MSlot2Cycle6Glitter", 0
+		, "MSlot2Cycle7Glitter", 0
+		, "MSlot2Cycle8Glitter", 0
+		, "MSlot2Cycle9Glitter", 0
+		, "MSlot2Cycle1AutoFull", "Timed"
+		, "MSlot2Cycle2AutoFull", "Timed"
+		, "MSlot2Cycle3AutoFull", "Timed"
+		, "MSlot2Cycle4AutoFull", "Timed"
+		, "MSlot2Cycle5AutoFull", "Timed"
+		, "MSlot2Cycle6AutoFull", "Timed"
+		, "MSlot2Cycle7AutoFull", "Timed"
+		, "MSlot2Cycle8AutoFull", "Timed"
+		, "MSlot2Cycle9AutoFull", "Timed")
+
+	ManualPlanters["Slot 3"] := Map("MSlot3Cycle1Planter", ""
+		, "MSlot3Cycle2Planter", ""
+		, "MSlot3Cycle3Planter", ""
+		, "MSlot3Cycle4Planter", ""
+		, "MSlot3Cycle5Planter", ""
+		, "MSlot3Cycle6Planter", ""
+		, "MSlot3Cycle7Planter", ""
+		, "MSlot3Cycle8Planter", ""
+		, "MSlot3Cycle9Planter", ""
+		, "MSlot3Cycle1Field", ""
+		, "MSlot3Cycle2Field", ""
+		, "MSlot3Cycle3Field", ""
+		, "MSlot3Cycle4Field", ""
+		, "MSlot3Cycle5Field", ""
+		, "MSlot3Cycle6Field", ""
+		, "MSlot3Cycle7Field", ""
+		, "MSlot3Cycle8Field", ""
+		, "MSlot3Cycle9Field", ""
+		, "MSlot3Cycle1Glitter", 0
+		, "MSlot3Cycle2Glitter", 0
+		, "MSlot3Cycle3Glitter", 0
+		, "MSlot3Cycle4Glitter", 0
+		, "MSlot3Cycle5Glitter", 0
+		, "MSlot3Cycle6Glitter", 0
+		, "MSlot3Cycle7Glitter", 0
+		, "MSlot3Cycle8Glitter", 0
+		, "MSlot3Cycle9Glitter", 0
+		, "MSlot3Cycle1AutoFull", "Timed"
+		, "MSlot3Cycle2AutoFull", "Timed"
+		, "MSlot3Cycle3AutoFull", "Timed"
+		, "MSlot3Cycle4AutoFull", "Timed"
+		, "MSlot3Cycle5AutoFull", "Timed"
+		, "MSlot3Cycle6AutoFull", "Timed"
+		, "MSlot3Cycle7AutoFull", "Timed"
+		, "MSlot3Cycle8AutoFull", "Timed"
+		, "MSlot3Cycle9AutoFull", "Timed")
+
+	local k, v, i, j
+	for k,v in ManualPlanters ; load the default values as globals, will be overwritten if a new value exists when reading
+		for i,j in v
+			%i% := j
+
+	local inipath := A_WorkingDir "\settings\manual_planters.ini"
+
+	if FileExist(inipath)
+		nm_ReadIni(inipath)
+
+	local ini := ""
+	for k,v in ManualPlanters ; overwrite any existing .ini with updated one with all new keys and old values
+	{
+		ini .= "[" k "]`r`n"
+		for i in v
+			ini .= i "=" %i% "`r`n"
+		ini .= "`r`n"
+	}
+	local file := FileOpen(inipath, "w-d")
+	file.Write(ini), file.Close()
+}

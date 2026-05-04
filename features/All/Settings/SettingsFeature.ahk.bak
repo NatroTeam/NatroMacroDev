@@ -1,0 +1,123 @@
+#Requires AutoHotkey v2.0
+
+global settingsConfigLoc := "features\All\Quests\nm_settings_config.ini"
+
+;this is this features GUI lines-of-code used to calculate loading progress
+SettingsFeatureProgressVolume := 108
+;this is the running total of all macro features included in the load progress metric
+LoadingProgressVolume := LoadingProgressVolume+SettingsFeatureProgressVolume
+
+nm_SettingsTab(*) {
+	global
+	TabCtrl.UseTab("Settings")
+	MainGui.SetFont("w700")
+	MainGui.Add("GroupBox", "x5 y25 w160 h65", "Gui")
+	MainGui.Add("GroupBox", "x5 y95 w160 h65", "Hive")
+	MainGui.Add("GroupBox", "x5 y165 w160 h70", "Reset")
+	MainGui.Add("GroupBox", "x170 y25 w160 h35", "Input")
+	MainGui.Add("GroupBox", "x170 y65 w160 h170", "Reconnect")
+	MainGui.Add("GroupBox", "x335 y25 w160 h165", "Character")
+	MainGui.Add("GroupBox", "x335 y190 w160 h45", "Updates")
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+
+	;gui settings
+	MainGui.Add("CheckBox", "x10 y73 Disabled vAlwaysOnTop Checked" AlwaysOnTop, "Always On Top").OnEvent("Click", nm_AlwaysOnTop)
+	MainGui.Add("Text", "x10 y40 w70 +BackgroundTrans", "GUI Theme:")
+	StylesList := []
+	Loop Files A_WorkingDir "\nm_image_assets\Styles\*.msstyles"
+		StylesList.Push(StrReplace(A_LoopFileName, ".msstyles"))
+	(GuiCtrl := MainGui.Add("DropDownList", "x75 y34 w72 h100 vGuiTheme Disabled", StylesList)).Text := GuiTheme, GuiCtrl.OnEvent("Change", nm_guiThemeSelect)
+	MainGui.Add("Text", "x10 y57 w100 +BackgroundTrans", "GUI Transparency:")
+	MainGui.Add("Text", "x104 y57 w20 +Center +BackgroundTrans vGuiTransparency", GuiTransparency)
+	MainGui.Add("UpDown", "xp+22 yp-1 h16 -16 Range0-14 vGuiTransparencyUpDown Disabled", GuiTransparency//5).OnEvent("Change", nm_guiTransparencySet)
+	SetLoadingProgress(29)
+
+	;hive settings
+	MainGui.Add("Text", "x10 y110 w60 +BackgroundTrans", "Hive Slot:")
+	MainGui.SetFont("s6")
+	MainGui.Add("Text", "x61 y112 w60 +BackgroundTrans", "(6-5-4-3-2-1)")
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+	MainGui.Add("Text", "x110 y109 w34 h16 0x201 +Center")
+	(GuiCtrl := MainGui.Add("UpDown", "Range1-6 vHiveSlot Disabled", HiveSlot)).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	MainGui.Add("Text", "x10 y125 w110 +BackgroundTrans", "My Hive Has:")
+	MainGui.Add("Edit", "x75 y124 w18 h16 Limit2 number vHiveBees Disabled", ValidateInt(&HiveBees, 50)).OnEvent("Change", nm_HiveBees)
+	MainGui.Add("Text", "x98 y125 w110 +BackgroundTrans", "Bees")
+	MainGui.Add("Button", "x150 y124 w10 h15 vHiveBeesHelp Disabled", "?").OnEvent("Click", nm_HiveBeesHelp)
+	MainGui.Add("Text", "x9 y142 w110 +BackgroundTrans", "Claim Method: ")
+	MainGui.Add("Text", "x92 yp w48 vClaimMethod +Center +BackgroundTrans", ClaimMethod)
+	MainGui.Add("Button", "x80 yp w12 h15 vCMLeft Disabled", "<").OnEvent("Click", nm_ClaimMethod)
+	MainGui.Add("Button", "x139 yp w12 h15 vCMRight Disabled", ">").OnEvent("Click", nm_ClaimMethod)
+	MainGui.Add("Button", "x150 yp w10 h15 vClaimMethodHelp Disabled", "?").OnEvent("Click", nm_ClaimMethodHelp)
+
+	;reset settings
+	MainGui.Add("Button", "x20 y183 w130 h22 vResetFieldDefaultsButton Disabled", "Reset Field Defaults").OnEvent("Click", nm_ResetFieldDefaultGUI)
+	MainGui.Add("Button", "x20 y207 w130 h22 vResetAllButton Disabled", "Reset All Settings").OnEvent("Click", nm_ResetConfig)
+
+	;input settings
+	MainGui.Add("Text", "x178 y41 w100 +BackgroundTrans", "Add Key Delay (ms):")
+	MainGui.Add("Text", "x278 y39 w47 h18 0x201")
+	MainGui.Add("UpDown", "Range0-9999 vKeyDelay Disabled", KeyDelay).OnEvent("Change", nm_saveKeyDelay)
+
+	;reconnect settings
+	MainGui.Add("Button", "x248 y64 w40 h16 vTestReconnectButton Disabled", "Test").OnEvent("Click", nm_testReconnect)
+	MainGui.Add("Text", "x178 y82 +BackgroundTrans", "Private Server Link:")
+	MainGui.Add("Edit", "x176 yp+13 w148 h16 vPrivServer Disabled", PrivServer).OnEvent("Change", nm_ServerLink)
+	MainGui.Add("Text", "x178 yp+21 +BackgroundTrans", "Join Method:")
+	MainGui.Add("Text", "x254 yp w48 vReconnectMethod +Center +BackgroundTrans", ReconnectMethod)
+	MainGui.Add("Button", "xp-12 yp-1 w12 h15 vRMLeft Disabled", "<").OnEvent("Click", nm_ReconnectMethod)
+	MainGui.Add("Button", "xp+59 yp w12 h15 vRMRight Disabled", ">").OnEvent("Click", nm_ReconnectMethod)
+	MainGui.Add("Button", "x315 yp w10 h15 vReconnectMethodHelp Disabled", "?").OnEvent("Click", nm_ReconnectMethodHelp)
+	MainGui.Add("Text", "x178 yp+18 +BackgroundTrans", "Daily Reconnect (optional):")
+	MainGui.Add("Text", "x178 yp+17 +BackgroundTrans", "Reconnect every")
+	MainGui.Add("Edit", "x264 yp-2 w18 h15 Number Limit2 vReconnectInterval Disabled", ValidateInt(&ReconnectInterval, "")).OnEvent("Change", nm_setReconnectInterval)
+	MainGui.Add("Text", "x287 yp+1 +BackgroundTrans", "hours")
+	MainGui.Add("Text", "x196 yp+18 +BackgroundTrans", "starting at")
+	MainGui.Add("Edit", "x250 yp w18 h15 Number Limit2 vReconnectHour Disabled", IsInteger(ReconnectHour) ? SubStr("0" ReconnectHour, -2) : "").OnEvent("Change", nm_setReconnectHour)
+	MainGui.Add("Edit", "x275 yp w18 h15 Number Limit2 vReconnectMin Disabled", IsInteger(ReconnectMin) ? SubStr("0" ReconnectMin, -2) : "").OnEvent("Change", nm_setReconnectMin)
+	MainGui.SetFont("w1000 s11")
+	MainGui.Add("Text", "x269 yp-2 +BackgroundTrans", ":")
+	MainGui.SetFont("s6 w700")
+	MainGui.Add("Text", "x295 yp+5 +BackgroundTrans", "UTC")
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+	MainGui.Add("Button", "x315 yp-2 w10 h15 vReconnectTimeHelp Disabled", "?").OnEvent("Click", nm_ReconnectTimeHelp)
+	(GuiCtrl := MainGui.Add("CheckBox", "x176 yp+17 w132 h15 vPublicFallback Disabled Checked" PublicFallback, "Fallback to Public Server")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	MainGui.Add("Button", "x315 yp w10 h15 vPublicFallbackHelp Disabled", "?").OnEvent("Click", nm_PublicFallbackHelp)
+	MainGui.Add("Text", "x178 yp+16 w200 h15 +BackgroundTrans", "Detected Roblox:")
+	MainGui.Add("Button", "x178 yp+15 w45 h15 vRefreshDetectedApplication Disabled", "Refresh").OnEvent("Click", nm_UpdateDetectedApplication)
+	MainGui.Add("Text", "x226 yp w85 h15 vDetectedApplicationText +BackgroundTrans", StrReplace(nm_DetectRobloxType(), " (Web)"))
+	MainGui.Add("Button", "x315 yp w10 h15 vDetectedApplicationHelp Disabled", "?").OnEvent("Click", nm_DetectedApplicationHelp)
+	nm_UpdateDetectedApplication()
+
+	;character settings
+	MainGui.Add("Text", "x345 y40 w110 +BackgroundTrans", "Movement Speed:")
+	MainGui.SetFont("s6")
+	MainGui.Add("Text", "x345 y55 w80 +right +BackgroundTrans", "(WITHOUT HASTE)")
+	MainGui.SetFont("s8 cDefault Norm", "Tahoma")
+	MainGui.Add("Edit", "x438 y43 w43 r1 limit5 vMoveSpeedNum Disabled", MoveSpeedNum).OnEvent("Change", nm_moveSpeed)
+	(GuiCtrl := MainGui.Add("CheckBox", "x345 y68 w125 h15 vNewWalk Disabled Checked" NewWalk, "MoveSpeed Correction")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+	MainGui.Add("Button", "x475 y68 w10 h15 vNewWalkHelp Disabled", "?").OnEvent("Click", nm_NewWalkHelp)
+	MainGui.Add("Text", "x338 y90 w85 +Center +BackgroundTrans", "Move Method:")
+	MainGui.Add("Text", "x434 yp w48 vMoveMethod +Center +BackgroundTrans", MoveMethod)
+	MainGui.Add("Button", "x422 y89 w12 h16 vMMLeft Disabled", "<").OnEvent("Click", nm_MoveMethod)
+	MainGui.Add("Button", "x480 y89 w12 h16 vMMRight Disabled", ">").OnEvent("Click", nm_MoveMethod)
+	MainGui.Add("Text", "x338 y111 w85 +Center +BackgroundTrans", "Sprinkler Type:")
+	MainGui.Add("Text", "x434 yp w48 vSprinklerType +Center +BackgroundTrans", SprinklerType)
+	MainGui.Add("Button", "x422 y110 w12 h16 vSTLeft Disabled", "<").OnEvent("Click", nm_SprinklerType)
+	MainGui.Add("Button", "x480 y110 w12 h16 vSTRight Disabled", ">").OnEvent("Click", nm_SprinklerType)
+	MainGui.Add("Text", "x338 y132 w85 +Center +BackgroundTrans", "Convert Balloon:")
+	MainGui.Add("Text", "x434 yp w48 vConvertBalloon +Center +BackgroundTrans", ConvertBalloon)
+	MainGui.Add("Button", "x422 y131 w12 h16 vCBLeft Disabled", "<").OnEvent("Click", nm_ConvertBalloon)
+	MainGui.Add("Button", "x480 y131 w12 h16 vCBRight Disabled", ">").OnEvent("Click", nm_ConvertBalloon)
+	MainGui.Add("Text", "x370 y147 w110 +BackgroundTrans", "\____\___")
+	(GuiCtrl := MainGui.Add("Edit", "x422 y150 w30 h18 number Limit3 vConvertMins Disabled", ValidateInt(&ConvertMins, 30))).Section := "Settings", GuiCtrl.OnEvent("Change", nm_saveConfig)
+	MainGui.Add("Text", "x456 y152", "Mins")
+	(GuiCtrl := MainGui.Add("CheckBox", "x345 y171 vDisableToolUse Disabled Checked" DisableToolUse, "Disable Tool Use")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
+
+	;update settings
+	MainGui.Add("Text", "x340 y210 w110 +BackgroundTrans", "Release Channel:")
+	MainGui.Add("Text", "x443 yp w35 vReleaseChannel +BackgroundTrans +Center" , ReleaseChannel)
+	MainGui.Add("Button", "xp-16 yp w12 h16 vRCLeft Disabled", "<").OnEvent("Click", nm_ReleaseChannel)
+	MainGui.Add("Button", "xp+52 yp wp hp vRCRight Disabled", ">").OnEvent("Click", nm_ReleaseChannel)
+	CurrentLoadProgress:=CurrentLoadProgress+SettingsFeatureProgressVolume
+	SetLoadingProgress(floor(CurrentLoadProgress/LoadingProgressVolume*100))
+}

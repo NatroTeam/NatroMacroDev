@@ -1,0 +1,80 @@
+#Requires AutoHotkey v2.0
+
+#Include "customizeGui.ahk"
+
+nm_ImportBaselineConfig(){
+    if (GatherFeature) {
+        nm_includeGatherFeature()
+    }
+    if (CollectKillFeature) {
+        nm_includeCollectKillFeature()
+    }
+}
+
+nm_ReadBaselineIni(path)
+{
+	global
+	local ini, str, c, p, k, v
+    local readvals:=0
+
+    ;read in entire file
+	ini := FileOpen(path, "r"), str := ini.Read(), ini.Close()
+
+    ;parse only enabled feature sections
+    for i in MacroFeatureConfigSections {
+        if %i%=1 {
+            for j in MacroFeatureConfigSections[i] {
+                Loop Parse str, "`n", "`r" A_Space A_Tab
+                {
+                    switch (c := SubStr(A_LoopField, 1))
+                    {
+                        ;locate ini section
+                        case "[" j "]":
+                        readVals:=1
+                        continue
+
+                        ;read section data
+                        default:
+                        if (readVals) {
+                            if (p := InStr(A_LoopField, "=")) {
+                                try k := SubStr(A_LoopField, 1, p-1), %k% := IsInteger(v := SubStr(A_LoopField, p+1)) ? Integer(v) : v
+                            } else { ;done reading section
+                                readVals:=0
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+nm_ReadBaselineIniSection(path, section)
+{
+	global
+	local ini, str, c, p, k, v
+	local readVals := 0
+
+	ini := FileOpen(path, "r"), str := ini.Read(), ini.Close()
+	Loop Parse str, "`n", "`r" A_Space A_Tab
+	{
+		switch (c := SubStr(A_LoopField, 1))
+		{
+			;locate ini section
+			case "[" section "]":
+			readVals:=1
+			continue
+
+			;read section data
+			default:
+			if (readVals) {
+				if (p := InStr(A_LoopField, "=")) {
+					try k := SubStr(A_LoopField, 1, p-1), %k% := IsInteger(v := SubStr(A_LoopField, p+1)) ? Integer(v) : v
+				} else { ;done reading section
+					break
+				}
+			}
+		}
+	}
+}
