@@ -2915,7 +2915,9 @@ SendMessage(0x1501, 0, StrPtr("Identifier"), GuiCtrl.Hwnd)
 
 ; only show if "N/A" isn't selected
 isNA := (SelectedAlt = "N/A" || AccountType != AccountTypes.Main) ? "Hidden" : ""
-CAFieldList := ["BlueFlower", "Bamboo", "PineTree", "Stump", "Mushroom", "Strawberry", "Rose", "Pepper", "Dandelion", "Spider", "Pineapple", "Coconut", "Clover", "Cactus", "Pumpkin", "MountainTop", "Sunflower"]
+CAFieldList := []
+for field in fieldnamelist
+	CAFieldList.Push(StrReplace(field, " "))
 for field in CAFieldList {
 	x := 15 + Mod((A_Index - 1), 4) * 29
 	y := 95 + Floor((A_Index - 1) / 4) * 27

@@ -2539,7 +2539,8 @@ nm_sendPostData(wParam, lParam, *) ; currently only ReportChannelID
 {
 	Critical
 	global ReportChannelID, MainChannelID
-	discord.SendMessageAPI(StringFromCopyData(lParam), "application/json", (StrLen(ReportChannelID) > 16) ? ReportChannelID : MainChannelID)
+	if (message := StringFromCopyData(lParam)) !== ""
+		discord.SendMessageAPI(message, "application/json", (StrLen(ReportChannelID) > 16) ? ReportChannelID : MainChannelID)
 	return 0
 }
 
