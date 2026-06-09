@@ -18545,13 +18545,33 @@ nm_VBCheck() {
     Gdip_DisposeImage(pBMScreen)
     return { result: 0 }
 }
-;//todo: make it work if someone has chat disabled
 ; open roblox chat
-nm_OpenChat(msg:="") {
-    PrevKeyDelay := A_KeyDelay
-    SetKeyDelay 50
-	Send "{" SC_Slash "}" msg "`n"
-    SetKeyDelay PrevKeyDelay
+nm_openChat(){
+	static BaselineHex := 0xffF7F7F8
+	static nOpen, nClosed
+
+	if (!IsSet(nOpen) && !IsSet(nClosed))
+	{
+		nOpen := Gdip_CreateBitmap(14, 3), G := Gdip_GraphicsFromImage(nOpen), Gdip_GraphicsClear(G, BaselineHex), Gdip_DeleteGraphics(G)
+		nClosed := Gdip_CloneBitmapArea(nOpen, 0, 0, 1, 3)
+	}
+
+    GetRobloxClientPos()
+	yOffset := GetYOffset()
+
+	;14w bitmap to avoid mistaking a notification for the chat color being filled.
+    pBMHaystack := Gdip_BitmapFromScreen(windowX + 120 "|" windowY + yOffset - 20 "|250|50")
+
+    isOpen := (Gdip_ImageSearch(pBMHaystack, nOpen, , , , , , 20) > 0)
+    isClosed := (Gdip_ImageSearch(pBMHaystack, nClosed, &out, , , , , 0) > 0) 
+
+	Gdip_DisposeImage(pBMHaystack)
+
+    if (!isOpen && isClosed) 
+	{
+        coords := StrSplit(out, ",")
+        Click(windowX + 120 + coords[1], windowY + yOffset - 20 + coords[2])
+    }
 }
 nm_IncrementStat(stat, amount:=1){ ; //todo: add to Quests/Bugrun when they are rewritten
 	global TotalBossKills, SessionBossKills
