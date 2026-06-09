@@ -17062,7 +17062,7 @@ nm_endWalk() ; this function ends the walk script
 {
 	global currentWalk
 	DetectHiddenWindows 1
-	try WinClose "ahk_class AutoHotkey ahk_pid " currentWalk.pid
+	try ProcessClose(currentWalk.pid)
 	DetectHiddenWindows 0
 	currentWalk.pid := currentWalk.name := ""
 	; if issues, we can check if closed, else kill and force keys up
