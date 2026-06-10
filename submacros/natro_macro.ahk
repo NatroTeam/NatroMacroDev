@@ -17061,9 +17061,9 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 nm_endWalk() ; this function ends the walk script
 {
 	global currentWalk
-	DetectHiddenWindows 1
-	try ProcessClose(currentWalk.pid)
-	DetectHiddenWindows 0
+	Timestamp := A_TickCount
+	while (ProcessExist(currentWalk.pid) && (A_TickCount - Timestamp < 20000))
+		try ProcessClose(currentWalk.pid)
 	currentWalk.pid := currentWalk.name := ""
 	; if issues, we can check if closed, else kill and force keys up
 }
