@@ -16944,9 +16944,7 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	; F14 is held down by 'walk' to indicate that the cycle is in progress, then released when the cycle is finished
 	; F16 can be used by any script to pause / unpause the walk script, when unpaused it will resume from where it left off
 
-	DetectHiddenWindows 1 ; allow communication with walk script
-
-	if WinExist("ahk_pid " currentWalk.pid " ahk_class AutoHotkey")
+	if ProcessExist(currentWalk.pid)
 		nm_endWalk()
 
 	script :=
@@ -17048,15 +17046,13 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	exec := shell.Exec('"' exe_path64 '" /script /force *')
 	exec.StdIn.Write(script), exec.StdIn.Close()
 
-	if WinWait("ahk_class AutoHotkey ahk_pid " exec.ProcessID, , 2) {
-		DetectHiddenWindows 0
+	if ProcessWait(exec.processID, 5)
+	{
 		currentWalk.pid := exec.ProcessID, currentWalk.name := name
 		return 1
 	}
-	else {
-		DetectHiddenWindows 0
-		return 0
-	}
+
+	return 0
 }
 nm_endWalk() ; this function ends the walk script
 {
