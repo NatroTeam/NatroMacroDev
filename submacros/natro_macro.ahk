@@ -1,4 +1,4 @@
-﻿/*
+/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -16672,7 +16672,7 @@ nm_GoGather(){
 
 			;high priority interrupts
 			if (Mod(A_Index, 5) = 1) { ; every 250ms
-				if DisconnectCheck() {
+				if DisconnectCheck(true) {
 					interruptReason := "Disconnect"
 					break
 				}
@@ -17611,7 +17611,7 @@ CloseRoblox()
 	for p in ComObjGet("winmgmts:").ExecQuery("SELECT * FROM Win32_Process WHERE Name LIKE '%Roblox%' OR CommandLine LIKE '%ROBLOXCORPORATION%'")
 		ProcessClose p.ProcessID
 }
-DisconnectCheck(testCheck := 0)
+DisconnectCheck(testCheck := 0, gather := false)
 {
 	global LastClock, LastGingerbread, HiveSlot, PrivServer, TotalDisconnects, SessionDisconnects, ReconnectMethod, PublicFallback, resetTime
 		, PlanterName1, PlanterName2, PlanterName3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3
@@ -17818,7 +17818,7 @@ DisconnectCheck(testCheck := 0)
 			}
 			PostSubmacroMessage("Status", 0x5552, 221, (server = 0))
 
-			if (testCheck || (nm_claimHiveSlot() = 1))
+			if (testCheck || (nm_claimHiveSlot(!gather) = 1))
 				return 1
 		}
 
@@ -17912,7 +17912,7 @@ ShellRun(prms*)
 	; IShellDispatch2.ShellExecute
 	shell.ShellExecute(prms*)
 }
-nm_claimHiveSlot(){
+nm_claimHiveSlot(detect_arrow := true){
 	global KeyDelay, FwdKey, RightKey, LeftKey, BackKey, ZoomOut, HiveSlot, HiveConfirmed, SC_E, SC_Esc, SC_R, SC_Enter, bitmaps
 	GetBitmap() {
 		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-200 "|" windowY+offsetY "|400|125")
@@ -17963,7 +17963,7 @@ nm_claimHiveSlot(){
 		}
 
 		; detect unclaimed hive slots.
-		if DetectHiveslots {
+		if DetectHiveslots && detect_arrow {
 			preferred := (ClaimMethod = "Detect") ? 0 : HiveSlot
 			if ClaimMethod = "Detect" {
 				slots := nm_detectHiveSlots()
