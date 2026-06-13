@@ -1,4 +1,4 @@
-/*
+﻿/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -17930,7 +17930,8 @@ nm_claimHiveSlot(detect_arrow := true){
 		}
 		return pBMScreen
 	}
-
+	ToolTip("Calling nm_claimHiveSlot")
+	SetTimer((*) => ToolTip(), -25000)
 	DetectHiveslots := 1
 	Loop 5
 	{
