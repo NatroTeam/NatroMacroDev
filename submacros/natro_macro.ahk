@@ -18548,8 +18548,8 @@ nm_VBCheck() {
 ; open roblox chat
 nm_openChat(){
 	static BaselineHex := 0xffF7F7F8
-	static nOpen := (Gdip_CreateBitmap(14, 3), G := Gdip_GraphicsFromImage(nOpen), Gdip_GraphicsClear(G, BaselineHex), Gdip_DeleteGraphics(G))
-	static nClosed := (nClosed := Gdip_CloneBitmapArea(nOpen, 0, 0, 1, 3))
+	static nOpen := (p := Gdip_CreateBitmap(14, 3), G := Gdip_GraphicsFromImage(nOpen), Gdip_GraphicsClear(G, BaselineHex), Gdip_DeleteGraphics(G), p) 
+	static nClosed := Gdip_CloneBitmapArea(nOpen, 0, 0, 1, 3)
 
     GetRobloxClientPos()
 	yOffset := GetYOffset()
