@@ -2635,7 +2635,7 @@ nm_sendItemPicture(wParam, lParam,*) {
 			}
 		default:
 			GetRobloxClientPos()
-			discord.SendEmbed("Item Found!", 5066239, , (pBMScreen := Gdip_BitmapFromScreen(windowX "|" wParam "|306|97")))
+			discord.SendEmbed("Item Found!", 5066239, , (pBMScreen := Gdip_BitmapFromScreen(windowX "|" wParam "|306|110")))
 			Gdip_DisposeImage(pBMScreen)
 	}
 }
