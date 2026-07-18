@@ -24,6 +24,8 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "DurationFromSeconds.ahk"
 #Include "Roblox.ahk"
 #Include "ErrorHandling.ahk"
+#Include "Auxiliary.ahk"
+#Include "WM_COPYDATA.ahk"
 
 SetWorkingDir A_ScriptDir "\.."
 CoordMode "Mouse", "Client"
@@ -2508,12 +2510,6 @@ nm_command(command)
 			return {item:0,dist:100} ;large dist to break
 		return {item:item,dist:dist}
 	}
-	ObjHasValue(obj, value) {
-		for k,v in obj
-			if (v = value)
-			return k
-		return 0
-	}
 }
 
 getUserRoles(user_id) {
@@ -2543,7 +2539,8 @@ nm_sendPostData(wParam, lParam, *) ; currently only ReportChannelID
 {
 	Critical
 	global ReportChannelID, MainChannelID
-	discord.SendMessageAPI(StrGet(NumGet(lParam + 2*A_PtrSize, "UPtr")), "application/json", (StrLen(ReportChannelID) > 16) ? ReportChannelID : MainChannelID)
+	if (message := StringFromCopyData(lParam)) !== ""
+		discord.SendMessageAPI(message, "application/json", (StrLen(ReportChannelID) > 16) ? ReportChannelID : MainChannelID)
 	return 0
 }
 

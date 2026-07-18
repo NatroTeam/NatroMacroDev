@@ -366,4 +366,5 @@
 	, "prioritylistnumeric"
 	, "dayOrNight"
 	, "CheckNight"
+	, "RunCommunicator"
 ]
