@@ -7955,7 +7955,7 @@ nm_EditControlAltSection(GuiCtrl, *) {
 		}
 	}
 	AltIDList := ObjStrJoin("|", AltAccountList)
-	IniWrite AltIDList, "settings\nm_config.ini", "TadSync", "AltIDList"
+	IniWrite AltIDList, "settings\nm_config.ini", "Alts", "AltIDList"
 }
 
 nm_FieldIconsVisible(*) {

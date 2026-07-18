@@ -7,14 +7,18 @@
 #DllLoad "ws2_32.dll"
 class Socket {
     static FD => {
-        READ: 0x01,
-        ACCEPT: 0x08,
+        READ: 0x1,
+        ACCEPT: 0x8,
         CLOSE: 0x20
     }
 
     static __New() {
         WSADATA := Buffer(396 + A_PtrSize)
-        if (err := DllCall("ws2_32\WSAStartup", "ushort", 0x0202, "ptr", WSADATA.Ptr, "int")) != 0
+        err := DllCall("ws2_32\WSAStartup",
+            "ushort", 0x0202,   ; [in] WORD wVersionRequired
+            "ptr", WSADATA.Ptr, ; [out] LPWSADATA lpWSAData
+            "int")              ; int
+        if err != 0
             throw OSError(err)
         if NumGet(WSADATA, 2, "ushort") != 0x0202
             throw Error("Winsock version 2.2 not available", -1)  
@@ -27,84 +31,123 @@ class Socket {
     }
 
     CreateSock() {
-        static AF_INET := 2, SOCK_STREAM := 1, IPPROTO_TCP := 6
+        static AF_INET := 2, SOCK_STREAM := 1, IPPROTO_TCP := 6, SOCKET_ERROR := -1
         if this._sock != -1 
             throw Error("Socket already exists", -1)
-        if (this._sock := DllCall("ws2_32\socket", "int", AF_INET, "int", SOCK_STREAM, "int", IPPROTO_TCP)) = -1
-            throw OSError(this.GetLastError())
+        
+        this._sock := DllCall("ws2_32\socket",
+            "int", AF_INET,     ; [in] int af
+            "int", SOCK_STREAM, ; [in] int type
+            "int", IPPROTO_TCP, ; [in] int protocol
+            "ptr")              ; SOCKET WSAAPI
+        if this._sock = SOCKET_ERROR
+            throw this.WSAError()
     }
 
     Createsockaddr(host, port) {
-        static AF_INET := 2
-        if (h := DllCall("ws2_32\inet_addr", "astr", host)) = -1
+        static AF_INET := 2, INADDR_NONE := 0xffffffff
+        h := DllCall("ws2_32\inet_addr",
+            "astr", host ; const char *cp
+            "uint")      ; unsigned long
+        if h = INADDR_NONE
             throw Error("Invalid IP", -1)
+        p := DllCall("ws2_32\htons",
+            "ushort", port ; [in] u_short hostshort
+            "ushort")      ; u_short
+
         sockaddr := Buffer(16)
         NumPut("ushort", AF_INET, sockaddr)
-        NumPut("ushort", DllCall("ws2_32\htons", "ushort", port), sockaddr, 2)
+        NumPut("ushort", p, sockaddr, 2)
         NumPut("uint", h, sockaddr, 4)
         return sockaddr
     }
 
-    AsyncSelect(Event, event_object, WM := 0x5566) {
-        result :=  DllCall("ws2_32\WSAAsyncSelect",
-            "ptr", this._sock,
-            "ptr", A_ScriptHwnd,
-            "uint", WM,
-            "uint", Event,
-            "int")
-        if result = -1
-            throw OSError(this.GetLastError())
-        OnMessage(WM, (wParam, lParam, msg, hWnd) => this.OnMessage(wParam, lParam, msg, hWnd, WM, event_object))
+    AsyncSelect(event, eventObject, WM := 0x5566) {
+        static SOCKET_ERROR := -1
+        result := DllCall("ws2_32\WSAAsyncSelect",
+            "ptr", this._sock,   ; [in] SOCKET s
+            "ptr", A_ScriptHwnd, ; [in] HWND   hWnd
+            "uint", WM,          ; [in] u_int  wMsg
+            "uint", event,       ; [in] long   lEvent
+            "int")               ; int
+        if result = SOCKET_ERROR
+            throw this.WSAError()
+        OnMessage(WM, (wParam, lParam, msg, hWnd) => this.OnMessage(wParam, lParam, msg, hWnd, WM, eventObject))
     }
 
-    OnMessage(wParam, lParam, msg, hWnd, WM, event_object) {
+    OnMessage(wParam, lParam, msg, hWnd, WM, eventObject) {
         if msg != WM
             return
-        if lParam & Socket.FD.ACCEPT && event_object.HasMethod("Accept")
-            (event_object.Accept)(this)
-        if lParam & Socket.FD.CLOSE && event_object.HasMethod("Close")
-            (event_object.Close)(this)
-        if lParam & Socket.FD.READ && event_object.HasMethod("Receive")
-            (event_object.Receive)(this)
+        if lParam & Socket.FD.ACCEPT && eventObject.HasMethod("Accept")
+            (eventObject.Accept)(this)
+        if lParam & Socket.FD.CLOSE && eventObject.HasMethod("Close")
+            (eventObject.Close)(this)
+        if lParam & Socket.FD.READ && eventObject.HasMethod("Receive")
+            (eventObject.Receive)(this)
     }
 
     Close() {
-        static SD_BOTH := 2
-        if this is Socket.Client
-            if DllCall("ws2_32\shutdown", "ptr", this._sock, "int", SD_BOTH) != 0
-                throw OSError(this.GetLastError())
-        if DllCall("ws2_32\closesocket", "ptr", this._sock) = -1
-            throw OSError(this.GetLastError())
+        static SD_BOTH := 2, SOCKET_ERROR := -1
+        if this is Socket.Client {
+            result := DllCall("ws2_32\shutdown",
+                "ptr", this._sock, ; [in] SOCKET s
+                "int", SD_BOTH,    ; [in] int how
+                "int")             ; int
+            if result = SOCKET_ERROR
+                throw this.WSAError()
+        }
+        result := DllCall("ws2_32\closesocket",
+            "ptr", this._sock, ; [in] SOCKET s
+            "int")             ; int
+        if result = SOCKET_ERROR
+            throw this.WSAError()
     }
 
     Cleanup() {
-        if DllCall("ws2_32\WSACleanup", "int") != 0
-            throw OSError(this.GetLastError())
+        static SOCKET_ERROR := -1
+        if DllCall("ws2_32\WSACleanup", "int") = SOCKET_ERROR
+            throw this.WSAError()
     }
 
-    GetLastError() => DllCall("ws2_32\WSAGetLastError", "int")
+    WSAError() => OSError(DllCall("ws2_32\WSAGetLastError", "int"))
 
     class Server extends Socket {
         static __New() => 0
 
         Bind(host, port, sockaddr?) {
+            static SOCKET_ERROR := -1
             if this._sock = -1
                 this.CreateSock()
             if !IsSet(sockaddr)
                 sockaddr := this.Createsockaddr(host, port)
-            if DllCall("ws2_32\bind", "ptr", this._sock, "ptr", sockaddr.Ptr, "int", sockaddr.Size) = -1
-                throw OSError(this.GetLastError())
+            result := DllCall("ws2_32\bind",
+                "ptr", this._sock,    ; [in] SOCKET s
+                "ptr", sockaddr.Ptr,  ; [in] const sockaddr *name
+                "int", sockaddr.Size, ; [in] int namelen
+                "int")                ; int WSAAPI
+            if result = SOCKET_ERROR
+                throw this.WSAError()
         }
 
         Listen(backlog := 10) {
-            if DllCall("ws2_32\listen", "ptr", this._sock, "int", backlog) = -1
-                throw OSError(this.GetLastError())
+            static SOCKET_ERROR := -1
+            result := DllCall("ws2_32\listen",
+                "ptr", this._sock, ; [in] SOCKET s
+                "int", backlog,    ; [in] int    backlog
+                "int")             ; int WSAAPI
+            if result = SOCKET_ERROR
+                throw this.WSAError()
         }
 
         Accept() {
-            if (sock := DllCall("ws2_32\accept", "ptr", this._sock, "ptr", 0, "ptr", 0)) = -1
-                if (err := this.GetLastError())
-                    throw OSError(err)
+            static INVALID_SOCKET := A_PtrSize = 8 ? 0xffffffffffffffff : 0xffffffff, NULL := 0
+            sock := DllCall("ws2_32\accept",
+                "ptr", this._sock, ; [in] SOCKET s
+                "ptr", NULL,       ; [out] sockaddr *addr
+                "ptr", NULL,       ; [in, out] int *addrlen
+                "ptr")             ; SOCKET WSAAPI
+            if sock = INVALID_SOCKET
+                throw this.WSAError()
             return sock
         }
     }
@@ -112,24 +155,30 @@ class Socket {
         static __New() => 0
 
         Connect(host, port, sockaddr?) {
+            static SOCKET_ERROR := -1
             if this._sock = -1
                 this.CreateSock()
             if !IsSet(sockaddr)
                 sockaddr := this.Createsockaddr(host, port)
-            if DllCall("ws2_32\connect", "ptr", this._sock, "ptr", sockaddr.Ptr, "int", sockaddr.Size) = -1
-                throw OSError(this.GetLastError())
+            result := DllCall("ws2_32\connect",
+                "ptr", this._sock,    ; [in] SOCKET s
+                "ptr", sockaddr.Ptr,  ; [in] const sockaddr *name
+                "int", sockaddr.Size, ; [in] int namelen
+                "int")                ; int WSAAPI
+            if result = SOCKET_ERROR
+                throw this.WSAError()
         }
 
         ReceiveRaw(message_buffer) {
-            static flags := 0
+            static SOCKET_ERROR := -1
             size := DllCall("ws2_32\recv",
-                "ptr", this._sock,
-                "ptr", message_buffer.Ptr,
-                "int", message_buffer.Size,
-                "int", flags,
-                "int")
-            if size = -1
-                throw OSError(this.GetLastError())
+                "ptr", this._sock,          ; [in] SOCKET s
+                "ptr", message_buffer.Ptr,  ; [out] char *buf
+                "int", message_buffer.Size, ; [in] int len
+                "int", 0,                   ; [in] int flags
+                "int")                      ; int
+            if size = SOCKET_ERROR
+                throw this.WSAError()
             return size
         }
 
@@ -140,15 +189,15 @@ class Socket {
         }
 
         SendRaw(message_buffer) {
-            static flags := 0
+            static SOCKET_ERROR := -1
             result := DllCall("ws2_32\send",
-                "ptr", this._sock,
-                "ptr", message_buffer.Ptr,
-                "int", message_buffer.Size,
-                "int", flags,
-                "int")
-            if result = -1
-                throw OSError(this.GetLastError())
+                "ptr", this._sock,          ; [in] SOCKET     s,
+                "ptr", message_buffer.Ptr,  ; [in] const char *buf,
+                "int", message_buffer.Size, ; [in] int        len,
+                "int", 0,                   ; [in] int        flags
+                "int")                      ; int WSAAPIs
+            if result = SOCKET_ERROR
+                throw this.WSAError()
         }
 
         SendText(message, encoding := "UTF-8") {

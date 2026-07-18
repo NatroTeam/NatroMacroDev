@@ -90,7 +90,7 @@ ReadMessages() {
 	if messages = -1 || messages.Length = 0
 		throw Error("No new messages")
 
-	for i, msg in messages {
+	for , msg in messages {
 		if msg["content"] = ""
 			continue
 		try {
@@ -156,17 +156,17 @@ SocketAccept(self) {
 	connected := false
 	try {
 		hSock := self.Accept()
-		new_sock := Socket.Client(hSock)
+		newSock := Socket.Client(hSock)
 		connected := true
-		new_sock.AsyncSelect(Socket.FD.READ | Socket.FD.CLOSE, EventHandler.Alt, WM++)
+		newSock.AsyncSelect(Socket.FD.READ | Socket.FD.CLOSE, EventHandler.Alt, WM++)
 	}
 	catch
-		TryClose(connected, new_sock)
+		TryClose(connected, newSock)
 	else {
-		new_sock.IsOwnedByMain := true
-		new_sock.IsIdentified := false
-		new_sock.Identifier := -1
-		new_sock.SendText('{"type": "identify"}')	
+		newSock.IsOwnedByMain := true
+		newSock.IsIdentified := false
+		newSock.Identifier := -1
+		newSock.SendText('{"type": "identify"}')	
 	}
 }
 
@@ -225,16 +225,16 @@ SocketListenerExists() {
 	static AF_INET := 2, TCP_TABLE_BASIC_LISTENER := 0
 	pTcpTable := Buffer(4096)
 	DllCall("IPHLPAPI\GetExtendedTcpTable",
-		"ptr", pTcpTable.Ptr,
-		"uint*", &(size := pTcpTable.Size),
-		"uchar", true,
-		"int64", AF_INET,
-		"int", TCP_TABLE_BASIC_LISTENER,
-		"int64", 0,
-		"uint")
+		"ptr", pTcpTable.Ptr,				; [out] PVOID pTcpTable
+		"uint*", &(size := pTcpTable.Size), ; [in, out] PDWORD pdwSize
+		"uchar", true,						; [in] BOOL bOrder
+		"uint", AF_INET,					; [in] ULONG ulAf
+		"int", TCP_TABLE_BASIC_LISTENER,	; [in] TCP_TABLE_CLASS TableClass
+		"uint", 0,							; [in] ULONG Reserved
+		"uint")								; IPHLPAPI_DLL_LINKAGE DWORD
 
-	struct_count := NumGet(pTcpTable, "uint")
-	loop struct_count {
+	structCount := NumGet(pTcpTable, "uint")
+	loop structCount {
 		MIB_TCPROW := pTcpTable.Ptr + 4 + (20 * (A_Index - 1))    
 		dwLocalPort := NumGet(MIB_TCPROW, 8, "uint")
 		if (((dwLocalPort >> 8) & 0xff) | ((dwLocalPort & 0xff) << 8)) = PortNumber
@@ -284,8 +284,8 @@ SendMessageToAlts(wParam, lParam, *) {
 	}
 	if ListenerIsConnected && (CommunicationStyle == CommunicationStyles.Socket) {
 		for identifier, sock in IdentifiedConnections.OwnProps() {
-			requested_id := jsonObj.Has("identifier") ? jsonObj["identifier"] : identifier
-			if identifier != requested_id
+			requestedId := jsonObj.Has("identifier") ? jsonObj["identifier"] : identifier
+			if identifier != requestedId
 				continue
 			try sock.SendText(JSON.Stringify(jsonObj))
 		}
@@ -293,9 +293,9 @@ SendMessageToAlts(wParam, lParam, *) {
 }
 
 GetMessages(*) {
-	is_discord := CommunicationStyle == CommunicationStyles.Discord
-	is_main := AccountType != AccountTypes.Main
-	if (MacroState != MacroStates.Running) && !is_discord && is_main 
+	isDiscord := CommunicationStyle == CommunicationStyles.Discord
+	isMain := AccountType != AccountTypes.Main
+	if (MacroState != MacroStates.Running) && !isDiscord && isMain 
 		return 0
 
 	try 
@@ -307,7 +307,7 @@ GetMessages(*) {
 }
 
 Interpreter(msg, *) {
-	if (MacroState != MacroStates.Running) && (msg.Has("identifier") && (msg["identifier"] != CommunicationID))
+	if msg.Has("identifier") && (msg["identifier"] != CommunicationID)
 		return
 
 	try Send_WM_COPYDATA(JSON.stringify(msg), "natro_macro ahk_class AutoHotkey", 2)

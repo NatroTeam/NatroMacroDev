@@ -25,8 +25,7 @@ OnMessage(0x5556, nm_SetHeartbeat)
 
 LastRobloxWindow := LastStatusHeartbeat := LastMainHeartbeat := LastBackgroundHeartbeat := LastCommunicatorHeartbeat := nowUnix()
 MacroState := 0
-config_path := A_ScriptDir ".\..\settings\nm_config.ini"
-RunCommunicator := IniRead(config_path, "Alts", "RunCommunicator", false)
+RunCommunicator := IniRead(A_ScriptDir ".\..\settings\nm_config.ini", "Alts", "RunCommunicator", false)
 path := '"' A_AhkPath '" "' A_ScriptDir '\natro_macro.ahk"'
 
 Loop
