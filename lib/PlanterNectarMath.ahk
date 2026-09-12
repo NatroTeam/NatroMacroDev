@@ -105,26 +105,43 @@ PN_MaintenanceFloor(minimum, buffer) {
     return Max(0, minimum*(1-0.75*Min(20, Max(0, buffer))/100))
 }
 
-PN_CandidatePlans(current, events, candidates, minimum, buffer, buildToFull) {
-    plans := []
+PN_CandidateKey(candidate) {
+    stats := candidate.planter
+    delay := candidate.HasOwnProp("delay") ? candidate.delay : 0
+    lead := candidate.HasOwnProp("lead") ? candidate.lead : 0
+    dispatch := candidate.HasOwnProp("dispatchLead") ? candidate.dispatchLead : lead
+    return Format("{:.17g}|{:.17g}|{:.17g}|{:.17g}|{:.17g}", stats[2]*stats[3]/864, stats[4], delay, lead, dispatch)
+}
+
+PN_CandidatePlans(current, events, candidates, minimum, buffer, buildToFull, candidateKeys := false) {
+    plans := [], calculations := Map(), arrivals := Map(), levels := Map()
     lower := PN_Bounds(current, minimum, buffer).lower
     for _, candidate in candidates {
-        stats := candidate.planter, rate := stats[2]*stats[3]/864
-        delay := candidate.HasOwnProp("delay") ? candidate.delay : 0
-        later := []
-        for _, event in events
-            if (event[1] > delay)
-                later.Push([event[1]-delay, event[2]])
-        lead := candidate.HasOwnProp("lead") ? candidate.lead : 0
-        dispatch := candidate.HasOwnProp("dispatchLead") ? candidate.dispatchLead : lead
-        growth := PN_Interval(PN_Forecast(current, events, delay), later, rate, stats[4]*3600,
-            minimum, buffer, buildToFull, Max(0, lead-dispatch))
-        growth := Max(growth, lead)
-        seconds := delay+growth
-        amount := rate*Min(growth, stats[4]*3600)
-        useful := Min(amount, Max(0, 100-PN_Forecast(current, events, seconds)))
-        plans.Push({field: candidate.field, planter: stats, seconds: seconds, growth: growth,
-            building: buildToFull, useful: useful, lower: lower})
+        stats := candidate.planter
+        key := candidateKeys && candidateKeys.Has(candidate) ? candidateKeys[candidate] : PN_CandidateKey(candidate)
+        if !calculations.Has(key) {
+            rate := stats[2]*stats[3]/864
+            delay := candidate.HasOwnProp("delay") ? candidate.delay : 0
+            if !arrivals.Has(delay) {
+                later := []
+                for _, event in events
+                    if (event[1] > delay)
+                        later.Push([event[1]-delay, event[2]])
+                arrivals[delay] := later, levels[delay] := PN_Forecast(current, events, delay)
+            }
+            lead := candidate.HasOwnProp("lead") ? candidate.lead : 0
+            dispatch := candidate.HasOwnProp("dispatchLead") ? candidate.dispatchLead : lead
+            growth := PN_Interval(levels[delay], arrivals[delay], rate, stats[4]*3600,
+                minimum, buffer, buildToFull, Max(0, lead-dispatch))
+            growth := Max(growth, lead), seconds := delay+growth
+            if !levels.Has(seconds)
+                levels[seconds] := PN_Forecast(current, events, seconds)
+            amount := rate*Min(growth, stats[4]*3600)
+            calculations[key] := {growth: growth, seconds: seconds, useful: Min(amount, Max(0, 100-levels[seconds]))}
+        }
+        value := calculations[key]
+        plans.Push({field: candidate.field, planter: stats, seconds: value.seconds, growth: value.growth,
+            building: buildToFull, useful: value.useful, lower: lower})
     }
     return plans
 }

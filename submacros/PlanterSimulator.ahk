@@ -22,106 +22,95 @@ for nectar, fields in PS_Fields
         PS_Tables[field] := %key%Planters
     }
 
-PS_Current := false, PS_Running := false, PS_Plot := false, PS_DetailsGui := false, PS_ChartToken := 0
+PS_Current := false, PS_Running := false, PS_ChartToken := 0
 OnExit(PS_ExitChart)
-PS_Gui := Gui("+Resize +MinSize860x620", "Planter simulator")
-PS_Gui.BackColor := "F3F6F7"
-PS_Gui.SetFont("s10 c243E43", "Segoe UI")
-PS_Gui.AddText("x24 y16 w520 h36 vTitle", "Planter simulator").SetFont("s22 Bold")
-PS_Gui.AddText("x24 y55 w680 h24 vSetup c65767E", "Preview the planter settings saved in your macro.")
-PS_Gui.AddButton("x780 y20 w70 h34 vCancel Hidden", "Cancel").OnEvent("Click", PS_Cancel)
-PS_Gui.AddButton("x870 y20 w150 h34 vRun Default", "Run simulation").OnEvent("Click", PS_Start)
+PS_Gui := Gui("+Resize +MinSize680x480", "Planter simulator")
+PS_Gui.BackColor := "F7F9FA"
+PS_Gui.SetFont("s9 c243E43", "Segoe UI")
+PS_Gui.AddText("x16 y12 w400 h28 vTitle", "Planter simulator").SetFont("s17 Bold")
+PS_Gui.AddButton("x566 y12 w84 h30 vCsv Disabled", "Export CSV").OnEvent("Click", PS_Csv)
+PS_Gui.AddButton("x660 y12 w124 h30 vRun Default", "Run simulation").OnEvent("Click", PS_Start)
 PS_Gui["Run"].SetFont("Bold")
-PS_Gui.AddText("x24 y89 w90 h20 vDurationLabel c65767E", "DURATION")
-PS_Gui.AddDropDownList("x24 y111 w110 vDays Choose1", ["14 days", "30 days", "90 days"])
-PS_Gui.AddText("x154 y113 w300 h24 vTravelCaption c65767E", "Travel: automatic per field")
-PS_Gui.AddButton("x690 y106 w116 h32 vDetails Disabled", "Run details").OnEvent("Click", PS_Details)
-PS_Gui.AddButton("x816 y106 w116 h32 vCsv Disabled", "Export CSV").OnEvent("Click", PS_Csv)
-for index, label in ["ALL FLOORS TOGETHER", "COLLECTIONS / DAY", "BUILDUP", "TRAVEL / DAY"] {
-    PS_Gui.AddText("x24 y158 w200 h88 BackgroundFFFFFF vCard" index)
-    PS_Gui.AddText("x36 y168 w180 h18 BackgroundFFFFFF c6B7C83 vLabel" index, label).SetFont("s9")
-    PS_Gui.AddText("x36 y187 w180 h35 BackgroundFFFFFF vMetric" index, "—").SetFont("s23 Bold")
-    PS_Gui.AddText("x36 y224 w180 h18 BackgroundFFFFFF c6B7C83 vHint" index, "Run to preview").SetFont("s9")
+PS_Gui.AddRadio("x16 y50 w72 h24 vDays14 Group Checked", "14 days")
+PS_Gui.AddRadio("x94 y50 w72 h24 vDays30", "30 days")
+PS_Gui.AddRadio("x172 y50 w72 h24 vDays90", "90 days")
+PS_Gui.AddText("x260 y54 w524 h20 vSetup c687A80 Right", "Uses your saved macro settings")
+for index, label in ["ALL FLOORS TOGETHER", "COLLECTIONS / DAY", "BUILT TO 97%", "TRAVEL / DAY"] {
+    PS_Gui.AddText("x16 y88 w180 h16 vLabel" index " c687A80", label).SetFont("s8")
+    PS_Gui.AddText("x16 y105 w180 h28 vMetric" index, "—").SetFont("s18 Bold")
 }
-PS_Gui.AddText("x24 y258 w900 h24 vVerdict c52686F", "Start from zero nectar. See which nectars build up and which fall below their buffers.")
-PS_Gui.AddDropDownList("x24 y294 w232 vPeriod Choose1", ["Buildup + maintenance", "Buildup: first five days", "Maintenance: final three days", "Entire run"]).OnEvent("Change", PS_Redraw)
-PS_Gui.AddText("x272 y298 w440 h22 vChartCaption c65767E", "All selected nectars · independent 0–100% axes")
-PS_Gui.AddButton("x800 y289 w132 h32 vView Disabled", "Expand charts").OnEvent("Click", PS_View)
-PS_Gui.AddPicture("x24 y334 w960 h400 +0xE vChart")
+PS_Gui.AddPicture("x16 y146 w768 h398 +0xE vChart")
 PS_Gui.OnEvent("Size", PS_Layout)
 PS_Gui.OnEvent("Close", (*) => ExitApp())
 PS_Gui.OnEvent("Escape", PS_Cancel)
 try PS_SetupText(PS_Config())
 MonitorGetWorkArea(MonitorGetPrimary(), &workLeft, &workTop, &workRight, &workBottom)
-PS_Gui.Show("w" Max(860, Min(1120, Floor((workRight-workLeft-48)/(A_ScreenDPI/96))))
-    " h" Max(620, Min(860, Floor((workBottom-workTop-70)/(A_ScreenDPI/96)))))
+PS_Gui.Show("w" Max(680, Min(800, Floor((workRight-workLeft-32)/(A_ScreenDPI/96))))
+    " h" Max(480, Min(560, Floor((workBottom-workTop-54)/(A_ScreenDPI/96)))))
 
 PS_SetupText(config) {
     global PS_Gui
-    PS_Gui["Setup"].Text := Format("{} planter types  ·  {} fields  ·  {} slots  ·  {}% buffer", config.types.Count, config.fields.Count, config.capacity, config.buffer)
+    PS_Gui["Setup"].Text := Format("{} types  ·  {} fields  ·  {} slots  ·  {}% buffer", config.types.Count, config.fields.Count, config.capacity, config.buffer)
 }
 
-PS_Layout(gui, state, *) {
+PS_Layout(window, state, *) {
     if (state = -1)
         return
-    gui.GetClientPos(,, &width, &height)
-    gui["Run"].Move(width-174, 20, 150, 34)
-    gui["Cancel"].Move(width-252, 20, 70, 34)
-    gui["Title"].Move(,, width-304)
-    gui["Setup"].Move(,, width-48)
-    compact := height < 740
-    gui["DurationLabel"].Visible := !compact
-    gui["Days"].Move(, compact ? 91 : 111)
-    gui["TravelCaption"].Move(, compact ? 94 : 113)
-    gui["Details"].Move(width-268, compact ? 86 : 106, 116, 32)
-    gui["Csv"].Move(width-140, compact ? 86 : 106, 116, 32)
-    cardWidth := (width-84)/4
+    window.GetClientPos(,, &width, &height)
+    window["Run"].Move(width-140, 12, 124, 30)
+    window["Csv"].Move(width-234, 12, 84, 30)
+    window["Title"].Move(,, width-266)
+    window["Setup"].Move(260, 54, width-276, 20)
+    column := (width-68)/4
     Loop 4 {
-        x := 24+(A_Index-1)*(cardWidth+12)
-        gui["Card" A_Index].Move(x, compact ? 130 : 158, cardWidth, compact ? 70 : 88)
-        gui["Label" A_Index].Move(x+12, compact ? 140 : 168, cardWidth-24)
-        gui["Metric" A_Index].Move(x+12, compact ? 159 : 187, cardWidth-24)
-        gui["Hint" A_Index].Move(x+12, 224, cardWidth-24)
-        gui["Hint" A_Index].Visible := !compact
+        x := 16+(A_Index-1)*(column+12)
+        window["Label" A_Index].Move(x, 88, column, 16)
+        window["Metric" A_Index].Move(x, 105, column, 28)
     }
-    gui["Verdict"].Move(, compact ? 212 : 258, width-48)
-    gui["Period"].Move(, compact ? 246 : 294)
-    gui["View"].Move(width-156, compact ? 241 : 289, 132, 32)
-    gui["ChartCaption"].Move(, compact ? 250 : 298, width-452)
-    chartTop := compact ? 286 : 334
-    gui["Chart"].Move(24, chartTop, width-48, height-chartTop-20)
+    window["Chart"].Move(16, 146, width-32, height-162)
     SetTimer PS_Redraw, -100
 }
 
 PS_Start(*) {
-    global PS_Gui, PS_Current, PS_Running, PS_Plot, PS_DetailsGui
+    global PS_Gui, PS_Current, PS_Running
+    if PS_Running {
+        PS_Cancel()
+        return
+    }
     try {
-        days := [14, 30, 90][PS_Gui["Days"].Value]
+        days := PS_Gui["Days90"].Value ? 90 : (PS_Gui["Days30"].Value ? 30 : 14)
         config := PS_Config()
         world := PS_World(config, days)
     } catch as err {
         MsgBox err.Message, "Cannot simulate settings", "Icon!"
         return
     }
-    if PS_Plot
-        PS_CloseChart(PS_Plot)
-    if PS_DetailsGui {
-        PS_DetailsGui.Destroy()
-        PS_DetailsGui := false
-    }
     PS_Current := world, PS_Running := true
+    world.planning.pulse := PS_Pulse.Bind(world)
     PS_SetupText(config)
-    Loop 4 {
+    Loop 4
         PS_Gui["Metric" A_Index].Text := "—"
-        PS_Gui["Hint" A_Index].Text := "Simulation running"
-    }
-    for _, name in ["Run", "Days", "View", "Csv", "Details", "Period"]
+    for _, name in ["Days14", "Days30", "Days90", "Csv"]
         PS_Gui[name].Enabled := false
-    PS_Gui["Cancel"].Visible := true
-    PS_Gui["Run"].Text := "Running 0%"
-    PS_Gui["Verdict"].Text := "Building your preview from zero nectar…"
+    PS_Gui["Run"].Text := "Cancel · 0%"
     PS_Redraw()
     SetTimer PS_Tick, 15
+}
+
+PS_Pulse(world) {
+    global PS_Current, PS_Running, PS_Gui
+    static last := 0
+    if (!PS_Running || world != PS_Current)
+        throw Error("Simulation cancelled.")
+    if (A_TickCount-last < 30)
+        return
+    last := A_TickCount
+    text := "Cancel · " Floor(100*world.now/world.finish) "%"
+    if (PS_Gui["Run"].Text != text)
+        PS_Gui["Run"].Text := text
+    Sleep(-1)
+    if (!PS_Running || world != PS_Current)
+        throw Error("Simulation cancelled.")
 }
 
 PS_Tick() {
@@ -137,118 +126,51 @@ PS_Tick() {
         }
         if (!PS_Running || world != PS_Current)
             return
-        PS_Gui["Run"].Text := "Running " Floor(100*world.now/world.finish) "%"
+        PS_Pulse(world)
         if world.completed {
             PS_Stop()
             PS_Results(world)
         }
     } catch as err {
-        if (world != PS_Current)
+        if (!PS_Running || world != PS_Current)
             return
         PS_Stop()
-        PS_Gui["Verdict"].Text := "The run could not finish. Your settings have not been changed."
         MsgBox err.Message, "Simulation could not finish", "Icon!"
     }
 }
 
 PS_Stop() {
-    global PS_Gui, PS_Running
+    global PS_Gui, PS_Running, PS_Current
     PS_Running := false
+    PS_Current.planning.pulse := false
     SetTimer PS_Tick, 0
-    for _, name in ["Run", "Days", "Period"]
+    for _, name in ["Days14", "Days30", "Days90"]
         PS_Gui[name].Enabled := true
-    PS_Gui["Cancel"].Visible := false
     PS_Gui["Run"].Text := "Run simulation"
 }
 
 PS_Cancel(*) {
-    global PS_Gui, PS_Current, PS_Running
-    if !PS_Running
-        return
-    PS_Stop()
-    PS_Gui["Verdict"].Text := "Run cancelled. Run again to see complete results."
-    Loop 4
-        PS_Gui["Hint" A_Index].Text := "No completed result"
+    global PS_Running
+    if PS_Running
+        PS_Stop()
 }
 
 PS_Results(world) {
     global PS_Gui
     window := world.finish-world.warmup, days := window/86400
-    built := 0, latest := 0, gaps := 0, coverageSum := 0, lowestCoverage := 101, lowestNectar := ""
-    for _, group in world.groups {
-        coverage := group.covered*100/window, coverageSum += coverage
-        if (coverage < lowestCoverage)
-            lowestCoverage := coverage, lowestNectar := group.nectar
+    built := 0, latest := 0
+    for _, group in world.groups
         if (group.firstBuilt >= 0)
             built++, latest := Max(latest, group.firstBuilt)
-        if (world.Metrics(group).below > 0.001)
-            gaps++
-    }
-    PS_Gui["Metric1"].Text := Format("{:.2f}%", world.covered*100/window)
-    PS_Gui["Hint1"].Text := "All selected nectars at once"
-    PS_Gui["Metric2"].Text := Format("{:.2f}", world.maintenanceCollections/days)
-    PS_Gui["Hint2"].Text := "Measured after day 7"
+    PS_Gui["Metric1"].Text := Format("{:.1f}%", world.covered*100/window)
+    PS_Gui["Metric2"].Text := Format("{:.1f}", world.maintenanceCollections/days)
     PS_Gui["Metric3"].Text := built = world.groups.Length ? Format("{:.1f} h", latest/3600) : built " / " world.groups.Length
-    PS_Gui["Hint3"].Text := built = world.groups.Length ? "Each nectar reached 97%" : "Nectars that reached 97%"
     PS_Gui["Metric4"].Text := Format("{:.1f} min", (world.maintenanceWork["Place"]+world.maintenanceWork["Collect"])/60/days)
-    PS_Gui["Hint4"].Text := "Placement + collection travel"
-    if !gaps
-        verdict := "Every selected nectar stayed above its lower floor after day 7."
-    else
-        verdict := Format("Individual floor coverage: average {:.1f}% · lowest {:.1f}% ({}).",
-            coverageSum/world.groups.Length, lowestCoverage, lowestNectar)
-    PS_Gui["Verdict"].Text := verdict
-    for _, name in ["View", "Csv", "Details"]
-        PS_Gui[name].Enabled := true
-    PS_Gui["Period"].Choose(1)
+    PS_Gui["Csv"].Enabled := true
     PS_Redraw()
 }
 
-PS_Details(*) {
-    global PS_Current, PS_DetailsGui, PS_Gui
-    if (!PS_Current || !PS_Current.completed)
-        return
-    if PS_DetailsGui {
-        PS_DetailsGui.Show()
-        return
-    }
-    world := PS_Current, window := world.finish-world.warmup
-    detailsWindow := Gui("+Owner" PS_Gui.Hwnd, "Simulation details")
-    PS_DetailsGui := detailsWindow
-    detailsWindow.BackColor := "F3F6F7", detailsWindow.SetFont("s10 c243E43", "Segoe UI")
-    tabs := detailsWindow.AddTab3("x16 y16 w870 h490", ["Nectar results", "Settings and assumptions"])
-    tabs.UseTab(1)
-    detailsWindow.AddText("x32 y57 w825 h25", "Maintenance metrics cover day 7 through day " world.finish/86400 ". Buildup starts at zero.")
-    list := detailsWindow.AddListView("x32 y94 w830 r6 -Multi", ["Nectar", "Min / floor", "Built by", "Floor coverage", "Below floor", "Lowest", "Longest dip"])
-    for index, width in [112, 104, 96, 115, 104, 92, 125]
-        list.ModifyCol(index, width)
-    for _, group in world.groups {
-        metric := world.Metrics(group)
-        list.Add(, group.nectar, Format("{:g}% / {:g}%", group.minimum, PN_Bounds(0, group.minimum, group.buffer).lower),
-            group.firstBuilt < 0 ? "Not reached" : Format("{:.1f} h", group.firstBuilt/3600),
-            Format("{:.2f}%", group.covered*100/window), Format("{:.1f} h", metric.below/3600),
-            Format("{:.1f}%", group.lowest), Format("{:.1f} h", metric.longest/3600))
-    }
-    counts := "Collections over the full run: " world.collections.Length "`r`n`r`n"
-    for name, count in world.counts
-        counts .= StrReplace(name, "Planter") ": " count "`r`n"
-    detailsWindow.AddEdit("x32 y283 w830 h200 ReadOnly -Wrap", counts)
-    tabs.UseTab(2)
-    detailsWindow.AddEdit("x32 y62 w830 h420 ReadOnly", PS_SettingsText(world))
-    tabs.UseTab()
-    detailsWindow.OnEvent("Close", PS_CloseDetails)
-    detailsWindow.OnEvent("Escape", PS_CloseDetails)
-    detailsWindow.Show("w902 h522")
-}
-
-PS_CloseDetails(*) {
-    global PS_DetailsGui
-    if PS_DetailsGui
-        PS_DetailsGui.Destroy()
-    PS_DetailsGui := false
-}
-
-PS_RenderPicture(picture, world, mode) {
+PS_RenderPicture(picture, world) {
     global PS_ChartToken
     if !PS_ChartToken
         PS_ChartToken := Gdip_Startup()
@@ -257,7 +179,7 @@ PS_RenderPicture(picture, world, mode) {
     picture.GetPos(,, &width, &height)
     if (width < 300 || height < 160)
         return
-    bitmap := PC_Render(world, mode, width, height, A_ScreenDPI/96)
+    bitmap := PC_Render(world, width, height, A_ScreenDPI/96)
     try {
         SetImage(picture.Hwnd, bitmap)
         bitmap := 0
@@ -269,67 +191,14 @@ PS_RenderPicture(picture, world, mode) {
 
 PS_Redraw(*) {
     global PS_Gui, PS_Current
-    try PS_RenderPicture(PS_Gui["Chart"], PS_Current && PS_Current.completed ? PS_Current : false, PS_Gui["Period"].Value)
-    catch as err {
-        PS_Gui["Verdict"].Text := "The chart could not be drawn. Run details and CSV results are still available."
-        MsgBox err.Message, "Could not draw simulated chart", "Icon!"
-    }
-}
-
-PS_View(*) {
-    global PS_Current, PS_Plot, PS_Gui
-    if (!PS_Current || !PS_Current.completed)
-        return
-    if PS_Plot {
-        PS_Plot.gui.Show()
-        return
-    }
-    chartWindow := Gui("+Resize +MinSize800x500 +Owner" PS_Gui.Hwnd, "Nectar charts")
-    chartWindow.BackColor := "F3F6F7", chartWindow.SetFont("s10 c243E43", "Segoe UI")
-    chartWindow.AddDropDownList("x20 y18 w248 vPeriod Choose1", ["Buildup + maintenance", "Buildup: first five days", "Maintenance: final three days", "Entire run"]).OnEvent("Change", PS_DrawExpanded)
-    chartWindow.AddText("x290 y22 w470 h24", "Every selected nectar · lower floors shown in red")
-    picture := chartWindow.AddPicture("x20 y62 w1040 h680 +0xE")
-    PS_Plot := {gui: chartWindow, picture: picture, world: PS_Current}
-    chartWindow.OnEvent("Size", PS_ExpandLayout)
-    chartWindow.OnEvent("Close", PS_CloseChart.Bind(PS_Plot))
-    chartWindow.OnEvent("Escape", PS_CloseChart.Bind(PS_Plot))
-    MonitorGetWorkArea(MonitorGetPrimary(), &l, &t, &r, &b)
-    chartWindow.Show("w" Max(800, Min(1280, Floor((r-l-48)/(A_ScreenDPI/96)))) " h" Max(500, Min(900, Floor((b-t-70)/(A_ScreenDPI/96)))))
-}
-
-PS_ExpandLayout(gui, state, *) {
-    global PS_Plot
-    if (state = -1 || !PS_Plot)
-        return
-    gui.GetClientPos(,, &width, &height)
-    PS_Plot.picture.Move(20, 62, width-40, height-82)
-    SetTimer PS_DrawExpanded, -100
-}
-
-PS_DrawExpanded(*) {
-    global PS_Plot
-    if !PS_Plot
-        return
-    try PS_RenderPicture(PS_Plot.picture, PS_Plot.world, PS_Plot.gui["Period"].Value)
+    try PS_RenderPicture(PS_Gui["Chart"], PS_Current && PS_Current.completed ? PS_Current : false)
     catch as err
         MsgBox err.Message, "Could not draw simulated chart", "Icon!"
 }
 
-PS_CloseChart(plot, *) {
-    global PS_Plot
-    SetTimer PS_DrawExpanded, 0
-    if plot.picture
-        SetImage(plot.picture.Hwnd, 0)
-    plot.gui.Destroy()
-    if (PS_Plot = plot)
-        PS_Plot := false
-}
-
 PS_ExitChart(*) {
-    global PS_Plot, PS_Gui, PS_ChartToken
+    global PS_Gui, PS_ChartToken
     SetTimer PS_Redraw, 0
-    if PS_Plot
-        PS_CloseChart(PS_Plot)
     if IsSet(PS_Gui)
         try SetImage(PS_Gui["Chart"].Hwnd, 0)
     if PS_ChartToken
@@ -369,7 +238,7 @@ PS_Config() {
     settings := snapshot["Planters"], gather := snapshot.Has("Gather") ? snapshot["Gather"] : Map()
     timingRecords := snapshot.Has("PlanterTiming") ? snapshot["PlanterTiming"] : Map()
     config := {groups: [], capacity: PS_Number(settings, "MaxAllowedPlanters", 3, 0, 3),
-        buffer: PS_Number(settings, "PlanterBuffer", 10, 0, 20), timings: Map(), types: Map(), fields: Map(), warnings: []}
+        buffer: PS_Number(settings, "PlanterBuffer", 10, 0, 20), types: Map(), fields: Map()}
     sipping := PS_Number(settings, "GatherFieldSipping", 0, 0, 1)
     planterGather := PS_Number(settings, "GotoPlanterField", 0, 0, 1)
     currentField := PS_Value(gather, "FieldName" PS_Number(gather, "CurrentFieldNum", 1, 1, 3), "Sunflower")
@@ -389,7 +258,6 @@ PS_Config() {
                 continue
             config.fields[field] := true
             timing := PT_TimingEstimate(PS_Value(timingRecords, key "_Travel"))
-            config.timings[field] := timing
             for _, stats in PS_Tables[field] {
                 if !PS_Number(settings, stats[1] "Check", 0, 0, 1)
                     continue
@@ -398,47 +266,26 @@ PS_Config() {
                     lead: timing.seconds, dispatchLead: PT_TravelDispatch(timing), tail: 0})
             }
         }
-        if !group.candidates.Length
-            config.warnings.Push(name " has no enabled field/planter combination.")
         config.groups.Push(group)
     }
     if !config.groups.Length
         throw Error("Select at least one nectar priority in Adaptive Planters.")
-    if !config.capacity
-        config.warnings.Push("No planter slots are enabled.")
-    if (config.types.Has("PaperPlanter") || config.types.Has("TicketPlanter"))
-        config.warnings.Push("Paper/Ticket stock is treated as unlimited; usage is counted below and in the CSV.")
-    if (sipping || planterGather)
-        config.warnings.Push("Gathering bonuses are excluded. Sipping preference holds the selected gathering field fixed (" currentField ").")
-    if !PS_Number(settings, "AdaptivePlanterGatherInterrupt", 1, 0, 1)
-        config.warnings.Push("Harvest interrupt is disabled. Real collection delays may exceed this preview's timing.")
     return config
 }
 
-PS_TimingText(estimate) {
-    return estimate.seconds " s (" (estimate.learned ? "learned, " : "fallback, ") estimate.samples " samples)"
-}
-
-PS_SettingsText(world) {
-    config := world.config
-    text := config.types.Count " usable planter types / " config.fields.Count " usable fields across selected nectars / " config.capacity " slots.`r`n"
-    text .= "Buffer: " config.buffer "% relative. Nectar readings use the same HUD-sized steps as the live macro. Travel time: automatic per field.`r`n"
-    text .= "Uses the first valid timing immediately, then the median of the latest 3 samples. The same travel time is used for placing and collecting; fallback is 90 seconds with no valid samples. Inventory, planter interactions, loot, pre-route reset/setup and extra padding are excluded.`r`n"
-    text .= "Selection balances coverage, prolonged gaps, and placement/collection travel. Small coverage gains must justify their travel cost; limited setups can still have gaps.`r`n"
-    text .= "Uses base growth tables and starts with zero nectar and empty slots. Learned growth, extra nectar, failures, and interruptions are excluded.`r`n"
-    text .= "All floors together measures every selected nectar above its floor at the same time. Individual coverage and longest gaps are shown in Nectar results. Compare these with collections and travel: a dip alone does not make a setup worse.`r`n"
-    text .= "Maintenance window: day 7 through day " world.finish/86400 ". All coverage refers to selected nectars.`r`n"
-    for _, warning in config.warnings
-        text .= warning "`r`n"
-    text .= "Shared destination-field travel times:`r`n"
-    for field, timing in config.timings
-        text .= field ": " PS_TimingText(timing) "`r`n"
-    return text
-}
-
 PS_ChartPoints(world, index, left, right) {
-    points := []
-    for _, segment in world.segments {
+    points := [], lo := 1, hi := world.segments.Length+1
+    while (lo < hi) {
+        mid := Floor((lo+hi)/2)
+        if (world.segments[mid][2] <= left)
+            lo := mid+1
+        else
+            hi := mid
+    }
+    Loop world.segments.Length-lo+1 {
+        segment := world.segments[lo+A_Index-1]
+        if (segment[1] >= right)
+            break
         a := Max(left, segment[1]), b := Min(right, segment[2])
         if (b <= a)
             continue

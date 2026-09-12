@@ -1,7 +1,7 @@
 ; Compare maintenance and recovery plans using the same growth, travel, and HUD model as the simulator.
 class PN_PlanningState {
     __New() {
-        this.gaps := Map(), this.mode := false, this.normal := false, this.omit := ""
+        this.gaps := Map(), this.mode := false, this.normal := false, this.omit := "", this.pulse := false
     }
 
     Observe(groups, now) {
@@ -47,7 +47,7 @@ PN_SelectPlan(groups, active, slots, maximumBand := 0, state := false, now := 0)
     }
     if !uncovered
         return initial
-    baseline := PN_Preview(groups, active, slots, maximumBand, false, "", 96, true)
+    baseline := PN_Preview(groups, active, slots, maximumBand, false, "", 96, true, state.pulse)
     if (baseline && PN_Stable(baseline.world, 72*3600)) {
         state.mode := false, state.normal := true
         return baseline.first
@@ -59,7 +59,7 @@ PN_SelectPlan(groups, active, slots, maximumBand := 0, state := false, now := 0)
             choices.Push({focus: true, omit: group.nectar})
     support := PN_SupportLimit(groups, Min(3, active.Length+slots))
     for _, choice in choices {
-        preview := PN_Preview(groups, active, slots, maximumBand, choice.focus, choice.omit, 48)
+        preview := PN_Preview(groups, active, slots, maximumBand, choice.focus, choice.omit, 48, false, state.pulse)
         if !preview
             continue
         score := PN_PreviewScore(preview.world, state, support)
@@ -74,7 +74,9 @@ PN_SelectPlan(groups, active, slots, maximumBand := 0, state := false, now := 0)
     return initial
 }
 
-PN_Preview(groups, active, slots, maximumBand, focus, omit, hours, normal := false) {
+PN_Preview(groups, active, slots, maximumBand, focus, omit, hours, normal := false, pulse := false) {
+    if pulse
+        pulse.Call()
     world := PN_PlanningWorld(groups, active, Min(3, active.Length+slots), hours, focus, omit, normal)
     world.maximumBand := maximumBand
     first := world.Choice()
@@ -83,6 +85,8 @@ PN_Preview(groups, active, slots, maximumBand, focus, omit, hours, normal := fal
     for _, plan in first.plans
         world.Place(plan)
     Loop 4096 {
+        if (pulse && Mod(A_Index, 16) = 0)
+            pulse.Call()
         if (world.now >= world.finish)
             return {world: world, first: first}
         world.Step()
@@ -120,16 +124,17 @@ PN_SupportLimit(groups, capacity) {
 }
 
 PN_PreviewScore(world, state, support) {
-    horizon := world.finish, count := world.groups.Length, weights := [], ages := [], total := 0
+    horizon := world.finish, count := world.groups.Length, weights := [], ages := [], floors := [], total := 0
     for index, group in world.groups {
         weight := (count-index+1)**0.25, total += weight, weights.Push(weight)
         ages.Push(state.gaps[group.nectar].age)
+        floors.Push(PN_Bounds(0, group.minimum, group.buffer).lower)
     }
     utility := 0, terminal := 0
     for _, segment in world.segments {
         span := segment[2]-segment[1], covered := []
         for index, group in world.groups {
-            floor := PN_Bounds(0, group.minimum, group.buffer).lower
+            floor := floors[index]
             good := Min(span, Max(0, (segment[3][index]-floor)*864)), covered.Push(good)
             if good
                 ages[index] := 0

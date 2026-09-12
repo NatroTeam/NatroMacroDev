@@ -5,16 +5,23 @@ class PS_World {
         this.config := config, this.finish := days*86400, this.now := 0
         this.warmup := 7*86400, this.active := []
         this.groups := [], this.segments := [], this.collections := []
-        this.counts := Map(), this.decisions := 0, this.covered := 0
+        this.decisions := 0, this.covered := 0
         this.work := Map("Place", 0, "Collect", 0, "Tail", 0)
         this.maintenanceWork := this.work.Clone()
         this.maintenanceCollections := 0, this.maximumBand := 0, this.completed := false
         for _, original in config.groups {
             group := original.Clone()
+            if !group.HasOwnProp("candidateKeys") {
+                group.candidateKeys := Map(), keys := Map()
+                for _, candidate in group.candidates {
+                    key := PN_CandidateKey(candidate)
+                    if !keys.Has(key)
+                        keys[key] := keys.Count+1
+                    group.candidateKeys[candidate] := keys[key]
+                }
+            }
             group.level := 0, group.phase := "Build", group.lastField := ""
             group.firstBuilt := -1, group.covered := 0
-            group.lowest := 100, group.collected := 0
-            group.shortfall := 0, group.dip := 0, group.longestDip := 0
             this.groups.Push(group)
             this.maximumBand := Max(this.maximumBand, group.minimum*group.buffer/100)
         }
@@ -47,20 +54,9 @@ class PS_World {
             levels.Push(group.level)
             if window {
                 value := Max(0, group.level-(left-this.now)/864)
-                finish := Max(0, value-window/864)
                 floor := PN_Bounds(value, group.minimum, group.buffer).lower
                 good := Min(window, Max(0, (value-floor)*864))
                 group.covered += good, allGood := Min(allGood, good)
-                group.lowest := Min(group.lowest, finish)
-                below := window-good
-                if (value >= floor)
-                    group.dip := 0
-                group.dip += below
-                group.longestDip := Max(group.longestDip, group.dip)
-                zeroAt := Min(window, value*864)
-                if (zeroAt > good)
-                    group.shortfall += (Max(0, floor-value+good/864)+Max(0, floor-value+zeroAt/864))*(zeroAt-good)/2
-                group.shortfall += floor*Max(0, window-value*864)
             }
             group.level := Max(0, group.level-span/864)
         }
@@ -68,27 +64,20 @@ class PS_World {
         this.segments.Push([this.now, at, levels]), this.now := at
     }
 
-    Metrics(group) {
-        window := this.finish-this.warmup, floor := PN_Bounds(0, group.minimum, group.buffer).lower
-        below := Max(0, window-group.covered)
-        return {below: below, worst: Max(0, floor-group.lowest), longest: group.longestDip,
-            average: below > 0.000001 ? group.shortfall/below : 0}
-    }
-
-    Events(nectar) {
+    Events(nectar, queue := false) {
         events := []
-        for _, job in PN_ServiceQueue(this.active, this.now)
+        for _, job in (queue ? queue : PN_ServiceQueue(this.active, this.now))
             if (job.nectar = nectar)
                 events.Push([job.at-this.now, PN_JobYield(job, job.at)])
         return events
     }
 
     Context() {
-        result := []
+        result := [], queue := PN_ServiceQueue(this.active, this.now)
         for _, group in this.groups {
             current := this.Observed(group)
             group.phase := PN_Phase(group.phase, current, group.minimum, group.buffer)
-            copy := group.Clone(), copy.current := current, copy.events := this.Events(group.nectar)
+            copy := group.Clone(), copy.current := current, copy.events := this.Events(group.nectar, queue)
             result.Push(copy)
         }
         return result
@@ -110,11 +99,9 @@ class PS_World {
         amount := PN_JobYield(job, job.at), group.level := Min(100, before+amount)
         if (group.firstBuilt < 0 && group.level >= 97)
             group.firstBuilt := this.now
-        group.collected++
         if (this.now >= this.warmup)
             this.maintenanceCollections++
         name := job.planter[1]
-        this.counts[name] := (this.counts.Has(name) ? this.counts[name] : 0)+1
         this.collections.Push({at: this.now, nectar: job.nectar, field: job.field, name: name,
             age: this.now-job.start, full: job.planter[4]*3600, amount: amount,
             before: before, after: group.level, phase: job.phase, slot: job.slot,
