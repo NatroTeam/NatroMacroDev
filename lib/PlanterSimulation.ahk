@@ -1,14 +1,13 @@
 ; Offline simulation using the live planter scheduling helpers.
 class PS_World {
-    __New(config, days := 14) {
+    __New(config, days := 3) {
         this.planning := PN_PlanningState()
         this.config := config, this.finish := days*86400, this.now := 0
-        this.warmup := 7*86400, this.active := []
+        this.active := []
         this.groups := [], this.segments := [], this.collections := []
-        this.decisions := 0, this.covered := 0
+        this.decisions := 0
         this.work := Map("Place", 0, "Collect", 0, "Tail", 0)
-        this.maintenanceWork := this.work.Clone()
-        this.maintenanceCollections := 0, this.maximumBand := 0, this.completed := false
+        this.maximumBand := 0, this.completed := false
         for _, original in config.groups {
             group := original.Clone()
             if !group.HasOwnProp("candidateKeys") {
@@ -20,8 +19,10 @@ class PS_World {
                     group.candidateKeys[candidate] := keys[key]
                 }
             }
+            if !group.HasOwnProp("candidateMemo")
+                group.candidateMemo := Map()
             group.level := 0, group.phase := "Build", group.lastField := ""
-            group.firstBuilt := -1, group.covered := 0
+            group.firstBuilt := -1
             this.groups.Push(group)
             this.maximumBand := Max(this.maximumBand, group.minimum*group.buffer/100)
         }
@@ -45,23 +46,13 @@ class PS_World {
         if (at = this.now)
             return
         levels := [], span := at-this.now
-        left := Max(this.now, this.warmup), window := Max(0, at-left), allGood := window
-        if (action != "") {
+        if (action != "")
             this.work[action] += span
-            this.maintenanceWork[action] += window
-        }
         for _, group in this.groups {
             levels.Push(group.level)
-            if window {
-                value := Max(0, group.level-(left-this.now)/864)
-                floor := PN_Bounds(value, group.minimum, group.buffer).lower
-                good := Min(window, Max(0, (value-floor)*864))
-                group.covered += good, allGood := Min(allGood, good)
-            }
             group.level := Max(0, group.level-span/864)
         }
-        this.covered += allGood
-        this.segments.Push([this.now, at, levels]), this.now := at
+        this.segments.Push([this.now, at, levels, action]), this.now := at
     }
 
     Events(nectar, queue := false) {
@@ -99,8 +90,6 @@ class PS_World {
         amount := PN_JobYield(job, job.at), group.level := Min(100, before+amount)
         if (group.firstBuilt < 0 && group.level >= PN_Bounds(group.level, group.minimum, group.buffer).upper)
             group.firstBuilt := this.now
-        if (this.now >= this.warmup)
-            this.maintenanceCollections++
         name := job.planter[1]
         this.collections.Push({at: this.now, nectar: job.nectar, field: job.field, name: name,
             age: this.now-job.start, full: job.planter[4]*3600, amount: amount,

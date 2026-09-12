@@ -22,7 +22,7 @@ for nectar, fields in PS_Fields
         PS_Tables[field] := %key%Planters
     }
 
-PS_Current := false, PS_Running := false, PS_ChartToken := 0, PS_Days := 14
+PS_Current := false, PS_Running := false, PS_ChartToken := 0, PS_Days := 3, PS_View := 1
 PS_Buttons := Map(), PS_Hover := 0
 OnExit(PS_ExitChart)
 OnMessage(0x2B, PS_DrawButton)
@@ -34,10 +34,13 @@ PS_Gui.SetFont("s9 c243E43", "Segoe UI")
 PS_Gui.AddText("x0 y0 w740 h82 vHeader Background102735")
 PS_Gui.AddText("x18 y13 w430 h28 vTitle Background102735 cFFFFFF", "Planter simulator").SetFont("s18 Bold")
 PS_Gui.AddText("x18 y52 w490 h18 vSetup Background102735 cA9BDC8", "Uses your saved macro settings").SetFont("s8")
+PS_Button("x418 y12 w80 h32 vPng Disabled", "Save PNG", "secondary").OnEvent("Click", PS_Png)
 PS_Button("x508 y12 w86 h32 vCsv Disabled", "Export CSV", "secondary").OnEvent("Click", PS_Csv)
 PS_Button("x606 y12 w116 h32 vRun", "Run simulation", "primary").OnEvent("Click", PS_Start)
-for index, days in [14, 30, 90]
+for index, days in [3, 7, 30]
     PS_Button("x" 542+(index-1)*62 " y51 w56 h24 vDays" days, days " days", "duration", days).OnEvent("Click", PS_Duration)
+for index, label in ["All", "Buildup", "Maintenance"]
+    PS_Button("x18 y51 w44 h24 vView" index, label, "view", index).OnEvent("Click", PS_ViewChange)
 PS_AccentColors := ["168577", "3985B6", "8461B8", "B78324"]
 for index, label in ["ALL FLOORS TOGETHER", "COLLECTIONS / DAY", "BUILT TO TARGET", "TRAVEL / DAY"] {
     PS_Gui.AddText("x14 y94 w172 h62 vCard" index " BackgroundFFFFFF")
@@ -57,7 +60,7 @@ PS_Gui["Run"].Focus()
 
 PS_SetupText(config) {
     global PS_Gui
-    PS_Gui["Setup"].Text := Format("{} types  ·  {} fields  ·  {} slots  ·  {}% buffer", config.types.Count, config.fields.Count, config.capacity, config.buffer)
+    PS_Gui["Setup"].Text := Format("{} types  ·  {} fields  ·  {} slots", config.types.Count, config.fields.Count, config.capacity)
 }
 
 PS_Button(options, caption, kind, days := 0) {
@@ -74,6 +77,16 @@ PS_Duration(control, *) {
         PS_Days := PS_Buttons[control.Hwnd].days
         PS_RefreshButtons()
     }
+}
+
+PS_ViewChange(control, *) {
+    global PS_View, PS_Buttons, PS_Current, PS_Running
+    if PS_Running
+        return
+    PS_View := PS_Buttons[control.Hwnd].days
+    PS_RefreshButtons()
+    if (PS_Current && PS_Current.completed)
+        PS_Results(PS_Current)
 }
 
 PS_RefreshButtons() {
@@ -106,7 +119,7 @@ PS_ButtonLeave(wParam, lParam, message, hwnd) {
 PS_RGB(color) => ((color & 255) << 16) | (color & 0xFF00) | ((color >> 16) & 255)
 
 PS_DrawButton(wParam, item, *) {
-    global PS_Buttons, PS_Hover, PS_Days
+    global PS_Buttons, PS_Hover, PS_Days, PS_View
     if (!item || NumGet(item, 0, "UInt") != 4)
         return
     offset := A_PtrSize = 8 ? 24 : 20
@@ -117,7 +130,8 @@ PS_DrawButton(wParam, item, *) {
     dc := NumGet(item, offset+A_PtrSize, "Ptr"), rect := item+offset+2*A_PtrSize
     left := NumGet(rect, 0, "Int"), top := NumGet(rect, 4, "Int")
     right := NumGet(rect, 8, "Int"), bottom := NumGet(rect, 12, "Int")
-    primary := entry.kind = "primary", selected := entry.days && entry.days = PS_Days
+    primary := entry.kind = "primary"
+    selected := entry.kind = "view" ? entry.days = PS_View : entry.kind = "duration" && entry.days = PS_Days
     disabled := state & 4, pressed := state & 1, hot := hwnd = PS_Hover
     fill := primary ? 0x168577 : (selected ? 0x315363 : 0x102735)
     border := primary ? fill : (selected ? 0x57B9AF : 0x35515F)
@@ -128,6 +142,8 @@ PS_DrawButton(wParam, item, *) {
         fill := primary ? 0x10695F : 0x3B606F
     else if hot
         fill := primary ? 0x20988A : 0x284856
+    if (!disabled && (state & 0x10) && !(state & 0x200))
+        border := 0x8DE3D4
     saved := DllCall("gdi32\SaveDC", "Ptr", dc, "Int"), back := 0, brush := 0, pen := 0
     if !saved
         return true
@@ -146,11 +162,6 @@ PS_DrawButton(wParam, item, *) {
         DllCall("gdi32\SetBkMode", "Ptr", dc, "Int", 1)
         DllCall("gdi32\SetTextColor", "Ptr", dc, "UInt", PS_RGB(ink))
         DllCall("user32\DrawTextW", "Ptr", dc, "Str", entry.control.Text, "Int", -1, "Ptr", rect, "UInt", 0x825)
-        if (!disabled && (state & 0x10) && !(state & 0x200)) {
-            focus := Buffer(16), inset := Round(4*A_ScreenDPI/96)
-            NumPut("Int", left+inset, "Int", top+inset, "Int", right-inset, "Int", bottom-inset, focus)
-            DllCall("user32\DrawFocusRect", "Ptr", dc, "Ptr", focus)
-        }
     } finally {
         if saved
             DllCall("gdi32\RestoreDC", "Ptr", dc, "Int", saved)
@@ -168,9 +179,13 @@ PS_Layout(window, state, *) {
     window["Header"].Move(,, width, 82)
     window["Run"].Move(width-134, 12, 116, 32)
     window["Csv"].Move(width-232, 12, 86, 32)
-    window["Title"].Move(,, width-268)
-    window["Setup"].Move(,, width-244)
-    for index, days in [14, 30, 90]
+    window["Png"].Move(width-322, 12, 80, 32)
+    window["Title"].Move(,, width-354)
+    window["Setup"].Move(254, 54, width-464, 18)
+    window["View1"].Move(18, 51, 44, 24)
+    window["View2"].Move(68, 51, 68, 24)
+    window["View3"].Move(142, 51, 94, 24)
+    for index, days in [3, 7, 30]
         window["Days" days].Move(width-198+(index-1)*62, 51, 56, 24)
     column := (width-52)/4
     Loop 4 {
@@ -203,7 +218,7 @@ PS_Start(*) {
     PS_SetupText(config)
     Loop 4
         PS_Gui["Metric" A_Index].Text := "—"
-    for _, name in ["Days14", "Days30", "Days90", "Csv"]
+    for _, name in ["Days3", "Days7", "Days30", "View1", "View2", "View3", "Csv", "Png"]
         PS_Gui[name].Enabled := false
     PS_Gui["Run"].Text := "Cancel · 0%"
     PS_RefreshButtons()
@@ -258,7 +273,7 @@ PS_Stop() {
     PS_Running := false
     PS_Current.planning.pulse := false
     SetTimer PS_Tick, 0
-    for _, name in ["Days14", "Days30", "Days90"]
+    for _, name in ["Days3", "Days7", "Days30", "View1", "View2", "View3"]
         PS_Gui[name].Enabled := true
     PS_Gui["Run"].Text := "Run simulation"
     PS_RefreshButtons()
@@ -271,23 +286,20 @@ PS_Cancel(*) {
 }
 
 PS_Results(world) {
-    global PS_Gui
-    window := world.finish-world.warmup, days := window/86400
-    built := 0, latest := 0
-    for _, group in world.groups
-        if (group.firstBuilt >= 0)
-            built++, latest := Max(latest, group.firstBuilt)
-    PS_Gui["Metric1"].Text := Format("{:.1f}%", world.covered*100/window)
-    PS_Gui["Metric2"].Text := Format("{:.1f}", world.maintenanceCollections/days)
-    PS_Gui["Metric3"].Text := built = world.groups.Length ? Format("{:.1f} h", latest/3600) : built " / " world.groups.Length
-    PS_Gui["Metric4"].Text := Format("{:.1f} min", (world.maintenanceWork["Place"]+world.maintenanceWork["Collect"])/60/days)
+    global PS_Gui, PS_View
+    report := PC_Report(world, PS_View), days := report.span/86400
+    PS_Gui["Metric1"].Text := days ? Format("{:.1f}%", report.all*100/report.span) : "—"
+    PS_Gui["Metric2"].Text := days ? Format("{:.1f}", report.collections/days) : "—"
+    PS_Gui["Metric3"].Text := report.built = world.groups.Length ? Format("{:.1f} h", report.builtAt/3600) : report.built " / " world.groups.Length
+    PS_Gui["Metric4"].Text := days ? Format("{:.1f} min", report.travel/60/days) : "—"
     PS_Gui["Csv"].Enabled := true
+    PS_Gui["Png"].Enabled := true
     PS_RefreshButtons()
     PS_Redraw()
 }
 
 PS_RenderPicture(picture, world) {
-    global PS_ChartToken
+    global PS_ChartToken, PS_View
     if !PS_ChartToken
         PS_ChartToken := Gdip_Startup()
     if !PS_ChartToken
@@ -295,7 +307,7 @@ PS_RenderPicture(picture, world) {
     picture.GetPos(,, &width, &height)
     if (width < 300 || height < 160)
         return
-    bitmap := PC_Render(world, width, height, A_ScreenDPI/96)
+    bitmap := PC_Render(world, width, height, A_ScreenDPI/96, PS_View)
     try {
         SetImage(picture.Hwnd, bitmap)
         bitmap := 0
@@ -389,32 +401,6 @@ PS_Config() {
     return config
 }
 
-PS_ChartPoints(world, index, left, right) {
-    points := [], lo := 1, hi := world.segments.Length+1
-    while (lo < hi) {
-        mid := Floor((lo+hi)/2)
-        if (world.segments[mid][2] <= left)
-            lo := mid+1
-        else
-            hi := mid
-    }
-    Loop world.segments.Length-lo+1 {
-        segment := world.segments[lo+A_Index-1]
-        if (segment[1] >= right)
-            break
-        a := Max(left, segment[1]), b := Min(right, segment[2])
-        if (b <= a)
-            continue
-        value := segment[3][index]
-        points.Push([a, Max(0, value-(a-segment[1])/864)])
-        zeroAt := segment[1]+value*864
-        if (zeroAt > a && zeroAt < b)
-            points.Push([zeroAt, 0])
-        points.Push([b, Max(0, value-(b-segment[1])/864)])
-    }
-    return points
-}
-
 PS_Write(path, text) {
     file := FileOpen(path, "w", "UTF-8")
     try file.Write(text)
@@ -436,4 +422,18 @@ PS_Csv(*) {
     try PS_Write(path, text)
     catch as err
         MsgBox err.Message, "Could not export simulation", "Icon!"
+}
+
+PS_Png(*) {
+    global PS_Gui, PS_Current
+    if (!PS_Current || !PS_Current.completed)
+        return
+    path := FileSelect("S16", "Planter simulation.png", "Save simulation chart", "PNG (*.png)")
+    if !path
+        return
+    if !RegExMatch(path, "i)\.png$")
+        path .= ".png"
+    try PC_SavePng(SendMessage(0x173, 0, 0, PS_Gui["Chart"].Hwnd), path)
+    catch as err
+        MsgBox err.Message, "Could not save chart", "Icon!"
 }

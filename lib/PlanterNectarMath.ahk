@@ -118,8 +118,14 @@ PN_CandidateKey(candidate) {
     return Format("{:.17g}|{:.17g}|{:.17g}|{:.17g}|{:.17g}", stats[2]*stats[3]/864, stats[4], delay, lead, dispatch)
 }
 
-PN_CandidatePlans(current, events, candidates, minimum, buffer, buildToFull, candidateKeys := false) {
+PN_CandidatePlans(current, events, candidates, minimum, buffer, buildToFull, candidateKeys := false, memo := false) {
     plans := [], calculations := Map(), arrivals := Map(), levels := Map()
+    if (memo && !events.Length) {
+        state := Format("{:.17g}|{:.17g}|{:.17g}|{}", current, minimum, buffer, buildToFull)
+        if !memo.Has(state)
+            memo[state] := Map()
+        calculations := memo[state]
+    }
     lower := PN_Bounds(current, minimum, buffer).lower
     for _, candidate in candidates {
         stats := candidate.planter

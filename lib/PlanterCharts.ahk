@@ -1,12 +1,43 @@
-; Native buildup and maintenance charts for the simulator.
+; Native full-run chart shared by the simulator and PNG export.
 PC_Layout(width, height, count) {
-    return {left: 114, top: 48, gap: 32,
-        plotWidth: (width-160)/2, rowHeight: (height-76)/Max(1, count)}
+    return {left: 114, top: 48, plotWidth: width-134, rowHeight: (height-76)/Max(1, count)}
 }
 
-PC_Windows(world) {
-    return [[0, Min(world.finish, 72*3600), "BUILDUP", "First 72 hours"],
-        [Max(0, world.finish-72*3600), world.finish, "MAINTENANCE", "Final 72 hours"]]
+PC_Report(world, view := 1) {
+    report := {left: 0, right: world.finish, built: 0, builtAt: 0, covered: [], all: 0, collections: 0, travel: 0}
+    for _, group in world.groups {
+        report.covered.Push(0)
+        if (group.firstBuilt >= 0)
+            report.built++, report.builtAt := Max(report.builtAt, group.firstBuilt)
+    }
+    boundary := report.built = world.groups.Length ? report.builtAt : world.finish
+    if (view = 2)
+        report.right := boundary
+    else if (view = 3)
+        report.left := boundary
+    report.span := report.right-report.left
+    if !report.span
+        return report
+    for _, segment in world.segments {
+        left := Max(report.left, segment[1]), right := Min(report.right, segment[2]), span := right-left
+        if (span <= 0)
+            continue
+        allGood := span
+        for index, group in world.groups {
+            value := Max(0, segment[3][index]-(left-segment[1])/864)
+            floor := PN_Bounds(0, group.minimum, group.buffer).lower
+            good := Min(span, Max(0, (value-floor)*864))
+            report.covered[index] += good, allGood := Min(allGood, good)
+        }
+        report.all += allGood
+        if (segment.Length >= 4 && (segment[4] = "Place" || segment[4] = "Collect"))
+            report.travel += span
+    }
+    if world.HasOwnProp("collections")
+        for _, collection in world.collections
+            if (collection.at > report.left && collection.at <= report.right)
+                report.collections++
+    return report
 }
 
 PC_Color(nectar) {
@@ -38,8 +69,8 @@ PC_Fill(g, color, x, y, width, height) {
     finally Gdip_DeleteBrush(brush)
 }
 
-PC_Render(world, width, height, scale := 1) {
-    bitmap := 0, g := 0
+PC_Render(world, width, height, scale := 1, view := 1) {
+    bitmap := 0, g := 0, report := world ? PC_Report(world, view) : false
     try {
         bitmap := Gdip_CreateBitmap(Round(width*scale), Round(height*scale))
         if !bitmap
@@ -57,72 +88,68 @@ PC_Render(world, width, height, scale := 1) {
         finally Gdip_DeleteBrush(panel)
         if !world {
             PC_Text(g, "Your nectar, over time", 40, height/2-25, width-80, 28, 16, "FF233A41", "Center Bold")
-            PC_Text(g, "Run a simulation to see buildup and maintenance together.", 40, height/2+9, width-80, 22, 10, "FF667781", "Center")
+            PC_Text(g, "Run a simulation to see the complete timeline.", 40, height/2+9, width-80, 22, 10, "FF667781", "Center")
+        } else if !report.span {
+            PC_Text(g, "No maintenance period yet", 40, height/2-25, width-80, 28, 16, "FF233A41", "Center Bold")
+            PC_Text(g, "Every enabled nectar must first reach its upper buffer target.", 40, height/2+9, width-80, 22, 10, "FF667781", "Center")
         } else {
             layout := PC_Layout(width, height, world.groups.Length)
-            windows := PC_Windows(world)
+            x := layout.left, w := layout.plotWidth
             PC_Line(g, 0xFFD87770, 1.2, 10, 14, 24, 14, 1)
             PC_Text(g, "Lower floor", 30, 6, 80, 18, 10)
             PC_Line(g, 0xFF9CA8AC, 1, 10, 33, 24, 33, 2)
             PC_Text(g, "Minimum", 30, 25, 80, 18, 10)
-            for col, window in windows {
-                x := layout.left+(col-1)*(layout.plotWidth+layout.gap)
-                PC_Text(g, window[3], x, 5, layout.plotWidth, 18, 10, "FF243E43", "Bold")
-                PC_Text(g, window[4], x, 23, layout.plotWidth, 18, 9)
-            }
+            PC_Text(g, view = 2 ? "BUILDUP" : view = 3 ? "MAINTENANCE" : "ALL PHASES", x, 5, w, 18, 10, "FF243E43", "Bold")
+            PC_Text(g, Format("{:g}–{:g} h · Stats cover this period", report.left/3600, report.right/3600), x, 23, w, 18, 9)
             for index, group in world.groups {
                 y := layout.top+(index-1)*layout.rowHeight
                 plotHeight := layout.rowHeight-14, floor := PN_Bounds(0, group.minimum, group.buffer).lower
                 color := PC_Color(group.nectar)
                 PC_Text(g, group.nectar, 10, y+Max(0, (plotHeight-30)/2), 80, 16, 11, Format("{:08X}", color), "Bold")
-                PC_Text(g, Format("{:.0f}% above floor", group.covered*100/(world.finish-world.warmup)),
+                PC_Text(g, Format("{:.0f}% above floor", report.covered[index]*100/report.span),
                     10, y+Max(0, (plotHeight-30)/2)+16, 80, 14, 9)
-                for col, window in windows {
-                    left := window[1], right := window[2]
-                    x := layout.left+(col-1)*(layout.plotWidth+layout.gap), w := layout.plotWidth
-                    PC_Fill(g, 0x08D87770, x, y+plotHeight*(1-floor/100), w, plotHeight*floor/100)
-                    Loop 4 {
-                        gx := x+w*(A_Index-1)/3
-                        PC_Line(g, 0xFFEDF1F2, 1, gx, y, gx, y+plotHeight)
-                    }
-                    for _, pct in [0, 50, 100]
-                        PC_Line(g, 0xFFE7ECEE, 1, x, y+plotHeight*(1-pct/100), x+w, y+plotHeight*(1-pct/100))
-                    PC_Text(g, "100", x-24, y-5, 20, 14, 9, "FF87949B", "Right")
-                    PC_Text(g, "0", x-24, y+plotHeight-8, 20, 14, 9, "FF87949B", "Right")
-                    points := []
-                    for _, point in PS_ChartPoints(world, index, left, right)
-                        points.Push([x+w*(point[1]-left)/(right-left), y+plotHeight*(1-point[2]/100)])
-                    if (points.Length > 1) {
-                        area := points.Clone()
-                        area.InsertAt(1, [points[1][1], y+plotHeight])
-                        area.Push([points[-1][1], y+plotHeight])
-                        brush := Gdip_BrushCreateSolid((color & 0xFFFFFF) | 0x12000000)
-                        pen := Gdip_CreatePen(color, 1.5)
-                        try {
-                            if (!brush || !pen)
-                                throw Error("Could not allocate nectar curve resources.")
-                            Gdip_SetClipRect(g, x, y, w, plotHeight)
-                            Gdip_FillPolygon(g, brush, area)
-                            if Gdip_DrawLines(g, pen, points)
-                                throw Error("Could not draw nectar curve.")
-                        } finally {
-                            Gdip_ResetClip(g)
-                            if brush
-                                Gdip_DeleteBrush(brush)
-                            if pen
-                                Gdip_DeletePen(pen)
-                        }
-                    }
-                    PC_Line(g, 0xFF9CA8AC, 1, x, y+plotHeight*(1-group.minimum/100), x+w, y+plotHeight*(1-group.minimum/100), 2)
-                    PC_Line(g, 0xFFD87770, 1.1, x, y+plotHeight*(1-floor/100), x+w, y+plotHeight*(1-floor/100), 1)
-                    if (index = world.groups.Length)
-                        Loop 4 {
-                            tick := A_Index
-                            PC_Text(g, Format("{:g} h", (left+(right-left)*(A_Index-1)/3)/3600),
-                                x+w*(tick-1)/3-(tick = 1 ? 0 : tick = 4 ? 56 : 28), y+plotHeight+6, 56, 18, 9,
-                                "FF6F7F87", tick = 1 ? "" : tick = 4 ? "Right" : "Center")
-                        }
+                PC_Fill(g, 0x08D87770, x, y+plotHeight*(1-floor/100), w, plotHeight*floor/100)
+                Loop 5 {
+                    gx := x+w*(A_Index-1)/4
+                    PC_Line(g, 0xFFEDF1F2, 1, gx, y, gx, y+plotHeight)
                 }
+                for _, pct in [0, 50, 100]
+                    PC_Line(g, 0xFFE7ECEE, 1, x, y+plotHeight*(1-pct/100), x+w, y+plotHeight*(1-pct/100))
+                PC_Text(g, "100", x-24, y-5, 20, 14, 9, "FF87949B", "Right")
+                PC_Text(g, "0", x-24, y+plotHeight-8, 20, 14, 9, "FF87949B", "Right")
+                points := []
+                for _, point in PC_Points(world, index, report.left, report.right)
+                    points.Push([x+w*(point[1]-report.left)/report.span, y+plotHeight*(1-point[2]/100)])
+                if (points.Length > 1) {
+                    area := points.Clone()
+                    area.InsertAt(1, [points[1][1], y+plotHeight])
+                    area.Push([points[-1][1], y+plotHeight])
+                    brush := Gdip_BrushCreateSolid((color & 0xFFFFFF) | 0x12000000)
+                    pen := Gdip_CreatePen(color, 1.5)
+                    try {
+                        if (!brush || !pen)
+                            throw Error("Could not allocate nectar curve resources.")
+                        Gdip_SetClipRect(g, x, y, w, plotHeight)
+                        Gdip_FillPolygon(g, brush, area)
+                        if Gdip_DrawLines(g, pen, points)
+                            throw Error("Could not draw nectar curve.")
+                    } finally {
+                        Gdip_ResetClip(g)
+                        if brush
+                            Gdip_DeleteBrush(brush)
+                        if pen
+                            Gdip_DeletePen(pen)
+                    }
+                }
+                PC_Line(g, 0xFF9CA8AC, 1, x, y+plotHeight*(1-group.minimum/100), x+w, y+plotHeight*(1-group.minimum/100), 2)
+                PC_Line(g, 0xFFD87770, 1.1, x, y+plotHeight*(1-floor/100), x+w, y+plotHeight*(1-floor/100), 1)
+                if (index = world.groups.Length)
+                    Loop 5 {
+                        tick := A_Index
+                        PC_Text(g, Format("{:g} h", (report.left+report.span*(tick-1)/4)/3600),
+                            x+w*(tick-1)/4-(tick = 1 ? 0 : tick = 5 ? 56 : 28), y+plotHeight+6, 56, 18, 9,
+                            "FF6F7F87", tick = 1 ? "" : tick = 5 ? "Right" : "Center")
+                    }
             }
         }
         native := Gdip_CreateHBITMAPFromBitmap(bitmap)
@@ -135,4 +162,47 @@ PC_Render(world, width, height, scale := 1) {
         if bitmap
             Gdip_DisposeImage(bitmap)
     }
+}
+
+PC_SavePng(native, path) {
+    if !native
+        throw Error("Run a simulation before saving its chart.")
+    bitmap := Gdip_CreateBitmapFromHBITMAP(native)
+    if !bitmap
+        throw Error("Could not read the displayed chart.")
+    try {
+        if Gdip_SaveBitmapToFile(bitmap, path)
+            throw Error("Could not save the PNG file.")
+    } finally Gdip_DisposeImage(bitmap)
+}
+
+PC_Points(world, index, left, right) {
+    points := [], lo := 1, hi := world.segments.Length+1
+    while (lo < hi) {
+        mid := Floor((lo+hi)/2)
+        if (world.segments[mid][2] <= left)
+            lo := mid+1
+        else
+            hi := mid
+    }
+    Loop world.segments.Length-lo+1 {
+        segment := world.segments[lo+A_Index-1]
+        if (segment[1] >= right) {
+            if (segment[1] = right)
+                points.Push([right, segment[3][index]])
+            break
+        }
+        a := Max(left, segment[1]), b := Min(right, segment[2])
+        if (b <= a)
+            continue
+        value := segment[3][index]
+        points.Push([a, Max(0, value-(a-segment[1])/864)])
+        zeroAt := segment[1]+value*864
+        if (zeroAt > a && zeroAt < b)
+            points.Push([zeroAt, 0])
+        points.Push([b, Max(0, value-(b-segment[1])/864)])
+    }
+    if (right = world.now && points.Length)
+        points.Push([right, world.groups[index].level])
+    return points
 }

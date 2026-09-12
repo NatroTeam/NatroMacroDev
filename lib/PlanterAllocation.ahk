@@ -41,7 +41,8 @@ PN_TypeOptions(plans) {
 
 PN_NeedGroup(group, current, events, candidates, phase, maximumBand := 0) {
     plans := PN_CandidatePlans(current, events, candidates, group.minimum, group.buffer, phase = "Build",
-        group.HasOwnProp("candidateKeys") ? group.candidateKeys : false)
+        group.HasOwnProp("candidateKeys") ? group.candidateKeys : false,
+        group.HasOwnProp("candidateMemo") ? group.candidateMemo : false)
     if !plans.Length
         return false
     reserve := current
