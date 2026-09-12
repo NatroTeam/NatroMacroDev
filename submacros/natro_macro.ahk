@@ -8956,6 +8956,8 @@ blc_mutations(*) {
 	#include %A_ScriptDir%\lib\Gdip_ImageSearch.ahk
 	#include %A_ScriptDir%\lib\ErrorHandling.ahk
 	#include %A_ScriptDir%\lib\LevenshteinDistance.ahk
+	#include %A_ScriptDir%\lib\OCR.ahk
+	#include %A_ScriptDir%\lib\TesseractOCR.ahk
 	;==================================
 	SendMode("Event")
 	CoordMode(`'Pixel`', `'Screen`')
@@ -9062,7 +9064,6 @@ blc_mutations(*) {
 				BeeAbilityRateMin: 0,
 				BeeGatherPollenMin: 0,
 				ssaAdvanced: 0,
-				ssaSafety: 0,
 				HoneyLimit: "5"
 			},
 			GUI : {
@@ -9170,8 +9171,6 @@ blc_mutations(*) {
 	ssaAdvToggleH := 14
 	ssaAdvX := ssaHoneyEditX
 	ssaAdvY := ssaHoneyEditY + ssaHoneyEditH + 10
-	ssaSafetyX := ssaAdvX
-	ssaSafetyY := ssaAdvY + ssaAdvToggleH + 8
 	HoneyLimitRemainingB := 0
 	HoneyLimitBase := ""
 	ssaMainLookup := Map(
@@ -9276,7 +9275,6 @@ blc_mutations(*) {
 			mgui.AddText("v" j.select " x" ssaStatsX " y" y " w170 h24")
 		}
 		mgui.AddText("vssaAdvanced x" ssaAdvX " y" ssaAdvY " w120 h16")
-		mgui.AddText("vssaSafety x" ssaSafetyX " y" ssaSafetyY " w120 h16")
 		for i, j in ssaExtras {
 			y := ssaExtrasY + (A_Index-1) * ssaRowH
 			mgui.AddText("v" j.name " x" ssaMainX " y" y " w260 h24")
@@ -9332,7 +9330,6 @@ blc_mutations(*) {
 	for i, j in ssaExtras
 		mgui[j.name].Visible := !showJelly
 	mgui["ssaAdvanced"].Visible := !showJelly
-	mgui["ssaSafety"].Visible := !showJelly
 	UpdateHoneyGui()
 }
 	guiMode := "jelly"
@@ -9436,15 +9433,6 @@ blc_mutations(*) {
 			} else
 				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaAdvX+20, ssaAdvY+7], [ssaAdvX+22, ssaAdvY+9], [ssaAdvX+26, ssaAdvY+4]]), Gdip_DeletePen(Pen)
 			Gdip_TextToGraphics(G, "Advanced", "s10 x" ssaAdvX+ssaAdvToggleW+6 " y" ssaAdvY-1 " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 70, 16), Gdip_DeleteBrush(brush)
-			Gdip_FillRoundedRectanglePath(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaSafetyX, ssaSafetyY, ssaAdvToggleW, ssaAdvToggleH, 7), Gdip_DeleteBrush(brush)
-			Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFFFEC6DF"), ssaSafety ? ssaSafetyX+16 : ssaSafetyX-2, ssaSafetyY-2, 18, 18), Gdip_DeleteBrush(brush)
-			if !ssaSafety {
-				Gdip_FillEllipse(G, brush:=Gdip_BrushCreateSolid("0xFF262832"), ssaSafetyX, ssaSafetyY, 14, 14), Gdip_DeleteBrush(brush)
-				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFFCC0000", 2), [[ssaSafetyX+4, ssaSafetyY+4 ], [ssaSafetyX+10, ssaSafetyY+10]])
-				Gdip_DrawLines(G, Pen								  , [[ssaSafetyX+4, ssaSafetyY+10], [ssaSafetyX+10, ssaSafetyY+4 ]]), Gdip_DeletePen(Pen)
-			} else
-				Gdip_DrawLines(G, Pen:=Gdip_CreatePen("0xFF006600", 2), [[ssaSafetyX+20, ssaSafetyY+7], [ssaSafetyX+22, ssaSafetyY+9], [ssaSafetyX+26, ssaSafetyY+4]]), Gdip_DeletePen(Pen)
-			Gdip_TextToGraphics(G, "Safety", "s10 x" ssaSafetyX+ssaAdvToggleW+6 " y" ssaSafetyY-1 " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", 70, 16), Gdip_DeleteBrush(brush)
 			for i, j in ssaMainPassives {
 				y := ssaStartY + (A_Index-1) * ssaRowH
 				on := (mainPassive = j.text)
@@ -9764,7 +9752,7 @@ UpdateHoneyGui() {
 		, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
 		, StarShowerCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
 		, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
-		, DoublePassiveCheck, PollenCheck, ssaMainLookup, ssaAdvanced, ssaStatsInputs, ssaStatMinLookup, ssaSafety
+		, DoublePassiveCheck, PollenCheck, ssaMainLookup, ssaAdvanced, ssaStatsInputs, ssaStatMinLookup
 		MouseGetPos(,,,&ctrl,2)
 		if !ctrl
 			return
@@ -9829,11 +9817,6 @@ UpdateHoneyGui() {
 				IniWrite(ssaAdvanced, ".\settings\mutations.ini", "ssa", "ssaAdvanced")
 				SSA_EnforceStatMax()
 				UpdateHoneyGui()
-			case "ssaSafety":
-				if (guiMode != "ssa")
-					return
-				ssaSafety := !ssaSafety
-				IniWrite(ssaSafety, ".\settings\mutations.ini", "ssa", "ssaSafety")
 			case "PollenCheck", "WhitePollenCheck", "RedPollenCheck", "BluePollenCheck", "ConvertRateCheck", "CriticalChanceCheck"
 				, "InstantConversionCheck", "BeeAbilityRateCheck", "BeeGatherPollenCheck":
 				if (guiMode != "ssa")
@@ -9911,242 +9894,226 @@ UpdateHoneyGui() {
 	blc_start() {
 		global stopping:=false
 		hotkey "~*esc", stopToggle, "On"
-		selectedBees := [], selectedMutations := []
-		for i in beeArr
-			if %i% || SelectAll
-				selectedBees.push(i)
-		if mutations {
-			selectedMutations := []
-			for i in mutationsArr
-				if %i.name%
-					selectedMutations.push(i)
-		}
-		ocr_enabled := 1
-		ocr_language := ""
-		for k,v in Map("Windows.Globalization.Language","{9B0252AC-0C27-44F8-B792-9793FB66C63E}", "Windows.Graphics.Imaging.BitmapDecoder","{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", "Windows.Media.Ocr.OcrEngine","{5BFFA85A-3384-3540-9940-699120D428A8}") {
-			CreateHString(k, &hString)
-			GUID := Buffer(16), DllCall("ole32\CLSIDFromString", "WStr", v, "Ptr", GUID)
-			result := DllCall("Combase.dll\RoGetActivationFactory", "Ptr", hString, "Ptr", GUID, "PtrP", &pClass:=0)
-			DeleteHString(hString)
-			if (result != 0)
-			{
-				ocr_enabled := 0
-				break
+		try {
+			selectedBees := [], selectedMutations := []
+			for i in beeArr
+				if %i% || SelectAll
+					selectedBees.push(i)
+			if mutations {
+				selectedMutations := []
+				for i in mutationsArr
+					if %i.name%
+						selectedMutations.push(i)
 			}
-		}
-		if !(ocr_enabled) && mutations
-			msgbox "OCR is disabled. This means that the macro will not be able to detect mutations.",, 0x40010
-		list := ocr("ShowAvailableLanguages")
-		lang:="en-"
-		Loop Parse list, "``n", "``r" {
-			if (InStr(A_LoopField, lang) = 1) {
-				ocr_language := A_LoopField
-				break
-			}
-		}
-		if (ocr_language = "" && ocr_enabled)
-			if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
-				return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
-		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
-			return msgbox("You must have Bee Swarm Simulator open to use this!", "Auto-Jelly", 0x40030)
-		if !selectedBees.length
-			return msgbox("You must select at least one bee to run this macro!", "Auto-Jelly", 0x40030)
-		yOffset := GetYOffset(hwndRoblox, &fail)
-		if fail	
-			MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
-		if mgui is Gui {
-			mgui.hide()
-			try honeyGui.Hide()
-			HideSSAStatInputs()
-		}
-		While !stopping {
-			ActivateRoblox()
-			click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
-			sleep 800
-			pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.425*windowHeight - 200 "|" 320 "|" 140)
-			if mythicStop
-				for i, j in ["Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
-					if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
-						Gdip_DisposeImage(pBitmap)
-						msgbox "Found a mythic bee!", "Auto-Jelly", 0x40040
-						break 2
-					}
-			if giftedStop
-				for i, j in beeArr {
-					if Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
-						Gdip_DisposeImage(pBitmap)
-						msgbox "Found a gifted bee!", "Auto-Jelly", 0x40040
-						break 2	
-					}	
-				}
-			found := 0
-			for i, j in selectedBees {
-				if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
-					if (!mutations || !ocr_enabled || !selectedMutations.length) {
-						Gdip_DisposeImage(pBitmap)
-						if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
-							break 2
-						else
-							continue 2
-					}
-					found := 1
+			ocr_enabled := 1
+			ocr_language := ""
+			for k,v in Map("Windows.Globalization.Language","{9B0252AC-0C27-44F8-B792-9793FB66C63E}", "Windows.Graphics.Imaging.BitmapDecoder","{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", "Windows.Media.Ocr.OcrEngine","{5BFFA85A-3384-3540-9940-699120D428A8}") {
+				CreateHString(k, &hString)
+				GUID := Buffer(16), DllCall("ole32\CLSIDFromString", "WStr", v, "Ptr", GUID)
+				result := DllCall("Combase.dll\RoGetActivationFactory", "Ptr", hString, "Ptr", GUID, "PtrP", &pClass:=0)
+				DeleteHString(hString)
+				if pClass
+					ObjRelease(pClass)
+				if (result != 0)
+				{
+					ocr_enabled := 0
 					break
 				}
 			}
-			Gdip_DisposeImage(pBitmap)
-			if !found
-				continue
-			pBitmap := Gdip_BitmapFromScreen(windowX + Round(0.5 * windowWidth - 320) "|" windowY + yOffset + Round(0.4 * windowHeight + 17) "|210|90")
-			pEffect := Gdip_CreateEffect(5, -60,30)
-			Gdip_BitmapApplyEffect(pBitmap, pEffect)
-			Gdip_DisposeEffect(pEffect)
-			hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmap)
-			pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
-			Gdip_DisposeImage(pBitmap)
-			DeleteObject(hBitmap)
-			text:= RegExReplace(ocr(pIRandomAccessStream), "i)([\r\n\s]|mutation)*")
-			found := 0
-			for i, j in selectedMutations
-				for k, trigger in j.triggers
-					if inStr(text, trigger) { 
+			if !(ocr_enabled) && mutations
+				return msgbox("OCR is disabled. This means that the macro will not be able to detect mutations.",, 0x40010)
+			list := ocr("ShowAvailableLanguages")
+			lang:="en-"
+			Loop Parse list, "``n", "``r" {
+				if (InStr(A_LoopField, lang) = 1) {
+					ocr_language := A_LoopField
+					break
+				}
+			}
+			if (ocr_language = "" && ocr_enabled)
+				if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
+					return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
+			if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
+				return msgbox("You must have Bee Swarm Simulator open to use this!", "Auto-Jelly", 0x40030)
+			if !selectedBees.length
+				return msgbox("You must select at least one bee to run this macro!", "Auto-Jelly", 0x40030)
+			yOffset := GetYOffset(hwndRoblox, &fail)
+			if fail
+				MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
+			if mgui is Gui {
+				mgui.hide()
+				try honeyGui.Hide()
+				HideSSAStatInputs()
+			}
+			While !stopping {
+				ActivateRoblox()
+				click windowX + Round(0.5 * windowWidth + 10) " " windowY + yOffset + Round(0.4 * windowHeight + 230)
+				sleep 800
+				pBitmap := Gdip_BitmapFromScreen(windowX + 0.5*windowWidth - 155 "|" windowY + yOffset + 0.425*windowHeight - 200 "|" 320 "|" 140)
+				if mythicStop
+					for i, j in ["Buoyant", "Fuzzy", "Precise", "Spicy", "Tadpole", "Vector"]
+						if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
+							Gdip_DisposeImage(pBitmap)
+							msgbox "Found a mythic bee!", "Auto-Jelly", 0x40040
+							break 2
+						}
+				if giftedStop
+					for i, j in beeArr {
+						if Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
+							Gdip_DisposeImage(pBitmap)
+							msgbox "Found a gifted bee!", "Auto-Jelly", 0x40040
+							break 2
+						}
+					}
+				found := 0
+				for i, j in selectedBees {
+					if Gdip_ImageSearch(pBitmap, bitmaps["-" j]) || Gdip_ImageSearch(pBitmap, bitmaps["+" j]) {
+						if (!mutations || !ocr_enabled || !selectedMutations.length) {
+							Gdip_DisposeImage(pBitmap)
+							if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
+								break 2
+							else
+								continue 2
+						}
 						found := 1
 						break
 					}
-			if !found
-				continue
-			if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
-				break
+				}
+				Gdip_DisposeImage(pBitmap)
+				if !found
+					continue
+				pBitmap := Gdip_BitmapFromScreen(windowX + Round(0.5 * windowWidth - 320) "|" windowY + yOffset + Round(0.4 * windowHeight + 17) "|210|90")
+				pEffect := Gdip_CreateEffect(5, -60,30)
+				Gdip_BitmapApplyEffect(pBitmap, pEffect)
+				Gdip_DisposeEffect(pEffect)
+				hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmap)
+				pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
+				Gdip_DisposeImage(pBitmap)
+				DeleteObject(hBitmap)
+				text:= RegExReplace(ocr(pIRandomAccessStream, ocr_language), "i)([\r\n\s]|mutation)*")
+				found := 0
+				for i, j in selectedMutations
+					for k, trigger in j.triggers
+						if inStr(text, trigger) {
+							found := 1
+							break
+						}
+				if !found
+					continue
+				if msgbox("Found a match!``nDo you want to keep this?","Auto-Jelly!", 0x40044) = "Yes"
+					break
+			}
+		} catch Error as err {
+			MsgBox("Auto-Jelly stopped: " err.Message, "Auto-Jelly", 0x40030)
+		} finally {
+			hotkey "~*esc", stopToggle, "Off"
+			mgui.Show()
+			UpdateHoneyGui()
 		}
-		hotkey "~*esc", stopToggle, "Off"
-		mgui.show()
-		UpdateHoneyGui()
 	}
 	blc_ssa_start() {
-		global stopping, ocr_enabled, ocr_language, HoneyLimit, HoneyLimitBase, HoneyLimitRemainingB, ssaSafety
+		global stopping, HoneyLimit, HoneyLimitBase, HoneyLimitRemainingB
 		stopping := false
 		hotkey "~*esc", stopToggle, "On"
-		ocr_enabled := 1
-		ocr_language := ""
-		for k,v in Map("Windows.Globalization.Language","{9B0252AC-0C27-44F8-B792-9793FB66C63E}", "Windows.Graphics.Imaging.BitmapDecoder","{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", "Windows.Media.Ocr.OcrEngine","{5BFFA85A-3384-3540-9940-699120D428A8}") {
-			CreateHString(k, &hString)
-			GUID := Buffer(16), DllCall("ole32\CLSIDFromString", "WStr", v, "Ptr", GUID)
-			result := DllCall("Combase.dll\RoGetActivationFactory", "Ptr", hString, "Ptr", GUID, "PtrP", &pClass:=0)
-			DeleteHString(hString)
-			if (result != 0)
-			{
-				ocr_enabled := 0
-				break
+		try {
+			NM_TesseractReady(() => stopping)
+			SSA_Log("OCR enabled (SSA). Local English engine.")
+			selectedStats := SSA_CountSelectedStats()
+			if (selectedStats > 5)
+				return msgbox("Select up to 5 stats in the Stats column to use the SSA roller.", "SSA Roller", 0x40030)
+			if (!HoneyLimit || HoneyLimit = "0")
+				if msgbox("Honey Limit is 0. Do you want to continue without a limit?", "SSA Roller", 0x40034) = "No"
+					return
+			if (HoneyLimit && HoneyLimit != "0") {
+				HoneyLimitBase := HoneyLimit
+				HoneyLimitRemainingB := HoneyLimit * 1000
 			}
-		}
-		if !(ocr_enabled) {
-			SSA_Log("OCR disabled (SSA).")
-			return msgbox("OCR is disabled. This means the macro will not be able to detect SSA stats.",, 0x40010)
-		}
-		list := ocr("ShowAvailableLanguages")
-		lang:="en-"
-		Loop Parse list, "``n", "``r" {
-			if (InStr(A_LoopField, lang) = 1) {
-				ocr_language := A_LoopField
-				break
+			if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
+				return msgbox("You must have Bee Swarm Simulator open to use this!", "SSA Roller", 0x40030)
+			yOffset := GetYOffset(hwndRoblox, &fail)
+			if fail
+				return MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
+			if mgui is Gui {
+				mgui.hide()
+				try honeyGui.Hide()
+				HideSSAStatInputs()
 			}
-		}
-		if (ocr_language = "")
-			if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
-				return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
-		SSA_Log("OCR enabled (SSA). Language: " ocr_language)
-		selectedStats := SSA_CountSelectedStats()
-		if (selectedStats > 5)
-			return msgbox("Select up to 5 stats in the Stats column to use the SSA roller.", "SSA Roller", 0x40030)
-		if (!HoneyLimit || HoneyLimit = "0")
-			if msgbox("Honey Limit is 0. Do you want to continue without a limit?", "SSA Roller", 0x40034) = "No"
-				return
-		if (HoneyLimit && HoneyLimit != "0") {
-			HoneyLimitBase := HoneyLimit
-			HoneyLimitRemainingB := HoneyLimit * 1000
-		}
-		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
-			return msgbox("You must have Bee Swarm Simulator open to use this!", "SSA Roller", 0x40030)
-		yOffset := GetYOffset(hwndRoblox, &fail)
-		if fail	
-			MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
-		if mgui is Gui {
-			mgui.hide()
-			try honeyGui.Hide()
-			HideSSAStatInputs()
-		}
-		While !stopping {
-			result := SSA()
-			if (result = 1) {
-				msgbox "Found a match!``nChoose Keep/Replace in-game.", "SSA Roller", 0x40040
-				break
-			} else if (result = -3) {
-				msgbox "Safety stop: Unable to verify a full SSA roll before timeout.``nCheck the SSA menu and try again.", "SSA Roller", 0x40030
-				break
-			} else if (result = -2) {
-				msgbox "Honey limit reached. SSA roller stopped.", "SSA Roller", 0x40040
-				break
-			} else if (result < 0) {
-				msgbox "Unable to read SSA roll. Make sure the SSA roll menu is open and unobstructed.", "SSA Roller", 0x40030
-				break
+			session := {lastRollTick: 0, pendingRoll: false, pendingSince: 0, signature: ""}
+			While !stopping {
+				result := SSA(session)
+				if stopping
+					break
+				if (result = 1) {
+					msgbox "Found a match!``nChoose Keep/Replace in-game.", "SSA Roller", 0x40040
+					break
+				} else if (result = -3) {
+					msgbox "Safety stop: Unable to verify a full SSA roll before timeout.``nCheck the SSA menu and try again.", "SSA Roller", 0x40030
+					break
+				} else if (result = -2) {
+					msgbox "Honey limit reached. SSA roller stopped.", "SSA Roller", 0x40040
+					break
+				} else if (result < 0) {
+					msgbox "Unable to read SSA roll. Make sure the SSA roll menu is open and unobstructed.", "SSA Roller", 0x40030
+					break
+				}
 			}
+		} catch Error as err {
+			SSA_Log("Stopped: " err.Message)
+			if !stopping
+				MsgBox("SSA stopped: " err.Message, "SSA Roller", 0x40030)
+		} finally {
+			hotkey "~*esc", stopToggle, "Off"
+			mgui.Show()
+			UpdateHoneyGui()
 		}
-		hotkey "~*esc", stopToggle, "Off"
-		mgui.show()
-		UpdateHoneyGui()
 	}
-	SSA() {
+	SSA(session) {
 		global mainPassive, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
 			, StarShowerCheck, PollenCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
 			, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
 			, DoublePassiveCheck, HoneyLimit, ssaStats, ssaAdvanced
 			, PollenMin, WhitePollenMin, RedPollenMin, BluePollenMin, ConvertRateMin
-			, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin, ssaSafety, stopping
-		static lastRollTick := 0, pendingRoll := false, pendingSince := 0
+			, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin, stopping
 		doublePassive := (DoublePassiveCheck = 1)
-		static rollCooldown := 900
-		if (!pendingRoll && lastRollTick) {
-			elapsed := A_TickCount - lastRollTick
+		static rollCooldown := 1100
+		if (!session.pendingRoll && session.lastRollTick) {
+			elapsed := A_TickCount - session.lastRollTick
 			if (elapsed < rollCooldown)
-				Sleep(rollCooldown - elapsed)
+				SSA_Wait(rollCooldown - elapsed)
 		}
+		if stopping
+			return 0
 		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
 			return -1
 		yOffset := GetYOffset(hwndRoblox, &fail)
 		if fail
 			return -1
-		if !pendingRoll {
+		if !session.pendingRoll {
 			rollCost := doublePassive ? 500 : 10
-			if (ssa_subHoney(rollCost) < 0)
-				return -2
 			ActivateRoblox()
+			if stopping
+				return 0
+			if (ssa_subHoney(rollCost, false) < 0)
+				return -2
 			SendEvent "e"
-			Sleep 250
+			if !SSA_Wait(250)
+				return 0
 			rollOffset := Round(windowWidth * 0.055)
 			if (rollOffset < 70)
 				rollOffset := 70
 			else if (rollOffset > 110)
 				rollOffset := 110
-			Click windowX + windowWidth//2 + (doublePassive ? -rollOffset : rollOffset), windowY + yOffset + windowHeight//2 + 30
-			lastRollTick := A_TickCount
-			pendingRoll := true
-			pendingSince := lastRollTick
-			MouseMove windowX + windowWidth//2, windowY + windowHeight//2 + 150
-			Sleep 300
-		} else {
-			elapsed := A_TickCount - pendingSince
-			if (elapsed > 8000) {
-				pendingRoll := false
-				pendingSince := 0
-				if ssaSafety {
-					SSA_Log("Safety stop: OCR could not verify a full roll before timeout.")
-					stopping := true
-					return -3
-				}
-				SSA_Log("OCR pending timeout; rerolling.")
+			if stopping
 				return 0
-			}
-			if (elapsed < 200)
-				Sleep(200 - elapsed)
+			ssa_subHoney(rollCost)
+			Click windowX + windowWidth//2 + (doublePassive ? -rollOffset : rollOffset), windowY + yOffset + windowHeight//2 + 30
+			session.lastRollTick := A_TickCount
+			session.pendingRoll := true
+			session.pendingSince := session.lastRollTick
+			MouseMove windowX + windowWidth//2, windowY + windowHeight//2 + 150
+			session.signature := ""
+			if !SSA_Wait(300)
+				return 0
 		}
 		ocrX := windowX + windowWidth//2 + 20
 		ocrY := windowY + yOffset + Round(0.4 * windowHeight + 20)
@@ -10155,18 +10122,33 @@ UpdateHoneyGui() {
 		validOcr := false
 		ocrSegments := []
 		Loop 5 {
-			text := SSA_ReadOcrText(ocrX, ocrY, ocrW, ocrH)
+			if stopping
+				return 0
+			remaining := 8000 - (A_TickCount - session.pendingSince)
+			if remaining <= 0
+				return -3
+			try text := SSA_ReadOcrText(ocrX, ocrY, ocrW, ocrH, Min(3000, remaining))
+			catch Error as err {
+				SSA_Log("OCR retry: " err.Message)
+				text := []
+			}
+			if stopping
+				return 0
+			if A_TickCount - session.pendingSince >= 8000
+				return -3
 			validOcr := SSA_OcrHasFullRoll(text, doublePassive, &ocrSegments)
-			if validOcr
+			signature := validOcr ? SSA_RollSignature(ocrSegments) : ""
+			if (validOcr && signature = session.signature)
 				break
-			Sleep 250
+			session.signature := signature
+			validOcr := false
+			if !SSA_Wait(150)
+				return 0
 		}
-		if !validOcr {
-			SSA_Log("OCR invalid/empty after roll; retrying.")
+		if !validOcr
 			return 0
-		}
-		pendingRoll := false
-		pendingSince := 0
+		session.pendingRoll := false
+		session.pendingSince := 0
 
 		stats := Map()
 		selectedCount := 0
@@ -10219,7 +10201,7 @@ UpdateHoneyGui() {
 			if (!mainPassiveFound && SSA_SidePassiveMatch(mainPassiveKey, tokens))
 				mainPassiveFound := 1
 			for i, j in sidePassives
-				if j && !foundSide.Has(i) && SSA_SidePassiveMatch(i, tokens)
+				if j && i != mainPassiveKey && !foundSide.Has(i) && SSA_SidePassiveMatch(i, tokens)
 					foundSide[i] := 1
 			sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
 			statCount := ssaAdvanced ? foundStats.Count : presentStats.Count
@@ -10279,41 +10261,107 @@ UpdateHoneyGui() {
 			return 1
 		return 0
 	}
-	SSA_ReadOcrText(x, y, w, h) {
-		pBitmap := Gdip_BitmapFromScreen(x "|" y "|" w "|" h)
-		pBitmapResize := Gdip_ResizeBitmap(pBitmap, w * 2, h * 2), Gdip_DisposeImage(pBitmap)
-		hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmapResize)
-		Gdip_DisposeImage pBitmapResize
-		pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
-		DeleteObject(hBitmap)
-		return StrSplit(ocr(pIRandomAccessStream), "``n")
+	SSA_Wait(milliseconds) {
+		global stopping
+		deadline := A_TickCount + milliseconds
+		while !stopping && A_TickCount < deadline
+			Sleep Max(1, Min(25, deadline - A_TickCount))
+		return !stopping
 	}
+	SSA_ReadOcrText(x, y, w, h, timeoutMs := 3000) {
+		global stopping
+		pBitmap := Gdip_BitmapFromScreen(x "|" y "|" w "|" h)
+		if !pBitmap
+			throw Error("Unable to capture the SSA result.")
+		try return SSA_ReadOcrBitmap(pBitmap, timeoutMs, () => stopping)
+		finally Gdip_DisposeImage(pBitmap)
+	}
+	SSA_ReadOcrBitmap(pBitmap, timeoutMs := 3000, cancelled := 0) {
+		deadline := A_TickCount + timeoutMs
+		Gdip_GetImageDimensions(pBitmap, &w, &h)
+		left := NM_OCRLeftInset(pBitmap)
+		cropped := left ? Gdip_CloneBitmapArea(pBitmap, left, 0, w - left, h) : 0
+		if left && !cropped
+			throw Error("Unable to isolate the SSA text.")
+		try {
+			if cropped
+				pBitmap := cropped, w -= left
+			signature := "", readings := 0, observed := Map()
+			for method in [{scale: 2, interpolation: 7}, {scale: 2, interpolation: 0}, {scale: 3, interpolation: 7}] {
+				if A_TickCount >= deadline || (cancelled && cancelled.Call())
+					throw Error("OCR was cancelled or timed out.")
+				prepared := Gdip_ResizeBitmap(pBitmap, w * method.scale, h * method.scale, method.interpolation)
+				if !prepared
+					throw Error("Unable to prepare the SSA image.")
+				try {
+					text := NM_TesseractOCR(prepared, Max(0, deadline - A_TickCount), cancelled)
+					lines := StrSplit(text, "``n")
+					complete := SSA_OcrHasFullRoll(lines, false, &segments)
+					for entry in segments {
+						if observed.Has(entry.key) && observed[entry.key] != entry.value
+							return []
+						observed[entry.key] := entry.value
+					}
+					if !complete
+						continue
+					current := SSA_RollSignature(segments)
+					if readings && current != signature
+						return []
+					signature := current
+					if ++readings = 2
+						return lines
+				} finally Gdip_DisposeImage(prepared)
+			}
+			return []
+		} finally {
+			if cropped
+				Gdip_DisposeImage(cropped)
+		}
+	}
+
 	SSA_OcrHasFullRoll(lines, doublePassive, &ocrSegments) {
 		ocrSegments := []
-		foundStats := Map()
-		foundPassives := Map()
+		foundStats := Map(), foundPassives := Map()
 		for _, line in lines {
-			if (line = "")
+			seg := Trim(line)
+			if seg = ""
 				continue
-			lower := StrLower(line)
-			for _, segRaw in StrSplit(lower, "|") {
-				seg := Trim(segRaw)
-				if (seg = "")
-					continue
-				normSeg := NormalizeOCRLine(seg)
-				tokens := (normSeg = "") ? [] : StrSplit(normSeg, " ")
-				SSA_CorrectTokens(tokens)
-				ocrSegments.Push({ seg: seg, tokens: tokens })
-				for _, key in ["white", "red", "blue", "pollen", "convert", "critical", "instant", "ability", "gath"]
-					if !foundStats.Has(key) && SSA_StatLineMatch(key, tokens)
-						foundStats[key] := 1
-				for _, key in ["pop", "scorch", "gummy", "guiding", "saw", "shower"]
-					if !foundPassives.Has(key) && SSA_SidePassiveMatch(key, tokens)
-						foundPassives[key] := 1
+			tokens := StrSplit(NormalizeOCRLine(seg), " ")
+			SSA_CorrectTokens(tokens)
+			statKeys := [], passiveKeys := []
+			for key in ["white", "red", "blue", "pollen", "convert", "critical", "instant", "ability", "gath"]
+				if SSA_StatLineMatch(key, tokens)
+					statKeys.Push(key)
+			for key in ["pop", "scorch", "gummy", "guiding", "saw", "shower"]
+				if SSA_SidePassiveMatch(key, tokens)
+					passiveKeys.Push(key)
+			if statKeys.Length + passiveKeys.Length > 1
+				return false
+			if statKeys.Length {
+				key := statKeys[1]
+				value := SSA_ParseStatValue(seg, key)
+				if value < 0 || foundStats.Has(key)
+					return false
+				foundStats[key] := value
+				ocrSegments.Push({seg: seg, tokens: tokens, key: key, value: value})
+			} else if passiveKeys.Length {
+				key := passiveKeys[1]
+				if foundPassives.Has(key)
+					return false
+				foundPassives[key] := 1
+				ocrSegments.Push({seg: seg, tokens: tokens, key: key, value: 0})
 			}
 		}
-		requiredPassives := doublePassive ? 2 : 1
-		return (foundStats.Count >= 5 && foundPassives.Count >= requiredPassives)
+		return foundStats.Count = 5 && foundPassives.Count >= (doublePassive ? 2 : 1) && foundPassives.Count <= 2
+	}
+	SSA_RollSignature(segments) {
+		values := Map()
+		for entry in segments
+			values[entry.key] := entry.value
+		signature := ""
+		for key, value in values
+			signature .= key ":" value "|"
+		return signature
 	}
 	SSA_Log(message) {
 		static logCount := 0
@@ -10356,30 +10404,17 @@ UpdateHoneyGui() {
 		f.Close()
 	}
 	SSA_ParseStatValue(line, key) {
-		cleaned := StrLower(line)
-		cleaned := RegExReplace(cleaned, "i)x\s*[li]", "x1")
-		cleaned := RegExReplace(cleaned, "(\d)\s+(?=\d)", "$1")
-		cleaned := RegExReplace(cleaned, "(\.)\s+(?=\d)", "$1")
-		if (key = "convert") {
-			if RegExMatch(cleaned, "i)x?\s*([0-9lIsS.\s]+)\s*convert\s*rate", &m) {
-				raw := RegExReplace(m[1], "\s+", "")
-				raw := SSA_NormalizeNumberToken(raw)
-				raw := RegExReplace(raw, "[^0-9.]", "")
-				if RegExMatch(raw, "^[0-9]+(?:\.[0-9]+)?$") {
-					val := raw + 0
-					if (val >= 1.0 && val <= 2.0)
-						return Round(val * 100)
-				}
-			}
-			return 0
-		}
-		if RegExMatch(cleaned, "i)([0-9lIsS]+(?:\s*[0-9lIsS]+)*)\s*%", &m) {
-			raw := RegExReplace(m[1], "\s+", "")
-			raw := SSA_NormalizeNumberToken(raw)
-			if RegExMatch(raw, "^[0-9]+$")
-				return Integer(raw)
-		}
-		return 0
+		static ranges := Map("pollen", [5, 20], "white", [15, 70], "red", [15, 70], "blue", [15, 70], "gath", [15, 70], "convert", [105, 125], "critical", [1, 7], "instant", [3, 12], "ability", [1, 7])
+		pattern := key = "convert" ? "i)^\s*[x×«*]?\s*([0-9lioS.]+(?:\s+[0-9lioS.]+)*)\s+" : "i)^\s*[+*]?\s*([0-9lioS]+(?:\s+[0-9lioS]+)*)\s*%"
+		if !ranges.Has(key) || !RegExMatch(line, pattern, &m)
+			return -1
+		raw := SSA_NormalizeNumberToken(RegExReplace(m[1], "\s+", ""))
+		if !RegExMatch(raw, "^\d+(?:\.\d+)?$")
+			return -1
+		value := (raw + 0) * (key = "convert" ? 100 : 1)
+		if Abs(value - Round(value)) > 0.001 || value < ranges[key][1] || value > ranges[key][2]
+			return -1
+		return Round(value)
 	}
 	NormalizeOCRLine(line) {
 		line := StrLower(line)
@@ -10395,7 +10430,7 @@ UpdateHoneyGui() {
 		if (key = "pollen") {
 			if !SSA_TokenMatch(tokens, "pollen")
 				return false
-			for _, forbid in ["red", "blue", "white", "bee", "gath", "gather"]
+			for _, forbid in ["red", "blue", "white", "bee", "bees", "gath", "gather"]
 				if SSA_TokenMatch(tokens, forbid)
 					return false
 			return true
@@ -10407,22 +10442,17 @@ UpdateHoneyGui() {
 		if (key = "ability")
 			return SSA_TokenMatch(tokens, "ability") && SSA_TokenMatch(tokens, "rate")
 		if (key = "gath")
-			return SSA_TokenMatch(tokens, "gather") && SSA_TokenMatch(tokens, "pollen")
+			return SSA_TokenMatch(tokens, "pollen") && (SSA_TokenMatch(tokens, "gather") || (SSA_TokenMatch(tokens, "from") && SSA_TokenMatch(tokens, "bees")))
 		if (key = "convert")
 			return SSA_TokenMatch(tokens, "convert") && SSA_TokenMatch(tokens, "rate")
 		if (key = "red" || key = "blue" || key = "white")
-			return SSA_TokenMatch(tokens, key)
+			return SSA_TokenMatch(tokens, key) && SSA_TokenMatch(tokens, "pollen")
 		return false
 	}
-	SSA_TokenMatch(tokens, word, maxDist := "") {
-		if (maxDist = "")
-			maxDist := (StrLen(word) >= 6) ? 2 : 1
-		for _, token in tokens {
-			if (token = word)
+	SSA_TokenMatch(tokens, word) {
+		for token in tokens
+			if token = word
 				return true
-			if (Abs(StrLen(token) - StrLen(word)) <= maxDist && LevenshteinDistance(token, word) <= maxDist)
-				return true
-		}
 		return false
 	}
 	SSA_CorrectToken(token) {
@@ -10442,20 +10472,30 @@ UpdateHoneyGui() {
 			"gather", "ability", "critical", "chance", "instant", "conversion",
 			"convert", "rate", "pollen", "red", "blue", "white", "bee",
 			"scorching", "guiding", "shower", "saw", "pop", "gummy",
-			"passive", "star", "replace"
+			"passive", "star", "replace", "scorch", "bees", "from"
 		]
-		for _, target in targets {
-			if (lower = target)
+		for target in targets
+			if lower = target
 				return lower
-			maxDist := (StrLen(target) >= 6) ? 2 : 1
-			if (Abs(StrLen(lower) - StrLen(target)) <= maxDist && LevenshteinDistance(lower, target) <= maxDist)
-				return target
+		best := lower, distance := 3, tied := false
+		for target in targets {
+			maxDist := StrLen(target) >= 6 ? 2 : (StrLen(target) >= 4 ? 1 : 0)
+			if Abs(StrLen(lower) - StrLen(target)) > maxDist
+				continue
+			d := LevenshteinDistance(lower, target)
+			if d > maxDist
+				continue
+			if d < distance
+				best := target, distance := d, tied := false
+			else if d = distance
+				tied := true
 		}
-		return lower
+		return tied ? lower : best
 	}
 	SSA_NormalizeNumberToken(token) {
-		cleaned := RegExReplace(token, "[lI]", "1")
-		return RegExReplace(cleaned, "[sS]", "5")
+		token := RegExReplace(token, "[liI]", "1")
+		token := RegExReplace(token, "[oO]", "0")
+		return RegExReplace(token, "[sS]", "5")
 	}
 	SSA_CorrectTokens(tokens) {
 		for idx, token in tokens
@@ -10482,7 +10522,7 @@ UpdateHoneyGui() {
 				return true
 		return false
 	}
-	ssa_subHoney(amount) {
+	ssa_subHoney(amount, spend := true) {
 		global HoneyLimit, HoneyLimitRemainingB, HoneyLimitBase
 		if (!HoneyLimit || HoneyLimit = "0")
 			return 1
@@ -10496,7 +10536,8 @@ UpdateHoneyGui() {
 			return -2
 		if (HoneyLimitRemainingB < amount)
 			return -2
-		HoneyLimitRemainingB -= amount
+		if spend
+			HoneyLimitRemainingB -= amount
 		return 1
 	}
 	closeFunction(*) {
@@ -10511,186 +10552,7 @@ UpdateHoneyGui() {
 			IniWrite(ypos, ".\settings\mutations.ini", "GUI", "ypos")
 		}
 	}
-	HBitmapToRandomAccessStream(hBitmap) {
-		static IID_IRandomAccessStream := "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}"
-				, IID_IPicture            := "{7BF80980-BF32-101A-8BBB-00AA00300CAB}"
-				, PICTYPE_BITMAP := 1
-				, BSOS_DEFAULT   := 0
-				, sz := 8 + A_PtrSize * 2
 
-		DllCall("Ole32\CreateStreamOnHGlobal", "Ptr", 0, "UInt", true, "PtrP", &pIStream:=0, "UInt")
-
-		PICTDESC := Buffer(sz, 0)
-		NumPut("uint", sz
-			, "uint", PICTYPE_BITMAP
-			, "ptr", hBitmap, PICTDESC)
-
-		riid := CLSIDFromString(IID_IPicture)
-		DllCall("OleAut32\OleCreatePictureIndirect", "Ptr", PICTDESC, "Ptr", riid, "UInt", false, "PtrP", &pIPicture:=0, "UInt")
-		; IPicture::SaveAsFile
-		ComCall(15, pIPicture, "Ptr", pIStream, "UInt", true, "UIntP", &size:=0, "UInt")
-		riid := CLSIDFromString(IID_IRandomAccessStream)
-		DllCall("ShCore\CreateRandomAccessStreamOverStream", "Ptr", pIStream, "UInt", BSOS_DEFAULT, "Ptr", riid, "PtrP", &pIRandomAccessStream:=0, "UInt")
-		ObjRelease(pIPicture)
-		ObjRelease(pIStream)
-		Return pIRandomAccessStream
-	}
-
-	CLSIDFromString(IID, &CLSID?) {
-		CLSID := Buffer(16)
-		if res := DllCall("ole32\CLSIDFromString", "WStr", IID, "Ptr", CLSID, "UInt")
-		throw Error("CLSIDFromString failed. Error: " . Format("{:#x}", res))
-		Return CLSID
-	}
-
-	ocr(file, lang := "FirstFromAvailableLanguages")
-	{
-		static OcrEngineStatics, OcrEngine, MaxDimension, LanguageFactory, Language, CurrentLanguage:="", BitmapDecoderStatics, GlobalizationPreferencesStatics
-		if !IsSet(OcrEngineStatics)
-		{
-			CreateClass("Windows.Globalization.Language", ILanguageFactory := "{9B0252AC-0C27-44F8-B792-9793FB66C63E}", &LanguageFactory)
-			CreateClass("Windows.Graphics.Imaging.BitmapDecoder", IBitmapDecoderStatics := "{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", &BitmapDecoderStatics)
-			CreateClass("Windows.Media.Ocr.OcrEngine", IOcrEngineStatics := "{5BFFA85A-3384-3540-9940-699120D428A8}", &OcrEngineStatics)
-			ComCall(6, OcrEngineStatics, "uint*", &MaxDimension:=0)
-		}
-		text := ""
-		if (file = "ShowAvailableLanguages")
-		{
-			if !IsSet(GlobalizationPreferencesStatics)
-				CreateClass("Windows.System.UserProfile.GlobalizationPreferences", IGlobalizationPreferencesStatics := "{01BF4326-ED37-4E96-B0E9-C1340D1EA158}", &GlobalizationPreferencesStatics)
-			ComCall(9, GlobalizationPreferencesStatics, "ptr*", &LanguageList:=0)   ; get_Languages
-			ComCall(7, LanguageList, "int*", &count:=0)   ; count
-			loop count
-			{
-				ComCall(6, LanguageList, "int", A_Index-1, "ptr*", &hString:=0)   ; get_Item
-				ComCall(6, LanguageFactory, "ptr", hString, "ptr*", &LanguageTest:=0)   ; CreateLanguage
-				ComCall(8, OcrEngineStatics, "ptr", LanguageTest, "int*", &bool:=0)   ; IsLanguageSupported
-				if (bool = 1)
-				{
-					ComCall(6, LanguageTest, "ptr*", &hText:=0)
-					b := DllCall("Combase.dll\WindowsGetStringRawBuffer", "ptr", hText, "uint*", &length:=0, "ptr")
-					text .= StrGet(b, "UTF-16") "``n"
-				}
-				ObjRelease(LanguageTest)
-			}
-			ObjRelease(LanguageList)
-			return text
-		}
-		if (lang != CurrentLanguage) or (lang = "FirstFromAvailableLanguages")
-		{
-			if IsSet(OcrEngine)
-			{
-				ObjRelease(OcrEngine)
-				if (CurrentLanguage != "FirstFromAvailableLanguages")
-					ObjRelease(Language)
-			}
-			if (lang = "FirstFromAvailableLanguages")
-				ComCall(10, OcrEngineStatics, "ptr*", &OcrEngine:=0)   ; TryCreateFromUserProfileLanguages
-			else
-			{
-				CreateHString(lang, &hString)
-				ComCall(6, LanguageFactory, "ptr", hString, "ptr*", &Language:=0)   ; CreateLanguage
-				DeleteHString(hString)
-				ComCall(9, OcrEngineStatics, "ptr", Language, "ptr*", &OcrEngine:=0)   ; TryCreateFromLanguage
-			}
-			if (OcrEngine = 0)
-			{
-				msgbox `'Can not use language "`' lang `'" for OCR, please install language pack.`'
-				ExitApp
-			}
-			CurrentLanguage := lang
-		}
-		IRandomAccessStream := file
-		ComCall(14, BitmapDecoderStatics, "ptr", IRandomAccessStream, "ptr*", &BitmapDecoder:=0)   ; CreateAsync
-		WaitForAsync(&BitmapDecoder)
-		BitmapFrame := ComObjQuery(BitmapDecoder, IBitmapFrame := "{72A49A1C-8081-438D-91BC-94ECFC8185C6}")
-		ComCall(12, BitmapFrame, "uint*", &width:=0)   ; get_PixelWidth
-		ComCall(13, BitmapFrame, "uint*", &height:=0)   ; get_PixelHeight
-		ObjRelease(BitmapFrame)
-		if (width > MaxDimension) or (height > MaxDimension)
-		{
-			msgbox "Image is to big - " width "x" height ".``nIt should be maximum - " MaxDimension " pixels"
-			ExitApp
-		}
-		BitmapFrameWithSoftwareBitmap := ComObjQuery(BitmapDecoder, IBitmapFrameWithSoftwareBitmap := "{FE287C9A-420C-4963-87AD-691436E08383}")
-		ComCall(6, BitmapFrameWithSoftwareBitmap, "ptr*", &SoftwareBitmap:=0)   ; GetSoftwareBitmapAsync
-		ObjRelease(BitmapFrameWithSoftwareBitmap)
-		WaitForAsync(&SoftwareBitmap)
-		ComCall(6, OcrEngine, "ptr", SoftwareBitmap, "ptr*", &OcrResult:=0)   ; RecognizeAsync
-		WaitForAsync(&OcrResult)
-		ComCall(6, OcrResult, "ptr*", &LinesList:=0)   ; get_Lines
-		ComCall(7, LinesList, "int*", &count:=0)   ; count
-		loop count
-		{
-			ComCall(6, LinesList, "int", A_Index-1, "ptr*", &OcrLine:=0)
-			ComCall(7, OcrLine, "ptr*", &hText:=0)
-			buf := DllCall("Combase.dll\WindowsGetStringRawBuffer", "ptr", hText, "uint*", &length:=0, "ptr")
-			text .= StrGet(buf, "UTF-16") "``n"
-			ObjRelease(OcrLine)
-		}
-		Close := ComObjQuery(IRandomAccessStream, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")
-		ComCall(6, Close)   ; Close
-		ObjRelease(Close)
-		Close := ComObjQuery(SoftwareBitmap, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")
-		ComCall(6, Close)   ; Close
-		ObjRelease(Close)
-		ObjRelease(IRandomAccessStream)
-		ObjRelease(BitmapDecoder)
-		ObjRelease(SoftwareBitmap)
-		ObjRelease(OcrResult)
-		ObjRelease(LinesList)
-		return text
-	}
-
-	CreateClass(str, interface, &Class)
-	{
-		CreateHString(str, &hString)
-		GUID := CLSIDFromString(interface)
-		result := DllCall("Combase.dll\RoGetActivationFactory", "ptr", hString, "ptr", GUID, "ptr*", &Class:=0)
-		if (result != 0)
-		{
-			if (result = 0x80004002)
-				msgbox "No such interface supported"
-			else if (result = 0x80040154)
-				msgbox "Class not registered"
-			else
-				msgbox "error: " result
-		}
-		DeleteHString(hString)
-	}
-
-	CreateHString(str, &hString)
-	{
-		DllCall("Combase.dll\WindowsCreateString", "wstr", str, "uint", StrLen(str), "ptr*", &hString:=0)
-	}
-
-	DeleteHString(hString)
-	{
-		DllCall("Combase.dll\WindowsDeleteString", "ptr", hString)
-	}
-
-	WaitForAsync(&Object)
-	{
-		AsyncInfo := ComObjQuery(Object, IAsyncInfo := "{00000036-0000-0000-C000-000000000046}")
-		loop
-		{
-			ComCall(7, AsyncInfo, "uint*", &status:=0)   ; IAsyncInfo.Status
-			if (status != 0)
-			{
-				if (status != 1)
-				{
-					ComCall(8, AsyncInfo, "uint*", &ErrorCode:=0)   ; IAsyncInfo.ErrorCode
-					msgbox "AsyncInfo status error: " ErrorCode
-					ExitApp
-				}
-				break
-			}
-			sleep 10
-		}
-		ComCall(8, Object, "ptr*", &ObjectResult:=0)   ; GetResults
-		ObjRelease(Object)
-		Object := ObjectResult
-	}
 	'
 	)
 	exec := ComObject("WScript.shell").Exec('"' exe_path64 '" /script /force *')
