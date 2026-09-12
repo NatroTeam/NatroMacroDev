@@ -41,6 +41,11 @@ PN_Bounds(current, minimum, buffer) {
     return {lower: Max(0, minimum-band), upper: upper}
 }
 
+PN_RecoveryNeedsFullGrowth(current, minimum, buffer) {
+    bounds := PN_Bounds(current, minimum, buffer)
+    return current < bounds.lower && minimum-bounds.lower < 100/38
+}
+
 PN_UsefulSeconds(rate, fullSeconds, minimum, buffer) {
     fullSeconds := Max(1, Round(fullSeconds))
     if (rate <= 0)
@@ -77,7 +82,7 @@ PN_TargetTime(current, events, rate, fullSeconds, target, earliest) {
 
 PN_Interval(current, events, rate, fullSeconds, minimum, buffer, buildToFull, deliveryDelay := 0) {
     fullSeconds := Max(1, Round(fullSeconds))
-    if (rate <= 0 || buildToFull)
+    if (rate <= 0 || buildToFull || PN_RecoveryNeedsFullGrowth(current, minimum, buffer))
         return fullSeconds
     bounds := PN_Bounds(current, minimum, buffer)
     protected := PN_MaintenanceFloor(minimum, buffer)

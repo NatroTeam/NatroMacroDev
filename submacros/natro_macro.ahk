@@ -6575,14 +6575,17 @@ nm_PlanterBufferHelp(*){
 	(
 	Buffer is a % of your nectar MINIMUM (% set in the Min column).
 	Example: min = 70, buffer = 10% => lower buffer = 63%, upper target = 77%.
-	Build lets each planter fully grow until its nectar is observed near full (97%).
+	Build favors full planter growth until the nectar reaches its upper buffer target.
 	Maintain uses 75% of the band: this example plans toward 64.75%.
 	The remaining band provides a margin before the 63% lower buffer.
 	Growth lasts until that protected deadline or full maturity, whichever comes first.
 	Inside the band, harvests stay within its remaining safe window.
 	When that cannot fit useful growth, recovery aims toward the upper target.
+	Below the floor, a buffer narrower than one HUD step favors full growth instead.
 	Maintenance can also free a slot in time for another nectar that has no planter.
-	A completely empty bar starts a new buildup.
+	After buildup, falling below the lower buffer enters recovery.
+	A full harvest can exceed the upper target; extra nectar is useful reserve.
+	New surplus planting waits when an eligible nectar still lacks its lower buffer.
 	Pending nectar helps choose the next planter; it is credited only after collection.
 	Travel estimates and available equipment affect how well the floor can be maintained.
 	)", "Planter Buffer", 0x40040)
@@ -22724,11 +22727,15 @@ ba_ObserveAdaptivePlanter(field) {
                         -Max(0, PT_Seconds(field)-PT_DispatchLead(field)))
                     useful := PN_UsefulSeconds(stats[2]*stats[3]/864, stats[4]*3600, minimum, PlanterBuffer)
                     usefulRemaining := Ceil(Max(0, useful-progress*stats[4]*3600))
-                    wait := floor >= remaining ? remaining : Min(remaining, Max(usefulRemaining, Floor(floor)))
+                    fullRecovery := PN_RecoveryNeedsFullGrowth(current, minimum, PlanterBuffer)
+                    wait := fullRecovery ? remaining
+                        : (floor >= remaining ? remaining : Min(remaining, Max(usefulRemaining, Floor(floor))))
                     PlanterHarvestTime%slot% := now+wait
                     PG_Intent(slot, name, field, intent.phase, wait >= remaining)
                     IniWrite PlanterHarvestTime%slot%, "settings\nm_config.ini", "Planters", "PlanterHarvestTime" slot
                     ba_SetGrowthOrigin(slot, now-progress*stats[4]*3600, "observed-adaptive")
+                    if fullRecovery
+                        ba_ProtectPlanterSlot(slot, now)
                 }
             }
         }

@@ -35,7 +35,7 @@ PS_Gui.AddRadio("x16 y50 w72 h24 vDays14 Group Checked", "14 days")
 PS_Gui.AddRadio("x94 y50 w72 h24 vDays30", "30 days")
 PS_Gui.AddRadio("x172 y50 w72 h24 vDays90", "90 days")
 PS_Gui.AddText("x260 y54 w524 h20 vSetup c687A80 Right", "Uses your saved macro settings")
-for index, label in ["ALL FLOORS TOGETHER", "COLLECTIONS / DAY", "BUILT TO 97%", "TRAVEL / DAY"] {
+for index, label in ["ALL FLOORS TOGETHER", "COLLECTIONS / DAY", "BUILT TO TARGET", "TRAVEL / DAY"] {
     PS_Gui.AddText("x16 y88 w180 h16 vLabel" index " c687A80", label).SetFont("s8")
     PS_Gui.AddText("x16 y105 w180 h28 vMetric" index, "—").SetFont("s18 Bold")
 }

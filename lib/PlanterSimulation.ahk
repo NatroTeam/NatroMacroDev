@@ -97,7 +97,7 @@ class PS_World {
         this.Advance(job.at, "Collect")
         group := this.Group(job.nectar), before := group.level
         amount := PN_JobYield(job, job.at), group.level := Min(100, before+amount)
-        if (group.firstBuilt < 0 && group.level >= 97)
+        if (group.firstBuilt < 0 && group.level >= PN_Bounds(group.level, group.minimum, group.buffer).upper)
             group.firstBuilt := this.now
         if (this.now >= this.warmup)
             this.maintenanceCollections++

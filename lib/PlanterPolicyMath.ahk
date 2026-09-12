@@ -4,12 +4,9 @@ PN_Phase(previous, current, minimum, buffer) {
         return previous
     if (previous != "Build" && previous != "Maintain" && previous != "Recover")
         previous := "Build"
-    ; The HUD reports integer percentages in approximately 2.63-point steps.
-    if (previous = "Build")
-        return current >= Round(100-100/38) ? "Maintain" : "Build"
     bounds := PN_Bounds(current, minimum, buffer)
-    if (previous = "Recover")
-        return current >= bounds.upper ? "Maintain" : "Recover"
+    if (previous = "Build" || previous = "Recover")
+        return current >= bounds.upper ? "Maintain" : previous
     return current < bounds.lower ? "Recover" : "Maintain"
 }
 

@@ -47,7 +47,8 @@ PN_NeedGroup(group, current, events, candidates, phase, maximumBand := 0) {
     reserve := current
     for _, event in events
         reserve += Max(0, event[2])
-    target := phase = "Build" ? 100 : Min(100, PN_Bounds(current, group.minimum, group.buffer).lower+2*maximumBand)
+    bounds := PN_Bounds(current, group.minimum, group.buffer)
+    target := phase = "Build" ? bounds.upper : Min(100, bounds.lower+2*maximumBand)
     for _, plan in plans {
         plan.nectar := group.nectar, plan.priority := group.priority, plan.phase := phase
         plan.urgency := reserve-target
@@ -57,11 +58,11 @@ PN_NeedGroup(group, current, events, candidates, phase, maximumBand := 0) {
 }
 
 PN_RawPlan(groups, active, slots, maximumBand := 0, concentrated := false) {
-    prepared := [], focus := false, threshold := Round(100-100/38)
+    prepared := [], focus := false, shortage := false
     for _, group in groups {
         bounds := PN_Bounds(group.current, group.minimum, group.buffer)
         repair := concentrated && (group.phase = "Build" || (group.phase = "Recover" && group.current < bounds.lower))
-        target := group.phase = "Build" ? threshold : bounds.upper
+        target := bounds.upper
         pending := false
         if repair
             for _, event in group.events
@@ -70,13 +71,21 @@ PN_RawPlan(groups, active, slots, maximumBand := 0, concentrated := false) {
                     break
                 }
         candidates := PN_Eligible(group, active, group.phase)
-        prepared.Push({group: group, candidates: candidates, repair: repair, pending: pending})
+        reserve := group.current
+        for _, event in group.events
+            reserve += Max(0, event[2])
+        if (candidates.Length && reserve < bounds.lower)
+            shortage := true
+        prepared.Push({group: group, candidates: candidates, repair: repair, pending: pending,
+            reserve: reserve, upper: bounds.upper})
         if (repair && !pending && candidates.Length && (!focus || group.priority < focus.priority))
             focus := group
     }
     needs := []
     for _, item in prepared {
         group := item.group
+        if (shortage && item.reserve >= item.upper)
+            continue
         if (concentrated && item.repair && (item.pending || !focus || group.nectar != focus.nectar))
             continue
         need := PN_NeedGroup(group, group.current, group.events, item.candidates, group.phase, maximumBand)
