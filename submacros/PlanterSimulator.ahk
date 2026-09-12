@@ -287,11 +287,8 @@ PS_Cancel(*) {
 
 PS_Results(world) {
     global PS_Gui, PS_View
-    report := PC_Report(world, PS_View), days := report.span/86400
-    PS_Gui["Metric1"].Text := days ? Format("{:.1f}%", report.all*100/report.span) : "—"
-    PS_Gui["Metric2"].Text := days ? Format("{:.1f}", report.collections/days) : "—"
-    PS_Gui["Metric3"].Text := report.built = world.groups.Length ? Format("{:.1f} h", report.builtAt/3600) : report.built " / " world.groups.Length
-    PS_Gui["Metric4"].Text := days ? Format("{:.1f} min", report.travel/60/days) : "—"
+    for index, value in PC_Metrics(world, PC_Report(world, PS_View))
+        PS_Gui["Metric" index].Text := value
     PS_Gui["Csv"].Enabled := true
     PS_Gui["Png"].Enabled := true
     PS_RefreshButtons()
@@ -425,15 +422,24 @@ PS_Csv(*) {
 }
 
 PS_Png(*) {
-    global PS_Gui, PS_Current
+    global PS_Gui, PS_Current, PS_View, PS_ChartToken
     if (!PS_Current || !PS_Current.completed)
         return
-    path := FileSelect("S16", "Planter simulation.png", "Save simulation chart", "PNG (*.png)")
+    world := PS_Current, view := PS_View
+    PS_Gui["Chart"].GetPos(,, &width, &height)
+    path := FileSelect("S16", "Planter simulation.png", "Save simulation chart and stats", "PNG (*.png)")
     if !path
         return
     if !RegExMatch(path, "i)\.png$")
         path .= ".png"
-    try PC_SavePng(SendMessage(0x173, 0, 0, PS_Gui["Chart"].Hwnd), path)
-    catch as err
+    try {
+        if !PS_ChartToken
+            PS_ChartToken := Gdip_Startup()
+        if !PS_ChartToken
+            throw Error("Windows could not start the chart renderer.")
+        bitmap := PC_Render(world, width, height, A_ScreenDPI/96, view, true)
+        try PC_SavePng(bitmap, path)
+        finally DeleteObject(bitmap)
+    } catch as err
         MsgBox err.Message, "Could not save chart", "Icon!"
 }

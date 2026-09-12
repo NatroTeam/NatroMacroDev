@@ -40,6 +40,27 @@ PC_Report(world, view := 1) {
     return report
 }
 
+PC_Metrics(world, report) {
+    days := report.span/86400
+    return [days ? Format("{:.1f}%", report.all*100/report.span) : "—",
+        days ? Format("{:.1f}", report.collections/days) : "—",
+        report.built = world.groups.Length ? Format("{:.1f} h", report.builtAt/3600) : report.built " / " world.groups.Length,
+        days ? Format("{:.1f} min", report.travel/60/days) : "—"]
+}
+
+PC_DrawMetrics(g, width, values) {
+    labels := ["ALL FLOORS TOGETHER", "COLLECTIONS / DAY", "BUILT TO TARGET", "TRAVEL / DAY"]
+    colors := [0xFF168577, 0xFF3985B6, 0xFF8461B8, 0xFFB78324]
+    column := (width-24)/4
+    for index, label in labels {
+        x := (index-1)*(column+8)
+        PC_Fill(g, 0xFFFFFFFF, x, 0, column, 62)
+        PC_Fill(g, colors[index], x, 12, 3, 38)
+        PC_Text(g, label, x+12, 8, column-24, 16, 8, "FF6A7E89")
+        PC_Text(g, values[index], x+12, 26, column-24, 27, 17, "FF243E43", "Bold")
+    }
+}
+
 PC_Color(nectar) {
     static colors := Map("Comforting", 0xFF19877C, "Motivating", 0xFF8461B8,
         "Satisfying", 0xFFB78324, "Refreshing", 0xFF3985B6, "Invigorating", 0xFFB45E7F)
@@ -69,10 +90,10 @@ PC_Fill(g, color, x, y, width, height) {
     finally Gdip_DeleteBrush(brush)
 }
 
-PC_Render(world, width, height, scale := 1, view := 1) {
+PC_Render(world, width, height, scale := 1, view := 1, includeStats := false) {
     bitmap := 0, g := 0, report := world ? PC_Report(world, view) : false
     try {
-        bitmap := Gdip_CreateBitmap(Round(width*scale), Round(height*scale))
+        bitmap := Gdip_CreateBitmap(Round(width*scale), Round((height+(includeStats && world ? 74 : 0))*scale))
         if !bitmap
             throw Error("Could not allocate chart image.")
         g := Gdip_GraphicsFromImage(bitmap)
@@ -81,6 +102,10 @@ PC_Render(world, width, height, scale := 1, view := 1) {
         Gdip_GraphicsClear(g, 0xFFF1F5F8)
         Gdip_ScaleWorldTransform(g, scale, scale)
         Gdip_SetSmoothingMode(g, 4)
+        if (includeStats && world) {
+            PC_DrawMetrics(g, width, PC_Metrics(world, report))
+            Gdip_TranslateWorldTransform(g, 0, 74)
+        }
         panel := Gdip_BrushCreateSolid(0xFFFFFFFF)
         if !panel
             throw Error("Could not allocate chart panel.")
