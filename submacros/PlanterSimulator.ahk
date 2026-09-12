@@ -22,63 +22,175 @@ for nectar, fields in PS_Fields
         PS_Tables[field] := %key%Planters
     }
 
-PS_Current := false, PS_Running := false, PS_ChartToken := 0
+PS_Current := false, PS_Running := false, PS_ChartToken := 0, PS_Days := 14
+PS_Buttons := Map(), PS_Hover := 0
 OnExit(PS_ExitChart)
+OnMessage(0x2B, PS_DrawButton)
+OnMessage(0x200, PS_ButtonHover)
+OnMessage(0x2A3, PS_ButtonLeave)
 PS_Gui := Gui("+Resize +MinSize680x480", "Planter simulator")
-PS_Gui.BackColor := "F7F9FA"
+PS_Gui.BackColor := "F1F5F8"
 PS_Gui.SetFont("s9 c243E43", "Segoe UI")
-PS_Gui.AddText("x16 y12 w400 h28 vTitle", "Planter simulator").SetFont("s17 Bold")
-PS_Gui.AddButton("x566 y12 w84 h30 vCsv Disabled", "Export CSV").OnEvent("Click", PS_Csv)
-PS_Gui.AddButton("x660 y12 w124 h30 vRun Default", "Run simulation").OnEvent("Click", PS_Start)
-PS_Gui["Run"].SetFont("Bold")
-PS_Gui.AddRadio("x16 y50 w72 h24 vDays14 Group Checked", "14 days")
-PS_Gui.AddRadio("x94 y50 w72 h24 vDays30", "30 days")
-PS_Gui.AddRadio("x172 y50 w72 h24 vDays90", "90 days")
-PS_Gui.AddText("x260 y54 w524 h20 vSetup c687A80 Right", "Uses your saved macro settings")
+PS_Gui.AddText("x0 y0 w740 h82 vHeader Background102735")
+PS_Gui.AddText("x18 y13 w430 h28 vTitle Background102735 cFFFFFF", "Planter simulator").SetFont("s18 Bold")
+PS_Gui.AddText("x18 y52 w490 h18 vSetup Background102735 cA9BDC8", "Uses your saved macro settings").SetFont("s8")
+PS_Button("x508 y12 w86 h32 vCsv Disabled", "Export CSV", "secondary").OnEvent("Click", PS_Csv)
+PS_Button("x606 y12 w116 h32 vRun", "Run simulation", "primary").OnEvent("Click", PS_Start)
+for index, days in [14, 30, 90]
+    PS_Button("x" 542+(index-1)*62 " y51 w56 h24 vDays" days, days " days", "duration", days).OnEvent("Click", PS_Duration)
 for index, label in ["ALL FLOORS TOGETHER", "COLLECTIONS / DAY", "BUILT TO TARGET", "TRAVEL / DAY"] {
-    PS_Gui.AddText("x16 y88 w180 h16 vLabel" index " c687A80", label).SetFont("s8")
-    PS_Gui.AddText("x16 y105 w180 h28 vMetric" index, "—").SetFont("s18 Bold")
+    PS_Gui.AddText("x14 y94 w172 h62 vCard" index " BackgroundFFFFFF")
+    PS_Gui.AddText("x14 y106 w3 h38 vAccent" index " Background" ["168577", "3985B6", "8461B8", "B78324"][index])
+    PS_Gui.AddText("x26 y102 w148 h16 vLabel" index " BackgroundFFFFFF c6A7E89", label).SetFont("s8")
+    PS_Gui.AddText("x26 y120 w148 h27 vMetric" index " BackgroundFFFFFF", "—").SetFont("s17 Bold")
 }
-PS_Gui.AddPicture("x16 y146 w768 h398 +0xE vChart")
+PS_Gui.AddPicture("x14 y168 w712 h338 +0xE vChart")
 PS_Gui.OnEvent("Size", PS_Layout)
 PS_Gui.OnEvent("Close", (*) => ExitApp())
 PS_Gui.OnEvent("Escape", PS_Cancel)
 try PS_SetupText(PS_Config())
 MonitorGetWorkArea(MonitorGetPrimary(), &workLeft, &workTop, &workRight, &workBottom)
-PS_Gui.Show("w" Max(680, Min(800, Floor((workRight-workLeft-32)/(A_ScreenDPI/96))))
-    " h" Max(480, Min(560, Floor((workBottom-workTop-54)/(A_ScreenDPI/96)))))
+PS_Gui.Show("w" Max(680, Min(740, Floor((workRight-workLeft-32)/(A_ScreenDPI/96))))
+    " h" Max(480, Min(520, Floor((workBottom-workTop-54)/(A_ScreenDPI/96)))))
+PS_Gui["Run"].Focus()
 
 PS_SetupText(config) {
     global PS_Gui
     PS_Gui["Setup"].Text := Format("{} types  ·  {} fields  ·  {} slots  ·  {}% buffer", config.types.Count, config.fields.Count, config.capacity, config.buffer)
 }
 
+PS_Button(options, caption, kind, days := 0) {
+    global PS_Gui, PS_Buttons
+    control := PS_Gui.AddButton(options " +0xB", caption)
+    control.SetFont(kind = "primary" ? "s9 Bold" : "s8")
+    PS_Buttons[control.Hwnd] := {control: control, kind: kind, days: days}
+    return control
+}
+
+PS_Duration(control, *) {
+    global PS_Days, PS_Buttons, PS_Running
+    if !PS_Running {
+        PS_Days := PS_Buttons[control.Hwnd].days
+        PS_RefreshButtons()
+    }
+}
+
+PS_RefreshButtons() {
+    global PS_Buttons
+    for hwnd in PS_Buttons
+        DllCall("user32\InvalidateRect", "Ptr", hwnd, "Ptr", 0, "Int", false)
+}
+
+PS_ButtonHover(wParam, lParam, message, hwnd) {
+    global PS_Buttons, PS_Hover
+    if (!PS_Buttons.Has(hwnd) || PS_Hover = hwnd)
+        return
+    previous := PS_Hover, PS_Hover := hwnd
+    if previous
+        DllCall("user32\InvalidateRect", "Ptr", previous, "Ptr", 0, "Int", false)
+    DllCall("user32\InvalidateRect", "Ptr", hwnd, "Ptr", 0, "Int", false)
+    tracking := Buffer(8+2*A_PtrSize, 0)
+    NumPut("UInt", tracking.Size, "UInt", 2, "Ptr", hwnd, tracking)
+    DllCall("user32\TrackMouseEvent", "Ptr", tracking)
+}
+
+PS_ButtonLeave(wParam, lParam, message, hwnd) {
+    global PS_Hover
+    if (PS_Hover = hwnd) {
+        PS_Hover := 0
+        DllCall("user32\InvalidateRect", "Ptr", hwnd, "Ptr", 0, "Int", false)
+    }
+}
+
+PS_RGB(color) => ((color & 255) << 16) | (color & 0xFF00) | ((color >> 16) & 255)
+
+PS_DrawButton(wParam, item, *) {
+    global PS_Buttons, PS_Hover, PS_Days
+    if (!item || NumGet(item, 0, "UInt") != 4)
+        return
+    offset := A_PtrSize = 8 ? 24 : 20
+    hwnd := NumGet(item, offset, "Ptr")
+    if !PS_Buttons.Has(hwnd)
+        return
+    entry := PS_Buttons[hwnd], state := NumGet(item, 16, "UInt")
+    dc := NumGet(item, offset+A_PtrSize, "Ptr"), rect := item+offset+2*A_PtrSize
+    left := NumGet(rect, 0, "Int"), top := NumGet(rect, 4, "Int")
+    right := NumGet(rect, 8, "Int"), bottom := NumGet(rect, 12, "Int")
+    primary := entry.kind = "primary", selected := entry.days && entry.days = PS_Days
+    disabled := state & 4, pressed := state & 1, hot := hwnd = PS_Hover
+    fill := primary ? 0x168577 : (selected ? 0x315363 : 0x102735)
+    border := primary ? fill : (selected ? 0x57B9AF : 0x35515F)
+    ink := 0xF5FAFC
+    if disabled
+        fill := 0x1D3441, border := 0x294450, ink := 0x8299A5
+    else if pressed
+        fill := primary ? 0x10695F : 0x3B606F
+    else if hot
+        fill := primary ? 0x20988A : 0x284856
+    saved := DllCall("gdi32\SaveDC", "Ptr", dc, "Int"), back := 0, brush := 0, pen := 0
+    if !saved
+        return true
+    try {
+        back := DllCall("gdi32\CreateSolidBrush", "UInt", PS_RGB(0x102735), "Ptr")
+        DllCall("user32\FillRect", "Ptr", dc, "Ptr", rect, "Ptr", back)
+        brush := DllCall("gdi32\CreateSolidBrush", "UInt", PS_RGB(fill), "Ptr")
+        pen := DllCall("gdi32\CreatePen", "Int", 0, "Int", Max(1, Round(A_ScreenDPI/96)), "UInt", PS_RGB(border), "Ptr")
+        DllCall("gdi32\SelectObject", "Ptr", dc, "Ptr", brush)
+        DllCall("gdi32\SelectObject", "Ptr", dc, "Ptr", pen)
+        radius := Round(12*A_ScreenDPI/96)
+        DllCall("gdi32\RoundRect", "Ptr", dc, "Int", left, "Int", top, "Int", right, "Int", bottom, "Int", radius, "Int", radius)
+        font := SendMessage(0x31, 0, 0, hwnd)
+        if font
+            DllCall("gdi32\SelectObject", "Ptr", dc, "Ptr", font)
+        DllCall("gdi32\SetBkMode", "Ptr", dc, "Int", 1)
+        DllCall("gdi32\SetTextColor", "Ptr", dc, "UInt", PS_RGB(ink))
+        DllCall("user32\DrawTextW", "Ptr", dc, "Str", entry.control.Text, "Int", -1, "Ptr", rect, "UInt", 0x825)
+        if (!disabled && (state & 0x10) && !(state & 0x200)) {
+            focus := Buffer(16), inset := Round(4*A_ScreenDPI/96)
+            NumPut("Int", left+inset, "Int", top+inset, "Int", right-inset, "Int", bottom-inset, focus)
+            DllCall("user32\DrawFocusRect", "Ptr", dc, "Ptr", focus)
+        }
+    } finally {
+        if saved
+            DllCall("gdi32\RestoreDC", "Ptr", dc, "Int", saved)
+        for resource in [back, brush, pen]
+            if resource
+                DllCall("gdi32\DeleteObject", "Ptr", resource)
+    }
+    return true
+}
+
 PS_Layout(window, state, *) {
     if (state = -1)
         return
     window.GetClientPos(,, &width, &height)
-    window["Run"].Move(width-140, 12, 124, 30)
-    window["Csv"].Move(width-234, 12, 84, 30)
-    window["Title"].Move(,, width-266)
-    window["Setup"].Move(260, 54, width-276, 20)
-    column := (width-68)/4
+    window["Header"].Move(,, width, 82)
+    window["Run"].Move(width-134, 12, 116, 32)
+    window["Csv"].Move(width-232, 12, 86, 32)
+    window["Title"].Move(,, width-268)
+    window["Setup"].Move(,, width-244)
+    for index, days in [14, 30, 90]
+        window["Days" days].Move(width-198+(index-1)*62, 51, 56, 24)
+    column := (width-52)/4
     Loop 4 {
-        x := 16+(A_Index-1)*(column+12)
-        window["Label" A_Index].Move(x, 88, column, 16)
-        window["Metric" A_Index].Move(x, 105, column, 28)
+        x := 14+(A_Index-1)*(column+8)
+        window["Card" A_Index].Move(x, 94, column, 62)
+        window["Accent" A_Index].Move(x, 106, 3, 38)
+        window["Label" A_Index].Move(x+12, 102, column-24, 16)
+        window["Metric" A_Index].Move(x+12, 120, column-24, 27)
     }
-    window["Chart"].Move(16, 146, width-32, height-162)
+    window["Chart"].Move(14, 168, width-28, height-182)
     SetTimer PS_Redraw, -100
 }
 
 PS_Start(*) {
-    global PS_Gui, PS_Current, PS_Running
+    global PS_Gui, PS_Current, PS_Running, PS_Days
     if PS_Running {
         PS_Cancel()
         return
     }
     try {
-        days := PS_Gui["Days90"].Value ? 90 : (PS_Gui["Days30"].Value ? 30 : 14)
+        days := PS_Days
         config := PS_Config()
         world := PS_World(config, days)
     } catch as err {
@@ -93,6 +205,7 @@ PS_Start(*) {
     for _, name in ["Days14", "Days30", "Days90", "Csv"]
         PS_Gui[name].Enabled := false
     PS_Gui["Run"].Text := "Cancel · 0%"
+    PS_RefreshButtons()
     PS_Redraw()
     SetTimer PS_Tick, 15
 }
@@ -147,6 +260,7 @@ PS_Stop() {
     for _, name in ["Days14", "Days30", "Days90"]
         PS_Gui[name].Enabled := true
     PS_Gui["Run"].Text := "Run simulation"
+    PS_RefreshButtons()
 }
 
 PS_Cancel(*) {
@@ -167,6 +281,7 @@ PS_Results(world) {
     PS_Gui["Metric3"].Text := built = world.groups.Length ? Format("{:.1f} h", latest/3600) : built " / " world.groups.Length
     PS_Gui["Metric4"].Text := Format("{:.1f} min", (world.maintenanceWork["Place"]+world.maintenanceWork["Collect"])/60/days)
     PS_Gui["Csv"].Enabled := true
+    PS_RefreshButtons()
     PS_Redraw()
 }
 

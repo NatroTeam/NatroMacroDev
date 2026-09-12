@@ -47,9 +47,14 @@ PC_Render(world, width, height, scale := 1) {
         g := Gdip_GraphicsFromImage(bitmap)
         if !g
             throw Error("Could not draw chart image.")
-        Gdip_GraphicsClear(g, 0xFFFFFFFF)
+        Gdip_GraphicsClear(g, 0xFFF1F5F8)
         Gdip_ScaleWorldTransform(g, scale, scale)
         Gdip_SetSmoothingMode(g, 4)
+        panel := Gdip_BrushCreateSolid(0xFFFFFFFF)
+        if !panel
+            throw Error("Could not allocate chart panel.")
+        try Gdip_FillRoundedRectanglePath(g, panel, 0, 0, width, height, 10)
+        finally Gdip_DeleteBrush(panel)
         if !world {
             PC_Text(g, "Your nectar, over time", 40, height/2-25, width-80, 28, 16, "FF233A41", "Center Bold")
             PC_Text(g, "Run a simulation to see buildup and maintenance together.", 40, height/2+9, width-80, 22, 10, "FF667781", "Center")
