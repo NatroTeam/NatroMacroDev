@@ -1,4 +1,4 @@
-NM_TesseractOCR(bitmap, timeoutMs := 3000, cancelled := 0) {
+NM_TesseractOCR(bitmap, timeoutMs := 3000, cancelled := 0, layout := false) {
 	static runtime := RegExReplace(A_LineFile, "[^\\]+$", "") "tesseract"
 	static serial := 0
 	deadline := A_TickCount + timeoutMs
@@ -18,7 +18,7 @@ NM_TesseractOCR(bitmap, timeoutMs := 3000, cancelled := 0) {
 		if Gdip_SaveBitmapToFile(bitmap, input) != 0
 			throw Error("Unable to prepare the OCR image.")
 		CheckDeadline()
-		command := '"' executable '" "' input '" "' output '" --tessdata-dir "' runtime '\tessdata" -l eng --psm 6'
+		command := '"' executable '" "' input '" "' output '" --tessdata-dir "' runtime '\tessdata" -l eng --psm ' (layout ? '11 -c tessedit_create_tsv=1' : '6')
 		commandBuffer := Buffer(StrPut(command, "UTF-16") * 2)
 		StrPut(command, commandBuffer, "UTF-16")
 		startup := Buffer(A_PtrSize = 8 ? 104 : 68, 0)
@@ -39,7 +39,7 @@ NM_TesseractOCR(bitmap, timeoutMs := 3000, cancelled := 0) {
 		if !DllCall("GetExitCodeProcess", "ptr", process, "uint*", &code := 0) || code != 0
 			throw Error("The bundled OCR engine could not read the image.")
 		CheckDeadline()
-		return FileRead(output ".txt", "UTF-8")
+		return FileRead(output (layout ? ".tsv" : ".txt"), "UTF-8")
 	} finally {
 		if process {
 			if DllCall("WaitForSingleObject", "ptr", process, "uint", 0, "uint") = 258 {
@@ -102,4 +102,38 @@ NM_OCRLeftInset(bitmap) {
 		}
 	} finally Gdip_UnlockBits(bitmap, &data)
 	return 0
+}
+
+NM_OCRLightText(bitmap, cancelled := 0) {
+	Gdip_GetImageDimensions(bitmap, &w, &h)
+	copy := Gdip_CloneBitmapArea(bitmap, 0, 0, w, h)
+	if !copy
+		throw Error("Unable to prepare the SSA menu.")
+	locked := false
+	try {
+		if Gdip_LockBits(copy, 0, 0, w, h, &stride, &scan, &data)
+			throw Error("Unable to read the SSA menu pixels.")
+		locked := true
+		loop h {
+			if Mod(A_Index, 32) = 0 {
+				Sleep -1
+				if cancelled && cancelled.Call()
+					throw Error("OCR was cancelled.")
+			}
+			row := scan + (A_Index - 1) * stride
+			loop w {
+				address := row + (A_Index - 1) * 4
+				pixel := NumGet(address, "uint")
+				light := Min((pixel >> 16) & 255, (pixel >> 8) & 255, pixel & 255) > 180
+				NumPut("uint", light ? 0xFF000000 : 0xFFFFFFFF, address)
+			}
+		}
+		Gdip_UnlockBits(copy, &data), locked := false
+		return copy
+	} catch {
+		if locked
+			Gdip_UnlockBits(copy, &data)
+		Gdip_DisposeImage(copy)
+		throw
+	}
 }

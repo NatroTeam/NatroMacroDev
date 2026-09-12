@@ -9581,7 +9581,7 @@ UpdateHoneyGui() {
 		global ssaStatPending, ssaStatUpdating
 		if ssaStatUpdating.Has(statName)
 			return
-		value := RegExReplace(ctrl.Value, "\\D+")
+		value := RegExReplace(ctrl.Value, "\D+")
 		if (value != ctrl.Value) {
 			ssaStatUpdating[statName] := true
 			ctrl.Value := value
@@ -9591,7 +9591,7 @@ UpdateHoneyGui() {
 		ssaStatPending[statName] := {value: value, ctrl: ctrl, tick: A_TickCount}
 		SetTimer(SSA_ProcessPendingStats, -350)
 	}
-	SSA_ProcessPendingStats() {
+	SSA_ProcessPendingStats(flush := false) {
 		global ssaStatPending, ssaStatUpdating
 		global PollenMin, WhitePollenMin, RedPollenMin, BluePollenMin, ConvertRateMin
 		, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin
@@ -9599,7 +9599,7 @@ UpdateHoneyGui() {
 		pendingLeft := false
 		toCommit := []
 		for statName, info in ssaStatPending {
-			if (now - info.tick < 350) {
+			if (!flush && now - info.tick < 350) {
 				pendingLeft := true
 				continue
 			}
@@ -9774,7 +9774,7 @@ UpdateHoneyGui() {
 			case "help":
 				ReplaceSystemCursors()
 				if (guiMode = "ssa")
-					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Open the SSA roll menu in-game``n- Select your main passive and side passives``n- Select up to 5 stats in the Stats column (Advanced: set Min %; 0 = ignore)``n``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nSafety: Enable the Safety toggle to stop the roller if OCR can`'t verify a full roll before timeout.``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
+					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Open the SSA roll menu in-game``n- Select your main passive and side passives``n- Select up to 5 stats in the Stats column (Advanced: set Min %; 0 = ignore)``n``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nThe roller always stops if it cannot verify the dialog or read a complete result.``n``nSide passives are alternatives: any selected side passive may match, but it must differ from the main passive.``n``nThe honey limit is a per-start allowance in trillions. Attempted purchases reserve their cost even if the outcome is unclear; this is not your live honey balance.``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
 				else
 					Msgbox("This feature allows you to roll royal jellies until you obtain your specified bees and/or mutations!``n``nTo use:``n- Select the bees and mutations you want``n- Make sure your in-game Auto-Jelly settings are right``n- Put a neonberry on the bee you want to change (if trying ``n  to obtain a mutated bee) ``n- Use one royal jelly on the bee and click Yes``n- Click on Roll.``n``nTo stop: ``n- Press the escape key``n``nAdditional options:``n- Stop on Gifteds stops on any gifted bee, ``n  ignoring the mutation and your bee selection``n- Stop on Mythics stops on any mythic bee, ``n  ignoring the mutation and your bee selection", "Auto-Jelly Help", "0x40040")
 			case "mode":
@@ -10016,6 +10016,8 @@ UpdateHoneyGui() {
 		stopping := false
 		hotkey "~*esc", stopToggle, "On"
 		try {
+			SSA_ProcessPendingStats(true)
+			SSA_ValidateSettings()
 			NM_TesseractReady(() => stopping)
 			SSA_Log("OCR enabled (SSA). Local English engine.")
 			selectedStats := SSA_CountSelectedStats()
@@ -10038,13 +10040,17 @@ UpdateHoneyGui() {
 				try honeyGui.Hide()
 				HideSSAStatInputs()
 			}
-			session := {lastRollTick: 0, pendingRoll: false, pendingSince: 0, signature: ""}
+			ActivateRoblox()
+			session := {lastRollTick: 0, pendingRoll: false, pendingSince: 0, signature: "", stage: "inspect", phaseSince: A_TickCount, reserved: false, previousSignature: "", directResult: false, hwnd: hwndRoblox, x: windowX, y: windowY, w: windowWidth, h: windowHeight}
 			While !stopping {
 				result := SSA(session)
 				if stopping
 					break
 				if (result = 1) {
 					msgbox "Found a match!``nChoose Keep/Replace in-game.", "SSA Roller", 0x40040
+					break
+				} else if (result = -4) {
+					msgbox "SSA stopped: The purchase or result dialog could not be confirmed.``nNo purchase click was retried. Check the current amulet before restarting.", "SSA Roller", 0x40030
 					break
 				} else if (result = -3) {
 					msgbox "Safety stop: Unable to verify a full SSA roll before timeout.``nCheck the SSA menu and try again.", "SSA Roller", 0x40030
@@ -10067,6 +10073,24 @@ UpdateHoneyGui() {
 			UpdateHoneyGui()
 		}
 	}
+	SSA_ValidateSettings() {
+		global mainPassive, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck, StarShowerCheck, HoneyLimit
+		passives := Map("Pop Star", PopStarCheck, "Scorch Star", ScorchStarCheck, "Gummy Star", GummyStarCheck, "Guiding Star", GuidingStarCheck, "Star Saw", StarSawCheck, "Star Shower", StarShowerCheck)
+		if !passives.Has(mainPassive)
+			throw Error("Choose a main passive before rolling.")
+		selected := 0, alternatives := 0
+		for name, checked in passives {
+			if checked {
+				selected += 1
+				if name != mainPassive
+					alternatives += 1
+			}
+		}
+		if selected && !alternatives
+			throw Error("Choose a side passive different from the main passive, or clear the side selections.")
+		if !RegExMatch(HoneyLimit, "^\d{1,6}$")
+			throw Error("Enter a honey limit from 0 to 999999 trillion. Use 0 for no limit.")
+	}
 	SSA(session) {
 		global mainPassive, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
 			, StarShowerCheck, PollenCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
@@ -10083,42 +10107,14 @@ UpdateHoneyGui() {
 		}
 		if stopping
 			return 0
-		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
-			return -1
-		yOffset := GetYOffset(hwndRoblox, &fail)
-		if fail
-			return -1
+		SSA_CheckWindow(session)
 		if !session.pendingRoll {
-			rollCost := doublePassive ? 500 : 10
-			ActivateRoblox()
-			if stopping
-				return 0
-			if (ssa_subHoney(rollCost, false) < 0)
-				return -2
-			SendEvent "e"
-			if !SSA_Wait(250)
-				return 0
-			rollOffset := Round(windowWidth * 0.055)
-			if (rollOffset < 70)
-				rollOffset := 70
-			else if (rollOffset > 110)
-				rollOffset := 110
-			if stopping
-				return 0
-			ssa_subHoney(rollCost)
-			Click windowX + windowWidth//2 + (doublePassive ? -rollOffset : rollOffset), windowY + yOffset + windowHeight//2 + 30
-			session.lastRollTick := A_TickCount
-			session.pendingRoll := true
-			session.pendingSince := session.lastRollTick
-			MouseMove windowX + windowWidth//2, windowY + windowHeight//2 + 150
-			session.signature := ""
-			if !SSA_Wait(300)
-				return 0
+			prepared := SSA_PrepareRoll(session, doublePassive)
+			if prepared != 1
+				return prepared
 		}
-		ocrX := windowX + windowWidth//2 + 20
-		ocrY := windowY + yOffset + Round(0.4 * windowHeight + 20)
-		ocrW := 188
-		ocrH := 160
+		ocrX := session.result.x, ocrY := session.result.y
+		ocrW := session.result.w, ocrH := session.result.h
 		validOcr := false
 		ocrSegments := []
 		Loop 5 {
@@ -10136,7 +10132,8 @@ UpdateHoneyGui() {
 				return 0
 			if A_TickCount - session.pendingSince >= 8000
 				return -3
-			validOcr := SSA_OcrHasFullRoll(text, doublePassive, &ocrSegments)
+			SSA_CheckWindow(session)
+			validOcr := SSA_OcrHasFullRoll(text, session.expectedDouble, &ocrSegments)
 			signature := validOcr ? SSA_RollSignature(ocrSegments) : ""
 			if (validOcr && signature = session.signature)
 				break
@@ -10147,8 +10144,30 @@ UpdateHoneyGui() {
 		}
 		if !validOcr
 			return 0
+		if session.directResult && signature = session.previousSignature
+			return -4
+		confirmed := SSA_ReadDialog(Min(3000, Max(1, 8000 - (A_TickCount - session.pendingSince))))
+		SSA_CheckWindow(session)
+		if stopping
+			return 0
+		if A_TickCount - session.pendingSince >= 8000
+			return -3
+		if confirmed.kind != "result" || Abs(confirmed.x - ocrX) > 3 || Abs(confirmed.y - ocrY) > 3 || Abs(confirmed.w - ocrW) > 3 || Abs(confirmed.h - ocrH) > 3
+			return -4
 		session.pendingRoll := false
 		session.pendingSince := 0
+		session.previousSignature := signature
+		session.stage := "open", session.phaseSince := A_TickCount, session.reserved := false
+		if doublePassive {
+			passiveCount := 0
+			for entry in ocrSegments
+				if entry.value = 0
+					passiveCount += 1
+			if passiveCount < 2 {
+				SSA_Log("Missing: second passive")
+				return 0
+			}
+		}
 
 		stats := Map()
 		selectedCount := 0
@@ -10182,7 +10201,6 @@ UpdateHoneyGui() {
 			selectedSide += v
 		presentStats := Map(), foundStats := Map(), foundSide := Map(), parsedStats := Map()
 		mainPassiveFound := 0
-		matched := false
 		for _, entry in ocrSegments {
 			seg := entry.seg
 			tokens := entry.tokens
@@ -10206,7 +10224,6 @@ UpdateHoneyGui() {
 			sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
 			statCount := ssaAdvanced ? foundStats.Count : presentStats.Count
 			if (statCount >= requiredStats && mainPassiveFound && sideMatch) {
-				matched := true
 				break
 			}
 		}
@@ -10259,6 +10276,132 @@ UpdateHoneyGui() {
 		}
 		if (statCount >= requiredStats && mainPassiveFound && sideMatch)
 			return 1
+		return 0
+	}
+	SSA_ReadDialog(timeoutMs := 3000) {
+		global windowX, windowY, windowWidth, windowHeight, stopping
+		width := Min(700, windowWidth), x := windowX + (windowWidth - width) // 2
+		bitmap := Gdip_BitmapFromScreen(x "|" windowY "|" width "|" windowHeight)
+		if !bitmap
+			throw Error("Unable to capture the SSA menu.")
+		try return SSA_ReadDialogBitmap(bitmap, timeoutMs, () => stopping, x, windowY)
+		finally Gdip_DisposeImage(bitmap)
+	}
+	SSA_ReadDialogBitmap(bitmap, timeoutMs := 3000, cancelled := 0, x := 0, y := 0) {
+		deadline := A_TickCount + timeoutMs
+		tsv := NM_TesseractOCR(bitmap, timeoutMs, cancelled, true)
+		dialog := SSA_ParseDialog(tsv, x, y)
+		if dialog.kind = "purchase" || dialog.kind = "result"
+			return dialog
+		light := NM_OCRLightText(bitmap, cancelled)
+		try {
+			remaining := deadline - A_TickCount
+			if remaining <= 0
+				throw Error("SSA menu recognition timed out.")
+			return SSA_ParseDialog(tsv "``n" NM_TesseractOCR(light, remaining, cancelled, true), x, y)
+		} finally Gdip_DisposeImage(light)
+	}
+	SSA_ParseDialog(tsv, offsetX := 0, offsetY := 0) {
+		words := [], text := ""
+		for line in StrSplit(tsv, "``n", "``r") {
+			cells := StrSplit(line, "``t")
+			if cells.Length < 12 || cells[1] != "5" || !IsNumber(cells[7]) || !IsNumber(cells[8]) || !IsNumber(cells[9]) || !IsNumber(cells[10])
+				continue
+			word := StrLower(RegExReplace(cells[12], "[^a-zA-Z0-9]"))
+			if word = "" || cells[9] <= 0 || cells[10] <= 0
+				continue
+			words.Push({text: word, x: offsetX + cells[7], y: offsetY + cells[8], w: cells[9] + 0, h: cells[10] + 0})
+			text .= word " "
+		}
+		spend := SSA_DialogWord(words, "spend", offsetY + 150)
+		yes := spend ? SSA_DialogWord(words, "yes", spend.y + spend.h) : 0
+		no := spend ? SSA_DialogWord(words, "no", spend.y + spend.h) : 0
+		if RegExMatch(text, "\bspend 500 billion honey to guarantee 2 passive abilities\b") && yes && no && yes.y - spend.y < spend.h * 8 && yes.x < no.x && Abs(yes.y - no.y) <= Max(yes.h, no.h) {
+			return {kind: "purchase", yes: yes, no: no}
+		}
+		title := SSA_DialogWord(words, "supreme", offsetY + 150)
+		if title && RegExMatch(text, "\bsupreme star amulet\b") {
+			old := SSA_DialogWord(words, "old", title.y + title.h)
+			new := SSA_DialogWord(words, "new", title.y + title.h)
+			keep := new ? SSA_DialogWord(words, "keep", new.y + new.h, new.y + 350) : 0
+			replace := new ? SSA_DialogWord(words, "replace", new.y + new.h, new.y + 350) : 0
+			if old && new && keep && replace && old.x < new.x && keep.x < replace.x && Abs(old.y - new.y) <= Max(old.h, new.h) && Abs(keep.y - replace.y) <= Max(keep.h, replace.h) {
+				spacing := (new.x + new.w / 2) - (old.x + old.w / 2)
+				x := Round((new.x + new.w / 2 + old.x + old.w / 2) / 2 + spacing * 0.035)
+				y := Round(Max(old.y + old.h, new.y + new.h) + new.h * 0.4)
+				w := Round(spacing * 0.94), h := Round(Min(keep.y, replace.y) - new.h * 0.5 - y)
+				if w >= 80 && w <= 350 && h >= 70 && h <= 350
+					return {kind: "result", x: x, y: y, w: w, h: h}
+			}
+		}
+		if !RegExMatch(text, "\b(?:replace|keep|created|old|new|yes|no|guarantee)\b") && RegExMatch(text, "\bspend 10000000000 honey to generate a supreme star amulet\b")
+			return {kind: "generator"}
+		return {kind: "unknown"}
+	}
+	SSA_DialogWord(words, text, below := -2147483648, above := 2147483647) {
+		for word in words
+			if word.text = text && word.y >= below && word.y < above
+				return word
+		return 0
+	}
+	SSA_CheckWindow(session) {
+		global windowX, windowY, windowWidth, windowHeight
+		if GetRobloxHWND() != session.hwnd || !WinActive("ahk_id " session.hwnd)
+			throw Error("Roblox lost focus. Check the current amulet before restarting.")
+		GetRobloxClientPos()
+		if windowX != session.x || windowY != session.y || windowWidth != session.w || windowHeight != session.h
+			throw Error("The Roblox window moved or resized. Check the current amulet before restarting.")
+	}
+	SSA_PrepareRoll(session, doublePassive) {
+		global stopping
+		remaining := 8000 - (A_TickCount - session.phaseSince)
+		if remaining <= 0
+			return -4
+		SSA_CheckWindow(session)
+		dialog := SSA_ReadDialog(Min(3000, remaining))
+		SSA_CheckWindow(session)
+		if stopping
+			return 0
+		if A_TickCount - session.phaseSince >= 8000
+			return -4
+		if dialog.kind = "result" && (session.stage = "inspect" || session.stage = "clicked" || (!doublePassive && session.stage = "purchase")) {
+			session.directResult := session.stage = "purchase"
+			session.expectedDouble := doublePassive && session.stage != "inspect"
+			session.result := dialog
+			session.pendingRoll := true
+			session.pendingSince := A_TickCount
+			session.signature := ""
+			return 1
+		}
+		cost := doublePassive ? 500 : 10
+		if dialog.kind = "purchase" && session.stage != "clicked" {
+			if !session.reserved && ssa_subHoney(cost, false) < 0
+				return -2
+			target := doublePassive ? dialog.yes : dialog.no
+			if stopping
+				return 0
+			SSA_CheckWindow(session)
+			if !session.reserved
+				ssa_subHoney(cost), session.reserved := true
+			Click Round(target.x + target.w / 2), Round(target.y + target.h / 2)
+			session.stage := "clicked", session.phaseSince := A_TickCount, session.lastRollTick := A_TickCount
+			MouseMove session.x + 10, session.y + session.h - 10
+			SSA_Wait(150)
+			return 0
+		}
+		if (session.stage = "inspect" && dialog.kind = "generator") || (session.stage = "open" && (dialog.kind = "result" || dialog.kind = "generator")) {
+			if ssa_subHoney(cost, false) < 0
+				return -2
+			if stopping
+				return 0
+			SSA_CheckWindow(session)
+			ssa_subHoney(cost), session.reserved := true
+			SendEvent "e"
+			session.stage := "purchase", session.phaseSince := A_TickCount, session.lastRollTick := A_TickCount
+			SSA_Wait(150)
+			return 0
+		}
+		SSA_Wait(150)
 		return 0
 	}
 	SSA_Wait(milliseconds) {
