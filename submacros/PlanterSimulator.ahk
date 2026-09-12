@@ -38,9 +38,10 @@ PS_Button("x508 y12 w86 h32 vCsv Disabled", "Export CSV", "secondary").OnEvent("
 PS_Button("x606 y12 w116 h32 vRun", "Run simulation", "primary").OnEvent("Click", PS_Start)
 for index, days in [14, 30, 90]
     PS_Button("x" 542+(index-1)*62 " y51 w56 h24 vDays" days, days " days", "duration", days).OnEvent("Click", PS_Duration)
+PS_AccentColors := ["168577", "3985B6", "8461B8", "B78324"]
 for index, label in ["ALL FLOORS TOGETHER", "COLLECTIONS / DAY", "BUILT TO TARGET", "TRAVEL / DAY"] {
     PS_Gui.AddText("x14 y94 w172 h62 vCard" index " BackgroundFFFFFF")
-    PS_Gui.AddText("x14 y106 w3 h38 vAccent" index " Background" ["168577", "3985B6", "8461B8", "B78324"][index])
+    PS_Gui.AddText("x14 y106 w3 h38 vAccent" index " Background" PS_AccentColors[index])
     PS_Gui.AddText("x26 y102 w148 h16 vLabel" index " BackgroundFFFFFF c6A7E89", label).SetFont("s8")
     PS_Gui.AddText("x26 y120 w148 h27 vMetric" index " BackgroundFFFFFF", "—").SetFont("s17 Bold")
 }
