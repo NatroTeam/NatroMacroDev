@@ -10548,7 +10548,7 @@ UpdateHoneyGui() {
 	}
 	SSA_ParseStatValue(line, key) {
 		static ranges := Map("pollen", [5, 20], "white", [15, 70], "red", [15, 70], "blue", [15, 70], "gath", [15, 70], "convert", [105, 125], "critical", [1, 7], "instant", [3, 12], "ability", [1, 7])
-		pattern := key = "convert" ? "i)^\s*[x×«*]?\s*([0-9lioS.]+(?:\s+[0-9lioS.]+)*)\s+" : "i)^\s*[+*]?\s*([0-9lioS]+(?:\s+[0-9lioS]+)*)\s*%"
+		pattern := key = "convert" ? "i)^\s*[x\x{00D7}\x{00AB}*]?\s*([0-9lioS.]+(?:\s+[0-9lioS.]+)*)\s+" : "i)^\s*[+*]?\s*([0-9lioS]+(?:\s+[0-9lioS]+)*)\s*%"
 		if !ranges.Has(key) || !RegExMatch(line, pattern, &m)
 			return -1
 		raw := SSA_NormalizeNumberToken(RegExReplace(m[1], "\s+", ""))
@@ -10698,8 +10698,15 @@ UpdateHoneyGui() {
 
 	'
 	)
-	exec := ComObject("WScript.shell").Exec('"' exe_path64 '" /script /force *')
-	exec.StdIn.Write(script), exec.StdIn.Close()
+	try {
+		exec := ComObject("WScript.shell").Exec('"' exe_path64 '" /script /force *')
+		exec.StdIn.Write(script), exec.StdIn.Close()
+	} catch Error as err {
+		if IsSet(exec)
+			try exec.Terminate()
+		MsgBox "Unable to open Auto Jelly / SSA Roller.`n`n" err.Message, "Auto Jelly / SSA Roller", 0x40030
+		return 0
+	}
 	return (MGUIPID := exec.processID)
 }
 
