@@ -3179,7 +3179,7 @@ MainGui.Add("UpDown", "xp+20 yp-1 h16 -16 Range0-20 vPlanterBufferUpDown Disable
 MainGui.Add("Button", "xp+20 yp w14 h16 vPlanterBufferHelp Disabled" hidden, "?").OnEvent("Click", nm_PlanterBufferHelp)
 MainGui.Add("CheckBox", "x2 y211 w150 h13 vgotoPlanterField Disabled Checked" gotoPlanterField hidden, "Only Gather in Planter Field").OnEvent("Click", ba_gotoPlanterFieldSwitch_)
 MainGui.Add("CheckBox", "x2 y224 w150 h13 vgatherFieldSipping Disabled Checked" gatherFieldSipping hidden, "Gather Field Nectar Sipping").OnEvent("Click", ba_gatherFieldSippingSwitch_)
-MainGui.Add("CheckBox", "x2 y197 w144 h13 vAdaptivePlanterGatherInterrupt Disabled Checked" AdaptivePlanterGatherInterrupt hidden, "Interrupt Gather for Harvest").OnEvent("Click", ba_saveConfig_)
+MainGui.Add("CheckBox", "x2 y197 w144 h13 vAdaptivePlanterGatherInterrupt Disabled Checked" AdaptivePlanterGatherInterrupt hidden, "Gather Interrupt").OnEvent("Click", ba_saveConfig_)
 MainGui.Add("Text", "x10 y194 w137 h1 0x7 vTextLine3" hidden)
 MainGui.Add("Button", "x261 y24 w44 h18 -Wrap vTimersButton Disabled" hidden, "Timers").OnEvent("Click", ba_showPlanterTimers)
 MainGui.Add("Button", "x308 y24 w49 h18 -Wrap vSimulatePlantersButton Disabled" hidden, "Simulate").OnEvent("Click", ba_showPlanterSimulator)
