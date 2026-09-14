@@ -10100,7 +10100,7 @@ UpdateHoneyGui() {
 			, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin, stopping
 		doublePassive := (DoublePassiveCheck = 1)
 		static rollCooldown := 1100
-		if (!session.pendingRoll && session.lastRollTick) {
+		if (!session.pendingRoll && session.stage = "open" && session.lastRollTick) {
 			elapsed := A_TickCount - session.lastRollTick
 			if (elapsed < rollCooldown)
 				SSA_Wait(rollCooldown - elapsed)
@@ -10146,7 +10146,7 @@ UpdateHoneyGui() {
 			return 0
 		if session.directResult && signature = session.previousSignature
 			return -4
-		confirmed := SSA_ReadDialog(Min(5000, Max(1, 15000 - (A_TickCount - session.pendingSince))))
+		confirmed := SSA_ReadDialog(Min(5000, Max(1, 15000 - (A_TickCount - session.pendingSince))), true)
 		SSA_CheckWindow(session)
 		if stopping
 			return 0
@@ -10278,19 +10278,50 @@ UpdateHoneyGui() {
 			return 1
 		return 0
 	}
-	SSA_ReadDialog(timeoutMs := 5000) {
+	SSA_ReadDialog(timeoutMs := 5000, preferResult := false) {
 		global windowX, windowY, windowWidth, windowHeight, stopping
-		width := Min(windowWidth, Max(700, Round(windowHeight * 0.75))), x := windowX + (windowWidth - width) // 2
-		bitmap := Gdip_BitmapFromScreen(x "|" windowY "|" width "|" windowHeight)
-		if !bitmap
-			throw Error("Unable to capture the SSA menu.")
-		try return SSA_ReadDialogBitmap(bitmap, timeoutMs, () => stopping, x, windowY)
-		finally Gdip_DisposeImage(bitmap)
+		static cachedArea := false, cachedWindow := ""
+		window := windowX "|" windowY "|" windowWidth "|" windowHeight
+		if window != cachedWindow
+			cachedArea := false, cachedWindow := window
+		deadline := A_TickCount + timeoutMs, areas := []
+		if preferResult && cachedArea
+			areas.Push(cachedArea)
+		width := Min(windowWidth, Max(700, Round(windowHeight * 0.75)))
+		areas.Push({x: windowX + (windowWidth - width) // 2, y: windowY, w: width, h: windowHeight})
+		for index, area in areas {
+			remaining := deadline - A_TickCount
+			if remaining <= 0
+				throw Error("SSA menu recognition timed out.",, "timeout")
+			focused := index < areas.Length
+			bitmap := Gdip_BitmapFromScreen(area.x "|" area.y "|" area.w "|" area.h)
+			if !bitmap
+				throw Error("Unable to capture the SSA menu.")
+			try dialog := SSA_ReadDialogBitmap(bitmap, focused ? Max(1, remaining * 3 // 4) : remaining, () => stopping, area.x, area.y)
+			catch Error as err {
+				if !focused || err.Extra != "timeout"
+					throw
+				dialog := {kind: "unknown"}
+			} finally Gdip_DisposeImage(bitmap)
+			if dialog.kind = "result" {
+				bounds := dialog.area
+				x := Max(windowX, Floor(bounds.x)), y := Max(windowY, Floor(bounds.y))
+				w := Min(windowX + windowWidth, Ceil(bounds.x + bounds.w)) - x
+				h := Min(windowY + windowHeight, Ceil(bounds.y + bounds.h)) - y
+				cachedArea := w > 0 && h > 0 ? {x: x, y: y, w: w, h: h} : false
+				return dialog
+			}
+			if !focused
+				return dialog
+			cachedArea := false
+		}
 	}
 	SSA_ReadDialogBitmap(bitmap, timeoutMs := 5000, cancelled := 0, x := 0, y := 0) {
-		deadline := A_TickCount + timeoutMs, tsv := "", dialog := {kind: "unknown"}
+		deadline := A_TickCount + timeoutMs, tsv := "", dialog := {kind: "unknown"}, focusedLight := false
 		Gdip_GetImageDimensions(bitmap, &w, &h)
 		for method in ["original", "dark", "light", "wide"] {
+			if method = "wide" && !focusedLight
+				continue
 			prepared := 0, crop := 0, dx := 0, dy := 0
 			try {
 				if method = "dark"
@@ -10302,6 +10333,7 @@ UpdateHoneyGui() {
 						if cw > 0 && ch > 0
 							crop := Gdip_CloneBitmapArea(bitmap, dx, dy, cw, ch)
 					}
+					focusedLight := !!crop
 					prepared := NM_OCRLightText(crop ? crop : bitmap, cancelled)
 				}
 				remaining := deadline - A_TickCount
@@ -10394,7 +10426,8 @@ UpdateHoneyGui() {
 				spacing := (new.x + new.w / 2) - (old.x + old.w / 2)
 				if spacing >= 60 {
 					candidate := {kind: "candidate", x: old.x + old.w / 2 - spacing * 0.6, y: title.y - title.h, w: spacing * 2.2, h: new.y - title.y + title.h + spacing * 2.5}
-					candidate.result := {kind: "result", x: Round((new.x + new.w / 2 + old.x + old.w / 2) / 2 + spacing * 0.035), y: Round(Max(old.y + old.h, new.y + new.h) + new.h * 0.4), w: Round(spacing * 0.94), h: Round(spacing * 2.5), bottom: new.y + spacing * 2.5}
+					area := {x: candidate.x, y: candidate.y, w: candidate.w, h: candidate.h}
+					candidate.result := {kind: "result", area: area, x: Round((new.x + new.w / 2 + old.x + old.w / 2) / 2 + spacing * 0.035), y: Round(Max(old.y + old.h, new.y + new.h) + new.h * 0.4), w: Round(spacing * 0.94), h: Round(spacing * 2.5), bottom: new.y + spacing * 2.5}
 				}
 			}
 			keep := new ? SSA_DialogWord(words, "keep", new.y + new.h, new.y + (new.x - (old ? old.x : new.x)) * 2.5) : 0
@@ -10405,7 +10438,7 @@ UpdateHoneyGui() {
 				y := Round(Max(old.y + old.h, new.y + new.h) + new.h * 0.4)
 				w := Round(spacing * 0.94), h := Round(Min(keep.y, replace.y) - Max(keep.h, replace.h) * 0.5 - y)
 				if spacing >= 60 && h >= spacing * 0.35 && h <= spacing * 2.5
-					return {kind: "result", x: x, y: y, w: w, h: h, bottom: Min(keep.y + keep.h, replace.y + replace.h)}
+					return {kind: "result", area: candidate.result.area, x: x, y: y, w: w, h: h, bottom: Min(keep.y + keep.h, replace.y + replace.h)}
 			}
 		}
 		if !RegExMatch(text, "\b(?:replace|keep|created|old|new|yes|no|guarantee)\b") && RegExMatch(text, "\bspend 10000000000 honey to generate a supreme star amulet\b")
@@ -10434,7 +10467,7 @@ UpdateHoneyGui() {
 			return -4
 		SSA_CheckWindow(session)
 		started := A_TickCount
-		try dialog := SSA_ReadDialog(Min(5000, remaining))
+		try dialog := SSA_ReadDialog(Min(5000, remaining), session.stage != "purchase")
 		catch Error as err {
 			if err.Extra != "timeout"
 				throw
@@ -10466,9 +10499,10 @@ UpdateHoneyGui() {
 			SSA_CheckWindow(session)
 			if !session.reserved
 				ssa_subHoney(cost), session.reserved := true
+			MouseMove Round(target.x + target.w / 2), Round(target.y + target.h / 2), 0
 			Click Round(target.x + target.w / 2), Round(target.y + target.h / 2)
 			session.stage := "clicked", session.phaseSince := A_TickCount, session.lastRollTick := A_TickCount
-			MouseMove session.x + 10, session.y + session.h - 10
+			MouseMove session.x + 10, session.y + session.h - 10, 0
 			SSA_Wait(150)
 			return 0
 		}
