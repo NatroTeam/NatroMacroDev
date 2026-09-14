@@ -3,8 +3,10 @@ NM_TesseractOCR(bitmap, timeoutMs := 3000, cancelled := 0, layout := false) {
 	static serial := 0
 	deadline := A_TickCount + timeoutMs
 	CheckDeadline() {
-		if (cancelled && cancelled.Call()) || A_TickCount >= deadline
-			throw Error("OCR was cancelled or timed out.")
+		if cancelled && cancelled.Call()
+			throw Error("OCR was cancelled.")
+		if A_TickCount >= deadline
+			throw Error("OCR timed out.",, "timeout")
 	}
 	CheckDeadline()
 	executable := runtime "\tesseract.exe"
@@ -105,35 +107,63 @@ NM_OCRLeftInset(bitmap) {
 }
 
 NM_OCRLightText(bitmap, cancelled := 0) {
+	channels := NM_OCRTextMask(bitmap, 180 / 255, "1|0|0|0|0|0|1|0|0|0|0|0|1|0|0|0|0|0|1|0|0|0|0|0|1", cancelled)
+	try return NM_OCRTextMask(channels, 0.2, "-0.3333|-0.3333|-0.3333|0|0|-0.3333|-0.3333|-0.3333|0|0|-0.3333|-0.3333|-0.3333|0|0|0|0|0|1|0|1|1|1|0|1", cancelled)
+	finally Gdip_DisposeImage(channels)
+}
+NM_OCRDarkText(bitmap, cancelled := 0) {
+	return NM_OCRTextMask(bitmap, 0.35, "0.3333|0.3333|0.3333|0|0|0.3333|0.3333|0.3333|0|0|0.3333|0.3333|0.3333|0|0|0|0|0|1|0|0|0|0|0|1", cancelled)
+}
+
+NM_OCRTextMask(bitmap, threshold, matrix, cancelled := 0) {
+	if cancelled && cancelled.Call()
+		throw Error("OCR was cancelled.")
 	Gdip_GetImageDimensions(bitmap, &w, &h)
-	copy := Gdip_CloneBitmapArea(bitmap, 0, 0, w, h)
-	if !copy
-		throw Error("Unable to prepare the SSA menu.")
-	locked := false
+	copy := Gdip_CreateBitmap(w, h), graphics := 0, attributes := 0, complete := false
 	try {
-		if Gdip_LockBits(copy, 0, 0, w, h, &stride, &scan, &data)
-			throw Error("Unable to read the SSA menu pixels.")
-		locked := true
-		loop h {
-			if Mod(A_Index, 32) = 0 {
-				Sleep -1
-				if cancelled && cancelled.Call()
-					throw Error("OCR was cancelled.")
-			}
-			row := scan + (A_Index - 1) * stride
-			loop w {
-				address := row + (A_Index - 1) * 4
-				pixel := NumGet(address, "uint")
-				light := Min((pixel >> 16) & 255, (pixel >> 8) & 255, pixel & 255) > 180
-				NumPut("uint", light ? 0xFF000000 : 0xFFFFFFFF, address)
-			}
-		}
-		Gdip_UnlockBits(copy, &data), locked := false
+		if !copy
+			throw Error("Unable to prepare the SSA menu.")
+		graphics := Gdip_GraphicsFromImage(copy)
+		attributes := Gdip_SetImageAttributesColorMatrix(matrix)
+		if !graphics || !attributes || DllCall("gdiplus\GdipSetImageAttributesThreshold", "ptr", attributes, "int", 1, "int", 1, "float", threshold)
+			throw Error("Unable to prepare the SSA menu colors.")
+		if DllCall("gdiplus\GdipDrawImageRectRectI", "ptr", graphics, "ptr", bitmap, "int", 0, "int", 0, "int", w, "int", h, "int", 0, "int", 0, "int", w, "int", h, "int", 2, "ptr", attributes, "ptr", 0, "ptr", 0)
+			throw Error("Unable to prepare the SSA menu pixels.")
+		if cancelled && cancelled.Call()
+			throw Error("OCR was cancelled.")
+		complete := true
 		return copy
-	} catch {
-		if locked
-			Gdip_UnlockBits(copy, &data)
-		Gdip_DisposeImage(copy)
-		throw
+	} finally {
+		if attributes
+			Gdip_DisposeImageAttributes(attributes)
+		if graphics
+			Gdip_DeleteGraphics(graphics)
+		if !complete && copy
+			Gdip_DisposeImage(copy)
+	}
+}
+
+NM_OCRTextBitmap(bitmap, scale, interpolation, grayscale := false) {
+	Gdip_GetImageDimensions(bitmap, &w, &h)
+	copy := Gdip_CreateBitmap(w * scale + 20, h * scale + 20), graphics := 0, complete := false
+	try {
+		if !copy
+			throw Error("Unable to prepare the SSA text.")
+		graphics := Gdip_GraphicsFromImage(copy)
+		if !graphics
+			throw Error("Unable to prepare the SSA text.")
+		Gdip_GraphicsClear(graphics, 0xFFFFFFFF)
+		Gdip_SetInterpolationMode(graphics, interpolation)
+		Gdip_SetPixelOffsetMode(graphics, 2)
+		matrix := grayscale ? "0.299|0.299|0.299|0|0|0.587|0.587|0.587|0|0|0.114|0.114|0.114|0|0|0|0|0|1|0|0|0|0|0|1" : 1
+		if Gdip_DrawImage(graphics, bitmap, 10, 10, w * scale, h * scale, 0, 0, w, h, matrix)
+			throw Error("Unable to resize the SSA text.")
+		complete := true
+		return copy
+	} finally {
+		if graphics
+			Gdip_DeleteGraphics(graphics)
+		if !complete && copy
+			Gdip_DisposeImage(copy)
 	}
 }

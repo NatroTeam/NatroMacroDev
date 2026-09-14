@@ -10120,17 +10120,17 @@ UpdateHoneyGui() {
 		Loop 5 {
 			if stopping
 				return 0
-			remaining := 8000 - (A_TickCount - session.pendingSince)
+			remaining := 15000 - (A_TickCount - session.pendingSince)
 			if remaining <= 0
 				return -3
-			try text := SSA_ReadOcrText(ocrX, ocrY, ocrW, ocrH, Min(3000, remaining))
+			try text := SSA_ReadOcrText(ocrX, ocrY, ocrW, ocrH, Min(5000, remaining), session.expectedDouble)
 			catch Error as err {
 				SSA_Log("OCR retry: " err.Message)
 				text := []
 			}
 			if stopping
 				return 0
-			if A_TickCount - session.pendingSince >= 8000
+			if A_TickCount - session.pendingSince >= 15000
 				return -3
 			SSA_CheckWindow(session)
 			validOcr := SSA_OcrHasFullRoll(text, session.expectedDouble, &ocrSegments)
@@ -10146,13 +10146,13 @@ UpdateHoneyGui() {
 			return 0
 		if session.directResult && signature = session.previousSignature
 			return -4
-		confirmed := SSA_ReadDialog(Min(3000, Max(1, 8000 - (A_TickCount - session.pendingSince))))
+		confirmed := SSA_ReadDialog(Min(5000, Max(1, 15000 - (A_TickCount - session.pendingSince))))
 		SSA_CheckWindow(session)
 		if stopping
 			return 0
-		if A_TickCount - session.pendingSince >= 8000
+		if A_TickCount - session.pendingSince >= 15000
 			return -3
-		if confirmed.kind != "result" || Abs(confirmed.x - ocrX) > 3 || Abs(confirmed.y - ocrY) > 3 || Abs(confirmed.w - ocrW) > 3 || Abs(confirmed.h - ocrH) > 3
+		if confirmed.kind != "result" || Abs(confirmed.x - ocrX) > Max(5, ocrW * 0.05) || Abs(confirmed.y - ocrY) > Max(5, ocrH * 0.05) || Abs(confirmed.w - ocrW) > Max(5, ocrW * 0.05) || Abs(confirmed.h - ocrH) > Max(5, ocrH * 0.05)
 			return -4
 		session.pendingRoll := false
 		session.pendingSince := 0
@@ -10278,31 +10278,97 @@ UpdateHoneyGui() {
 			return 1
 		return 0
 	}
-	SSA_ReadDialog(timeoutMs := 3000) {
+	SSA_ReadDialog(timeoutMs := 5000) {
 		global windowX, windowY, windowWidth, windowHeight, stopping
-		width := Min(700, windowWidth), x := windowX + (windowWidth - width) // 2
+		width := Min(windowWidth, Max(700, Round(windowHeight * 0.75))), x := windowX + (windowWidth - width) // 2
 		bitmap := Gdip_BitmapFromScreen(x "|" windowY "|" width "|" windowHeight)
 		if !bitmap
 			throw Error("Unable to capture the SSA menu.")
 		try return SSA_ReadDialogBitmap(bitmap, timeoutMs, () => stopping, x, windowY)
 		finally Gdip_DisposeImage(bitmap)
 	}
-	SSA_ReadDialogBitmap(bitmap, timeoutMs := 3000, cancelled := 0, x := 0, y := 0) {
-		deadline := A_TickCount + timeoutMs
-		tsv := NM_TesseractOCR(bitmap, timeoutMs, cancelled, true)
-		dialog := SSA_ParseDialog(tsv, x, y)
-		if dialog.kind = "purchase" || dialog.kind = "result"
+	SSA_ReadDialogBitmap(bitmap, timeoutMs := 5000, cancelled := 0, x := 0, y := 0) {
+		deadline := A_TickCount + timeoutMs, tsv := "", dialog := {kind: "unknown"}
+		Gdip_GetImageDimensions(bitmap, &w, &h)
+		for method in ["original", "dark", "light", "wide"] {
+			prepared := 0, crop := 0, dx := 0, dy := 0
+			try {
+				if method = "dark"
+					prepared := NM_OCRDarkText(bitmap, cancelled)
+				else if method = "light" || method = "wide" {
+					if method = "light" && dialog.kind = "candidate" {
+						dx := Max(0, Floor(dialog.x - x)), dy := Max(0, Floor(dialog.y - y))
+						cw := Min(w - dx, Ceil(dialog.w)), ch := Min(h - dy, Ceil(dialog.h))
+						if cw > 0 && ch > 0
+							crop := Gdip_CloneBitmapArea(bitmap, dx, dy, cw, ch)
+					}
+					prepared := NM_OCRLightText(crop ? crop : bitmap, cancelled)
+				}
+				remaining := deadline - A_TickCount
+				if remaining <= 0
+					throw Error("SSA menu recognition timed out.",, "timeout")
+				read := NM_TesseractOCR(prepared ? prepared : bitmap, remaining, cancelled, true)
+				if crop {
+					shifted := ""
+					for line in StrSplit(read, "``n", "``r") {
+						cells := StrSplit(line, "``t")
+						if cells.Length < 12 || cells[1] != "5"
+							continue
+						cells[7] += dx, cells[8] += dy
+						for cell in cells
+							shifted .= (A_Index = 1 ? "" : "``t") cell
+						shifted .= "``n"
+					}
+					read := shifted
+				}
+				tsv .= "``n" read
+				dialog := SSA_ParseDialog(tsv, x, y)
+				if dialog.kind = "result" || dialog.kind = "candidate"
+					dialog := SSA_TrimResult(bitmap, dialog, x, y)
+				if dialog.kind = "purchase" || dialog.kind = "result"
+					return dialog
+			} finally {
+				if prepared
+					Gdip_DisposeImage(prepared)
+				if crop
+					Gdip_DisposeImage(crop)
+			}
+		}
+		return dialog.kind = "candidate" ? {kind: "unknown"} : dialog
+	}
+	SSA_TrimResult(bitmap, dialog, offsetX, offsetY) {
+		result := dialog.kind = "candidate" ? dialog.result : dialog
+		Gdip_GetImageDimensions(bitmap, &width, &height)
+		x := Max(0, Round(result.x - offsetX + result.w * 0.15))
+		right := Min(width, Round(result.x - offsetX + result.w * 0.85))
+		top := Max(0, Round(result.y - offsetY + result.w * 0.2))
+		bottom := Min(height, Round(result.bottom - offsetY))
+		if right <= x || bottom <= top || x - Round(result.w / 0.94) < 0 || Gdip_LockBits(bitmap, 0, 0, width, height, &stride, &scan, &data)
 			return dialog
-		light := NM_OCRLightText(bitmap, cancelled)
 		try {
-			remaining := deadline - A_TickCount
-			if remaining <= 0
-				throw Error("SSA menu recognition timed out.")
-			return SSA_ParseDialog(tsv "``n" NM_TesseractOCR(light, remaining, cancelled, true), x, y)
-		} finally Gdip_DisposeImage(light)
+			streak := 0
+			loop bottom - top {
+				y := top + A_Index - 1, green := 0, red := 0, samples := 0
+				loop Ceil((right - x) / 4) {
+					pixel := NumGet(scan + y * stride + (x + (A_Index - 1) * 4) * 4, "uint")
+					r := (pixel >> 16) & 255, g := (pixel >> 8) & 255, b := pixel & 255
+					green += g > 70 && r < 140 && g > r * 1.5 && g > b * 1.4
+					pixel := NumGet(scan + y * stride + (x - Round(result.w / 0.94) + (A_Index - 1) * 4) * 4, "uint")
+					r := (pixel >> 16) & 255, g := (pixel >> 8) & 255, b := pixel & 255
+					red += r > 120 && g < 140 && b < 140 && r > g * 1.5 && r > b * 1.5
+					samples += 1
+				}
+				streak := green >= samples * 0.65 && red >= samples * 0.65 ? streak + 1 : 0
+				if streak = 2 {
+					result.h := Round(offsetY + y - 3 - result.y)
+					return result
+				}
+			}
+		} finally Gdip_UnlockBits(bitmap, &data)
+		return dialog
 	}
 	SSA_ParseDialog(tsv, offsetX := 0, offsetY := 0) {
-		words := [], text := ""
+		words := [], text := "", candidate := 0
 		for line in StrSplit(tsv, "``n", "``r") {
 			cells := StrSplit(line, "``t")
 			if cells.Length < 12 || cells[1] != "5" || !IsNumber(cells[7]) || !IsNumber(cells[8]) || !IsNumber(cells[9]) || !IsNumber(cells[10])
@@ -10319,30 +10385,39 @@ UpdateHoneyGui() {
 		if RegExMatch(text, "\bspend 500 billion honey to guarantee 2 passive abilities\b") && yes && no && yes.y - spend.y < spend.h * 8 && yes.x < no.x && Abs(yes.y - no.y) <= Max(yes.h, no.h) {
 			return {kind: "purchase", yes: yes, no: no}
 		}
-		title := SSA_DialogWord(words, "supreme", offsetY + 150)
-		if title && RegExMatch(text, "\bsupreme star amulet\b") {
-			old := SSA_DialogWord(words, "old", title.y + title.h)
-			new := SSA_DialogWord(words, "new", title.y + title.h)
-			keep := new ? SSA_DialogWord(words, "keep", new.y + new.h, new.y + 350) : 0
-			replace := new ? SSA_DialogWord(words, "replace", new.y + new.h, new.y + 350) : 0
+		for title in words {
+			if title.text != "supreme" || !RegExMatch(text, "\bsupreme star amu[l1i]et\b")
+				continue
+			old := SSA_DialogWord(words, "old", title.y + title.h, title.y + title.h * 8)
+			new := SSA_DialogWord(words, "new", title.y + title.h, title.y + title.h * 8)
+			if old && new && old.x < new.x && Abs(old.y - new.y) <= Max(old.h, new.h) {
+				spacing := (new.x + new.w / 2) - (old.x + old.w / 2)
+				if spacing >= 60 {
+					candidate := {kind: "candidate", x: old.x + old.w / 2 - spacing * 0.6, y: title.y - title.h, w: spacing * 2.2, h: new.y - title.y + title.h + spacing * 2.5}
+					candidate.result := {kind: "result", x: Round((new.x + new.w / 2 + old.x + old.w / 2) / 2 + spacing * 0.035), y: Round(Max(old.y + old.h, new.y + new.h) + new.h * 0.4), w: Round(spacing * 0.94), h: Round(spacing * 2.5), bottom: new.y + spacing * 2.5}
+				}
+			}
+			keep := new ? SSA_DialogWord(words, "keep", new.y + new.h, new.y + (new.x - (old ? old.x : new.x)) * 2.5) : 0
+			replace := new ? SSA_DialogWord(words, "replace", new.y + new.h, new.y + (new.x - (old ? old.x : new.x)) * 2.5) : 0
 			if old && new && keep && replace && old.x < new.x && keep.x < replace.x && Abs(old.y - new.y) <= Max(old.h, new.h) && Abs(keep.y - replace.y) <= Max(keep.h, replace.h) {
 				spacing := (new.x + new.w / 2) - (old.x + old.w / 2)
 				x := Round((new.x + new.w / 2 + old.x + old.w / 2) / 2 + spacing * 0.035)
 				y := Round(Max(old.y + old.h, new.y + new.h) + new.h * 0.4)
-				w := Round(spacing * 0.94), h := Round(Min(keep.y, replace.y) - new.h * 0.5 - y)
-				if w >= 80 && w <= 350 && h >= 70 && h <= 350
-					return {kind: "result", x: x, y: y, w: w, h: h}
+				w := Round(spacing * 0.94), h := Round(Min(keep.y, replace.y) - Max(keep.h, replace.h) * 0.5 - y)
+				if spacing >= 60 && h >= spacing * 0.35 && h <= spacing * 2.5
+					return {kind: "result", x: x, y: y, w: w, h: h, bottom: Min(keep.y + keep.h, replace.y + replace.h)}
 			}
 		}
 		if !RegExMatch(text, "\b(?:replace|keep|created|old|new|yes|no|guarantee)\b") && RegExMatch(text, "\bspend 10000000000 honey to generate a supreme star amulet\b")
 			return {kind: "generator"}
-		return {kind: "unknown"}
+		return candidate ? candidate : {kind: "unknown"}
 	}
 	SSA_DialogWord(words, text, below := -2147483648, above := 2147483647) {
+		found := 0
 		for word in words
-			if word.text = text && word.y >= below && word.y < above
-				return word
-		return 0
+			if word.text = text && word.y >= below && word.y < above && (!found || word.y < found.y)
+				found := word
+		return found
 	}
 	SSA_CheckWindow(session) {
 		global windowX, windowY, windowWidth, windowHeight
@@ -10354,15 +10429,23 @@ UpdateHoneyGui() {
 	}
 	SSA_PrepareRoll(session, doublePassive) {
 		global stopping
-		remaining := 8000 - (A_TickCount - session.phaseSince)
+		remaining := 15000 - (A_TickCount - session.phaseSince)
 		if remaining <= 0
 			return -4
 		SSA_CheckWindow(session)
-		dialog := SSA_ReadDialog(Min(3000, remaining))
+		started := A_TickCount
+		try dialog := SSA_ReadDialog(Min(5000, remaining))
+		catch Error as err {
+			if err.Extra != "timeout"
+				throw
+			SSA_Log("Menu retry: " err.Message)
+			dialog := {kind: "unknown"}
+		}
+		SSA_Log("Menu " session.stage ": " dialog.kind " at " session.w "x" session.h " in " (A_TickCount - started) " ms")
 		SSA_CheckWindow(session)
 		if stopping
 			return 0
-		if A_TickCount - session.phaseSince >= 8000
+		if A_TickCount - session.phaseSince >= 15000
 			return -4
 		if dialog.kind = "result" && (session.stage = "inspect" || session.stage = "clicked" || (!doublePassive && session.stage = "purchase")) {
 			session.directResult := session.stage = "purchase"
@@ -10411,15 +10494,15 @@ UpdateHoneyGui() {
 			Sleep Max(1, Min(25, deadline - A_TickCount))
 		return !stopping
 	}
-	SSA_ReadOcrText(x, y, w, h, timeoutMs := 3000) {
+	SSA_ReadOcrText(x, y, w, h, timeoutMs := 5000, doublePassive := false) {
 		global stopping
 		pBitmap := Gdip_BitmapFromScreen(x "|" y "|" w "|" h)
 		if !pBitmap
 			throw Error("Unable to capture the SSA result.")
-		try return SSA_ReadOcrBitmap(pBitmap, timeoutMs, () => stopping)
+		try return SSA_ReadOcrBitmap(pBitmap, timeoutMs, () => stopping, doublePassive)
 		finally Gdip_DisposeImage(pBitmap)
 	}
-	SSA_ReadOcrBitmap(pBitmap, timeoutMs := 3000, cancelled := 0) {
+	SSA_ReadOcrBitmap(pBitmap, timeoutMs := 5000, cancelled := 0, doublePassive := false) {
 		deadline := A_TickCount + timeoutMs
 		Gdip_GetImageDimensions(pBitmap, &w, &h)
 		left := NM_OCRLeftInset(pBitmap)
@@ -10430,16 +10513,16 @@ UpdateHoneyGui() {
 			if cropped
 				pBitmap := cropped, w -= left
 			signature := "", readings := 0, observed := Map()
-			for method in [{scale: 2, interpolation: 7}, {scale: 2, interpolation: 0}, {scale: 3, interpolation: 7}] {
+			for method in [{scale: 2, interpolation: 7, gray: false}, {scale: 2, interpolation: 0, gray: false}, {scale: 3, interpolation: 7, gray: false}, {scale: 3, interpolation: 7, gray: true}] {
 				if A_TickCount >= deadline || (cancelled && cancelled.Call())
 					throw Error("OCR was cancelled or timed out.")
-				prepared := Gdip_ResizeBitmap(pBitmap, w * method.scale, h * method.scale, method.interpolation)
+				prepared := NM_OCRTextBitmap(pBitmap, method.scale, method.interpolation, method.gray)
 				if !prepared
 					throw Error("Unable to prepare the SSA image.")
 				try {
 					text := NM_TesseractOCR(prepared, Max(0, deadline - A_TickCount), cancelled)
 					lines := StrSplit(text, "``n")
-					complete := SSA_OcrHasFullRoll(lines, false, &segments)
+					complete := SSA_OcrHasFullRoll(lines, doublePassive, &segments)
 					for entry in segments {
 						if observed.Has(entry.key) && observed[entry.key] != entry.value
 							return []
