@@ -144,7 +144,7 @@ PN_CandidatePlans(current, events, candidates, minimum, buffer, buildToFull, can
             dispatch := candidate.HasOwnProp("dispatchLead") ? candidate.dispatchLead : lead
             growth := PN_Interval(levels[delay], arrivals[delay], rate, stats[4]*3600,
                 minimum, buffer, buildToFull, Max(0, lead-dispatch))
-            growth := Max(growth, lead), seconds := delay+growth
+            growth := Max(growth, Max(0, growth-dispatch)+lead), seconds := delay+growth
             if !levels.Has(seconds)
                 levels[seconds] := PN_Forecast(current, events, seconds)
             amount := rate*Min(growth, stats[4]*3600)

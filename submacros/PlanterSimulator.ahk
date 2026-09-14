@@ -152,13 +152,13 @@ PS_DrawButton(wParam, item, *) {
         DllCall("user32\FillRect", "Ptr", dc, "Ptr", rect, "Ptr", back)
         brush := DllCall("gdi32\CreateSolidBrush", "UInt", PS_RGB(fill), "Ptr")
         pen := DllCall("gdi32\CreatePen", "Int", 0, "Int", Max(1, Round(A_ScreenDPI/96)), "UInt", PS_RGB(border), "Ptr")
-        DllCall("gdi32\SelectObject", "Ptr", dc, "Ptr", brush)
-        DllCall("gdi32\SelectObject", "Ptr", dc, "Ptr", pen)
+        SelectObject(dc, brush)
+        SelectObject(dc, pen)
         radius := Round(12*A_ScreenDPI/96)
         DllCall("gdi32\RoundRect", "Ptr", dc, "Int", left, "Int", top, "Int", right, "Int", bottom, "Int", radius, "Int", radius)
         font := SendMessage(0x31, 0, 0, hwnd)
         if font
-            DllCall("gdi32\SelectObject", "Ptr", dc, "Ptr", font)
+            SelectObject(dc, font)
         DllCall("gdi32\SetBkMode", "Ptr", dc, "Int", 1)
         DllCall("gdi32\SetTextColor", "Ptr", dc, "UInt", PS_RGB(ink))
         DllCall("user32\DrawTextW", "Ptr", dc, "Str", entry.control.Text, "Int", -1, "Ptr", rect, "UInt", 0x825)
@@ -167,7 +167,7 @@ PS_DrawButton(wParam, item, *) {
             DllCall("gdi32\RestoreDC", "Ptr", dc, "Int", saved)
         for resource in [back, brush, pen]
             if resource
-                DllCall("gdi32\DeleteObject", "Ptr", resource)
+                DeleteObject(resource)
     }
     return true
 }
@@ -399,7 +399,12 @@ PS_Config() {
 }
 
 PS_Write(path, text) {
+    SplitPath path,, &directory
+    if (directory != "" && !DirExist(directory))
+        throw Error("Choose an existing folder for the export.")
     file := FileOpen(path, "w", "UTF-8")
+    if !file
+        throw OSError(A_LastError, , "Could not open the export file.")
     try file.Write(text)
     finally file.Close()
 }

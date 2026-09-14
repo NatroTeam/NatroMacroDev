@@ -6622,21 +6622,12 @@ nm_PlanterBuffer(GuiCtrl, *){
 nm_PlanterBufferHelp(*){
 	MsgBox("
 	(
-	Buffer is a % of your nectar MINIMUM (% set in the Min column).
-	Example: min = 70, buffer = 10% => lower buffer = 63%, upper target = 77%.
-	Build favors full planter growth until the nectar reaches its upper buffer target.
-	Maintain uses 75% of the band: this example plans toward 64.75%.
-	The remaining band provides a margin before the 63% lower buffer.
-	Growth lasts until that protected deadline or full maturity, whichever comes first.
-	Inside the band, harvests stay within its remaining safe window.
-	When that cannot fit useful growth, recovery aims toward the upper target.
-	Below the floor, a buffer narrower than one HUD step favors full growth instead.
-	Maintenance can also free a slot in time for another nectar that has no planter.
-	After buildup, falling below the lower buffer enters recovery.
-	A full harvest can exceed the upper target; extra nectar is useful reserve.
-	New surplus planting waits when an eligible nectar still lacks its lower buffer.
-	Pending nectar helps choose the next planter; it is credited only after collection.
-	Travel estimates and available equipment affect how well the floor can be maintained.
+	Buffer sets a range around each nectar minimum.
+	Example: 70% minimum with 10% buffer gives a 63% lower limit and 77% upper target.
+	Buildup favors full-grown planters until nectar reaches the upper target.
+	Maintenance allows longer growth while aiming slightly above the lower limit.
+	Below that limit, recovery works toward the upper target again.
+	Your available planters, fields and travel times affect which targets can be maintained.
 	)", "Planter Buffer", 0x40040)
 }
 ba_gotoPlanterFieldSwitch_(*){
@@ -21124,6 +21115,8 @@ ba_harvestPlanter(planterNum){
 			return 0
 	}
 	else {
+		if (!(hwnd := GetRobloxHWND()) || !WinActive("ahk_id " hwnd))
+			return 0
 		SendInput "{" SC_E " down}"
 		Sleep 100
 		SendInput "{" SC_E " up}"
@@ -21148,24 +21141,33 @@ ba_harvestPlanter(planterNum){
 
 		Sleep 50 ; wait for game to update frame
 		GetRobloxClientPos(hwnd)
+		clicked := false
 		loop 3 {
+			if !WinActive("ahk_id " hwnd)
+				return 0
 			pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-52 "|500|150")
 			if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1) {
 				MouseMove windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1), windowY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1)
 				Sleep 150
+				if !WinActive("ahk_id " hwnd) {
+					Gdip_DisposeImage(pBMScreen)
+					return 0
+				}
 				Click
 				sleep 100
 				MouseMove windowX+350, windowY+offsetY+100
 				Gdip_DisposeImage(pBMScreen)
-				If PlanterHarvestNow%planterNum%
-					IniWrite 0, "settings\nm_config.ini", "Planters", "PlanterHarvestNow" planterNum
+				clicked := true
 				break
 			}
 			Gdip_DisposeImage(pBMScreen)
 			Sleep 50 ; delay in case of lag
 		}
 
-
+		if !ba_ConfirmPlanterHarvest(planterNum, hwnd, clicked)
+			return 0
+		PlanterHarvestNow%planterNum% := 0
+		IniWrite 0, "settings\nm_config.ini", "Planters", "PlanterHarvestNow" planterNum
 		ba_PlanterAccepted(planterNum)
 		;reset values
 		PlanterName%planterNum% := "None"
@@ -21216,6 +21218,37 @@ ba_harvestPlanter(planterNum){
 		}
 		return 1
 	}
+}
+
+ba_ConfirmPlanterHarvest(slot, hwnd, clicked) {
+    global bitmaps, windowX, windowY, windowWidth, windowHeight
+        , PlanterNectar1, PlanterNectar2, PlanterNectar3
+    state := ba_TimingState(slot), clearFrames := 0
+    Loop 20 {
+        if (!WinActive("ahk_id " hwnd) || !GetRobloxClientPos(hwnd))
+            return false
+        screen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight)
+        if (!screen || screen = -1)
+            return false
+        try {
+            yes := Gdip_ImageSearch(screen, bitmaps["yes"],, windowWidth//2-250, windowHeight//2-52,
+                windowWidth//2+250, windowHeight//2+98, 2,, 2)
+            no := Gdip_ImageSearch(screen, bitmaps["no"],, windowWidth//2-250, windowHeight//2-52,
+                windowWidth//2+250, windowHeight//2+98, 2,, 3)
+            prompt := Gdip_ImageSearch(screen, bitmaps["e_button"],, windowWidth//2-200, GetYOffset(hwnd)+36,
+                windowWidth//2, GetYOffset(hwnd)+156, 2,, 6)
+        } finally Gdip_DisposeImage(screen)
+        clearFrames := yes = 0 && no = 0 && prompt = 0 ? clearFrames+1 : 0
+        if (clearFrames >= 2) {
+            if clicked
+                return true
+            after := ba_GetNectarPercent(PlanterNectar%slot%, true)
+            if (state.before >= 0 && after > state.before)
+                return true
+        }
+        Sleep 100
+    }
+    return false
 }
 
 ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar, buildToFull := false, phase := ""){
