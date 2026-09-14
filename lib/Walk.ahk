@@ -1,5 +1,4 @@
 ﻿pToken := Gdip_Startup()
-
 ; buff characters for stack detection
 buff_characters := Map()
 buff_characters[0] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAKCAAAAACsrEBcAAAAAnRSTlMAAHaTzTgAAAArSURBVHgBY2Rg+MzAwMALxCAaQoDBZyYYmwlMYmXAAFApWPVnBkYIi5cBAJNvCLCTFAy9AAAAAElFTkSuQmCC")
@@ -48,6 +47,7 @@ Walk(n, hasteCap:=0)
 
 DetectMovespeed(&s, &f, hasteCap:=0)
 {
+	static chdc := CreateCompatibleDC(), last_width := 0, _deinit := {}.DefineProp("__Delete", {Call: deinit}), hbm := 0, obm := 0
 	DllCall("QueryPerformanceCounter", "Int64*", &s := 0)
 	
 	global hasty_guard, gifted_hasty, base_movespeed, buff_characters, bitmaps, offsetY
@@ -58,11 +58,17 @@ DetectMovespeed(&s, &f, hasteCap:=0)
 		return (DllCall("QueryPerformanceCounter", "Int64*", &f := 0), 10000000) ; large number to break walk loop
 	
 	; get screen bitmap of buff area from client window
-	chdc := CreateCompatibleDC(), hbm := CreateDIBSection(windowWidth, 30, chdc), obm := SelectObject(chdc, hbm), hhdc := GetDC()
+	if (!hbm || last_width != windowWidth) {
+		if (hbm)
+			SelectObject(chdc, obm), DeleteObject(hbm)
+		
+		hbm := CreateDIBSection(windowWidth, 30, chdc), obm := SelectObject(chdc, hbm)
+		last_width := windowWidth
+	}
+	hhdc := GetDC()
 	BitBlt(chdc, 0, 0, windowWidth, 30, hhdc, windowX, windowY+offsetY+48)
 	ReleaseDC(hhdc)
 	pBMArea := Gdip_CreateBitmapFromHBITMAP(hbm)
-	SelectObject(chdc, obm), DeleteObject(hbm), DeleteDC(hhdc), DeleteDC(chdc)
 	
 	; find haste buffs (haste, coconut haste)
 	x := 0
@@ -119,4 +125,14 @@ DetectMovespeed(&s, &f, hasteCap:=0)
 	v := ((base_movespeed + (coconut_haste ? 10 : 0) + (bear ? 4 : 0)) * (hasty_guard ? 1.1 : 1) * (gifted_hasty ? 1.15 : 1) * (1 + max(0, haste-hasteCap)*0.1) * (haste_plus ? 2 : 1) * (oil ? 1.2 : 1) * (smoothie ? 1.25 : 1))
 	
 	return (DllCall("QueryPerformanceCounter", "Int64*", &f := 0), v)
+	deinit(*) {
+		if (hbm && obm)
+			SelectObject(chdc, obm)
+
+		if (hbm)
+			DeleteObject(hbm)
+
+		if (chdc)
+			DeleteDC(chdc)
+	}
 }

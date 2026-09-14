@@ -35,7 +35,8 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "PlanterAllocation.ahk"
 #Include "PlanterSimulation.ahk"
 #Include "PlanterPlanner.ahk"
-#include "ErrorHandling.ahk"
+#Include "ErrorHandling.ahk"
+#Include "HashFile.ahk"
 
 #Warn VarUnset, Off
 
@@ -118,7 +119,7 @@ OnMessage(0x5561, ba_PlanterTravelFinished)
 OnMessage(0x0020, nm_WM_SETCURSOR)
 
 ; set version identifier
-VersionID := "1.1.0-B2"
+VersionID := "1.1.2"
 
 ;initial load warnings
 if (A_ScreenDPI != 96)
@@ -180,14 +181,20 @@ nm_importPatterns()
 	global patterns := Map()
 	patterns.CaseSense := 0
 	global patternlist := []
-	defaultpatterns := [
-		"Auryn", "CornerXSnake", "Diamonds", "e_lol", "Fork", "Lines", "Slimline", "Snake", "Squares", "Stationary", "SuperCat", "XSnake"
-	]
+
+	installedPatternHashes := []
+
+
 
 	if FileExist("settings\imported\patterns.ahk")
 		file := FileOpen("settings\imported\patterns.ahk", "r"), imported := file.Read(), file.Close()
 	else
 		imported := ""
+
+	if FileExist("settings\imported\patternHashes.ahk")
+		getHashes()
+	else
+		hashDefaults()
 
 	import := ""
 	Loop Files A_WorkingDir "\patterns\*.ahk"
@@ -204,8 +211,9 @@ nm_importPatterns()
 			), "Error", 0x40010 " T60"
 		if !InStr(imported, imported_pattern := '("' (pattern_name := StrReplace(A_LoopFileName, "." A_LoopFileExt)) '")`r`n' pattern '`r`n`r`n') 
 		{
-			for name in defaultpatterns {
-				if pattern_name = name {
+			patternhash := HashFile(A_LoopFilePath, 6)
+			for hash in installedPatternHashes {
+				if patternhash = hash {
 					bypassWarning := 1
 				}
 			}
@@ -282,6 +290,23 @@ nm_importPatterns()
 
 	if (import != imported)
 		file := FileOpen(A_WorkingDir "\settings\imported\patterns.ahk", "w-d"), file.Write(import), file.Close()
+
+
+	hashDefaults(){
+		hashes := []
+
+		output := FileOpen(A_WorkingDir "\settings\imported\patternHashes.ahk", "w-d")
+
+		loop files "patterns/*.ahk" {
+			fileHash := HashFile(A_LoopFileFullPath, 6)
+			hashes.push(fileHash)
+		}
+
+		output.Write(JSON.stringify(hashes))
+		output.Close()
+		installedPatternHashes := hashes
+	}
+	getHashes() => (installedPatternHashes := JSON.parse(FileRead("settings\imported\patternHashes.ahk")))
 }
 nm_importPatterns()
 
@@ -1192,9 +1217,9 @@ BuckoBee := Map("Abilities",
 		,[3,"Collect","Pine Tree"]]
 
 	, "Petals",
-		[[1,"Collect","Clover"]
-		,[2,"Collect","Pineapple"]
-		,[3,"Collect","Pine Tree"]])
+		[[1,"Collect","Pine Tree"]
+		,[2,"Collect","Clover"]
+		,[3,"Collect","Pineapple"]])
 
 
 RileyBee := Map("Abilities",
@@ -1267,9 +1292,9 @@ RileyBee := Map("Abilities",
 		,[3,"Collect","Rose"]]
 
 	, "Petals",
-		[[1,"Collect","Clover"]
-		,[2,"Collect","Spider"]
-		,[3,"Collect","Strawberry"]]
+		[[1,"Collect","Strawberry"]
+		,[2,"Collect","Clover"]
+		,[3,"Collect","Spider"]]
 )
 
 ;field booster data
@@ -1844,15 +1869,23 @@ QuestBlueBoost := 0
 QuestRedBoost := 0
 HiveConfirmed := 0
 ShiftLockEnabled := 0
-vicStart := 0
-vicResults := {
+VBStart := 0
+VBResults := {
+	; status states
 	success: "Killed",
-	;(Killed before detected)
-	otherplayer: "Killed by another player",
+	failed: "Failed",
 	retry: "Retrying field",
-	inactivehoney: "Inactive Honey",
+	notfound: "Not Found",
+	; detection states
 	found: "Found",
 	dead: "Dead"
+}
+VBReasons := {
+	inactiveHoney: "Inactive honey",
+	youDied: "You Died",
+	otherPlayer: "Killed by other player",
+	timeout: "Timeout",
+	killed: "Killed"
 }
 CUSTOM_CURSOR := 1
 nm_WM_SETCURSOR(*) => CUSTOM_CURSOR
@@ -1917,6 +1950,7 @@ hBitmapsSBT := Map(), hBitmapsSBT.CaseSense := 0
 #Include "stickerprinter\bitmaps.ahk"
 #Include "memorymatch\bitmaps.ahk"
 #include "reset\bitmaps.ahk"
+#include "night\bitmaps.ahk"
 
 (hBitmapsSB := Map()).CaseSense := 0
 for x,y in hBitmapsSBT
@@ -3046,8 +3080,13 @@ MainGui.Add("GroupBox", "x160 y131 w165 h108", "Brown Bear")
 MainGui.Add("GroupBox", "x330 y23 w165 h108", "Bucko Bee")
 MainGui.Add("GroupBox", "x330 y131 w165 h108", "Riley Bee")
 
+petalQuestDisclaimer := Msgbox.Bind(
+	"As of version 1.1.0, petal quests have been added to detection, but the macro will simply gather in the corresponding field, or the field with the highest concenctration of a specific petal color."
+	. "`n`nIT IS EXPECTED THAT PETAL QUESTS TAKE A LONG TIME, especially high-tier quests like Riley/Bucko at 250+ quests completed"
+	, "Petal Quest Warning", "Owner" MainGui.Hwnd)
+
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
-(GuiCtrl := MainGui.Add("CheckBox", "x80 y23 vPolarQuestCheck Disabled Checked" PolarQuestCheck, "Enable")).Section := "Quests", GuiCtrl.OnEvent("Click", nm_saveConfig)
+(GuiCtrl := MainGui.Add("CheckBox", "x80 y23 vPolarQuestCheck Disabled Checked" PolarQuestCheck, "Enable")).Section := "Quests", GuiCtrl.OnEvent("Click", nm_PolarQuestCheck)
 (GuiCtrl := MainGui.Add("CheckBox", "x15 y37 vPolarQuestGatherInterruptCheck Disabled Checked" PolarQuestGatherInterruptCheck, "Allow Gather Interrupt")).Section := "Quests", GuiCtrl.OnEvent("Click", nm_saveConfig)
 MainGui.Add("Text", "x8 y51 w145 h78 vPolarQuestProgress", StrReplace(PolarQuestProgress, "|", "`n"))
 
@@ -5994,6 +6033,8 @@ nm_BuckoQuestCheck(*){
 		IniWrite (MainGui["AntPassAction"].Text := AntPassAction := "Pass"), "settings\nm_config.ini", "Collect", "AntPassAction"
 		MsgBox 'Ant Pass collection has been automatically enabled so the passes can be stockpiled for the "Picnic" quest.', "Bucko Bee Quest", "Owner" MainGui.Hwnd
 	}
+	if BuckoQuestCheck
+		petalQuestDisclaimer()
 }
 nm_RileyQuestCheck(*){
 	global
@@ -6004,6 +6045,14 @@ nm_RileyQuestCheck(*){
 		IniWrite (MainGui["AntPassAction"].Text := AntPassAction := "Pass"), "settings\nm_config.ini", "Collect", "AntPassAction"
 		MsgBox 'Ant Pass collection has been automatically enabled so the passes can be stockpiled for the "Picnic" quest.', "Riley Bee Quest", "Owner" MainGui.Hwnd
 	}
+	if RileyQuestCheck
+		petalQuestDisclaimer()
+}
+nm_PolarQuestCheck(*){
+	global
+	IniWrite (PolarQuestCheck := MainGui["PolarQuestCheck"].Value), "settings\nm_config.ini", "Quests", "PolarQuestCheck"
+	if (PolarQuestCheck = 1)
+		petalQuestDisclaimer()
 }
 nm_QuestGatherReturnBy(GuiCtrl, *){
 	global QuestGatherReturnBy
@@ -7664,9 +7713,9 @@ nm_ClaimMethodHelp(*){ ; join method information
 	MsgBox "
 	(
 	DESCRIPTION:
-	This option lets you choose between 'Detect' and 'To Hive' Hive Claiming.
+	This option lets you choose between 'Detect' and 'To Slot' Hive Claiming.
 
-	'To Hive' is the more reliable option out of the bunch, this will go straight to hive without any concern to if it's claimed or not.
+	'To Slot' is the more reliable option out of the bunch, this will go straight to the set hive slot without any concern as to if it's claimed or not.
 	This is the best choice if you are in a private server.
 
 	'Detect' is only recommended if you are playing in a public server for speed.
@@ -9440,7 +9489,7 @@ nm_ContributorsImage(page:=1, contributors:=""){
 			, ["mis.c",0xffa174fe,"https://github.com/misc-et"]
 			, ["ninju",0xffe6a157,"727937385274540046"]
 			, ["Dully176",0xff138718,"522940239904243712"]
-			, ["nooby", 0xff915dd5, "https://n-by.me"]
+			, ["nooby", 0xff915dd5,"https://n-by.me"]
 		]
 
 		testers := [
@@ -9456,6 +9505,9 @@ nm_ContributorsImage(page:=1, contributors:=""){
 			, ["idote",0xfff47fff,"350433227380621322"]
 			, ["mahirishere",0xffa3bded,"724740667158429747"]
 			, ["Pinwheel",0xfff49fbc,"849962858774003712"]
+			, ["symbol_101", 0xffa42d2d,"1210002709894266911"]
+			, ["data ^-^", 0xfffcb1ff,"https://www.roblox.com/users/841425386/profile"]
+			, ["Trystar001", 0xff15199e,""]
 		]
 
 		pBM := Gdip_CreateBitmap(244,212)
@@ -9526,10 +9578,12 @@ nm_ContributorsImage(page:=1, contributors:=""){
 			{
 				if ((x >= v[4][1]) && (x <= v[4][3]) && (y >= v[4][2]) && (y <= v[4][4]))
 				{
-					if InStr(v[3], "http")
-						Run(v[3])
-					else
-						nm_RunDiscord("users/" v[3])
+					if v[3] {
+						if InStr(v[3], "http")
+							Run(v[3])
+						else
+							nm_RunDiscord("users/" v[3])
+					}
 					break
 				}
 			}
@@ -10922,11 +10976,13 @@ nm_ConfirmAtHive(){
 nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here since it seems to reliably detect hive slots even when the stuff is really bad
     ActivateRoblox()
     GetRobloxClientPos()
-    loop 5
-        send("{" ZoomIn "}"), sleep(50)
-    send("{" RotDown " 11}"), sleep(100), send("{" RotUp " 5}")
+    send "{" RotDown " 11}{" RotUp " 5}"
+	loop 5
+		send("{" ZoomIn "}"), Sleep(50)
+
 	sconf := windowWidth**2//3200
     spawnConfirmed := 0
+
 	loop 4 {
 		sleep 250
 		pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY "|" windowWidth "|" windowHeight//4), s := 0
@@ -10935,15 +10991,16 @@ nm_DetectSpawn() { ; some of the code was from hive check, repurposing it here s
 			if (s >= sconf) {
 				Gdip_DisposeImage(pBMScreen)
 				spawnConfirmed := 1 
-				Send "{" RotUp " 2}"
-				loop 5
-                    send("{" ZoomOut "}"), sleep(50)
 				break 2
 			}
 		}
 		Gdip_DisposeImage(pBMScreen)
 		sendinput "{" RotRight " 4}"
 	}
+	;rotate back
+	Send "{" RotUp " 2}"
+	loop 5
+		send("{" ZoomOut "}"), Sleep(50)
 	return spawnConfirmed
 }
 nm_detectHiveSlots() {
@@ -13259,7 +13316,7 @@ nm_toBooster(location){
 	static blueBoosterFields:=["Pine Tree", "Bamboo", "Blue Flower", "Stump"], redBoosterFields:=["Rose", "Strawberry", "Mushroom", "Pepper"], mountainBoosterfields:=["Cactus", "Pumpkin", "Pineapple", "Spider", "Clover", "Dandelion", "Sunflower"], coconutBoosterfields:=["Coconut"]
 	
 	Loop 2 {
-		nm_Reset(AFBuseBooster ? 1 : 0)
+		nm_Reset(0)
 		nm_setStatus("Traveling", ((location="Mountain") ? "Mountain Top Booster" : StrTitle(location) " Field Booster") . ((A_Index=2) ? " (Attempt 2)" : ""))
 		(location="coconut") ? (nm_gotoCollect("coconutdis")) : (nm_gotoBooster(location))
 		if (nm_imgSearch("e_button.png",30,"high")[1] = 0) {
@@ -13386,6 +13443,7 @@ nm_fieldBoostBooster(){
 	global CurrentField, FieldBooster, AFBuseBooster, FieldLastBoosted, FieldBoostStacks, FieldLastBoostedBy, FieldNextBoostedBy, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, FieldBoostStacks
 	if (!AFBuseBooster)
 		return
+	AFBuseBooster:=0
 	nm_setStatus(0, "Boosting Field: Booster")
 	booster := FieldBooster[StrLower(CurrentField)].booster
 	if(booster="blue") {
@@ -13400,7 +13458,6 @@ nm_fieldBoostBooster(){
 		boosterName:="mbooster"
 		nm_toBooster("mountain")
 	}
-	AFBuseBooster:=0
 	Sleep 5000
 	;check if gathering field was boosted
 	if(nm_fieldBoostCheck(CurrentField)) {
@@ -14033,7 +14090,7 @@ nm_Bugrun(){
 				nm_setStatus("Traveling", "Rhino Beetles (Blue Flower)")
 				movement :=
 				(
-				nm_Walk(18, BackKey) '
+				nm_Walk(22, BackKey) '
 				send "{' RotLeft ' 2}"
 				' nm_Walk(10, BackKey)
 				)
@@ -17885,34 +17942,73 @@ nm_searchForE(){
 nm_boostBypassCheck() => 0 ; always returns 0 for now: no field boost bypass implemented
 nm_Night(){
 	global CheckNight
+
 	if CheckNight != 1
 		return
+
+	if !nm_confirmNight()
+		return CheckNight := 0
+
 	nm_NightMemoryMatch()
 	nm_ViciousBee()
 	CheckNight := 0
 }
+
+nm_confirmNight()
+{
+	isNight := 0
+	nm_Reset(0, 0, 0)
+	nm_setStatus("Confirming", "Night")
+	ActivateRoblox()
+	GetRobloxClientPos()
+
+	Send "{" RotUp " 10}"
+
+	loop 7
+		Send("{" ZoomOut "}"), Sleep(25)
+
+	pBMArea := Gdip_BitmapFromScreen(windowX+300 "|" windowY+windowHeight//2+50 "|" windowWidth-600 "|" windowHeight//2-50) ; searches bottom middle of the screen with offset
+
+	for key, bitmap in bitmaps["confirm_night"] 
+		if Gdip_ImageSearch(pBMArea, bitmap) = 1
+			isNight := 1
+
+	Gdip_DisposeImage(pBMArea)
+	Send "{" RotDown " 4}"
+
+	if isNight
+		nm_SetStatus("Confirmed", "Night")
+	else 
+		nm_SetStatus("Aborting", "Not night")
+
+	return isNight
+}
+
 nm_NightMemoryMatch(){
 	; night (general) + no amulet + nightmm ready + night confirmed (last b/c reset)
 	if (!nm_NightInterrupt() || nm_AmuletPrompt() || !(NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800))
 			return
 	nm_MemoryMatch("Night")
 }
-nm_NightInterrupt() => CheckNight=1 && ((NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || !(StingerCheck=0 || (StingerDailyBonusCheck=1 && (vicStart-VBLastKilled)<79200)))
+nm_NightInterrupt() => CheckNight=1 && ((NightMemoryMatchCheck && (nowUnix()-LastNightMemoryMatch)>28800) || !(StingerCheck=0 || (StingerDailyBonusCheck=1 && (VBStart-VBLastKilled)<79200)))
 nm_ViciousBee(){
-	if !nm_locateVB()
-		vicEnd('All fields checked')
+	if nm_locateVB() = 0
+		VBEnd({ result: VBResults.notfound, reason: "All fields checked" })
 }
 /**
  * Check each enabled field for vicious
+ * @returns {x < 0} if not enabled
+ * @returns {x = 0} if all fields checked
+ * @returns {x = 1} if success
  */
 nm_locateVB(){ 
-	global vicStart := nowUnix(), fieldsChecked := 0
+	global VBfieldStart, VBStart := nowUnix(), fieldsChecked := 0, attackingVB := 0
 	; don't run if disabled or only daily bonus
-	if (StingerCheck=0) || (StingerDailyBonusCheck=1 && (vicStart-VBLastKilled)<79200) {
-		return
+	if (StingerCheck=0) || (StingerDailyBonusCheck=1 && (VBStart-VBLastKilled)<79200) {
+		return -1 
 	}
 
-	static VicData := [
+	static VBData := [
 		{ field: "Pepper", enabled: StingerPepperCheck
 		, bees: 35
 		, reps: 1
@@ -17962,155 +18058,160 @@ nm_locateVB(){
 		, initFwd: 10 }
 	]
 
-	for data in VicData { ; if no fields enabled, return
+	for data in VBData { ; if no fields enabled, return
 		if data.enabled
 			break
-		if A_Index = VicData.Length
-			return
+		if A_Index = VBData.Length
+			return -2
 	}
 
 	
 	nm_setStatus("Starting", "Vicious Bee Cycle")
 	nm_updateAction("Stingers")
 
-	for data in VicData
+	for data in VBData
 	{
 		if !data.enabled || data.bees >= HiveBees
 			continue
 		; This is built into the game
-		if (nowUnix() - vicStart) > 300
-			return vicEnd('Timeout - 5 minute limit')
+		if (nowUnix() - VBStart) > 300
+			return VBEnd('Timeout - 5 minute limit')
 
 		fieldsChecked++
+		global VBfieldStart := nowUnix()
 		
 		fieldloop:
-		Loop 3 ; attempt each field a maximum of 3 times
+		while (A_Index < 4) || attackingVB ; keep going to field if attacking vb, max 3 loops otherwise
 		{
 			nm_Reset(0, 2000, 0)
-			nm_setStatus("Traveling", "Vicious Bee (" data.field ")" ((A_Index > 1) ? " - Attempt " A_Index : ""))
+			nm_setStatus("Traveling", "Vicious Bee (" data.field ")" ((A_Index > 1) ? " — Attempt " A_Index : ""))
 			nm_gotoField(data.field)
+			
+			if attackingVB {
+				switch (vic := nm_killVB(data.field)).result {
+					case VBResults.success, VBResults.failed: ; death message or timeout
+						return VBEnd(vic)
+					case VBResults.retry: ; return to field
+						continue fieldloop
+				}
+			}
 			nm_setStatus("Searching", "Vicious Bee (" data.field ")")
-
-			LRDist := data.lrdist
-			FBDist := data.fbdist
 
 			if !DisableToolUse
 				Click "Down"
 
-			alignment := nm_Walk(data.initRight, RightKey) "`n" nm_Walk(data.initFwd, FwdKey)
-
-			if (vic := SearchforVB(alignment, data.field)).result = vicResults.retry
-				continue fieldloop
-			else if vic.result = vicResults.otherplayer
-				return vicEnd("Killed by another player")
-
 			patterns := [
-				nm_Walk(LRDist, LeftKey) "`n" nm_Walk(FBDist, BackKey) "`n" nm_Walk(LRDist, RightKey) "`n" nm_Walk(FBDist, BackKey),
-				nm_Walk(LRDist, LeftKey)
+				nm_Walk(data.initRight, RightKey) "`n" nm_Walk(data.initFwd, FwdKey),
+				nm_Walk(data.lrdist, LeftKey) "`n" nm_Walk(data.fbdist, BackKey) "`n" nm_Walk(data.lrdist, RightKey) "`n" nm_Walk(data.fbdist, BackKey),
+				nm_Walk(data.lrdist, LeftKey)
 			]
 
-			Loop data.reps {
-				if (vic := SearchforVB(patterns[1], data.field)).result = vicResults.success 
-					return vicEnd()
-				else if vic.result = vicResults.otherplayer
-					return vicEnd("Killed by another player")
-				else if vic.result = vicResults.retry
-					continue fieldloop
+			Loop 3 { ; 1 alignment, 2 search
+				i := A_Index
+				Loop (i = 2 ? data.reps : 1) { ; only repeat for search pattern
+					switch (vic := SearchforVB(patterns[i], data.field)).result {
+						case VBResults.success, VBResults.failed, VBResults.dead: ; end loop
+							return VBEnd(vic)
+						case VBResults.retry: ; return to field
+							continue fieldloop
+					}
+				}
 			}
-			
-			if (vic := SearchforVB(patterns[2], data.field)).result = vicResults.success
-				return vicEnd()
-			else if vic.result = vicResults.otherplayer
-				return vicEnd("Killed by another player")
-			else if vic.result = vicResults.retry
-				continue fieldloop
 
+			; nothing found, no issues
 			Click "Up"
-			break fieldLoop
+			break fieldloop
 		}
 	}
+	; vb not found
+	return 0
 }
 /**
- * End cycle and send status message
+ * End cycle and send status message using vic Obj
  */
-vicEnd(reason:=vicResults.success){
+VBEnd(vic){
 	global VBLastKilled
 	Click "Up"
-	duration := DurationFromSeconds(nowUnix() - vicStart, "mm:ss")
 
-	nm_setStatus("Completed", "Vicious Bee - " reason "`nTime: " duration "`nFields Checked: " fieldsChecked)
-	if reason = vicResults.success {
+	nm_setStatus("Completed"
+	, "Vicious Bee — " vic.result  " — " vic.reason
+	. "`nTime: " DurationFromSeconds(nowUnix() - VBStart, "mm:ss") 
+	. "`nFields Checked: " fieldsChecked)
+
+	if vic.result = VBResults.success {
 		nm_IncrementStat("ViciousKills")
 
 		IniWrite((VBLastKilled:=nowUnix()), "settings\nm_config.ini", "Collect", "VBLastKilled")
+		return 1
 	}
-
-	return true
 }
 /** 
  * Create a movement with vicious bee detection. Used in both find and attack VB
- * @returns {{result: String} or false}
+ * @returns {{result: found/dead/retry/0, reason?: youDied/inactivehoney}}
  */
-WalkwithVBCheck(movement, ignoreHoney?, ignoreStatus?){
-	local inactiveHoney := 0
-	nm_OpenChat() ; just to ensure that chat is open :sob:
-	start := nowUnix()
-	nm_createWalk(movement)
-	KeyWait "F14", "D T5 L"
-	while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
-	{
-		vic := nm_ViciousCheck()
-		if vic.result {
-			if IsSet(ignoreStatus)
-				KeyWait "F14", "T120 L"
-			nm_endWalk()
-			return vic
-		}
-		if !nm_activeHoney(){
-			if (!IsSet(ignoreHoney) && inactiveHoney++ >= 10) {
+WalkwithVBCheck(movement, search:=true){
+    local inactiveHoney := 0
+    nm_OpenChat() ; just to ensure that chat is open 😭
+    start := nowUnix()
+    nm_createWalk(movement)
+    KeyWait "F14", "D T5 L"
+    while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
+    {
+        vic := nm_VBCheck()
+		switch {
+			case vic.result:
+				if (!search && vic.result = VBResults.found) ; we dont care if VB is detected during atk phase
+					continue
+
 				nm_endWalk()
-				return {result: vicResults.inactivehoney}
-			}
+				return vic
+			case !nm_activeHoney():
+				if (inactiveHoney++ >= 10) { ; just increase inactive honey counter, break on 10
+					nm_endWalk()
+					return {result: VBResults.retry, reason: VBReasons.inactivehoney}
+            	}
+			case youDied: ; retry field
+				nm_endWalk()
+            	return {result: VBResults.retry, reason: VBReasons.youDied}
 		}
-		if youDied {
-			nm_endWalk()
-			return {result: vicResults.retry}
-		}
-	}
-	KeyWait "F14", "T120 L"
-	nm_endWalk()
-	return {result: 0}
+    }
+    nm_endWalk()
+    return { result: 0 }
 }
 /**
- * Search for vicious bee using WalkwithVBCheck()
- *  @returns {{result: String or false}}
+ * Search for vicious bee
+ *  @returns {{result: found | dead | retry | 0 , reason?: otherplayer | inactivehoney | youDied}}
+ *  @returns {{result: success | failed | retry , reason?: killed | timeout}} VB found
  */
 SearchforVB(movement, field){
 	static inactiveHoney := 0
 	vic := WalkwithVBCheck(movement)
-	if vic.result = vicResults.found {
-		return nm_killVB(field)
-	} else if vic.result = vicResults.dead {
-		nm_setStatus("Detected", "Vicious Bee - Killed")
-		return {result: vicResults.otherplayer}
-	} else if vic.result = vicResults.inactivehoney {
-		if (inactiveHoney++ < 5) {
-			inactiveHoney := 0
-			nm_setStatus("Warning", "Vicious Bee - Inactive Honey - Retrying")
-			return {result: vicResults.retry}
-		}
-		return {result: 0} ; since we can't be sure that it's out of the field yet
-	} else if vic.result = 0 || vic.result = vicResults.retry {
-		return vic
+	switch vic.result {
+		case VBResults.found: ; VB found bitmap found
+			return nm_killVB(field)
+		case VBResults.dead: ; VB dead bitmap found BEFORE VB found bitmap
+			nm_setStatus("Detected", "Vicious Bee - Killed")
+			vic.reason := VBReasons.otherPlayer
+		case VBResults.retry: ; retry field: inactive honey/died
+			if (vic.reason = VBReasons.inactivehoney) {
+				if (++inactiveHoney < 5) {
+					inactiveHoney := 0
+					nm_setStatus("Warning", "Vicious Bee — Inactive Honey — Retrying")
+				} else {
+					; don't retry yet: not enough inactive honey triggers
+					vic.result := 0
+				}
+			}
 	}
+
+	return vic
 }
 /**
- * Kill vicious bee using battle pattern after it is detected from SearchforVB()
- * @returns {{result: String or false}}
+ * Kill vicious bee using battle pattern
+ * @returns {{result: retry | success | failed}}
  */
 nm_killVB(field) {
-	global state:="Attacking"
-	start := nowUnix()
+	global state:="Attacking", attackingVB := 1
 	nm_setStatus("Attacking", "Vicious Bee (" field ")")
 
 	battlepattern :=
@@ -18124,24 +18225,28 @@ nm_killVB(field) {
 		" nm_Walk(4, LeftKey)
 	)
 
-	while nowUnix()-start <= 300 { ; 5 minute timeout
-		vic := WalkwithVBCheck(battlepattern, 1, 1)
-		if vic.result = vicResults.dead {
-			nm_setStatus("Killed", "Vicious Bee (" field ")")
-			return {result: vicResults.success}
+	while nowUnix()-VBfieldStart <= 300 { ; 5 minute timeout
+		switch (vic := WalkwithVBCheck(battlepattern, false)).result {
+			case VBResults.retry:
+				nm_setStatus("Retrying", "Vicious Bee (" field ")")
+				return vic
+			case VBResults.dead:
+				nm_setStatus("Killed", "Vicious Bee (" field ")")
+				attackingVB := 0
+				return {result: VBResults.success, reason: VBReasons.killed}
 		}
-		sleep 1000
 	}
 	nm_setStatus("Aborting", "Vicious Bee - Timeout")
-	return {result: 0}
+	attackingVB := 0
+	return {result: VBResults.failed, reason: VBReasons.timeout}
 }
 /**
  * Vicious bee detection using chat
- * @returns {{result: String or false}}
+ * @returns {{result: found/dead/0}}
  */
-nm_ViciousCheck() {
+nm_VBCheck() {
 	static LastRan := 0
-	GetRobloxClientPos(hwnd := GetRobloxHWND())
+	GetRobloxClientPos()
 	offsetY := GetYOffset()
 	if (nowUnix()-LastRan>=40) { ; chat translucent after 3 seconds, text dissapears after 40 seconds
 		if !GetKeyState("F14")
@@ -18151,22 +18256,26 @@ nm_ViciousCheck() {
 		sleep 50
 		LastRan := nowUnix()
 	}
+
 	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth - 8 - (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" windowY+offsetY+40 "|" (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" (windowHeight>=1156 ? 334 : windowHeight/3.464))
-    for , x in bitmaps["viciousbee"]["dead"] {
-        if Gdip_ImageSearch(pBMScreen, x,,,,,, 5) {
+    
+	for , bitmap in bitmaps["viciousbee"]["dead"] {
+        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
             Gdip_DisposeImage(pBMScreen)
-            return { result: vicResults.dead }
+            return { result: VBResults.dead }
         }
     }
-    for , x in bitmaps["viciousbee"]["found"] {
-        if Gdip_ImageSearch(pBMScreen, x,,,,,, 5) {
+    for , bitmap in bitmaps["viciousbee"]["found"] {
+        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
             Gdip_DisposeImage(pBMScreen)
-            return { result: vicResults.found }
+            return { result: VBResults.found }
         }
     }
     Gdip_DisposeImage(pBMScreen)
     return { result: 0 }
 }
+;//todo: make it work if someone has chat disabled
+; open roblox chat
 nm_OpenChat(msg:="") {
     PrevKeyDelay := A_KeyDelay
     SetKeyDelay 50
