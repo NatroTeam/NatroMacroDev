@@ -51,3 +51,12 @@ PN_ServiceQueue(active, clock := 0) {
     }
     return ordered
 }
+
+PG_CalibratedModel(stats, record, now) {
+    parts := StrSplit(record, "|")
+    if (parts.Length != 3 || !IsNumber(parts[1]) || !IsNumber(parts[2]) || !IsNumber(parts[3])
+        || parts[2] < 2 || now < parts[3] || now-parts[3] > 604800)
+        return {stats: stats.Clone(), trusted: false}
+    factor := Min(2, Max(0.5, Number(parts[1])))
+    return {stats: [stats[1], stats[2], stats[3]*factor, stats[4]/factor], trusted: true}
+}

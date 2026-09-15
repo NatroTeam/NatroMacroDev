@@ -52,12 +52,8 @@ PG_AdaptiveStats(stats, field) {
 }
 
 PG_AdaptiveModel(stats, field) {
-    parts := StrSplit(IniRead("settings\nm_config.ini", "PlanterCalibration", stats[1] "_" StrReplace(field, " "), ""), "|")
-    if (parts.Length != 3 || !IsNumber(parts[1]) || !IsNumber(parts[2]) || !IsNumber(parts[3])
-        || parts[2] < 2 || nowUnix()-parts[3] > 604800)
-        return {stats: stats.Clone(), trusted: false}
-    factor := Min(2, Max(0.5, Number(parts[1])))
-    return {stats: [stats[1], stats[2], stats[3]*factor, stats[4]/factor], trusted: true}
+    record := IniRead("settings\nm_config.ini", "PlanterCalibration", stats[1] "_" StrReplace(field, " "), "")
+    return PG_CalibratedModel(stats, record, nowUnix())
 }
 
 PG_Observe(slot, name, field, progress, at) {

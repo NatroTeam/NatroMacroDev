@@ -333,6 +333,9 @@ setTimerGuiTransparency(GuiCtrl?, *) {
 }
 ba_updatePlanterDeadline(slot, deadline) {
     estimate := PG_TimerYield(slot, deadline, nowUnix())
+    name := IniRead("settings\nm_config.ini", "Planters", "PlanterName" slot, "None")
+    field := IniRead("settings\nm_config.ini", "Planters", "PlanterField" slot, "None")
+    PG_Intent(slot, name, field, "Manual", false)
     UpdateInt("PlanterHarvestTime" slot, deadline)
     UpdateInt("PlanterEstPercent" slot, estimate)
 }
@@ -469,6 +472,7 @@ ba_AddPlanter(GuiCtrl?, *) {
 	UpdateStr("PlanterHarvestFull" addindex, "")
 	growthNow := nowUnix()
 	PG_Save(addindex, addplanter, addfield, growthNow, "user-added-age-unknown")
+	PG_Intent(addindex, addplanter, addfield, "Manual", false)
 	addharvesttime := values.AddHours * 3600 + values.AddMins * 60 + values.AddSecs
 	UpdateInt("PlanterHarvestTime" addindex, growthNow + addharvesttime)
 	UpdateInt("PlanterEstPercent" addindex, Round(PG_Yield(ba_GetPlanterStats(addplanter, addfield), growthNow, growthNow+addharvesttime), 1))

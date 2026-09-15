@@ -922,13 +922,27 @@ nm_importConfig()
 	if FileExist(inipath) ; update default values with new ones read from any existing .ini
 		nm_ReadIni(inipath)
 
-	local ini := ""
+	local ini := "", slot, key
 	for k,v in config ; overwrite any existing .ini with updated one with all new keys and old values
 	{
 		ini .= "[" k "]`r`n"
 		for i in v
 			ini .= i "=" %i% "`r`n"
+		if (k = "Planters") {
+			Loop 3 {
+				slot := A_Index
+				for _, key in ["PlanterGrowth", "PlanterModel", "PlanterIntent", "PlanterObservation"]
+					ini .= key slot "=" IniRead(inipath, "Planters", key slot, "") "`r`n"
+			}
+		}
 		ini .= "`r`n"
+	}
+
+	local section, records
+	for _, section in ["PlanterTiming", "PlanterCalibration", "PlanterLifecycle"] {
+		records := IniRead(inipath, section, , "")
+		if (records != "")
+			ini .= "[" section "]`r`n" StrReplace(records, "`n", "`r`n") "`r`n`r`n"
 	}
 
 	local file := FileOpen(inipath, "w-d")
@@ -6141,8 +6155,8 @@ ba_planterSwitch(*){
 	MainGui["PlanterMode"].Enabled := 1
 }
 ba_showPlanterSimulator(*) {
-    global exe_path32
-    Run '"' exe_path32 '" /script "' A_WorkingDir '\submacros\PlanterSimulator.ahk"'
+    global exe_path64
+    Run '"' exe_path64 '" /script "' A_WorkingDir '\submacros\PlanterSimulator.ahk"'
 }
 
 ba_showPlanterTimers(*){
@@ -6662,8 +6676,8 @@ ba_gatherFieldSippingSwitch_(*){
 		(
 		You have selected to "Gather Field Nectar Sipping".
 
-		This option will force planters to always be placed in your current gathering field if you need the nectar type that field provides.
-		This is done regardless of the allowed field selections.
+		During maintenance, this prefers your current gathering field when that field is enabled and provides the nectar you need.
+		It does not change your allowed field selections.
 		This will allow your bees to sip from the planter and greatly increase the amount of nectar gained.
 		)", "INFORMATION", 1) = "Ok")
 		{
@@ -20564,6 +20578,7 @@ ba_planter(){
 		atField := 0
 		attemptsInField := 0
 		maxAttemptsInField := 2
+		failedFields := Map()
 		while (success!=1 && nextField!="none" && nextPlanter[1]!="none") {
 			attemptsInField++
 			success := ba_placePlanter(nextField, nextPlanter, planterNum, atField)
@@ -20579,7 +20594,8 @@ ba_planter(){
 				break
 
 				case 2: ;already a planter in this field, change field and try
-				lastnextfield:=ba_getlastfield(targetNectar)
+				failedFields[nextField] := true
+				lastnextfield:=ba_getlastfield(targetNectar, failedFields)
 				nextField:=lastNextField[2]
 				nextPlanter:=ba_getNextPlanter(nextField, targetNectar, !buildToFull)
 				atField:=0
@@ -20606,7 +20622,8 @@ ba_planter(){
 					atField:=1
 			}
 			if (success!=1 && attemptsInField >= maxAttemptsInField) {
-				lastnextfield:=ba_getlastfield(targetNectar)
+				failedFields[nextField] := true
+				lastnextfield:=ba_getlastfield(targetNectar, failedFields)
 				nextField:=lastNextField[2]
 				nextPlanter:=ba_getNextPlanter(nextField, targetNectar, !buildToFull)
 				atField:=0
@@ -20832,7 +20849,7 @@ ba_ReadNectarSnapshot(){
     }
 }
 
-ba_getLastField(currentnectar){
+ba_getLastField(currentnectar, excluded := false){
 	global ComfortingFields, RefreshingFields, SatisfyingFields, MotivatingFields, InvigoratingFields
 		, LastComfortingField, LastRefreshingField, LastSatisfyingField, LastMotivatingField, LastInvigoratingField
 		, BambooFieldCheck, BlueFlowerFieldCheck, CactusFieldCheck, CloverFieldCheck, CoconutFieldCheck, DandelionFieldCheck, MountainTopFieldCheck, MushroomFieldCheck
@@ -20847,7 +20864,8 @@ ba_getLastField(currentnectar){
 	;determine allowed fields
 	for key, value in %currentnectar%Fields {
 		tempfieldname := StrReplace(value, " ", "")
-		if(%tempfieldname%FieldCheck && value!=PlanterField1 && value!=PlanterField2 && value!=PlanterField3)
+		if(%tempfieldname%FieldCheck && value!=PlanterField1 && value!=PlanterField2 && value!=PlanterField3
+			&& (!excluded || !excluded.Has(value)))
 			availablefields.Push(value)
 	}
 	arraylen:=availablefields.Length
@@ -21311,7 +21329,7 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar, buildToFull := fals
             if (now+interval-start < usefulAt)
                 continue
             intent := PG_Intent(i, PlanterName%i%, PlanterField%i%)
-            if (intent.full && now+interval-start < Round(stats[4]*3600))
+            if (intent.phase = "Manual" || (intent.full && now+interval-start < Round(stats[4]*3600)))
                 continue
             checks := [], safe := true, included := false
             Loop 5 {

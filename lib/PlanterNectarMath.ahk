@@ -10,9 +10,9 @@ PN_Sort(items, column := 0) {
     return items
 }
 
-PN_Forecast(current, events, seconds) {
+PN_Forecast(current, events, seconds, &level := unset, &previous := unset) {
     level := Min(100, Max(0, current)), previous := 0
-    for _, event in PN_Sort(events.Clone(), 1) {
+    for _, event in (events.Length > 1 ? PN_Sort(events.Clone(), 1) : events) {
         t := Max(0, event[1])
         if (t > seconds)
             break
@@ -24,7 +24,7 @@ PN_Forecast(current, events, seconds) {
 
 PN_FloorTime(current, events, floorPercent) {
     level := Min(100, Max(0, current)), previous := 0
-    for _, event in PN_Sort(events.Clone(), 1) {
+    for _, event in (events.Length > 1 ? PN_Sort(events.Clone(), 1) : events) {
         t := Max(0, event[1])
         crossing := previous + Max(0, level - floorPercent)*864
         if (crossing < t)
@@ -62,13 +62,14 @@ PN_TargetTime(current, events, rate, fullSeconds, target, earliest) {
     PN_Sort(boundaries)
     left := earliest
     for _, right in boundaries {
-        if (PN_Forecast(current, events, left)+rate*left >= target)
+        if (PN_Forecast(current, events, left, &level, &previous)+rate*left >= target)
             return left
         if (PN_Forecast(current, events, right)+rate*right >= target) {
             lo := left, hi := right
             Loop 40 {
                 mid := (lo+hi)/2
-                if (PN_Forecast(current, events, mid)+rate*mid >= target)
+                if ((mid < right ? Max(0, level-Max(0, mid-previous)/864)
+                    : PN_Forecast(current, events, mid))+rate*mid >= target)
                     hi := mid
                 else
                     lo := mid

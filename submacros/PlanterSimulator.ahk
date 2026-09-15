@@ -307,7 +307,8 @@ PS_RenderPicture(picture, world) {
     bitmap := PC_Render(world, width, height, A_ScreenDPI/96, PS_View)
     try {
         SetImage(picture.Hwnd, bitmap)
-        bitmap := 0
+        if (SendMessage(0x173, 0, 0, picture.Hwnd) = bitmap)
+            bitmap := 0
     } finally {
         if bitmap
             DeleteObject(bitmap)
@@ -362,6 +363,8 @@ PS_Config() {
         throw Error("Open the macro and select Adaptive Planters settings first.")
     settings := snapshot["Planters"], gather := snapshot.Has("Gather") ? snapshot["Gather"] : Map()
     timingRecords := snapshot.Has("PlanterTiming") ? snapshot["PlanterTiming"] : Map()
+    calibration := snapshot.Has("PlanterCalibration") ? snapshot["PlanterCalibration"] : Map()
+    now := DateDiff(A_NowUTC, "19700101000000", "Seconds")
     config := {groups: [], capacity: PS_Number(settings, "MaxAllowedPlanters", 3, 0, 3),
         buffer: PS_Number(settings, "PlanterBuffer", 10, 0, 20), types: Map(), fields: Map()}
     sipping := PS_Number(settings, "GatherFieldSipping", 0, 0, 1)
@@ -387,7 +390,8 @@ PS_Config() {
                 if !PS_Number(settings, stats[1] "Check", 0, 0, 1)
                     continue
                 config.types[stats[1]] := true
-                group.candidates.Push({field: field, planter: stats.Clone(), delay: timing.seconds,
+                model := PG_CalibratedModel(stats, PS_Value(calibration, stats[1] "_" key), now)
+                group.candidates.Push({field: field, planter: model.stats, delay: timing.seconds,
                     lead: timing.seconds, dispatchLead: PT_TravelDispatch(timing), tail: 0})
             }
         }

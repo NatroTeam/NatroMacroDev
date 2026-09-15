@@ -138,6 +138,13 @@ PN_SearchAssignments(groups, index, slots, chosen, types, fields, coverage, &bes
         }
         return
     }
+    if best {
+        remaining := Min(slots-chosen.Length, groups.Length-index+1)
+        count := chosen.Length+remaining
+        ceiling := coverage+2**(groups.Length-index+1)-2**(groups.Length-index+1-remaining)
+        if (count < best.plans.Length || (count = best.plans.Length && ceiling < best.coverage))
+            return
+    }
     for _, plan in groups[index].options {
         name := plan.planter[1]
         if (types.Has(name) || fields.Has(plan.field))
@@ -160,7 +167,7 @@ PN_JointAssignment(groups, slots) {
 }
 
 PN_ReleaseDeadline(job, groups, active) {
-    if (job.phase = "Build")
+    if (job.phase = "Build" || job.phase = "Manual")
         return job.due
     others := [], ownMinimum := 0, ownBuffer := 0, ownKnown := false
     for _, other in active
