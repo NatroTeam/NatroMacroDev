@@ -10123,6 +10123,12 @@ UpdateHoneyGui() {
 			remaining := 15000 - (A_TickCount - session.pendingSince)
 			if remaining <= 0
 				return -3
+			if !SSA_ResultVisible(session.result) {
+				if session.directResult
+					session.pendingRoll := false, session.signature := ""
+				SSA_Wait(150)
+				return 0
+			}
 			try text := SSA_ReadOcrText(ocrX, ocrY, ocrW, ocrH, Min(5000, remaining), session.expectedDouble)
 			catch Error as err {
 				SSA_Log("OCR retry: " err.Message)
@@ -10144,15 +10150,14 @@ UpdateHoneyGui() {
 		}
 		if !validOcr
 			return 0
-		if session.directResult && signature = session.previousSignature
-			return -4
-		confirmed := SSA_ReadDialog(Min(5000, Max(1, 15000 - (A_TickCount - session.pendingSince))), true)
+		if session.directResult && signature = session.previousSignature {
+			session.pendingRoll := false, session.signature := ""
+			return A_TickCount - session.phaseSince >= 15000 ? -4 : 0
+		}
 		SSA_CheckWindow(session)
 		if stopping
 			return 0
-		if A_TickCount - session.pendingSince >= 15000
-			return -3
-		if confirmed.kind != "result" || Abs(confirmed.x - ocrX) > Max(5, ocrW * 0.05) || Abs(confirmed.y - ocrY) > Max(5, ocrH * 0.05) || Abs(confirmed.w - ocrW) > Max(5, ocrW * 0.05) || Abs(confirmed.h - ocrH) > Max(5, ocrH * 0.05)
+		if !SSA_ResultVisible(session.result)
 			return -4
 		session.pendingRoll := false
 		session.pendingSince := 0
@@ -10277,6 +10282,89 @@ UpdateHoneyGui() {
 		if (statCount >= requiredStats && mainPassiveFound && sideMatch)
 			return 1
 		return 0
+	}
+	SSA_ButtonPair(bitmap, reversed := false, offsetX := 0, offsetY := 0) {
+		Gdip_GetImageDimensions(bitmap, &w, &h)
+		if Gdip_LockBits(bitmap, 0, 0, w, h, &stride, &scan, &data)
+			return 0
+		try {
+			step := 3, minWidth := Max(24, w * 0.035)
+			loop Ceil(h / step) {
+				y := (A_Index - 1) * step, runs := [], start := 0, previous := 0
+				loop Ceil(w / step) + 1 {
+					x := Min(w, (A_Index - 1) * step)
+					kind := x < w ? SSA_ButtonColor(NumGet(scan + y * stride + x * 4, "uint")) : 0
+					if kind != previous {
+						if previous && x - start >= minWidth
+							runs.Push({x: start, w: x - start, kind: previous})
+						start := x, previous := kind
+					}
+				}
+				for left in runs {
+					if left.kind != (reversed ? 2 : 1)
+						continue
+					for right in runs {
+						gap := right.x - left.x - left.w
+						if right.kind != (reversed ? 1 : 2) || gap < left.w * 0.05 || gap > left.w * 0.7 || Abs(left.w - right.w) > left.w * 0.15
+							continue
+						top := y, bottom := y
+						while top > 0 && SSA_ButtonColor(NumGet(scan + (top - 1) * stride + (left.x + 3) * 4, "uint")) = left.kind && SSA_ButtonColor(NumGet(scan + (top - 1) * stride + (right.x + 3) * 4, "uint")) = right.kind
+							top -= 1
+						while bottom + 1 < h && SSA_ButtonColor(NumGet(scan + (bottom + 1) * stride + (left.x + 3) * 4, "uint")) = left.kind && SSA_ButtonColor(NumGet(scan + (bottom + 1) * stride + (right.x + 3) * 4, "uint")) = right.kind
+							bottom += 1
+						height := bottom - top + 1
+						if height < Max(12, left.w * 0.18) || height > left.w * 0.65 || top < 3 || bottom >= h - 3
+							continue
+						if !reversed {
+							blue := NumGet(scan + (top - 3) * stride + (left.x + left.w // 2) * 4, "uint")
+							if (blue & 255) < 100 || (blue & 255) < ((blue >> 16) & 255) * 1.3
+								continue
+						}
+						return {left: {x: offsetX + left.x, y: offsetY + top, w: left.w, h: height}, right: {x: offsetX + right.x, y: offsetY + top, w: right.w, h: height}}
+					}
+				}
+			}
+		} finally Gdip_UnlockBits(bitmap, &data)
+		return 0
+	}
+	SSA_ButtonColor(pixel) {
+		r := (pixel >> 16) & 255, g := (pixel >> 8) & 255, b := pixel & 255
+		return g >= 55 && g > r * 1.35 && g > b * 1.2 ? 1 : (r >= 100 && r > g * 1.5 && r > b * 1.5 ? 2 : 0)
+	}
+	SSA_ReadPurchase(session) {
+		global stopping
+		x := session.x + session.w // 4, y := session.y + session.h // 4
+		bitmap := Gdip_BitmapFromScreen(x "|" y "|" session.w // 2 "|" session.h // 2)
+		if !bitmap
+			throw Error("Unable to capture the SSA purchase buttons.")
+		try return SSA_PurchaseFromBitmap(bitmap, x, y)
+		finally Gdip_DisposeImage(bitmap)
+	}
+	SSA_PurchaseFromBitmap(bitmap, x := 0, y := 0) {
+		global stopping
+		pair := SSA_ButtonPair(bitmap, false, x, y)
+		if !pair
+			return {kind: "unknown"}
+		strip := Gdip_CloneBitmapArea(bitmap, pair.left.x - x, pair.left.y - y, pair.right.x + pair.right.w - pair.left.x, pair.left.h)
+		if !strip
+			return {kind: "unknown"}
+		try {
+			mask := NM_OCRLightText(strip, () => stopping)
+			try text := StrLower(NM_TesseractOCR(mask, 2000, () => stopping))
+			finally Gdip_DisposeImage(mask)
+		} finally Gdip_DisposeImage(strip)
+		if RegExMatch(text, "\byes\s+no\b")
+			return {kind: "purchase", yes: pair.left, no: pair.right}
+		return {kind: "unknown"}
+	}
+	SSA_ResultVisible(result) {
+		x := Round(result.x - result.w / 0.94), y := Round(result.y + result.h - 5)
+		w := Round(result.w * 2.2), h := Round(result.w * 0.65)
+		bitmap := Gdip_BitmapFromScreen(x "|" y "|" w "|" h)
+		if !bitmap
+			return false
+		try return !!SSA_ButtonPair(bitmap, true)
+		finally Gdip_DisposeImage(bitmap)
 	}
 	SSA_ReadDialog(timeoutMs := 5000, preferResult := false) {
 		global windowX, windowY, windowWidth, windowHeight, stopping
@@ -10414,7 +10502,7 @@ UpdateHoneyGui() {
 		spend := SSA_DialogWord(words, "spend", offsetY + 150)
 		yes := spend ? SSA_DialogWord(words, "yes", spend.y + spend.h) : 0
 		no := spend ? SSA_DialogWord(words, "no", spend.y + spend.h) : 0
-		if RegExMatch(text, "\bspend 500 billion honey to guarantee 2 passive abilities\b") && yes && no && yes.y - spend.y < spend.h * 8 && yes.x < no.x && Abs(yes.y - no.y) <= Max(yes.h, no.h) {
+		if RegExMatch(text, "\b500\b") && RegExMatch(text, "\bpassive\b") && yes && no && yes.y - spend.y < spend.h * 8 && yes.x < no.x && Abs(yes.y - no.y) <= Max(yes.h, no.h) {
 			return {kind: "purchase", yes: yes, no: no}
 		}
 		for title in words {
@@ -10467,7 +10555,15 @@ UpdateHoneyGui() {
 			return -4
 		SSA_CheckWindow(session)
 		started := A_TickCount
-		try dialog := SSA_ReadDialog(Min(5000, remaining), session.stage != "purchase")
+		try {
+			if session.stage = "open" && SSA_ResultVisible(session.result)
+				dialog := {kind: "result"}
+			else {
+				dialog := SSA_ReadPurchase(session)
+				if dialog.kind != "purchase"
+					dialog := SSA_ReadDialog(Min(5000, remaining), session.stage != "purchase")
+			}
+		}
 		catch Error as err {
 			if err.Extra != "timeout"
 				throw
@@ -10499,11 +10595,14 @@ UpdateHoneyGui() {
 			SSA_CheckWindow(session)
 			if !session.reserved
 				ssa_subHoney(cost), session.reserved := true
-			MouseMove Round(target.x + target.w / 2), Round(target.y + target.h / 2), 0
-			Click Round(target.x + target.w / 2), Round(target.y + target.h / 2)
+			MouseMove Round(target.x + target.w / 2), Round(target.y + target.h / 2)
+			SSA_CheckWindow(session)
+			if stopping
+				return 0
+			Click
 			session.stage := "clicked", session.phaseSince := A_TickCount, session.lastRollTick := A_TickCount
-			MouseMove session.x + 10, session.y + session.h - 10, 0
-			SSA_Wait(150)
+			MouseMove session.x + 10, session.y + session.h - 10
+			SSA_Wait(300)
 			return 0
 		}
 		if (session.stage = "inspect" && dialog.kind = "generator") || (session.stage = "open" && (dialog.kind = "result" || dialog.kind = "generator")) {
@@ -10515,7 +10614,7 @@ UpdateHoneyGui() {
 			ssa_subHoney(cost), session.reserved := true
 			SendEvent "e"
 			session.stage := "purchase", session.phaseSince := A_TickCount, session.lastRollTick := A_TickCount
-			SSA_Wait(150)
+			SSA_Wait(250)
 			return 0
 		}
 		SSA_Wait(150)
