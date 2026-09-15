@@ -81,7 +81,7 @@ PG_Observe(slot, name, field, progress, at) {
     key := name "_" StrReplace(field, " ")
     learned := StrSplit(IniRead("settings\nm_config.ini", "PlanterCalibration", key, ""), "|")
     mean := 1, count := 0
-    if (learned.Length = 3 && IsNumber(learned[1]) && IsNumber(learned[2]) && IsNumber(learned[3]) && at-learned[3] <= 604800)
+    if (learned.Length = 3 && IsNumber(learned[1]) && IsNumber(learned[2]) && IsNumber(learned[3]) && at >= learned[3] && at-learned[3] <= 604800)
         mean := Min(2, Max(0.5, Number(learned[1]))), count := Max(0, Number(learned[2]))
     mean := count ? 0.75*mean+0.25*factor : factor
     IniWrite mean "|" Min(100, count+1) "|" at, "settings\nm_config.ini", "PlanterCalibration", key

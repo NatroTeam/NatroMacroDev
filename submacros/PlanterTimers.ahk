@@ -336,6 +336,7 @@ ba_updatePlanterDeadline(slot, deadline) {
     name := IniRead("settings\nm_config.ini", "Planters", "PlanterName" slot, "None")
     field := IniRead("settings\nm_config.ini", "Planters", "PlanterField" slot, "None")
     PG_Intent(slot, name, field, "Manual", false)
+    UpdateStr("PlanterHarvestFull" slot, "")
     UpdateInt("PlanterHarvestTime" slot, deadline)
     UpdateInt("PlanterEstPercent" slot, estimate)
 }
