@@ -127,17 +127,20 @@ class Chroma {
             throw Error("ChromaAhk.dll not found: " dllPath)
         }
         this.dllPath := dllPath
-        this.apiPrefix := "ChromaAhk"
+        this.apiPrefix := ""
         this._procCache := Map()
         this.hModule := DllCall("LoadLibrary", "Str", this.dllPath, "Ptr")
         if !this.hModule {
             throw Error("LoadLibrary failed for: " this.dllPath)
         }
-        try {
-            DllCall(this.Api("GetApiVersion"), "Int")
-        } catch {
-            throw Error("Unsupported Chroma DLL. Expected ChromaAhk_* exports.")
+        for prefix in ["ChromaAhk", "Chroma"] {
+            if DllCall("GetProcAddress", "Ptr", this.hModule, "AStr", prefix "_GetApiVersion", "Ptr") {
+                this.apiPrefix := prefix
+                break
+            }
         }
+        if (!this.apiPrefix || !((version := this.GetApiVersion()) = 1 || version = 2))
+            throw Error("Unsupported Chroma DLL API version.")
 
         cfgSize := this.GetConfigStructSize()
         if (cfgSize != Chroma.CFG_SIZE_EXPECTED) {
@@ -558,7 +561,7 @@ class Chroma {
         cfg.minCircularity := NumGet(cfgBuf, Chroma.CFG_O_MIN_CIRC, "Float")
         cfg.minCenterFillRatio := NumGet(cfgBuf, Chroma.CFG_O_MIN_FILL, "Float")
 
-        cfg.requirePetalContext := NumGet(cfgBuf, Chroma.CFG_O_REQUIRE_CTX, "Int") != 0
+        cfg.requirePetalContext := NumGet(cfgBuf, Chroma.CFG_O_REQUIRE_CTX, "Int")
         cfg.ringInnerRadiusPercent := NumGet(cfgBuf, Chroma.CFG_O_RING_INNER, "Int")
         cfg.ringOuterRadiusPercent := NumGet(cfgBuf, Chroma.CFG_O_RING_OUTER, "Int")
 
@@ -610,7 +613,7 @@ class Chroma {
         NumPut("Float", cfg.minCircularity, cfgBuf, Chroma.CFG_O_MIN_CIRC)
         NumPut("Float", cfg.minCenterFillRatio, cfgBuf, Chroma.CFG_O_MIN_FILL)
 
-        NumPut("Int", cfg.requirePetalContext ? 1 : 0, cfgBuf, Chroma.CFG_O_REQUIRE_CTX)
+        NumPut("Int", cfg.requirePetalContext, cfgBuf, Chroma.CFG_O_REQUIRE_CTX)
         NumPut("Int", cfg.ringInnerRadiusPercent, cfgBuf, Chroma.CFG_O_RING_INNER)
         NumPut("Int", cfg.ringOuterRadiusPercent, cfgBuf, Chroma.CFG_O_RING_OUTER)
 

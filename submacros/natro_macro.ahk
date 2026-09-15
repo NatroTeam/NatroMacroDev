@@ -1414,9 +1414,9 @@ BuckoBee := Map("Abilities",
 
 	; Blooms
 	, "Petals",
-		[1,"Petal","Pine Tree","Blue"]
+		[[1,"Petal","Pine Tree","Blue"]
 		,[2,"Petal","Clover","Blue"]
-		,[3,"Petal","Pineapple","Blue"]
+		,[3,"Petal","Pineapple","Blue"]]
 )
 
 RileyBee := Map("Abilities",
@@ -1490,9 +1490,9 @@ RileyBee := Map("Abilities",
 
 	; Blooms
 	, "Petals",
-		[1,"Petal","Strawberry","Red"]
+		[[1,"Petal","Strawberry","Red"]
 		,[2,"Petal","Clover","Red"]
-		,[3,"Petal","Spider","Red"]
+		,[3,"Petal","Spider","Red"]]
 )
 
 ;field booster data
@@ -2036,7 +2036,7 @@ try Hotkey StopHotkey, stop, "On"
 
 pToken := Gdip_Startup()
 currentWalk := {pid:"", name:""} ; stores "pid" (script process ID) and "name" (pattern/movement name)
-PetalCalibCache := {ready:0, vfX:0.0, vfY:0.0, vrX:0.0, vrY:0.0, vfSign:1, vrSign:1}
+PetalCalibCache := {context:"", ready:0, vfX:0.0, vfY:0.0, vrX:0.0, vrY:0.0, vfSign:1, vrSign:1}
 PetalPatternOverride := 0
 
 priorityList:=[], defaultPriorityList:=["Night", "Mondo", "Planter", "Bugrun", "Collect", "QuestRotate", "Boost", "GoGather"]
@@ -16269,6 +16269,8 @@ nm_getPetalPatternScript() {
 		, __chromaDll := A_ScriptDir "/lib/ChromaAhk.dll"
 		, __chroma := 0
 		, __calibReady := 0
+		, __viewW := 0
+		, __viewH := 0
 		, __vfX := 0.0
 		, __vfY := 0.0
 		, __vrX := 0.0
@@ -16283,6 +16285,8 @@ nm_getPetalPatternScript() {
 		if !FileExist(__chromaDll)
 			throw Error("ChromaAhk.dll missing at expected path: " __chromaDll)
 		__chroma := Chroma(__chromaDll)
+		if (__chroma.GetApiVersion() < 2)
+			throw Error("Bloom detection requires the updated ChromaAhk.dll.")
 		cfgResult := __chroma.SetActiveConfig(pd_GetChromaConfigBase())
 		if (cfgResult.status != 0)
 			throw Error("Chroma SetActiveConfig failed: " cfgResult.statusText " - " cfgResult.error)
@@ -16292,27 +16296,39 @@ nm_getPetalPatternScript() {
 	}
 	if !__chroma {
 		__chroma := Chroma(__chromaDll)
+		if (__chroma.GetApiVersion() < 2)
+			throw Error("Bloom detection requires the updated ChromaAhk.dll.")
 		cfgResult := __chroma.SetActiveConfig(pd_GetChromaConfigBase())
 		if (cfgResult.status != 0)
 			throw Error("Chroma SetActiveConfig failed: " cfgResult.statusText " - " cfgResult.error)
 	}
 
 	if (!__calibReady && IsSet(__petalCalibReady) && (__petalCalibReady + 0)) {
-		__calibReady := 1
 		__vfX := IsSet(__petalCalibVfX) ? (__petalCalibVfX + 0.0) : 0.0
 		__vfY := IsSet(__petalCalibVfY) ? (__petalCalibVfY + 0.0) : 0.0
 		__vrX := IsSet(__petalCalibVrX) ? (__petalCalibVrX + 0.0) : 0.0
 		__vrY := IsSet(__petalCalibVrY) ? (__petalCalibVrY + 0.0) : 0.0
 		__vfSign := (IsSet(__petalCalibVfSign) && ((__petalCalibVfSign + 0) < 0)) ? -1 : 1
 		__vrSign := (IsSet(__petalCalibVrSign) && ((__petalCalibVrSign + 0) < 0)) ? -1 : 1
+		__calibReady := pd_IsCalibrationUsable(__vfX, __vfY, __vrX, __vrY)
 	}
 	pd_PublishCalibState(__calibReady, __vfX, __vfY, __vrX, __vrY, __vfSign, __vrSign)
 	Loop {
 		hwnd := GetRobloxHWND()
-		if (hwnd) {
+		if (hwnd && WinActive("ahk_id " hwnd)) {
 			clientW := 0, clientH := 0
 			try WinGetClientPos(&clientX, &clientY, &clientW, &clientH, "ahk_id " hwnd)
 			if (clientW > 0 && clientH > 0) {
+				if (__viewW != clientW || __viewH != clientH) {
+					cfgResult := __chroma.SetActiveConfig(pd_GetChromaConfigBase(clientH))
+					if (cfgResult.status != 0)
+						throw Error("Bloom configuration failed: " cfgResult.error)
+					if __viewW {
+						__calibReady := 0
+						pd_PublishCalibState(0, 0, 0, 0, 0, 1, 1)
+					}
+				}
+				__viewW := clientW, __viewH := clientH
 				originX := Round((clientW - 1) * 0.50)
 				originY := Round((clientH - 1) * 0.50)
 				loc := pd_LocatePointsFromClient(__chroma, clientX, clientY, clientW, clientH)
@@ -16321,6 +16337,14 @@ nm_getPetalPatternScript() {
 					if (nearest.found) {
 						targetX := nearest.x
 						targetY := nearest.y
+						Sleep 80
+						loc := pd_LocatePointsFromClient(__chroma, clientX, clientY, clientW, clientH)
+						match := pd_FindNearestToTarget(loc.points, targetX, targetY, Max(3, clientH * 0.006))
+						if (!pd_IsLocateStatusOk(loc.status) || !match.found) {
+							Sleep 250
+							continue
+						}
+						targetX := match.x, targetY := match.y
 
 						if !__calibReady {
 							calib := pd_CalibrateVectors(
@@ -16338,6 +16362,13 @@ nm_getPetalPatternScript() {
 								__vfSign := calib.vfSign
 								__vrSign := calib.vrSign
 								pd_PublishCalibState(__calibReady, __vfX, __vfY, __vrX, __vrY, __vfSign, __vrSign)
+								loc := pd_LocatePointsFromClient(__chroma, clientX, clientY, clientW, clientH)
+								if (!pd_IsLocateStatusOk(loc.status) || !loc.written)
+									continue
+								nearest := pd_FindNearestToTarget(loc.points, targetX, targetY, Max(3, clientH * 0.006))
+								if !nearest.found
+									continue
+								targetX := nearest.x, targetY := nearest.y
 							}
 						}
 
@@ -16345,7 +16376,7 @@ nm_getPetalPatternScript() {
 							dx := targetX - originX
 							dy := targetY - originY
 							det := (__vfX * __vrY) - (__vfY * __vrX)
-							if (Abs(det) >= 0.000001) {
+							if pd_IsCalibrationUsable(__vfX, __vfY, __vrX, __vrY) {
 								fwdRaw := (((-dx) * __vrY) - ((-dy) * __vrX)) / det
 								rightRaw := ((__vfX * (-dy)) - (__vfY * (-dx))) / det
 								fwdTiles := Round(fwdRaw, 2)
@@ -16401,23 +16432,24 @@ nm_getPetalPatternScript() {
 		return ((status = 0) || (status = 4))
 	}
 
-	pd_GetChromaConfigBase() {
+	pd_GetChromaConfigBase(clientH := 1080) {
+		scale := clientH / 1080
 		return {
 			yellowHueRanges: [[16, 32]],
-			yellowSatRange: [50, 125],
+			yellowSatRange: [50, 150],
 			yellowValRange: [85, 255],
-			morphOpenIterations: 5,
-			morphCloseIterations: 3,
+			morphOpenIterations: Max(1, Round(2 * scale)),
+			morphCloseIterations: Max(1, Round(3 * scale)),
 			dilateIterations: 1,
-			minBlobArea: 20,
-			maxBlobArea: 800,
-			minCircularity: 0.75,
-			minCenterFillRatio: 0.68,
-			requirePetalContext: true,
+			minBlobArea: Max(20, Round(250 * scale * scale)),
+			maxBlobArea: Max(800, Round(8000 * scale * scale)),
+			minCircularity: 0.58,
+			minCenterFillRatio: 0.43,
+			requirePetalContext: 2,
 			ringInnerRadiusPercent: 105,
-			ringOuterRadiusPercent: 225,
+			ringOuterRadiusPercent: 200,
 			petalSatRange: [0, 255],
-			petalValRange: [120, 255],
+			petalValRange: [60, 255],
 			greenHueRanges: [[52, 68], [24, 48]],
 			minPetalRatio: 0.42,
 			drawRejectedCandidates: false
@@ -16425,15 +16457,24 @@ nm_getPetalPatternScript() {
 	}
 
 	pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH) {
-		pBM := Gdip_BitmapFromScreen(clientX "|" clientY "|" clientW "|" clientH)
-		hBmp := pBM ? Gdip_CreateHBITMAPFromBitmap(pBM) : 0
-		if (pBM)
-			Gdip_DisposeImage(pBM)
+		if (!(hwnd := GetRobloxHWND()) || !WinActive("ahk_id " hwnd))
+			return { status: -1, written: 0, points: [] }
+		width := 0, height := 0
+		try WinGetClientPos(&clientX, &clientY, &width, &height, "ahk_id " hwnd)
+		if (width != clientW || height != clientH)
+			return { status: -1, written: 0, points: [] }
+		inset := Round(clientH * 0.12)
+		pBM := Gdip_BitmapFromScreen(clientX "|" (clientY + inset) "|" clientW "|" (clientH - inset * 2))
+		if (!pBM || pBM = -1)
+			return { status: -1, written: 0, points: [] }
+		try hBmp := Gdip_CreateHBITMAPFromBitmap(pBM)
+		finally Gdip_DisposeImage(pBM)
 		if !hBmp
 			return { status: -1, written: 0, points: [] }
-
-		result := chromaObj.LocateHBitmapAll(hBmp)
-		DllCall("gdi32\DeleteObject", "Ptr", hBmp)
+		try result := chromaObj.LocateHBitmap(hBmp)
+		finally DeleteObject(hBmp)
+		for point in result.points
+			point.y += inset
 		return result
 	}
 
@@ -16464,11 +16505,12 @@ nm_getPetalPatternScript() {
 		return { found: (bestIdx >= 0) ? 1 : 0, index: bestIdx, x: bestX, y: bestY, d2: bestD2 }
 	}
 
-	pd_FindNearestToTarget(points, targetX, targetY) {
+	pd_FindNearestToTarget(points, targetX, targetY, maxDistance) {
 		if (points.Length <= 0)
 			return { found: 0, x: 0, y: 0, shiftX: 0.0, shiftY: 0.0, d2: 0.0 }
 
 		bestD2 := 1.0e30
+		secondD2 := 1.0e30
 		bestX := 0
 		bestY := 0
 
@@ -16479,13 +16521,15 @@ nm_getPetalPatternScript() {
 			tdy := py - targetY
 			d2 := (tdx * tdx) + (tdy * tdy)
 			if (d2 < bestD2) {
+				secondD2 := bestD2
 				bestD2 := d2
 				bestX := px
 				bestY := py
-			}
+			} else if (d2 < secondD2)
+				secondD2 := d2
 		}
 
-		if (bestD2 >= 1.0e29)
+		if (bestD2 > maxDistance * maxDistance || secondD2 <= Max(9, bestD2 * 2.25))
 			return { found: 0, x: 0, y: 0, shiftX: 0.0, shiftY: 0.0, d2: 0.0 }
 
 		return {
@@ -16496,6 +16540,21 @@ nm_getPetalPatternScript() {
 			shiftY: bestY - targetY,
 			d2: bestD2
 		}
+	}
+
+	pd_IsCalibrationUsable(vfX, vfY, vrX, vrY) {
+		f2 := vfX * vfX + vfY * vfY
+		r2 := vrX * vrX + vrY * vrY
+		det := vfX * vrY - vfY * vrX
+		return (f2 >= 1 && r2 >= 1 && det * det >= f2 * r2 * 0.0625)
+	}
+
+	pd_ConfirmCalibrationReturn(chromaObj, clientX, clientY, clientW, clientH, targetX, targetY, shiftX, shiftY) {
+		loc := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
+		if (!pd_IsLocateStatusOk(loc.status) || !loc.written)
+			return false
+		match := pd_FindNearestToTarget(loc.points, targetX, targetY, Max(3, Sqrt(shiftX * shiftX + shiftY * shiftY) * 0.15))
+		return match.found
 	}
 
 	pd_CalibrateVectors(chromaObj, clientX, clientY, clientW, clientH, calibTiles, targetX, targetY, originX, originY) {
@@ -16528,7 +16587,7 @@ nm_getPetalPatternScript() {
 		Sleep 80
 		locF := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
 		if (pd_IsLocateStatusOk(locF.status) && (locF.written > 0)) {
-			matchF := pd_FindNearestToTarget(locF.points, targetX, targetY)
+			matchF := pd_FindNearestToTarget(locF.points, targetX, targetY, Min(clientW, clientH) / 4)
 			if (matchF.found) {
 				foundF := 1
 				shiftFx := matchF.shiftX
@@ -16537,12 +16596,14 @@ nm_getPetalPatternScript() {
 		}
 		nm_Walk(calibTiles, fwdUndoKey)
 		Sleep 60
+		if foundF
+			foundF := pd_ConfirmCalibrationReturn(chromaObj, clientX, clientY, clientW, clientH, targetX, targetY, shiftFx, shiftFy)
 
 		nm_Walk(calibTiles, rightMoveKey)
 		Sleep 80
 		locR := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
 		if (pd_IsLocateStatusOk(locR.status) && (locR.written > 0)) {
-			matchR := pd_FindNearestToTarget(locR.points, targetX, targetY)
+			matchR := pd_FindNearestToTarget(locR.points, targetX, targetY, Min(clientW, clientH) / 4)
 			if (matchR.found) {
 				foundR := 1
 				shiftRx := matchR.shiftX
@@ -16551,15 +16612,15 @@ nm_getPetalPatternScript() {
 		}
 		nm_Walk(calibTiles, rightUndoKey)
 		Sleep 60
+		if foundR
+			foundR := pd_ConfirmCalibrationReturn(chromaObj, clientX, clientY, clientW, clientH, targetX, targetY, shiftRx, shiftRy)
 
 		if (foundF && foundR) {
 			vfX := (shiftFx / calibTiles) * vfSign
 			vfY := (shiftFy / calibTiles) * vfSign
 			vrX := (shiftRx / calibTiles) * vrSign
 			vrY := (shiftRy / calibTiles) * vrSign
-			det0 := (vfX * vrY) - (vfY * vrX)
-			if (Abs(det0) >= 0.000001)
-				ready := 1
+			ready := pd_IsCalibrationUsable(vfX, vfY, vrX, vrY)
 		}
 
 		return {
@@ -17212,7 +17273,14 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 		nm_endWalk()
 }
 nm_getPetalCalibSeedScript() {
-	global PetalCalibCache
+	global PetalCalibCache, FieldName, FieldRotateDirection, FieldRotateTimes
+	hwnd := GetRobloxHWND(), width := 0, height := 0
+	if hwnd
+		try WinGetClientPos(,, &width, &height, "ahk_id " hwnd)
+	context := hwnd "|" FieldName "|" FieldRotateDirection "|" FieldRotateTimes "|" width "|" height
+	if (width <= 0 || height <= 0 || context != PetalCalibCache.context)
+		PetalCalibCache.ready := 0
+	PetalCalibCache.context := context
 	return
 	(
 	'
@@ -19323,7 +19391,7 @@ nm_PolarQuestProg(){
 		loop num {
 			action:=PolarBear[PolarQuest][A_Index][2]
 			where:=PolarBear[PolarQuest][A_Index][3]
-			pcolor:=PolarBear[PolarQuest][A_Index][4]
+			pcolor := action = "Petal" ? PolarBear[PolarQuest][A_Index][4] : "None"
 			questbarColor := PixelGetColor(windowX+QuestBarInset+10, windowY+QuestBarSize*(PolarBear[PolarQuest][A_Index][1]-1)+PolarStart[3]+QuestBarGapSize+5)
 			if((questbarColor=0xF46C55) || (questbarColor=0x6EFF60)) {
 				PolarQuestComplete:=0
@@ -19335,7 +19403,7 @@ nm_PolarQuestProg(){
 					QuestGatherField:=where
 					QuestGatherFieldSlot:=PolarBear[PolarQuest][A_Index][1]
 				}
-				else if(action="Petal"){ ; Blooms
+				else if(action="Petal" && QuestPetalField="None"){ ; Blooms
 					QuestPetal:=pcolor
 					QuestPetalField:=where
 					QuestGatherField:=where
@@ -19560,7 +19628,7 @@ nm_RileyQuestProg(){
 		loop num {
 			action:=RileyBee[RileyQuest][A_Index][2]
 			where:=RileyBee[RileyQuest][A_Index][3]
-			pcolor:=BuckoBee[BuckoQuest][A_Index][4]
+			pcolor := action = "Petal" ? RileyBee[RileyQuest][A_Index][4] : "None"
 			questbarColor := PixelGetColor(windowX+QuestBarInset+10, windowY+QuestBarSize*(RileyBee[RileyQuest][A_Index][1]-1)+RileyStart[3]+QuestBarGapSize+5)
 			if((questbarColor=0xF46C55) || (questbarColor=0x6EFF60)) {
 				RileyQuestComplete:=0
@@ -19615,7 +19683,7 @@ nm_RileyQuestProg(){
 				else if(action="feed"){ ;Strawberries
 					QuestFeed:=where
 				}
-				else if(action="Petal"){ ; Blooms
+				else if(action="Petal" && QuestPetalField="None"){ ; Blooms
 					QuestPetal:=pcolor
 					QuestPetalField:=where
 					QuestGatherField:=where
@@ -19638,7 +19706,7 @@ nm_RileyQuestProg(){
 		if(RileyLadybugs=0 && RileyScorpions=0 && RileyAll=0 && QuestGatherField="None" && QuestPetalField="None" && QuestAnt=0 && QuestRedBoost=0 && QuestFeed="None" && QuestRedAnyField=0){
 			RileyQuestComplete:=1
 		} else { ;check if all doable things are done and everything else is on cooldown
-			if(QuestGatherField!="None" || QuestPetalField="None" || (QuestAnt && (nowUnix()-LastAntPass)<7200) || (RileyLadybugs && (nowUnix()-LastBugrunLadybugs)<floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (RileyScorpions && (nowUnix()-LastBugrunScorpions)<floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) { ;there is at least one thing no longer on cooldown
+			if(QuestGatherField!="None" || QuestPetalField!="None" || (QuestAnt && (nowUnix()-LastAntPass)<7200) || (RileyLadybugs && (nowUnix()-LastBugrunLadybugs)<floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (RileyScorpions && (nowUnix()-LastBugrunScorpions)<floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) { ;there is at least one thing no longer on cooldown
 				RileyQuestComplete:=0
 			} else {
 				RileyQuestComplete:=2
@@ -19848,7 +19916,7 @@ nm_BuckoQuestProg(){
 		loop num {
 			action:=BuckoBee[BuckoQuest][A_Index][2]
 			where:=BuckoBee[BuckoQuest][A_Index][3]
-			pcolor:=BuckoBee[BuckoQuest][A_Index][4]
+			pcolor := action = "Petal" ? BuckoBee[BuckoQuest][A_Index][4] : "None"
 			questbarColor := PixelGetColor(windowX+QuestBarInset+10, windowY+QuestBarSize*(BuckoBee[BuckoQuest][A_Index][1]-1)+BuckoStart[3]+QuestBarGapSize+5)
 			if((questbarColor=0xF46C55) || (questbarColor=0x6EFF60)) {
 				BuckoQuestComplete:=0
@@ -19903,7 +19971,7 @@ nm_BuckoQuestProg(){
 				else if(action="feed"){ ;Blueberries
 					QuestFeed:=where
 				}
-				else if(action="Petal"){ ; Blooms
+				else if(action="Petal" && QuestPetalField="None"){ ; Blooms
 					QuestPetal:=pcolor
 					QuestPetalField:=where
 					QuestGatherField:=where
