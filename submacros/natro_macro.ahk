@@ -10074,6 +10074,8 @@ UpdateHoneyGui() {
 			try honeyGui.Hide()
 			HideSSAStatInputs()
 		}
+		ActivateRoblox()
+		SSA(true)
 		While !stopping {
 			result := SSA()
 			if (result = 1) {
@@ -10094,79 +10096,100 @@ UpdateHoneyGui() {
 		mgui.show()
 		UpdateHoneyGui()
 	}
-	SSA() {
+	SSA(reset := false) {
 		global mainPassive, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
 			, StarShowerCheck, PollenCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
 			, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
 			, DoublePassiveCheck, HoneyLimit, ssaStats, ssaAdvanced
 			, PollenMin, WhitePollenMin, RedPollenMin, BluePollenMin, ConvertRateMin
 			, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin, ssaSafety, stopping
-		static lastRollTick := 0, pendingRoll := false, pendingSince := 0
-		doublePassive := (DoublePassiveCheck = 1)
-		static rollCooldown := 900
-		if (!pendingRoll && lastRollTick) {
-			elapsed := A_TickCount - lastRollTick
-			if (elapsed < rollCooldown)
-				Sleep(rollCooldown - elapsed)
+		static lastRollTick := 0, pendingRoll := true, pendingSince := 0, previousRoll := ""
+		if reset {
+			lastRollTick := 0, pendingRoll := true, pendingSince := A_TickCount, previousRoll := ""
+			return
 		}
-		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
+		doublePassive := (DoublePassiveCheck = 1)
+		if !(hwndRoblox := GetRobloxHWND()) || !WinActive("ahk_id " hwndRoblox) || !(GetRobloxClientPos(), windowWidth)
 			return -1
 		yOffset := GetYOffset(hwndRoblox, &fail)
 		if fail
 			return -1
-		if !pendingRoll {
-			rollCost := doublePassive ? 500 : 10
-			if (ssa_subHoney(rollCost) < 0)
-				return -2
-			ActivateRoblox()
-			SendEvent "e"
-			Sleep 250
-			rollOffset := Round(windowWidth * 0.055)
-			if (rollOffset < 70)
-				rollOffset := 70
-			else if (rollOffset > 110)
-				rollOffset := 110
-			Click windowX + windowWidth//2 + (doublePassive ? -rollOffset : rollOffset), windowY + yOffset + windowHeight//2 + 30
-			lastRollTick := A_TickCount
-			pendingRoll := true
-			pendingSince := lastRollTick
-			MouseMove windowX + 10, windowY + windowHeight - 10, 0
-			Sleep 500
-		} else {
-			elapsed := A_TickCount - pendingSince
-			if (elapsed > 8000) {
-				pendingRoll := false
-				pendingSince := 0
-				if ssaSafety {
-					SSA_Log("Safety stop: OCR could not verify a full roll before timeout.")
-					stopping := true
-					return -3
+		rollOffset := Min(110, Max(70, Round(windowWidth * 0.055)))
+		prompt := SSA_PromptVisible(rollOffset, yOffset)
+		if prompt || !pendingRoll {
+			if lastRollTick && !SSA_Wait(Max(0, 900 - (A_TickCount - lastRollTick)), hwndRoblox)
+				return stopping ? 0 : -1
+			if !prompt {
+				SendEvent "e"
+				deadline := A_TickCount + 2500
+				while !SSA_PromptVisible(rollOffset, yOffset) {
+					if A_TickCount >= deadline {
+						SSA_Log("Purchase prompt did not appear; stopped before clicking.")
+						return -1
+					}
+					if !SSA_Wait(50, hwndRoblox)
+						return stopping ? 0 : -1
 				}
-				SSA_Log("OCR pending timeout; rerolling.")
-				return 0
 			}
-			if (elapsed < 200)
-				Sleep(200 - elapsed)
+			if !SSA_Wait(150, hwndRoblox) || !SSA_PromptVisible(rollOffset, yOffset)
+				return stopping ? 0 : -1
+			MouseMove windowX + windowWidth//2 + (doublePassive ? -rollOffset : rollOffset), windowY + yOffset + windowHeight//2 + 30
+			if !SSA_Wait(75, hwndRoblox) || !SSA_PromptVisible(rollOffset, yOffset)
+				return stopping ? 0 : -1
+			if (ssa_subHoney(doublePassive ? 500 : 10) < 0)
+				return -2
+			Click
+			lastRollTick := A_TickCount, pendingRoll := true, pendingSince := lastRollTick
+			MouseMove windowX + 10, windowY + windowHeight - 10, 0
+			deadline := A_TickCount + 2500
+			while SSA_PromptVisible(rollOffset, yOffset) {
+				if A_TickCount >= deadline {
+					SSA_Log("Purchase click was not accepted; stopped without clicking again.")
+					return -1
+				}
+				if !SSA_Wait(50, hwndRoblox)
+					return stopping ? 0 : -1
+			}
+			if !SSA_Wait(750, hwndRoblox)
+				return stopping ? 0 : -1
+		} else if !lastRollTick && !SSA_Wait(500, hwndRoblox)
+			return stopping ? 0 : -1
+		if A_TickCount - pendingSince > 8000 {
+			if ssaSafety {
+				SSA_Log("Safety stop: OCR could not verify a full roll before timeout.")
+				stopping := true
+				return -3
+			}
+			pendingSince := A_TickCount
+			SSA_Log("OCR still unreadable; waiting without rerolling.")
 		}
 		ocrX := windowX + windowWidth//2 + 20
 		ocrY := windowY + yOffset + Round(0.4 * windowHeight + 20)
-		ocrW := 188
-		ocrH := 160
-		validOcr := false
-		ocrSegments := []
+		ocrW := 188, ocrH := 160
+		validOcr := false, previousText := ""
 		Loop 5 {
+			if stopping || !WinActive("ahk_id " hwndRoblox)
+				return stopping ? 0 : -1
+			if SSA_PromptVisible(rollOffset, yOffset)
+				return -1
 			text := SSA_ReadOcrText(ocrX, ocrY, ocrW, ocrH)
-			validOcr := SSA_OcrHasFullRoll(text, doublePassive, &ocrSegments)
+			validOcr := SSA_OcrHasFullRoll(text, doublePassive && lastRollTick, &ocrSegments)
+			currentText := ""
 			if validOcr
+				for entry in ocrSegments
+					currentText .= entry.seg "|"
+			if validOcr && currentText = previousText && (!lastRollTick || currentText != previousRoll)
 				break
-			Sleep 250
+			previousText := currentText, validOcr := false
+			if !SSA_Wait(150, hwndRoblox)
+				return stopping ? 0 : -1
 		}
 		if !validOcr {
-			SSA_Log("OCR invalid/empty after roll; retrying.")
+			SSA_Log("OCR invalid or changing; waiting without rerolling.")
 			return 0
 		}
-		pendingRoll := false
-		pendingSince := 0
+		canMatch := SSA_OcrHasFullRoll(text, doublePassive, &matchingSegments)
+		pendingRoll := false, pendingSince := 0, previousRoll := currentText
 
 		stats := Map()
 		selectedCount := 0
@@ -10275,20 +10298,67 @@ UpdateHoneyGui() {
 			}
 			SSA_Log("Missing: " missingText)
 		}
-		if (statCount >= requiredStats && mainPassiveFound && sideMatch)
+		if (canMatch && statCount >= requiredStats && mainPassiveFound && sideMatch)
 			return 1
 		return 0
 	}
+	SSA_Wait(ms, hwnd) {
+		global stopping
+		deadline := A_TickCount + ms
+		while A_TickCount < deadline {
+			if stopping || !WinActive("ahk_id " hwnd)
+				return false
+			Sleep Min(25, deadline - A_TickCount)
+		}
+		return !stopping && WinActive("ahk_id " hwnd)
+	}
+	SSA_PromptVisible(rollOffset, yOffset) {
+		global windowX, windowY, windowWidth, windowHeight
+		x := windowX + windowWidth//2, y := windowY + yOffset + windowHeight//2 + 30
+		color := PixelGetColor(x, y)
+		r := (color >> 16) & 255, g := (color >> 8) & 255, b := color & 255
+		if b < r + 60 || b < g + 20
+			return false
+		green := 0, red := 0
+		for dx in [-8, 0, 8]
+			for dy in [-8, 0, 8] {
+				color := PixelGetColor(x - rollOffset + dx, y + dy)
+				r := (color >> 16) & 255, g := (color >> 8) & 255, b := color & 255
+				green += g > r * 1.5 && g > b * 1.25
+				color := PixelGetColor(x + rollOffset + dx, y + dy)
+				r := (color >> 16) & 255, g := (color >> 8) & 255, b := color & 255
+				red += r > g * 1.6 && r > b * 1.25
+			}
+		return green >= 2 && red >= 2
+	}
 	SSA_ReadOcrText(x, y, w, h) {
+		global ocr_language
 		pBitmap := Gdip_BitmapFromScreen(x "|" y "|" w "|" h)
-		pBitmapResize := Gdip_ResizeBitmap(pBitmap, w * 2, h * 2), Gdip_DisposeImage(pBitmap)
-		hBitmap := Gdip_CreateHBITMAPFromBitmap(pBitmapResize)
-		Gdip_DisposeImage pBitmapResize
-		pIRandomAccessStream := HBitmapToRandomAccessStream(hBitmap)
-		DeleteObject(hBitmap)
-		return StrSplit(ocr(pIRandomAccessStream), "``n")
+		if pBitmap <= 0
+			throw Error("Unable to capture the SSA result.")
+		resized := Gdip_CreateBitmap(w * 3 + 20, h * 3 + 20), graphics := 0, hBitmap := 0
+		try {
+			graphics := Gdip_GraphicsFromImage(resized)
+			Gdip_GraphicsClear(graphics, 0xFFFFFFFF)
+			Gdip_SetInterpolationMode(graphics, 7), Gdip_SetPixelOffsetMode(graphics, 2)
+			matrix := "0.299|0.299|0.299|0|0|0.587|0.587|0.587|0|0|0.114|0.114|0.114|0|0|0|0|0|1|0|0|0|0|0|1"
+			Gdip_DrawImage(graphics, pBitmap, 10, 10, w * 3, h * 3, 0, 0, w, h, matrix)
+			Gdip_DeleteGraphics(graphics), graphics := 0
+			hBitmap := Gdip_CreateHBITMAPFromBitmap(resized)
+			stream := HBitmapToRandomAccessStream(hBitmap)
+			return StrSplit(ocr(stream, ocr_language), "``n")
+		} finally {
+			if hBitmap
+				DeleteObject(hBitmap)
+			if graphics
+				Gdip_DeleteGraphics(graphics)
+			if resized
+				Gdip_DisposeImage(resized)
+			Gdip_DisposeImage(pBitmap)
+		}
 	}
 	SSA_OcrHasFullRoll(lines, doublePassive, &ocrSegments) {
+		static ranges := Map("pollen", [5, 20], "white", [15, 70], "red", [15, 70], "blue", [15, 70], "gath", [15, 70], "convert", [105, 125], "critical", [1, 7], "instant", [3, 12], "ability", [1, 7])
 		ocrSegments := []
 		foundStats := Map()
 		foundPassives := Map()
@@ -10305,7 +10375,7 @@ UpdateHoneyGui() {
 				SSA_CorrectTokens(tokens)
 				ocrSegments.Push({ seg: seg, tokens: tokens })
 				for _, key in ["white", "red", "blue", "pollen", "convert", "critical", "instant", "ability", "gath"]
-					if !foundStats.Has(key) && SSA_StatLineMatch(key, tokens)
+					if !foundStats.Has(key) && SSA_StatLineMatch(key, tokens) && (value := SSA_ParseStatValue(seg, key)) >= ranges[key][1] && value <= ranges[key][2]
 						foundStats[key] := 1
 				for _, key in ["pop", "scorch", "gummy", "guiding", "saw", "shower"]
 					if !foundPassives.Has(key) && SSA_SidePassiveMatch(key, tokens)
@@ -10313,7 +10383,7 @@ UpdateHoneyGui() {
 			}
 		}
 		requiredPassives := doublePassive ? 2 : 1
-		return (foundStats.Count >= 5 && foundPassives.Count >= requiredPassives)
+		return (foundStats.Count = 5 && foundPassives.Count >= requiredPassives)
 	}
 	SSA_Log(message) {
 		static logCount := 0
@@ -10606,7 +10676,6 @@ UpdateHoneyGui() {
 		BitmapFrame := ComObjQuery(BitmapDecoder, IBitmapFrame := "{72A49A1C-8081-438D-91BC-94ECFC8185C6}")
 		ComCall(12, BitmapFrame, "uint*", &width:=0)   ; get_PixelWidth
 		ComCall(13, BitmapFrame, "uint*", &height:=0)   ; get_PixelHeight
-		ObjRelease(BitmapFrame)
 		if (width > MaxDimension) or (height > MaxDimension)
 		{
 			msgbox "Image is to big - " width "x" height ".``nIt should be maximum - " MaxDimension " pixels"
@@ -10614,7 +10683,6 @@ UpdateHoneyGui() {
 		}
 		BitmapFrameWithSoftwareBitmap := ComObjQuery(BitmapDecoder, IBitmapFrameWithSoftwareBitmap := "{FE287C9A-420C-4963-87AD-691436E08383}")
 		ComCall(6, BitmapFrameWithSoftwareBitmap, "ptr*", &SoftwareBitmap:=0)   ; GetSoftwareBitmapAsync
-		ObjRelease(BitmapFrameWithSoftwareBitmap)
 		WaitForAsync(&SoftwareBitmap)
 		ComCall(6, OcrEngine, "ptr", SoftwareBitmap, "ptr*", &OcrResult:=0)   ; RecognizeAsync
 		WaitForAsync(&OcrResult)
@@ -10630,10 +10698,8 @@ UpdateHoneyGui() {
 		}
 		Close := ComObjQuery(IRandomAccessStream, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")
 		ComCall(6, Close)   ; Close
-		ObjRelease(Close)
 		Close := ComObjQuery(SoftwareBitmap, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")
 		ComCall(6, Close)   ; Close
-		ObjRelease(Close)
 		ObjRelease(IRandomAccessStream)
 		ObjRelease(BitmapDecoder)
 		ObjRelease(SoftwareBitmap)
