@@ -10130,8 +10130,8 @@ UpdateHoneyGui() {
 			lastRollTick := A_TickCount
 			pendingRoll := true
 			pendingSince := lastRollTick
-			MouseMove windowX + windowWidth//2, windowY + windowHeight//2 + 150
-			Sleep 300
+			MouseMove windowX + 10, windowY + windowHeight - 10, 0
+			Sleep 500
 		} else {
 			elapsed := A_TickCount - pendingSince
 			if (elapsed > 8000) {
