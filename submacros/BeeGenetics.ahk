@@ -696,10 +696,10 @@ blc_CloseBeeWindow() {
 blc_DragItem(item, beeX, beeY) {
 	global windowX, windowY, dragging
 	blc_CheckWindow()
-	pos := nm_InventorySearch(item, "down", , , , 40)
+	pos := nm_InventorySearch(item, "down", , , , 70, &failure, 20)
 	blc_CheckWindow()
 	if !IsObject(pos)
-		throw Error("Could not find " item " in the inventory. Check the item and try again.")
+		throw Error("Could not find " item " in the inventory.`n" failure)
 	MouseMove windowX+pos[1], windowY+pos[2]
 	dragging := true
 	SendEvent "{LButton down}"

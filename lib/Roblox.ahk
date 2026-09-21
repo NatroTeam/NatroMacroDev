@@ -43,11 +43,14 @@ GetRobloxHWND()
 ; Returns: offset (integer), defaults to 0 on fail (ByRef param fail is then set to 1, else 0)
 GetYOffset(hwnd?, &fail?)
 {
-	static hRoblox := 0, offset := 0
+	static hRoblox := 0, offset := 0, cachedWidth := 0, cachedHeight := 0
     if !IsSet(hwnd)
         hwnd := GetRobloxHWND()
 
-	if (hwnd = hRoblox)
+	fail := 1
+	if !hwnd || !GetRobloxClientPos(hwnd)
+		return 0
+	if (hwnd = hRoblox && windowWidth = cachedWidth && windowHeight = cachedHeight)
 	{
 		fail := 0
 		return offset
@@ -55,7 +58,6 @@ GetYOffset(hwnd?, &fail?)
 	else if WinExist("ahk_id " hwnd)
 	{
 		try WinActivate "Roblox"
-		GetRobloxClientPos(hwnd)
 		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2 "|" windowY "|60|100")
 
 		Loop 20 ; for red vignette effect
@@ -64,7 +66,7 @@ GetYOffset(hwnd?, &fail?)
 				&& (Gdip_ImageSearch(pBMScreen, bitmaps["toppollenfill"], , x := SubStr(pos, 1, (comma := InStr(pos, ",")) - 1), y := SubStr(pos, comma + 1), x + 41, y + 10, 20) = 0))
 			{
 				Gdip_DisposeImage(pBMScreen)
-				hRoblox := hwnd, fail := 0
+				hRoblox := hwnd, cachedWidth := windowWidth, cachedHeight := windowHeight, fail := 0
 				return offset := y - 14
 			}
 			else
