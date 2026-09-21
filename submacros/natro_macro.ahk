@@ -9239,7 +9239,7 @@ blc_mutations(*) {
 	startGui() {
 		global
 		local i,j,y,hBM,x
-		(mgui := Gui("+E" (0x00080000) " +OwnDialogs -Caption -DPIScale", "Auto-Jelly")).OnEvent("Close", ExitApp)
+		(mgui := Gui("+E" (0x00080000) " +OwnDialogs -Caption -DPIScale", "Auto-Jelly")).OnEvent("Close", (*) => ExitApp())
 		mgui.Show()
 		for i, j in [
 			{name:"move", options:"x0 y0 w" w " h36"},
@@ -9298,6 +9298,7 @@ blc_mutations(*) {
 			statEdit.Opt("Background262832 cFEC6DF")
 			statEdit.Value := (%j.min% > 0) ? %j.min% : ""
 			statEdit.OnEvent("Change", SSAStatMinChanged.Bind(j.min))
+			statEdit.OnEvent("LoseFocus", SSA_ProcessPendingStats)
 			statGui.SetFont()
 			ssaStatsInputs[j.min] := statGui
 		}
@@ -9591,35 +9592,20 @@ UpdateHoneyGui() {
 	}
 	SSAStatMinChanged(statName, ctrl, *) {
 		global ssaStatPending, ssaStatUpdating
-		if ssaStatUpdating.Has(statName)
-			return
-		value := RegExReplace(ctrl.Value, "\\D+")
-		if (value != ctrl.Value) {
-			ssaStatUpdating[statName] := true
-			ctrl.Value := value
-			ssaStatUpdating.Delete(statName)
-		}
-		value := (value = "") ? 0 : Integer(value)
-		ssaStatPending[statName] := {value: value, ctrl: ctrl, tick: A_TickCount}
-		SetTimer(SSA_ProcessPendingStats, -350)
+		if !ssaStatUpdating.Has(statName)
+			ssaStatPending[statName] := ctrl
 	}
-	SSA_ProcessPendingStats() {
+	SSA_ProcessPendingStats(*) {
 		global ssaStatPending, ssaStatUpdating
 		global PollenMin, WhitePollenMin, RedPollenMin, BluePollenMin, ConvertRateMin
 		, CriticalChanceMin, InstantConversionMin, BeeAbilityRateMin, BeeGatherPollenMin
-		now := A_TickCount
-		pendingLeft := false
 		toCommit := []
-		for statName, info in ssaStatPending {
-			if (now - info.tick < 350) {
-				pendingLeft := true
-				continue
-			}
+		for statName in ssaStatPending
 			toCommit.Push(statName)
-		}
-		for i, statName in toCommit {
-			info := ssaStatPending[statName]
-			value := info.value
+		for statName in toCommit {
+			ctrl := ssaStatPending[statName]
+			value := RegExReplace(ctrl.Value, "\D+")
+			value := (value = "") ? 0 : Integer(value)
 			if (value > 0) {
 				value := SSA_ClampStatMin(statName, value)
 				if (%statName% <= 0 && SSA_CountSelectedStats(true) >= 5) {
@@ -9630,14 +9616,12 @@ UpdateHoneyGui() {
 			ssaStatUpdating[statName] := true
 			%statName% := value
 			display := (value = 0) ? "" : value
-			if (display != info.ctrl.Value)
-				info.ctrl.Value := display
-			IniWrite(%statName%, ".\\settings\\mutations.ini", "ssa", statName)
+			if (display != ctrl.Value)
+				ctrl.Value := display
+			IniWrite(%statName%, ".\settings\mutations.ini", "ssa", statName)
 			ssaStatUpdating.Delete(statName)
 			ssaStatPending.Delete(statName)
 		}
-		if pendingLeft
-			SetTimer(SSA_ProcessPendingStats, -150)
 	}
 	SSA_ClampStatMin(statName, value) {
 		if (value = 0)
@@ -9776,8 +9760,9 @@ UpdateHoneyGui() {
 					sleep -1
 				mousegetpos ,,, &ctrl2, 2
 				if ctrl = ctrl2
-					PostMessage(0x0112,0xF060)
+					ExitApp()
 			case "roll":
+				SSA_ProcessPendingStats()
 				ReplaceSystemCursors()
 				if (guiMode = "ssa")
 					blc_ssa_start()
@@ -9790,6 +9775,7 @@ UpdateHoneyGui() {
 				else
 					Msgbox("This feature allows you to roll royal jellies until you obtain your specified bees and/or mutations!``n``nTo use:``n- Select the bees and mutations you want``n- Make sure your in-game Auto-Jelly settings are right``n- Put a neonberry on the bee you want to change (if trying ``n  to obtain a mutated bee) ``n- Use one royal jelly on the bee and click Yes``n- Click on Roll.``n``nTo stop: ``n- Press the escape key``n``nAdditional options:``n- Stop on Gifteds stops on any gifted bee, ``n  ignoring the mutation and your bee selection``n- Stop on Mythics stops on any mythic bee, ``n  ignoring the mutation and your bee selection", "Auto-Jelly Help", "0x40040")
 			case "mode":
+				SSA_ProcessPendingStats()
 				guiMode := (guiMode = "jelly") ? "ssa" : "jelly"
 				hovercontrol := ""
 				SetModeVisibility()
@@ -9825,6 +9811,7 @@ UpdateHoneyGui() {
 			case "ssaAdvanced":
 				if (guiMode != "ssa")
 					return
+				SSA_ProcessPendingStats()
 				ssaAdvanced := !ssaAdvanced
 				IniWrite(ssaAdvanced, ".\settings\mutations.ini", "ssa", "ssaAdvanced")
 				SSA_EnforceStatMax()
@@ -10571,7 +10558,7 @@ UpdateHoneyGui() {
 	}
 	closeFunction(*) {
 		global xPos, yPos
-		Gdip_Shutdown(pToken)
+		try SSA_ProcessPendingStats()
 		ReplaceSystemCursors()
 		try {
 			mgui.getPos(&xp, &yp)
@@ -10580,6 +10567,12 @@ UpdateHoneyGui() {
 			IniWrite(xpos, ".\settings\mutations.ini", "GUI", "xpos")
 			IniWrite(ypos, ".\settings\mutations.ini", "GUI", "ypos")
 		}
+		if IsSet(ssaStatsInputs)
+			for name, statGui in ssaStatsInputs
+				try statGui.Destroy()
+		try honeyGui.Destroy()
+		try mgui.Destroy()
+		Gdip_Shutdown(pToken)
 	}
 	HBitmapToRandomAccessStream(hBitmap) {
 		static IID_IRandomAccessStream := "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}"
