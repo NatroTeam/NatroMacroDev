@@ -2707,7 +2707,7 @@ MainGui.Add("GroupBox", "x335 y168 w160 h62", "Bugs and Suggestions")
 MainGui.SetFont("s9 cDefault Norm", "Tahoma")
 ;hive tools
 MainGui.Add("Button", "x10 y40 w150 h40 vBasicEggHatcherButton Disabled", "Gifted Basic Bee`nAuto-Hatcher").OnEvent("Click", nm_BasicEggHatcher)
-MainGui.Add("Button", "x10 y82 w150 h40 vBitterberryFeederButton Disabled", "Bitterberry`nAuto-Feeder").OnEvent("Click", nm_BitterberryFeeder)
+MainGui.Add("Button", "x10 y82 w150 h40 vBitterberryFeederButton Disabled", "Bee Genetics").OnEvent("Click", nm_BeeGenetics)
 MainGui.Add("Button", "x10 y124 w150 h40 vAutoMutatorButton Disabled", "Auto Jelly / SSA Roller").OnEvent("Click", blc_mutations)
 ;other tools
 MainGui.Add("Button", "x10 y184 w150 h42 vGenerateBeeListButton Disabled", "Export Hive Bee List`n(for Hive Builder)").OnEvent("Click", nm_GenerateBeeList)
@@ -8055,155 +8055,12 @@ nm_ConvertBalloon(GuiCtrl, *){
 
 ; MISC TAB
 ; ------------------------
-nm_BitterberryFeeder(*)
-{
-	if !GetRobloxHWND()
-	{
-		MsgBox "You must have Bee Swarm Simulator open to use this!", "Bitterberry Auto-Feeder", 0x40030 " T20"
-		return
-	}
-
-	script :=
-	(
-	'
-	#NoTrayIcon
-	#SingleInstance Force
-
-	#Include "%A_ScriptDir%\lib"
-	#Include "Gdip_All.ahk"
-	#Include "Gdip_ImageSearch.ahk"
-	#Include "Roblox.ahk"
-	#Include "nm_OpenMenu.ahk"
-	#Include "nm_InventorySearch.ahk"
-
-	CoordMode "Mouse", "Screen"
-	OnExit(ExitFunc)
-	pToken := Gdip_Startup()
-
-	bitmaps := Map()
-	bitmaps["itemmenu"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAACcAAAAuAQAAAACD1z1QAAAAAnRSTlMAAHaTzTgAAAB4SURBVHjanc2hDcJQGAbAex9NQCCQyA6CqGMswiaM0lGACSoQDWn6I5A4zNnDiY32aCPbuoujA1rNUIsggqZRrgmGdJAd+qwN2YdDdEiPXUCgy3lGQJ6I8VK1ZoT4cQBjVa2tUAH/uTHwvZbcMWfClBduVK2i9/YB0wgl4MlLHxIAAAAASUVORK5CYII=")
-	bitmaps["questlog"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAACoAAAAnAQAAAABRJucoAAAAAnRSTlMAAHaTzTgAAACASURBVHjajczBCcJAEEbhl42wuSUVmFjJphRL2dLGEuxAxQIiePCw+MswBRgY+OANMxgUoJG1gZj1Bd0lWeIIkKCrgBqjxzcfjxs4/GcKhiBXVyL7M0WEIZiCJVgDoJPPJUGtcV5ksWMHB6jCWQv0dl46ToxqzJZePHnQw9W4/QAf0C04CGYsYgAAAABJRU5ErkJggg==")
-	bitmaps["beemenu"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAACsAAAAsAQAAAADUI3zVAAAAAnRSTlMAAHaTzTgAAACaSURBVHjadc5BDgIhDAXQT9U4y1m6G24inkyO4lGaOUm9AW7MzMY6HyQxJjaBFwotxdW3UAEjNhCc+/1z+mXGmgCH22Ti/S5bIRoXSMgtmTASBeOFsx6td/lDIgGIJ8Czl6kVRAguGL4mW9NcC8zJUjRvlCXXZH3kxiUYW+sBgewhRPq3exIwEOhYiZHl/nS3HdIBePQBlfvtDUnsNfflK46tAAAAAElFTkSuQmCC")
-	bitmaps["item"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAMAAAAUAQMAAAByNRXfAAAAA1BMVEXU3dp/aiCuAAAAC0lEQVR42mMgEgAAACgAAU1752oAAAAASUVORK5CYII=")
-	bitmaps["bitterberry"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAG8AAAAbCAMAAABFqCGFAAAB11BMVEUbKjUcKzYdLDceLDceLTgfLjkgLzohMDoiMDsjMTwkMj0kMz0lND4mND8oNkApN0EqOEMrOUMsOkQtO0UuPEYvPUcwPkgyQEkzQUo0QUs1Q0w3RU44RU85Rk86SFE8SVM9SlM+S1Q/TFVATVZCT1hDUFlEUVlFUVpGU1xHVFxJVV5KVl9LV19NWWJPW2NRXWVSXmZUYGhVYWhWYWlXYmpXY2tbZm5cZ29daG9eanFibXRibnVkb3ZlcHdoc3ptd35ueX9veoBweoFzfYN0foR1f4V2gIZ4god6hIp7hYt+h41/iY6Aio+FjpSGj5SHkJWKk5iLlJmMlZqNlpqOl5uQmJ2QmZ2Rmp6Sm5+UnKCVnaGZoaWbo6ecpKigp6uhqKyjq66mrbCnrrGnr7Kor7OrsrWss7avtrmwt7myuLu2vL+4v8G5wMK6wMO8wsS+xMa/xcfAxsjBx8nDyMrEyszGzM3HzM7Izc/Jzs/Jz9DK0NHN0tPP1NXQ1dbR1tfS19jV2drX3NzY3N3Z3d7b4ODc4OHe4uLf4+Pg5OTg5eXi5ubj5+fm6urn6+vo7Ovp7ezq7e3r7u7r7+7s8O/t8fDu8fHv8vHw8/Lx9PPx9fTy9fTz9vX09/ZX5XClAAACKElEQVR42u3W61NMYQDH8W9iu7uEhAhJURIphYRci0QiFXKJXAttQnIPXdVWK/3+WHvK6dnZfaY3O443fm9+L34zz2fmzDPnHORt+O/9BS8HJ6mlL2Xys6XJlCVTLbUxepDQJaln9b5ZSXs4J7dsKeZIzB45kvzpRY6XHYLcsiU/Ju+YpOHD8NEdPPDUD8+kL52dwcW9K2kF3cazzqYX8d5Ar9QMQ7qMk/o/JU3WZfnWnx2RVEpWPLSFvJ1FKekVvZIss9v10C9JfXAy0hsswTdu937tx0nepHMgkDCifHPFLLPbn5dQI0k18NpyX05r3ot8nq2sejz+dCVNcwfeDAwq5CW1TzzPZLttNl3CmqA0k0G+or3kd7J7uTRIqqNw7oFJcrwKSbfhvWU2fRfuSw+h1eKxdsjqBeKYT6pz0G4Z7yt0WGbTkys4IFWSPKpwr1rSjzPQbPW+4SYY4U1Dm3V2WyeIHxhOpEpRnoJJnLJ6E3BJ84nwQlS7bTaeHxquwwuLN5XIeRmvVgu1iTJJ09FeB7wys83TNjYXslXR3mg1+Be8XeTe8bt1gbgbga6Msu5wL+lWoG8L62ZkZpt3FeCa/f15VAteLfDJrYkdOFn+NtybS9w9ycw27/tS8A1ZvGXZjTPGGzuYvNfUaM0GX2bVB5mDqgoOFaWkFT+SrLPxVA6VXn5vG+GJl14eG2c99Hrgojz0jhM/4KE3lkK5PPRa4cG/+x/8DdlCsT+3EwaSAAAAAElFTkSuQmCC")
-	bitmaps["feed"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAADwAAAAUAQMAAADrzcxqAAAABlBMVEUAAAD3//lCqWtQAAAAAXRSTlMAQObYZgAAAE1JREFUeNqNzbENwCAMRNHfpYxLSo/ACB4pG8SjMkImIAiwRIe46lX3+QtzAcE5wQ1cHeKQHhw10EwFwISK6YAvvCVg7LBamuM5fRGFBk/MFx8u1mbtAAAAAElFTkSuQmCC")
-	bitmaps["greensuccess"] := Gdip_BitmapFromBase64("iVBORw0KGgoAAAANSUhEUgAAAA4AAAALCAYAAABPhbxiAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAhdEVYdENyZWF0aW9uIFRpbWUAMjAyMzowMzowOCAxNToyMzo1N/c+ABwAAAAdSURBVChTY3T+H/6fgQzABKVJBqMa8YDhr5GBAQBwxAKu5PiUjAAAAA5lWElmTU0AKgAAAAgAAAAAAAAA0lOTAAAAAElFTkSuQmCC")
-	#Include "%A_ScriptDir%\nm_image_assets\offset\bitmaps.ahk"
-
-	if (MsgBox("BITTERBERRY AUTO FEEDER v0.2 by anniespony#8135``nMake sure BEE SLOT TO MUTATE is always visible``nDO NOT MOVE THE SCREEN OR RESIZE WINDOW FROM NOW ON.``nMAKE SURE BEE IS RADIOACTIVE AT ALL TIMES!", "Bitterberry Auto-Feeder v0.2", 0x40001) = "Cancel")
-		ExitApp
-
-	bitterberrynos := InputBox("Enter the amount of bitterberry used each time", "How many bitterberry?", "w320 h180 T60").Value
-	if IsInteger(bitterberrynos) {
-		if (bitterberrynos > 30)
-			if (MsgBox("You have entered " bitterberrynos " which is more than 30.``nAre you sure?", "Bitterberry Auto-Feeder v0.2", 0x40034) = "No")
-				ExitApp
-	} else {
-		MsgBox "You must enter a number for Bitterberries!!``nStopping Feeder!", "Bitterberry Auto-Feeder v0.2", 0x40010
-		ExitApp
-	}
-
-	if (MsgBox("After dismissing this message,``nleft click ONLY once on BEE SLOT", "Bitterberry Auto-Feeder v0.2", 0x40001) = "Cancel")
-		ExitApp
-
-	hwnd := GetRobloxHWND()
-	ActivateRoblox()
-	GetRobloxClientPos(hwnd)
-	offsetY := GetYOffset(hwnd, &offsetfail)
-	if (offsetfail = 1) {
-		MsgBox "Unable to detect in-game GUI offset!``nStopping Feeder!``n``nThere are a few reasons why this can happen, including:``n - Incorrect graphics settings``n - Your `'Experience Language`' is not set to English``n - Something is covering the top of your Roblox window``n``nJoin our Discord server for support and our Knowledge Base post on this topic (Unable to detect in-game GUI offset)!", "WARNING!!", "0x40030"
-		ExitApp
-	}
-
-	StatusBar := Gui("-Caption +E0x80000 +AlwaysOnTop +ToolWindow -DPIScale")
-	StatusBar.Show("NA")
-	hbm := CreateDIBSection(windowWidth, windowHeight), hdc := CreateCompatibleDC(), obm := SelectObject(hdc, hbm)
-	G := Gdip_GraphicsFromHDC(hdc), Gdip_SetSmoothingMode(G, 2), Gdip_SetInterpolationMode(G, 2)
-	Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0x60000000), -1, -1, windowWidth+1, windowHeight+1), Gdip_DeleteBrush(pBrush)
-	UpdateLayeredWindow(StatusBar.Hwnd, hdc, windowX, windowY, windowWidth, windowHeight)
-
-	KeyWait "LButton", "D" ; Wait for the left mouse button to be pressed down.
-	MouseGetPos &beeX, &beeY
-	Gdip_GraphicsClear(G), Gdip_FillRectangle(G, pBrush := Gdip_BrushCreateSolid(0xd0000000), -1, -1, windowWidth+1, 38), Gdip_DeleteBrush(pBrush)
-	Gdip_TextToGraphics(G, "Mutating... Right Click or Shift to Stop!", "x0 y0 cffff5f1f Bold Center vCenter s24", "Tahoma", windowWidth, 38)
-	UpdateLayeredWindow(StatusBar.Hwnd, hdc, windowX, windowY, windowWidth, 38)
-	SelectObject(hdc, obm), DeleteObject(hbm), DeleteDC(hdc), Gdip_DeleteGraphics(G)
-	try
-	{
-		Hotkey "Shift", ExitFunc, "On"
-		Hotkey "RButton", ExitFunc, "On"
-		Hotkey "F11", ExitFunc, "On"
-	}
-	Sleep 250
-
-	Loop
-	{
-		if ((pos := nm_InventorySearch("bitterberry", "down", , , , (A_Index = 1) ? 40 : 4)) = 0)
-		{
-			MsgBox "You ran out of Bitterberries!", "Bitterberry Auto-Feeder v0.2", 0x40010
-			break
-		}
-		GetRobloxClientPos(hwnd)
-
-		SendEvent "{Click " windowX+pos[1] " " windowY+pos[2] " 0}"
-		Send "{Click Down}"
-		Sleep 100
-		SendEvent "{Click " beeX " " beeY " 0}"
-		Sleep 100
-		Send "{Click Up}"
-		Loop 10
-		{
-			Sleep 100
-			pBMScreen := Gdip_BitmapFromScreen(windowX+(54*windowWidth)//100-300 "|" windowY+offsetY+(46*windowHeight)//100-59 "|250|100")
-			if (Gdip_ImageSearch(pBMScreen, bitmaps["feed"], &pos, , , , , 2, , 2) = 1)
-			{
-				Gdip_DisposeImage(pBMScreen)
-				SendEvent "{Click " windowX+(54*windowWidth)//100-300+SubStr(pos, 1, InStr(pos, ",")-1)+140 " " windowY+offsetY+(46*windowHeight)//100-59+SubStr(pos, InStr(pos, ",")+1)+5 "}" ; Click Number
-				Sleep 100
-				Loop StrLen(bitterberrynos)
-				{
-					SendEvent "{Text}" SubStr(bitterberrynos, A_Index, 1)
-					Sleep 100
-				}
-				SendEvent "{Click " windowX+(54*windowWidth)//100-300+SubStr(pos, 1, InStr(pos, ",")-1) " " windowY+offsetY+(46*windowHeight)//100-59+SubStr(pos, InStr(pos, ",")+1) "}" ; Click Feed
-				break
-			}
-			Gdip_DisposeImage(pBMScreen)
-			if (A_Index = 10)
-				continue 2
-		}
-		Sleep 750
-
-		pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-295 "|" windowY+offsetY+((4*windowHeight)//10 - 15) "|150|50")
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["greensuccess"], , , , , , 20) = 1) {
-			if (MsgBox("SUCCESS!!!!``nKeep this?", "Bitterberry Auto-Feeder v0.2", 0x40024) = "Yes")
-			{
-				Gdip_DisposeImage(pBMScreen)
-				break
-			}
-			else
-			{
-				ActivateRoblox()
-				SendEvent "{Click " windowX + (windowWidth//2 - 132) " " windowY + offsetY + ((4*windowHeight)//10 - 150) "}" ; Close Bee
-			}
-		}
-		Gdip_DisposeImage(pBMScreen)
-	}
-	ExitApp
-
-	ExitFunc(*)
-	{
-		try StatusBar.Destroy()
-		try Gdip_Shutdown(pToken)
-		ExitApp
-	}
-	'
-	)
-
-	shell := ComObject("WScript.Shell")
-	exec := shell.Exec('"' exe_path64 '" /script /force *')
-	exec.StdIn.Write(script), exec.StdIn.Close()
+nm_BeeGenetics(*) {
+	global MGUIPID, exe_path64
+	try ProcessClose(MGUIPID)
+	Run('"' exe_path64 '" /script "' A_WorkingDir '\submacros\BeeGenetics.ahk"', A_WorkingDir, , &MGUIPID)
 }
+
 nm_BasicEggHatcher(*)
 {
 	if !GetRobloxHWND()
