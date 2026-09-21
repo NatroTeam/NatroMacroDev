@@ -9771,7 +9771,7 @@ UpdateHoneyGui() {
 			case "help":
 				ReplaceSystemCursors()
 				if (guiMode = "ssa")
-					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Open the SSA roll menu in-game``n- Select your main passive and side passives``n- Select up to 5 stats in the Stats column (Advanced: set Min %; 0 = ignore)``n``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nSafety: Enable the Safety toggle to stop the roller if OCR can`'t verify a full roll before timeout.``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
+					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Stand at the Supreme Star Amulet generator with its E prompt visible, or leave an SSA result open``n- Select your main passive and side passives``n- Select up to 5 stats in the Stats column (Advanced: set Min %; 0 = ignore)``n``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nSafety: Enable the Safety toggle to stop the roller if OCR can`'t verify a full roll before timeout.``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
 				else
 					Msgbox("This feature allows you to roll royal jellies until you obtain your specified bees and/or mutations!``n``nTo use:``n- Select the bees and mutations you want``n- Make sure your in-game Auto-Jelly settings are right``n- Put a neonberry on the bee you want to change (if trying ``n  to obtain a mutated bee) ``n- Use one royal jelly on the bee and click Yes``n- Click on Roll.``n``nTo stop: ``n- Press the escape key``n``nAdditional options:``n- Stop on Gifteds stops on any gifted bee, ``n  ignoring the mutation and your bee selection``n- Stop on Mythics stops on any mythic bee, ``n  ignoring the mutation and your bee selection", "Auto-Jelly Help", "0x40040")
 			case "mode":
@@ -10075,7 +10075,7 @@ UpdateHoneyGui() {
 				msgbox "Honey limit reached. SSA roller stopped.", "SSA Roller", 0x40040
 				break
 			} else if (result < 0) {
-				msgbox "Unable to read SSA roll. Make sure the SSA roll menu is open and unobstructed.", "SSA Roller", 0x40030
+				msgbox "Unable to confirm the SSA menu. Stand at the Supreme Star Amulet generator with its E prompt visible, or leave an SSA result open and unobstructed.", "SSA Roller", 0x40030
 				break
 			}
 		}
@@ -10103,6 +10103,18 @@ UpdateHoneyGui() {
 			return -1
 		rollOffset := Min(110, Max(70, Round(windowWidth * 0.055)))
 		prompt := SSA_PromptVisible(rollOffset, yOffset)
+		if !lastRollTick && pendingRoll && !prompt {
+			if !SSA_Wait(500, hwndRoblox)
+				return stopping ? 0 : -1
+			prompt := SSA_PromptVisible(rollOffset, yOffset)
+			if !prompt && !SSA_ResultVisible(yOffset) {
+				if !SSA_Wait(150, hwndRoblox)
+					return stopping ? 0 : -1
+				prompt := SSA_PromptVisible(rollOffset, yOffset)
+				if !prompt && !SSA_ResultVisible(yOffset)
+					pendingRoll := false
+			}
+		}
 		if prompt || !pendingRoll {
 			if lastRollTick && !SSA_Wait(Max(0, 900 - (A_TickCount - lastRollTick)), hwndRoblox)
 				return stopping ? 0 : -1
@@ -10139,8 +10151,7 @@ UpdateHoneyGui() {
 			}
 			if !SSA_Wait(750, hwndRoblox)
 				return stopping ? 0 : -1
-		} else if !lastRollTick && !SSA_Wait(500, hwndRoblox)
-			return stopping ? 0 : -1
+		}
 		if A_TickCount - pendingSince > 8000 {
 			if ssaSafety {
 				SSA_Log("Safety stop: OCR could not verify a full roll before timeout.")
@@ -10317,6 +10328,19 @@ UpdateHoneyGui() {
 				red += r > g * 1.6 && r > b * 1.25
 			}
 		return green >= 2 && red >= 2
+	}
+	SSA_ResultVisible(yOffset) {
+		global windowX, windowY, windowWidth, windowHeight
+		x := windowX + windowWidth//2 + 20
+		y := windowY + yOffset + Round(0.4 * windowHeight + 20)
+		yellow := 0
+		for dx in [8, 85, 165]
+			for dy in [10, 55, 100] {
+				color := PixelGetColor(x + dx, y + dy)
+				r := (color >> 16) & 255, g := (color >> 8) & 255, b := color & 255
+				yellow += r > 170 && g > 140 && b < 150 && Abs(r - g) < 70
+			}
+		return yellow >= 5
 	}
 	SSA_ReadOcrText(x, y, w, h) {
 		global ocr_language
