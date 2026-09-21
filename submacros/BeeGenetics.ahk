@@ -656,6 +656,41 @@ blc_CheckWindow() {
 	if windowX != runWindow.x || windowY != runWindow.y || windowWidth != runWindow.w || windowHeight != runWindow.h
 		throw Error("The Roblox window moved or changed size. Start again to select the bee.")
 }
+blc_SelectBee(&beeX, &beeY) {
+	global runWindow
+	KeyWait "LButton"
+	blc_CheckWindow()
+	selection := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +Owner" runWindow.hwnd, "Select a bee")
+	released := false
+	OnRelease(wParam, lParam, msg, hwnd) {
+		if hwnd = selection.Hwnd
+			released := true
+	}
+	try {
+		OnMessage(0x202, OnRelease)
+		selection.OnEvent("Close", stopToggle)
+		selection.BackColor := "000000"
+		WinSetTransparent 96, selection.Hwnd
+		selection.Show("x" runWindow.x " y" runWindow.y " w" runWindow.w " h" runWindow.h)
+		ToolTip "Click the bee slot to target. Press Escape to cancel."
+		KeyWait "LButton", "D"
+		MouseGetPos &beeX, &beeY, &selectedWindow
+		if selectedWindow != selection.Hwnd {
+			KeyWait "LButton"
+			throw Error("Select a bee inside the Roblox window.")
+		}
+		DllCall("SetCapture", "Ptr", selection.Hwnd)
+		while !released
+			Sleep 10
+	} finally {
+		OnMessage(0x202, OnRelease, 0)
+		DllCall("ReleaseCapture")
+		ToolTip()
+		selection.Destroy()
+	}
+	WinActivate "ahk_id " runWindow.hwnd
+	blc_CheckWindow()
+}
 blc_Wait(ms) {
 	deadline := A_TickCount + ms
 	loop {
@@ -870,17 +905,8 @@ blc_start() {
 			throw Error("The in-game GUI offset could not be detected.")
 		runWindow := {hwnd:hwnd, x:windowX, y:windowY, w:windowWidth, h:windowHeight, offset:offset}
 		beeX := beeY := 0
-		if bitterberryMode || autoRadioactive {
-			ToolTip "Click the bee slot to target. Press Escape to cancel."
-			KeyWait "LButton"
-			KeyWait "LButton", "D"
-			MouseGetPos &beeX, &beeY
-			KeyWait "LButton"
-			ToolTip()
-			blc_CheckWindow()
-			if beeX < windowX || beeY < windowY || beeX >= windowX+windowWidth || beeY >= windowY+windowHeight
-				throw Error("Select a bee inside the Roblox window.")
-		}
+		if bitterberryMode || autoRadioactive
+			blc_SelectBee(&beeX, &beeY)
 		used := 0, nextRadioactive := 0, first := true
 		loop {
 			blc_CheckWindow()
