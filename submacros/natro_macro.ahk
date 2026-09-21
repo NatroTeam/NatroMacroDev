@@ -16280,6 +16280,7 @@ nm_getPetalPatternScript() {
 		, __calibTiles := 3
 		, __postBloomWaitMs := 250
 		, __diamondRadiusTiles := 5
+		, __rejectedTargets := []
 
 	if !__petalInit {
 		if !FileExist(__chromaDll)
@@ -16320,6 +16321,7 @@ nm_getPetalPatternScript() {
 			try WinGetClientPos(&clientX, &clientY, &clientW, &clientH, "ahk_id " hwnd)
 			if (clientW > 0 && clientH > 0) {
 				if (__viewW != clientW || __viewH != clientH) {
+					__rejectedTargets := []
 					cfgResult := __chroma.SetActiveConfig(pd_GetChromaConfigBase(clientH))
 					if (cfgResult.status != 0)
 						throw Error("Bloom configuration failed: " cfgResult.error)
@@ -16333,7 +16335,7 @@ nm_getPetalPatternScript() {
 				originY := Round((clientH - 1) * 0.50)
 				loc := pd_LocatePointsFromClient(__chroma, clientX, clientY, clientW, clientH)
 				if (pd_IsLocateStatusOk(loc.status) && (loc.written > 0)) {
-					nearest := pd_FindNearestToOrigin(loc.points, originX, originY)
+					nearest := pd_FindNearestToOrigin(loc.points, originX, originY, __rejectedTargets)
 					if (nearest.found) {
 						targetX := nearest.x
 						targetY := nearest.y
@@ -16372,50 +16374,118 @@ nm_getPetalPatternScript() {
 							}
 						}
 
-						if (__calibReady) {
-							dx := targetX - originX
-							dy := targetY - originY
-							det := (__vfX * __vrY) - (__vfY * __vrX)
-							if pd_IsCalibrationUsable(__vfX, __vfY, __vrX, __vrY) {
-								fwdRaw := (((-dx) * __vrY) - ((-dy) * __vrX)) / det
-								rightRaw := ((__vfX * (-dy)) - (__vfY * (-dx))) / det
-								fwdTiles := Round(fwdRaw, 2)
-								rightTiles := Round(rightRaw, 2)
-
-								if (fwdTiles > 0)
-									nm_Walk(fwdTiles, FwdKey)
-								else if (fwdTiles < 0)
-									nm_Walk(Abs(fwdTiles), BackKey)
-
-								if (rightTiles > 0)
-									nm_Walk(rightTiles, RightKey)
-								else if (rightTiles < 0)
-									nm_Walk(Abs(rightTiles), LeftKey)
-
+						if __calibReady {
+							trip := pd_ApproachBloom(__chroma, hwnd, clientX, clientY, clientW, clientH,
+								targetX, targetY, originX, originY, __vfX, __vfY, __vrX, __vrY)
+							if trip.arrived {
 								Sleep __postBloomWaitMs
-								nm_Walk(__diamondRadiusTiles, FwdKey)
-								nm_Walk(__diamondRadiusTiles, BackKey, RightKey)
-								nm_Walk(__diamondRadiusTiles, BackKey, LeftKey)
-								nm_Walk(__diamondRadiusTiles, FwdKey, LeftKey)
-								nm_Walk(__diamondRadiusTiles, FwdKey, RightKey)
-								nm_Walk(__diamondRadiusTiles, BackKey)
-
-								if (rightTiles > 0)
-									nm_Walk(rightTiles, LeftKey)
-								else if (rightTiles < 0)
-									nm_Walk(Abs(rightTiles), RightKey)
-
-								if (fwdTiles > 0)
-									nm_Walk(fwdTiles, BackKey)
-								else if (fwdTiles < 0)
-									nm_Walk(Abs(fwdTiles), FwdKey)
+								for keys in [[FwdKey], [BackKey, RightKey], [BackKey, LeftKey], [FwdKey, LeftKey], [FwdKey, RightKey], [BackKey]] {
+									if !pd_Walk(__diamondRadiusTiles, keys[1], keys.Length > 1 ? keys[2] : 0, hwnd, clientW, clientH) {
+										trip.interrupted := true
+										break
+									}
+								}
+							}
+							if !trip.interrupted {
+								Loop trip.route.Length {
+									step := trip.route[trip.route.Length - A_Index + 1]
+									if !pd_Walk(step.tiles, step.undo, 0, hwnd, clientW, clientH) {
+										trip.interrupted := true
+										break
+									}
+								}
+							}
+							if (!trip.arrived || trip.interrupted) {
+								__calibReady := 0
+								pd_PublishCalibState(0, 0, 0, 0, 0, 1, 1)
 							}
 						}
+						if !__calibReady
+							__rejectedTargets.Push({x: targetX, y: targetY, radius: Max(6, clientH * 0.012), until: A_TickCount + 5000})
 					}
 				}
 			}
 		}
 		Sleep 250
+	}
+
+	pd_CheckView(hwnd, clientW, clientH) {
+		if (!hwnd || GetRobloxHWND() != hwnd || !WinActive("ahk_id " hwnd))
+			return false
+		width := 0, height := 0
+		try WinGetClientPos(, , &width, &height, "ahk_id " hwnd)
+		return (width = clientW && height = clientH)
+	}
+
+	pd_Walk(tiles, key, secondKey, hwnd, clientW, clientH) {
+		while (tiles > 0.001) {
+			if !pd_CheckView(hwnd, clientW, clientH)
+				return false
+			step := Min(3, tiles)
+			nm_Walk(step, key, secondKey)
+			tiles -= step
+		}
+		return pd_CheckView(hwnd, clientW, clientH)
+	}
+
+	pd_BloomOffset(targetX, targetY, originX, originY, vfX, vfY, vrX, vrY) {
+		dx := originX - targetX, dy := originY - targetY
+		det := vfX * vrY - vfY * vrX
+		return {fwd: (dx * vrY - dy * vrX) / det, right: (vfX * dy - vfY * dx) / det}
+	}
+
+	pd_ApproachBloom(chromaObj, hwnd, clientX, clientY, clientW, clientH,
+		targetX, targetY, originX, originY, vfX, vfY, vrX, vrY) {
+		global FwdKey, BackKey, LeftKey, RightKey
+		trip := {arrived: false, interrupted: false, route: []}
+		if !pd_IsCalibrationUsable(vfX, vfY, vrX, vrY)
+			return trip
+		Loop 12 {
+			offset := pd_BloomOffset(targetX, targetY, originX, originY, vfX, vfY, vrX, vrY)
+			if (Max(Abs(offset.fwd), Abs(offset.right)) <= 0.5) {
+				trip.arrived := true
+				return trip
+			}
+			forward := Abs(offset.fwd) >= Abs(offset.right)
+			amount := forward ? offset.fwd : offset.right
+			signedTiles := Max(-3, Min(3, amount))
+			key := forward ? (amount > 0 ? FwdKey : BackKey) : (amount > 0 ? RightKey : LeftKey)
+			undo := forward ? (amount > 0 ? BackKey : FwdKey) : (amount > 0 ? LeftKey : RightKey)
+			shiftX := signedTiles * (forward ? vfX : vrX)
+			shiftY := signedTiles * (forward ? vfY : vrY)
+			if !pd_Walk(Abs(signedTiles), key, 0, hwnd, clientW, clientH) {
+				trip.interrupted := true
+				return trip
+			}
+			trip.route.Push({tiles: Abs(signedTiles), undo: undo})
+			Sleep 80
+			loc := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
+			if !pd_CheckView(hwnd, clientW, clientH) {
+				trip.interrupted := true
+				return trip
+			}
+			if !pd_IsLocateStatusOk(loc.status)
+				return trip
+			expectedX := targetX + shiftX, expectedY := targetY + shiftY
+			distance := Sqrt(shiftX * shiftX + shiftY * shiftY)
+			match := pd_FindNearestToTarget(loc.points, expectedX, expectedY, Max(3, clientH * 0.006, distance * 0.25))
+			if !match.found {
+				remaining := pd_BloomOffset(expectedX, expectedY, originX, originY, vfX, vfY, vrX, vrY)
+				previous := pd_FindNearestToOrigin(loc.points, targetX, targetY)
+				next := pd_FindNearestToOrigin(loc.points, expectedX, expectedY)
+				tolerance := Max(3, clientH * 0.006, distance * 0.25)
+				trip.arrived := Max(Abs(remaining.fwd), Abs(remaining.right)) <= 0.5
+					&& (!previous.found || previous.d2 > tolerance * tolerance)
+					&& (!next.found || next.d2 > tolerance * tolerance)
+				return trip
+			}
+			if ((match.x - targetX) * shiftX + (match.y - targetY) * shiftY < distance * distance * 0.25)
+				return trip
+			targetX := match.x, targetY := match.y
+		}
+		offset := pd_BloomOffset(targetX, targetY, originX, originY, vfX, vfY, vrX, vrY)
+		trip.arrived := Max(Abs(offset.fwd), Abs(offset.right)) <= 0.5
+		return trip
 	}
 
 	pd_PublishCalibState(ready, vfX, vfY, vrX, vrY, vfSign, vrSign) {
@@ -16478,7 +16548,15 @@ nm_getPetalPatternScript() {
 		return result
 	}
 
-	pd_FindNearestToOrigin(points, originX, originY) {
+	pd_FindNearestToOrigin(points, originX, originY, excluded := 0) {
+		if IsObject(excluded) {
+			i := excluded.Length
+			while (i > 0) {
+				if A_TickCount >= excluded[i].until
+					excluded.RemoveAt(i)
+				i--
+			}
+		}
 		if (points.Length <= 0)
 			return { found: 0, index: -1, x: 0, y: 0, d2: 0.0 }
 
@@ -16488,6 +16566,17 @@ nm_getPetalPatternScript() {
 		bestY := 0
 
 		for i, p in points {
+			skip := false
+			if IsObject(excluded) {
+				for blocked in excluded {
+					if ((p.x - blocked.x)**2 + (p.y - blocked.y)**2 <= blocked.radius**2) {
+						skip := true
+						break
+					}
+				}
+			}
+			if skip
+				continue
 			idx := i - 1
 			px := p.x
 			py := p.y
@@ -16560,6 +16649,8 @@ nm_getPetalPatternScript() {
 	pd_CalibrateVectors(chromaObj, clientX, clientY, clientW, clientH, calibTiles, targetX, targetY, originX, originY) {
 		global FwdKey, BackKey, LeftKey, RightKey
 
+		hwnd := GetRobloxHWND()
+		failed := {ready: false, vfX: 0, vfY: 0, vrX: 0, vrY: 0, vfSign: 1, vrSign: 1}
 		foundF := 0
 		foundR := 0
 		shiftFx := 0.0
@@ -16583,7 +16674,8 @@ nm_getPetalPatternScript() {
 		vfSign := (fwdMoveKey = FwdKey) ? 1 : -1
 		vrSign := (rightMoveKey = RightKey) ? 1 : -1
 
-		nm_Walk(calibTiles, fwdMoveKey)
+		if !pd_Walk(calibTiles, fwdMoveKey, 0, hwnd, clientW, clientH)
+			return failed
 		Sleep 80
 		locF := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
 		if (pd_IsLocateStatusOk(locF.status) && (locF.written > 0)) {
@@ -16594,12 +16686,18 @@ nm_getPetalPatternScript() {
 				shiftFy := matchF.shiftY
 			}
 		}
-		nm_Walk(calibTiles, fwdUndoKey)
+		if !pd_Walk(calibTiles, fwdUndoKey, 0, hwnd, clientW, clientH)
+			return failed
 		Sleep 60
+		foundF := foundF && shiftFx * shiftFx + shiftFy * shiftFy >= calibTiles * calibTiles
 		if foundF
 			foundF := pd_ConfirmCalibrationReturn(chromaObj, clientX, clientY, clientW, clientH, targetX, targetY, shiftFx, shiftFy)
 
-		nm_Walk(calibTiles, rightMoveKey)
+		if !foundF
+			return failed
+
+		if !pd_Walk(calibTiles, rightMoveKey, 0, hwnd, clientW, clientH)
+			return failed
 		Sleep 80
 		locR := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
 		if (pd_IsLocateStatusOk(locR.status) && (locR.written > 0)) {
@@ -16610,7 +16708,8 @@ nm_getPetalPatternScript() {
 				shiftRy := matchR.shiftY
 			}
 		}
-		nm_Walk(calibTiles, rightUndoKey)
+		if !pd_Walk(calibTiles, rightUndoKey, 0, hwnd, clientW, clientH)
+			return failed
 		Sleep 60
 		if foundR
 			foundR := pd_ConfirmCalibrationReturn(chromaObj, clientX, clientY, clientW, clientH, targetX, targetY, shiftRx, shiftRy)
