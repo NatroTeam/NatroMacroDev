@@ -42,8 +42,12 @@ Walk(n, hasteCap:=0)
 	d := freq // 8, l := n * freq * 4 ; 4 studs in a tile
 	
 	d += (v := DetectMovespeed(&s, &f, hasteCap)) * (f - s)
-	while (d < l)
+	global MovementInterrupt
+	while (d < l) {
+		if IsSet(MovementInterrupt) && IsObject(MovementInterrupt)
+			MovementInterrupt.Poll()
 		d += ((v + 0) + (v := DetectMovespeed(&s, &f, hasteCap)))/2 * (f - s)
+	}
 }
 
 DetectMovespeed(&s, &f, hasteCap:=0)

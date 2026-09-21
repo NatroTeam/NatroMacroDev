@@ -27,6 +27,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Gdip_ImageSearch.ahk"
 #Include "JSON.ahk"
 #Include "Roblox.ahk"
+#Include "BloomPattern.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
 #include "ErrorHandling.ahk"
@@ -444,6 +445,7 @@ nm_importConfig()
 	config["Gather"] := Map("FieldName1", "Sunflower"
 		, "FieldName2", "None"
 		, "FieldName3", "None"
+		, "GatherBlooms", 0
 		, "FieldPattern1", "Squares"
 		, "FieldPattern2", "Lines"
 		, "FieldPattern3", "Lines"
@@ -2590,7 +2592,10 @@ if (TimersOpen = 1)
 TabCtrl.UseTab("Gather") ; not needed since TabCtrl creation defaults to using first tab, but specified for readability
 MainGui.SetFont("w700 Underline")
 MainGui.Add("Text", "x0 y25 w126 +center +BackgroundTrans", "Gathering")
-MainGui.Add("Text", "x126 y25 w205 +center +BackgroundTrans", "Pattern")
+MainGui.Add("Text", "x126 y25 w133 +center +BackgroundTrans", "Pattern")
+MainGui.SetFont("Norm")
+(GuiCtrl := MainGui.Add("CheckBox", "x263 y25 w65 h14 vGatherBlooms Checked" GatherBlooms, "Blooms")).Section := "Gather", GuiCtrl.OnEvent("Click", nm_saveConfig)
+MainGui.SetFont("w700 Underline")
 MainGui.Add("Text", "x331 y25 w83 +center +BackgroundTrans", "Until")
 MainGui.Add("Text", "x414 y25 w86 +center +BackgroundTrans", "Sprinkler")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -3622,6 +3627,7 @@ nm_TabGatherLock(){
 	global
 	local hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefielddisabled"])
 	MainGui["FieldName1"].Enabled := 0
+	MainGui["GatherBlooms"].Enabled := 0
 	MainGui["FieldPattern1"].Enabled := 0
 	MainGui["FieldPatternSize1UpDown"].Enabled := 0
 	MainGui["FieldPatternReps1"].Enabled := 0
@@ -3696,6 +3702,7 @@ nm_TabGatherUnLock(){
 	local hBM := Gdip_CreateHBITMAPFromBitmap(bitmaps["savefield"])
 	MainGui["FieldName1"].Enabled := 1
 	MainGui["FieldName2"].Enabled := 1
+	MainGui["GatherBlooms"].Enabled := 1
 	MainGui["FieldPattern1"].Enabled := 1
 	MainGui["FieldPatternSize1UpDown"].Enabled := 1
 	MainGui["FieldPatternReps1"].Enabled := 1
@@ -16238,6 +16245,10 @@ nm_Mondo(){
 		IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
 	}
 }
+nm_PetalTaskMatches(field, color) {
+	global QuestPetalField, QuestPetal
+	return QuestPetalField = field && QuestPetal = color && QuestPetal != "None"
+}
 nm_PetalRun(){
 	global QuestPetalField, QuestGatherField, QuestGatherFieldSlot, PetalPatternOverride
 
@@ -16409,329 +16420,7 @@ nm_getPetalPatternScript() {
 		Sleep 250
 	}
 
-	pd_CheckView(hwnd, clientW, clientH) {
-		if (!hwnd || GetRobloxHWND() != hwnd || !WinActive("ahk_id " hwnd))
-			return false
-		width := 0, height := 0
-		try WinGetClientPos(, , &width, &height, "ahk_id " hwnd)
-		return (width = clientW && height = clientH)
-	}
 
-	pd_Walk(tiles, key, secondKey, hwnd, clientW, clientH) {
-		while (tiles > 0.001) {
-			if !pd_CheckView(hwnd, clientW, clientH)
-				return false
-			step := Min(3, tiles)
-			nm_Walk(step, key, secondKey)
-			tiles -= step
-		}
-		return pd_CheckView(hwnd, clientW, clientH)
-	}
-
-	pd_BloomOffset(targetX, targetY, originX, originY, vfX, vfY, vrX, vrY) {
-		dx := originX - targetX, dy := originY - targetY
-		det := vfX * vrY - vfY * vrX
-		return {fwd: (dx * vrY - dy * vrX) / det, right: (vfX * dy - vfY * dx) / det}
-	}
-
-	pd_ApproachBloom(chromaObj, hwnd, clientX, clientY, clientW, clientH,
-		targetX, targetY, originX, originY, vfX, vfY, vrX, vrY) {
-		global FwdKey, BackKey, LeftKey, RightKey
-		trip := {arrived: false, interrupted: false, route: []}
-		if !pd_IsCalibrationUsable(vfX, vfY, vrX, vrY)
-			return trip
-		Loop 12 {
-			offset := pd_BloomOffset(targetX, targetY, originX, originY, vfX, vfY, vrX, vrY)
-			if (Max(Abs(offset.fwd), Abs(offset.right)) <= 0.5) {
-				trip.arrived := true
-				return trip
-			}
-			forward := Abs(offset.fwd) >= Abs(offset.right)
-			amount := forward ? offset.fwd : offset.right
-			signedTiles := Max(-3, Min(3, amount))
-			key := forward ? (amount > 0 ? FwdKey : BackKey) : (amount > 0 ? RightKey : LeftKey)
-			undo := forward ? (amount > 0 ? BackKey : FwdKey) : (amount > 0 ? LeftKey : RightKey)
-			shiftX := signedTiles * (forward ? vfX : vrX)
-			shiftY := signedTiles * (forward ? vfY : vrY)
-			if !pd_Walk(Abs(signedTiles), key, 0, hwnd, clientW, clientH) {
-				trip.interrupted := true
-				return trip
-			}
-			trip.route.Push({tiles: Abs(signedTiles), undo: undo})
-			Sleep 80
-			loc := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
-			if !pd_CheckView(hwnd, clientW, clientH) {
-				trip.interrupted := true
-				return trip
-			}
-			if !pd_IsLocateStatusOk(loc.status)
-				return trip
-			expectedX := targetX + shiftX, expectedY := targetY + shiftY
-			distance := Sqrt(shiftX * shiftX + shiftY * shiftY)
-			match := pd_FindNearestToTarget(loc.points, expectedX, expectedY, Max(3, clientH * 0.006, distance * 0.25))
-			if !match.found {
-				remaining := pd_BloomOffset(expectedX, expectedY, originX, originY, vfX, vfY, vrX, vrY)
-				previous := pd_FindNearestToOrigin(loc.points, targetX, targetY)
-				next := pd_FindNearestToOrigin(loc.points, expectedX, expectedY)
-				tolerance := Max(3, clientH * 0.006, distance * 0.25)
-				trip.arrived := Max(Abs(remaining.fwd), Abs(remaining.right)) <= 0.5
-					&& (!previous.found || previous.d2 > tolerance * tolerance)
-					&& (!next.found || next.d2 > tolerance * tolerance)
-				return trip
-			}
-			if ((match.x - targetX) * shiftX + (match.y - targetY) * shiftY < distance * distance * 0.25)
-				return trip
-			targetX := match.x, targetY := match.y
-		}
-		offset := pd_BloomOffset(targetX, targetY, originX, originY, vfX, vfY, vrX, vrY)
-		trip.arrived := Max(Abs(offset.fwd), Abs(offset.right)) <= 0.5
-		return trip
-	}
-
-	pd_PublishCalibState(ready, vfX, vfY, vrX, vrY, vfSign, vrSign) {
-		if !(IsSet(__petalCalibParentHwnd) && __petalCalibParentHwnd)
-			return
-		payload := "NMPCAL|" ((ready + 0) ? 1 : 0) "|" Round(vfX, 6) "|" Round(vfY, 6) "|" Round(vrX, 6) "|" Round(vrY, 6) "|" ((vfSign < 0) ? -1 : 1) "|" ((vrSign < 0) ? -1 : 1)
-		cds := Buffer(A_PtrSize*3, 0)
-		NumPut("UPtr", 0, cds, 0)
-		NumPut("UInt", (StrLen(payload) + 1) * 2, cds, A_PtrSize)
-		NumPut("Ptr", StrPtr(payload), cds, A_PtrSize*2)
-		try DllCall("SendMessageW", "Ptr", __petalCalibParentHwnd, "UInt", 0x004A, "Ptr", A_ScriptHwnd, "Ptr", cds.Ptr, "Ptr")
-	}
-	pd_IsLocateStatusOk(status) {
-		return ((status = 0) || (status = 4))
-	}
-
-	pd_GetChromaConfigBase(clientH := 1080) {
-		scale := clientH / 1080
-		return {
-			yellowHueRanges: [[16, 32]],
-			yellowSatRange: [50, 150],
-			yellowValRange: [85, 255],
-			morphOpenIterations: Max(1, Round(2 * scale)),
-			morphCloseIterations: Max(1, Round(3 * scale)),
-			dilateIterations: 1,
-			minBlobArea: Max(20, Round(250 * scale * scale)),
-			maxBlobArea: Max(800, Round(8000 * scale * scale)),
-			minCircularity: 0.80,
-			minCenterFillRatio: 0.43,
-			requirePetalContext: 2,
-			ringInnerRadiusPercent: 105,
-			ringOuterRadiusPercent: 200,
-			petalSatRange: [0, 255],
-			petalValRange: [60, 255],
-			greenHueRanges: [[52, 68], [24, 48]],
-			minPetalRatio: 0.42,
-			drawRejectedCandidates: false
-		}
-	}
-
-	pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH) {
-		if (!(hwnd := GetRobloxHWND()) || !WinActive("ahk_id " hwnd))
-			return { status: -1, written: 0, points: [] }
-		width := 0, height := 0
-		try WinGetClientPos(&clientX, &clientY, &width, &height, "ahk_id " hwnd)
-		if (width != clientW || height != clientH)
-			return { status: -1, written: 0, points: [] }
-		inset := Round(clientH * 0.12)
-		pBM := Gdip_BitmapFromScreen(clientX "|" (clientY + inset) "|" clientW "|" (clientH - inset * 2))
-		if (!pBM || pBM = -1)
-			return { status: -1, written: 0, points: [] }
-		try hBmp := Gdip_CreateHBITMAPFromBitmap(pBM)
-		finally Gdip_DisposeImage(pBM)
-		if !hBmp
-			return { status: -1, written: 0, points: [] }
-		try result := chromaObj.LocateHBitmap(hBmp)
-		finally DeleteObject(hBmp)
-		for point in result.points
-			point.y += inset
-		return result
-	}
-
-	pd_FindNearestToOrigin(points, originX, originY, excluded := 0) {
-		if IsObject(excluded) {
-			i := excluded.Length
-			while (i > 0) {
-				if A_TickCount >= excluded[i].until
-					excluded.RemoveAt(i)
-				i--
-			}
-		}
-		if (points.Length <= 0)
-			return { found: 0, index: -1, x: 0, y: 0, d2: 0.0 }
-
-		bestIdx := -1
-		bestD2 := 1.0e30
-		bestX := 0
-		bestY := 0
-
-		for i, p in points {
-			skip := false
-			if IsObject(excluded) {
-				for blocked in excluded {
-					if ((p.x - blocked.x)**2 + (p.y - blocked.y)**2 <= blocked.radius**2) {
-						skip := true
-						break
-					}
-				}
-			}
-			if skip
-				continue
-			idx := i - 1
-			px := p.x
-			py := p.y
-			dx := px - originX
-			dy := py - originY
-			d2 := (dx * dx) + (dy * dy)
-			if (d2 < bestD2) {
-				bestD2 := d2
-				bestIdx := idx
-				bestX := px
-				bestY := py
-			}
-		}
-
-		return { found: (bestIdx >= 0) ? 1 : 0, index: bestIdx, x: bestX, y: bestY, d2: bestD2 }
-	}
-
-	pd_FindNearestToTarget(points, targetX, targetY, maxDistance) {
-		if (points.Length <= 0)
-			return { found: 0, x: 0, y: 0, shiftX: 0.0, shiftY: 0.0, d2: 0.0 }
-
-		bestD2 := 1.0e30
-		secondD2 := 1.0e30
-		bestX := 0
-		bestY := 0
-
-		for _, p in points {
-			px := p.x
-			py := p.y
-			tdx := px - targetX
-			tdy := py - targetY
-			d2 := (tdx * tdx) + (tdy * tdy)
-			if (d2 < bestD2) {
-				secondD2 := bestD2
-				bestD2 := d2
-				bestX := px
-				bestY := py
-			} else if (d2 < secondD2)
-				secondD2 := d2
-		}
-
-		if (bestD2 > maxDistance * maxDistance || secondD2 <= Max(9, bestD2 * 2.25))
-			return { found: 0, x: 0, y: 0, shiftX: 0.0, shiftY: 0.0, d2: 0.0 }
-
-		return {
-			found: 1,
-			x: bestX,
-			y: bestY,
-			shiftX: bestX - targetX,
-			shiftY: bestY - targetY,
-			d2: bestD2
-		}
-	}
-
-	pd_IsCalibrationUsable(vfX, vfY, vrX, vrY) {
-		f2 := vfX * vfX + vfY * vfY
-		r2 := vrX * vrX + vrY * vrY
-		det := vfX * vrY - vfY * vrX
-		return (f2 >= 1 && r2 >= 1 && det * det >= f2 * r2 * 0.0625)
-	}
-
-	pd_ConfirmCalibrationReturn(chromaObj, clientX, clientY, clientW, clientH, targetX, targetY, shiftX, shiftY) {
-		loc := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
-		if (!pd_IsLocateStatusOk(loc.status) || !loc.written)
-			return false
-		match := pd_FindNearestToTarget(loc.points, targetX, targetY, Max(3, Sqrt(shiftX * shiftX + shiftY * shiftY) * 0.15))
-		return match.found
-	}
-
-	pd_CalibrateVectors(chromaObj, clientX, clientY, clientW, clientH, calibTiles, targetX, targetY, originX, originY) {
-		global FwdKey, BackKey, LeftKey, RightKey
-
-		hwnd := GetRobloxHWND()
-		failed := {ready: false, vfX: 0, vfY: 0, vrX: 0, vrY: 0, vfSign: 1, vrSign: 1}
-		foundF := 0
-		foundR := 0
-		shiftFx := 0.0
-		shiftFy := 0.0
-		shiftRx := 0.0
-		shiftRy := 0.0
-		vfX := 0.0
-		vfY := 0.0
-		vrX := 0.0
-		vrY := 0.0
-		vfSign := 1
-		vrSign := 1
-		ready := 0
-
-		dxTarget := targetX - originX
-		dyTarget := targetY - originY
-		fwdMoveKey := (dyTarget <= 0) ? FwdKey : BackKey
-		fwdUndoKey := (dyTarget <= 0) ? BackKey : FwdKey
-		rightMoveKey := (dxTarget <= 0) ? LeftKey : RightKey
-		rightUndoKey := (dxTarget <= 0) ? RightKey : LeftKey
-		vfSign := (fwdMoveKey = FwdKey) ? 1 : -1
-		vrSign := (rightMoveKey = RightKey) ? 1 : -1
-
-		if !pd_Walk(calibTiles, fwdMoveKey, 0, hwnd, clientW, clientH)
-			return failed
-		Sleep 80
-		locF := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
-		if (pd_IsLocateStatusOk(locF.status) && (locF.written > 0)) {
-			matchF := pd_FindNearestToTarget(locF.points, targetX, targetY, Min(clientW, clientH) / 4)
-			if (matchF.found) {
-				foundF := 1
-				shiftFx := matchF.shiftX
-				shiftFy := matchF.shiftY
-			}
-		}
-		if !pd_Walk(calibTiles, fwdUndoKey, 0, hwnd, clientW, clientH)
-			return failed
-		Sleep 60
-		foundF := foundF && shiftFx * shiftFx + shiftFy * shiftFy >= calibTiles * calibTiles
-		if foundF
-			foundF := pd_ConfirmCalibrationReturn(chromaObj, clientX, clientY, clientW, clientH, targetX, targetY, shiftFx, shiftFy)
-
-		if !foundF
-			return failed
-
-		if !pd_Walk(calibTiles, rightMoveKey, 0, hwnd, clientW, clientH)
-			return failed
-		Sleep 80
-		locR := pd_LocatePointsFromClient(chromaObj, clientX, clientY, clientW, clientH)
-		if (pd_IsLocateStatusOk(locR.status) && (locR.written > 0)) {
-			matchR := pd_FindNearestToTarget(locR.points, targetX, targetY, Min(clientW, clientH) / 4)
-			if (matchR.found) {
-				foundR := 1
-				shiftRx := matchR.shiftX
-				shiftRy := matchR.shiftY
-			}
-		}
-		if !pd_Walk(calibTiles, rightUndoKey, 0, hwnd, clientW, clientH)
-			return failed
-		Sleep 60
-		if foundR
-			foundR := pd_ConfirmCalibrationReturn(chromaObj, clientX, clientY, clientW, clientH, targetX, targetY, shiftRx, shiftRy)
-
-		if (foundF && foundR) {
-			vfX := (shiftFx / calibTiles) * vfSign
-			vfY := (shiftFy / calibTiles) * vfSign
-			vrX := (shiftRx / calibTiles) * vrSign
-			vrY := (shiftRy / calibTiles) * vrSign
-			ready := pd_IsCalibrationUsable(vfX, vfY, vrX, vrY)
-		}
-
-		return {
-			ready: ready,
-			vfX: vfX,
-			vfY: vfY,
-			vrX: vrX,
-			vrY: vrY,
-			vfSign: vfSign,
-			vrSign: vrSign
-		}
-	}
 	'
 	)
 }
@@ -17115,6 +16804,7 @@ nm_GoGather(){
 	inactiveHoney:=0
 	bypass:=0
 	interruptReason := ""
+	activePetalColor := IsSet(QuestPetal) ? QuestPetal : "None"
 	GatherStartTime:=gatherStart:=nowUnix()
 	if(FieldPatternShift) {
 		nm_setShiftLock(1)
@@ -17201,7 +16891,7 @@ nm_GoGather(){
 						nm_setShiftLock(1)
 					}
 					;interrupt if
-					if (thisfield!=QuestGatherField || %RotateQuest%QuestComplete){ ;change fields or this field is complete
+					if (%RotateQuest%QuestComplete || (PetalPatternOverride ? !nm_PetalTaskMatches(thisfield, activePetalColor) : thisfield!=QuestGatherField)){ ;change fields or this field is complete
 						interruptReason := "Next Quest Step"
 						break
 					}
@@ -17325,10 +17015,11 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 		: (patternsize="XL") ? 2
 		: 1 ; medium (default)
 	petalCalibSeed := (pattern = "__PetalPattern__") ? nm_getPetalCalibSeedScript() : ""
+	bloomSeed := (GatherBlooms && pattern != "__PetalPattern__") ? "MovementInterrupt := BloomGather(), MovementInterrupt.Start()" : ""
 
 	DetectHiddenWindows 1
 	if ((index = 1) || !WinExist("ahk_class AutoHotkey ahk_pid " currentWalk.pid))
-		nm_createWalk(patterns[pattern], "pattern",
+		nm_createWalk(bloomSeed ? nm_BloomPatternSource(patterns[pattern]) : patterns[pattern], "pattern",
 			(
 			'
 			size:=' size '
@@ -17351,6 +17042,7 @@ nm_gather(pattern, index, patternsize:="M", reps:=1, facingcorner:=0){
 			FieldRotateTimes:=' FieldRotateTimes '
 			FieldDriftCheck:=' FieldDriftCheck '
 			' petalCalibSeed '
+			' bloomSeed '
 			nm_CameraRotation(Dir, count) {
 				Static LR := 0, UD := 0, init := OnExit((*) => send("{" Rot%(LR > 0 ? "Left" : "Right")% " " Mod(Abs(LR), 8) "}{" Rot%(UD > 0 ? "Up" : "Down")% " " Abs(UD) "}"), -1)
 				send "{" Rot%Dir% " " count "}"
@@ -17458,6 +17150,7 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 	#Include "HyperSleep.ahk"
 	#Include "Roblox.ahk"
 	#Include "Chroma.ahk"
+	#Include "BloomGather.ahk"
 	'
 	)
 
@@ -17512,15 +17205,19 @@ nm_createWalk(movement, name:="", vars:="") ; this function generates the 'walk'
 
 	F16::
 	{
+		global __bloomPauseElapsed
+		static pausedAt := 0
 		static key_states := Map(LeftKey,0, RightKey,0, FwdKey,0, BackKey,0, "LButton",0, "RButton",0, SC_E,0)
 		if A_IsPaused
 		{
+			__bloomPauseElapsed := (IsSet(__bloomPauseElapsed) ? __bloomPauseElapsed : 0) + A_TickCount - pausedAt
 			for k,v in key_states
 				if (v = 1)
 					Send "{" k " down}"
 		}
 		else
 		{
+			pausedAt := A_TickCount
 			for k,v in key_states
 			{
 				key_states[k] := GetKeyState(k)
