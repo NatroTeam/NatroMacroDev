@@ -696,7 +696,7 @@ blc_CloseBeeWindow() {
 blc_DragItem(item, beeX, beeY) {
 	global windowX, windowY, dragging
 	blc_CheckWindow()
-	pos := nm_InventorySearch(item, "down", , , , 70, &failure, 20)
+	pos := nm_InventorySearch(item, "down", , , , 70, &failure)
 	blc_CheckWindow()
 	if !IsObject(pos)
 		throw Error("Could not find " item " in the inventory.`n" failure)
@@ -792,7 +792,7 @@ blc_ReadMutationText() {
 		effect := Gdip_CreateEffect(5, -60, 30)
 		Gdip_BitmapApplyEffect(bm, effect)
 		hBitmap := Gdip_CreateHBITMAPFromBitmap(bm)
-		return ocr(HBitmapToRandomAccessStream(hBitmap), ocr_language)
+		return nm_OCRRead(nm_OCRBitmapStream(hBitmap), ocr_language)
 	} finally {
 		if hBitmap
 			DeleteObject(hBitmap)
@@ -843,7 +843,7 @@ blc_start() {
 			throw Error("Set at least one mutation minimum, or turn off Advanced mode.")
 		if selectedMutations.Length {
 			ocr_language := ""
-			for language in StrSplit(ocr("ShowAvailableLanguages"), "`n", "`r")
+			for language in StrSplit(nm_OCRRead("ShowAvailableLanguages"), "`n", "`r")
 				if InStr(language, "en-") = 1 {
 					ocr_language := language
 					break
@@ -953,126 +953,4 @@ closeFunction(*) {
 		for name, bitmap in bitmaps
 			Gdip_DisposeImage(bitmap)
 	Gdip_Shutdown(pToken)
-}
-
-HBitmapToRandomAccessStream(hBitmap) {
-	stream := picture := randomAccess := 0
-	try {
-		DllCall("Ole32\CreateStreamOnHGlobal", "Ptr", 0, "UInt", true, "PtrP", &stream, "HRESULT")
-		desc := Buffer(8+A_PtrSize*2, 0)
-		NumPut("UInt", desc.Size, "UInt", 1, "Ptr", hBitmap, desc)
-		DllCall("OleAut32\OleCreatePictureIndirect", "Ptr", desc, "Ptr", CLSIDFromString("{7BF80980-BF32-101A-8BBB-00AA00300CAB}"), "UInt", false, "PtrP", &picture, "HRESULT")
-		ComCall(15, picture, "Ptr", stream, "UInt", true, "UIntP", &size := 0)
-		DllCall("ShCore\CreateRandomAccessStreamOverStream", "Ptr", stream, "UInt", 0, "Ptr", CLSIDFromString("{905A0FE1-BC53-11DF-8C49-001E4FC686DA}"), "PtrP", &randomAccess, "HRESULT")
-		return randomAccess
-	} finally {
-		if picture
-			ObjRelease(picture)
-		if stream
-			ObjRelease(stream)
-	}
-}
-CLSIDFromString(iid) {
-	guid := Buffer(16)
-	DllCall("ole32\CLSIDFromString", "WStr", iid, "Ptr", guid, "HRESULT")
-	return guid
-}
-CreateClass(name, iid) {
-	hString := 0
-	try {
-		DllCall("Combase\WindowsCreateString", "WStr", name, "UInt", StrLen(name), "PtrP", &hString, "HRESULT")
-		DllCall("Combase\RoGetActivationFactory", "Ptr", hString, "Ptr", CLSIDFromString(iid), "PtrP", &factory := 0, "HRESULT")
-		return factory
-	} finally DllCall("Combase\WindowsDeleteString", "Ptr", hString)
-}
-blc_String(hString) {
-	try return StrGet(DllCall("Combase\WindowsGetStringRawBuffer", "Ptr", hString, "UIntP", &length := 0, "Ptr"), length, "UTF-16")
-	finally DllCall("Combase\WindowsDeleteString", "Ptr", hString)
-}
-WaitForAsync(&object) {
-	info := ComObjQuery(object, "{00000036-0000-0000-C000-000000000046}")
-	deadline := A_TickCount+3000
-	loop {
-		ComCall(7, info, "UIntP", &status := 0)
-		if status = 1
-			break
-		if status != 0
-			throw Error("Windows OCR could not complete the read.")
-		if A_TickCount >= deadline {
-			ComCall(9, info)
-			throw Error("Windows OCR timed out. Stopped before using more items.")
-		}
-		Sleep 10
-	}
-	ComCall(8, object, "PtrP", &result := 0)
-	ObjRelease(object)
-	object := result
-}
-ocr(input, language := "") {
-	static engineStatics := 0, languageFactory := 0, decoderStatics := 0, engine := 0, activeLanguage := ""
-	stream := IsInteger(input) ? input : 0
-	languageObject := decoder := software := result := lines := languages := 0
-	try {
-		if !engineStatics
-			engineStatics := CreateClass("Windows.Media.Ocr.OcrEngine", "{5BFFA85A-3384-3540-9940-699120D428A8}")
-		if !languageFactory
-			languageFactory := CreateClass("Windows.Globalization.Language", "{9B0252AC-0C27-44F8-B792-9793FB66C63E}")
-		if input = "ShowAvailableLanguages" {
-			ComCall(7, engineStatics, "PtrP", &languages)
-			ComCall(7, languages, "UIntP", &count := 0)
-			text := ""
-			Loop count {
-				ComCall(6, languages, "UInt", A_Index-1, "PtrP", &languageObject)
-				ComCall(6, languageObject, "PtrP", &hText := 0)
-				text .= blc_String(hText) "`n"
-				ObjRelease(languageObject), languageObject := 0
-			}
-			return text
-		}
-		if !decoderStatics
-			decoderStatics := CreateClass("Windows.Graphics.Imaging.BitmapDecoder", "{438CCB26-BCEF-4E95-BAD6-23A822E58D01}")
-		if !engine || activeLanguage != language {
-			if engine
-				ObjRelease(engine), engine := 0
-			hString := 0
-			try {
-				DllCall("Combase\WindowsCreateString", "WStr", language, "UInt", StrLen(language), "PtrP", &hString, "HRESULT")
-				ComCall(6, languageFactory, "Ptr", hString, "PtrP", &languageObject)
-				ComCall(9, engineStatics, "Ptr", languageObject, "PtrP", &engine)
-			} finally DllCall("Combase\WindowsDeleteString", "Ptr", hString)
-			if !engine
-				throw Error("The selected Windows OCR language is unavailable.")
-			activeLanguage := language
-		}
-		ComCall(14, decoderStatics, "Ptr", stream, "PtrP", &decoder)
-		WaitForAsync(&decoder)
-		frame := ComObjQuery(decoder, "{FE287C9A-420C-4963-87AD-691436E08383}")
-		ComCall(6, frame, "PtrP", &software)
-		WaitForAsync(&software)
-		ComCall(6, engine, "Ptr", software, "PtrP", &result)
-		WaitForAsync(&result)
-		ComCall(6, result, "PtrP", &lines)
-		ComCall(7, lines, "UIntP", &count := 0)
-		text := ""
-		Loop count {
-			ComCall(6, lines, "UInt", A_Index-1, "PtrP", &line := 0)
-			try {
-				ComCall(7, line, "PtrP", &hText := 0)
-				text .= blc_String(hText) "`n"
-			} finally ObjRelease(line)
-		}
-		return text
-	} finally {
-		for object in [stream, software] {
-			if object {
-				try {
-					closable := ComObjQuery(object, "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")
-					ComCall(6, closable)
-				}
-			}
-		}
-		for object in [languageObject, decoder, software, result, lines, languages, stream]
-			if object
-				ObjRelease(object)
-	}
 }
