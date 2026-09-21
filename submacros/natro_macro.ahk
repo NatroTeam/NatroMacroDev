@@ -16443,7 +16443,7 @@ nm_getPetalPatternScript() {
 			dilateIterations: 1,
 			minBlobArea: Max(20, Round(250 * scale * scale)),
 			maxBlobArea: Max(800, Round(8000 * scale * scale)),
-			minCircularity: 0.58,
+			minCircularity: 0.80,
 			minCenterFillRatio: 0.43,
 			requirePetalContext: 2,
 			ringInnerRadiusPercent: 105,
