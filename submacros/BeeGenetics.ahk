@@ -26,7 +26,6 @@ pToken := Gdip_Startup()
 OnExit((*) => (closefunction()), -1)
 stopToggle(*) {
 	global stopping := true
-	ExitApp()
 }
 class __ArrEx extends Array {
 	static __New() {
@@ -522,7 +521,7 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 			SetTimer(blc_start, -1)
 		case "help":
 			ReplaceSystemCursors()
-			Msgbox("Bee Genetics supports both Royal Jelly and Bitterberry workflows.`n`nTo use:`n- Select bees for Royal Jelly mode`n- Without Auto-radioactive, leave a Royal Jelly result open before starting`n- Toggle Bitterberry mode ON to feed bitterberries instead`n- Keep Mutations enabled when using Bitterberry mode`n- Select mutation filters for OCR matching`n- Advanced mode: click a mutation to enter a minimum, such as +2 or 10%`n- Enable Auto-radioactive and set Neon limit if desired`n- Click Roll to start`n`nKeep the Roblox window and camera still during the run.`n`nAt start, you'll be asked to left-click a bee slot when needed.`n(Bitterberry mode always needs it; Auto-radioactive needs it too.)`n`nTo stop:`n- Press Escape to stop and close Bee Genetics", "Bee Genetics Help", "0x40040")
+			Msgbox("Bee Genetics supports both Royal Jelly and Bitterberry workflows.`n`nTo use:`n- Select bees for Royal Jelly mode`n- Without Auto-radioactive, leave a Royal Jelly result open before starting`n- Toggle Bitterberry mode ON to feed bitterberries instead`n- Keep Mutations enabled when using Bitterberry mode`n- Select mutation filters for OCR matching`n- Advanced mode: click a mutation to enter a minimum, such as +2 or 10%`n- Enable Auto-radioactive and set Neon limit if desired`n- Click Roll to start`n`nKeep the Roblox window and camera still during the run.`n`nAt start, you'll be asked to left-click a bee slot when needed.`n(Bitterberry mode always needs it; Auto-radioactive needs it too.)`n`nTo stop:`n- Press Escape to stop and return to Bee Genetics", "Bee Genetics Help", "0x40040")
 		case "selectAll":
 			IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\bee_genetics.ini", "bees", mgui[ctrl].name)
 		case "Bomber", "Brave", "Bumble", "Cool", "Hasty", "Looker", "Rad", "Rascal", "Stubborn", "Bubble", "Bucko", "Commander", "Demo", "Exhausted", "Fire", "Frosty", "Honey", "Rage", "Riley":
@@ -647,10 +646,14 @@ ReplaceSystemCursors(IDC := "")
 		}
 	}
 }
-blc_CheckWindow() {
-	global runWindow, stopping, windowX, windowY, windowWidth, windowHeight
+blc_CheckStopped() {
+	global stopping
 	if stopping
 		throw Error("Stopped.")
+}
+blc_CheckWindow() {
+	global runWindow, windowX, windowY, windowWidth, windowHeight
+	blc_CheckStopped()
 	if !WinActive("ahk_id " runWindow.hwnd) || !GetRobloxClientPos(runWindow.hwnd)
 		throw Error("Roblox lost focus. Stopped before using more items.")
 	if windowX != runWindow.x || windowY != runWindow.y || windowWidth != runWindow.w || windowHeight != runWindow.h
@@ -658,7 +661,8 @@ blc_CheckWindow() {
 }
 blc_SelectBee(&beeX, &beeY) {
 	global runWindow
-	KeyWait "LButton"
+	while !KeyWait("LButton", "T0.05")
+		blc_CheckStopped()
 	blc_CheckWindow()
 	selection := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +Owner" runWindow.hwnd, "Select a bee")
 	released := false
@@ -669,19 +673,25 @@ blc_SelectBee(&beeX, &beeY) {
 	try {
 		OnMessage(0x202, OnRelease)
 		selection.OnEvent("Close", stopToggle)
+		selection.OnEvent("Escape", stopToggle)
 		selection.BackColor := "000000"
 		WinSetTransparent 96, selection.Hwnd
 		selection.Show("x" runWindow.x " y" runWindow.y " w" runWindow.w " h" runWindow.h)
 		ToolTip "Click the bee slot to target. Press Escape to cancel."
-		KeyWait "LButton", "D"
+		while !KeyWait("LButton", "D T0.05")
+			blc_CheckStopped()
+		blc_CheckStopped()
 		MouseGetPos &beeX, &beeY, &selectedWindow
 		if selectedWindow != selection.Hwnd {
-			KeyWait "LButton"
+			while !KeyWait("LButton", "T0.05")
+				blc_CheckStopped()
 			throw Error("Select a bee inside the Roblox window.")
 		}
 		DllCall("SetCapture", "Ptr", selection.Hwnd)
-		while !released
+		while !released {
+			blc_CheckStopped()
 			Sleep 10
+		}
 	} finally {
 		OnMessage(0x202, OnRelease, 0)
 		DllCall("ReleaseCapture")
@@ -731,7 +741,7 @@ blc_CloseBeeWindow() {
 blc_DragItem(item, beeX, beeY) {
 	global windowX, windowY, dragging
 	blc_CheckWindow()
-	pos := nm_InventorySearch(item, "down", , , , 70, &failure)
+	pos := nm_InventorySearch(item, "down", , , , 70, &failure, blc_CheckWindow)
 	blc_CheckWindow()
 	if !IsObject(pos)
 		throw Error("Could not find " item " in the inventory.`n" failure)
@@ -886,6 +896,7 @@ blc_start() {
 			if !ocr_language
 				throw Error("Install an English Windows OCR language before using mutation filters.")
 		}
+		blc_CheckStopped()
 		if bitterberryMode {
 			amount := InputBox("Bitterberries per feed:", "Bee Genetics", "w340 h150", bitterberryAmount)
 			if amount.Result != "OK"
@@ -897,6 +908,7 @@ blc_start() {
 		}
 		if !IsInteger(neonberryLimit) || neonberryLimit < 0
 			throw Error("Enter a non-negative whole number for the Neonberry limit.")
+		blc_CheckStopped()
 		mgui.Hide()
 		if !(hwnd := GetRobloxHWND()) || !ActivateRoblox() || !GetRobloxClientPos(hwnd)
 			throw Error("Open Bee Swarm Simulator before starting.")
@@ -944,12 +956,15 @@ blc_start() {
 				if selectedMutations.Length && !blc_MutationMatches(blc_ReadMutation(), selectedMutations)
 					continue
 			}
+			blc_CheckStopped()
 			if MsgBox("Found a match!`nKeep this result?", "Bee Genetics", 0x40044) = "Yes"
 				break
+			blc_CheckStopped()
 			ActivateRoblox()
 		}
 	} catch Error as err {
-		MsgBox err.Message, "Bee Genetics", 0x40030
+		if !stopping
+			MsgBox err.Message, "Bee Genetics", 0x40030
 	} finally {
 		ToolTip()
 		Hotkey "~*esc", stopToggle, "Off"

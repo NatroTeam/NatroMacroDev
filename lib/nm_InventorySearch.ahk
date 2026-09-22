@@ -1,9 +1,11 @@
 ﻿#Include %A_LineFile%\..\WindowsOCR.ahk
 
-nm_InventorySearch(item, direction:="down", prescroll:=0, prescrolldir:="", scrolltoend:=1, max:=70, &failure:=""){ ;~ item: string of item; direction: down or up; prescroll: number of scrolls before direction switch; prescrolldir: direction to prescroll, set blank for same as direction; scrolltoend: set 0 to omit scrolling to top/bottom after prescrolls; max: number of scrolls in total
+nm_InventorySearch(item, direction:="down", prescroll:=0, prescrolldir:="", scrolltoend:=1, max:=70, &failure:="", check:=0){ ;~ item: string of item; direction: down or up; prescroll: number of scrolls before direction switch; prescrolldir: direction to prescroll, set blank for same as direction; scrolltoend: set 0 to omit scrolling to top/bottom after prescrolls; max: number of scrolls in total
 	failure := "", previousRows := 0, lastStep := 0, batch := 3
 
-	nm_OpenMenu("itemmenu")
+	if IsObject(check)
+		check.Call()
+	nm_OpenMenu("itemmenu", , check)
 
 	if (hwnd := GetRobloxHWND())
 	{
@@ -24,6 +26,8 @@ nm_InventorySearch(item, direction:="down", prescroll:=0, prescrolldir:="", scro
 	; search inventory
 	Loop max+1
 	{
+		if IsObject(check)
+			check.Call()
 		ActivateRoblox()
 		if !GetRobloxClientPos(hwnd) || windowWidth != searchWidth || windowHeight != searchHeight
 			return (failure := "The Roblox window changed during inventory search. Start again.", 0)
@@ -31,6 +35,8 @@ nm_InventorySearch(item, direction:="down", prescroll:=0, prescrolldir:="", scro
 
 		try page := nm_InventoryRead(pBMScreen, item)
 		finally Gdip_DisposeImage(pBMScreen)
+		if IsObject(check)
+			check.Call()
 		if IsObject(page.target)
 			return [page.target[1], page.target[2]+captureTop]
 		if !page.rows.Count
@@ -43,6 +49,8 @@ nm_InventorySearch(item, direction:="down", prescroll:=0, prescrolldir:="", scro
 					break
 				}
 			if !overlap {
+				if IsObject(check)
+					check.Call()
 				SendEvent "{Click " windowX+30 " " windowY+captureTop+page.scroll " 0}"
 				SendInput "{Wheel" (lastDirection = "Down" ? "Up" : "Down") " " lastStep-1 "}"
 				Sleep 500
@@ -62,12 +70,16 @@ nm_InventorySearch(item, direction:="down", prescroll:=0, prescrolldir:="", scro
 				lastStep := 0
 				Loop 100
 				{
+					if IsObject(check)
+						check.Call()
 					SendEvent "{Click " windowX+30 " " windowY+scrollY " 0}"
 					SendInput "{Wheel" ((direction = "down") ? "Up" : "Down") "}"
 					Sleep 50
 				}
 			}
 			default:
+			if IsObject(check)
+				check.Call()
 			SendEvent "{Click " windowX+30 " " windowY+scrollY " 0}"
 			lastDirection := (A_Index <= prescroll) ? (prescrolldir ? prescrolldir : direction) : direction
 			lastDirection := lastDirection = "down" ? "Down" : "Up"
