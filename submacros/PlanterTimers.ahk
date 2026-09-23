@@ -18,10 +18,10 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Gdip_All.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
-#Include "PlanterData.ahk"
-#Include "PlanterGrowth.ahk"
-#Include "PlanterNectarMath.ahk"
-#Include "PlanterPolicy.ahk"
+#Include "data\PlanterData.ahk"
+#Include "%A_ScriptDir%\planters\PlanterGrowth.ahk"
+#Include "%A_ScriptDir%\planters\PlanterNectarMath.ahk"
+#Include "%A_ScriptDir%\planters\PlanterPolicy.ahk"
 #Include "ErrorHandling.ahk"
 
 DetectHiddenWindows 1

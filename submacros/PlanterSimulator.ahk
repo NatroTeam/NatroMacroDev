@@ -2,15 +2,15 @@
 #SingleInstance Force
 #NoTrayIcon
 #Include "%A_ScriptDir%\..\lib"
-#Include "PlanterData.ahk"
-#Include "PlanterNectarMath.ahk"
-#Include "PlanterPolicyMath.ahk"
-#Include "PlanterTiming.ahk"
-#Include "PlanterAllocation.ahk"
-#Include "PlanterSimulation.ahk"
-#Include "PlanterPlanner.ahk"
+#Include "data\PlanterData.ahk"
+#Include "%A_ScriptDir%\planters\PlanterNectarMath.ahk"
+#Include "%A_ScriptDir%\planters\PlanterPolicyMath.ahk"
+#Include "%A_ScriptDir%\planters\PlanterTiming.ahk"
+#Include "%A_ScriptDir%\planters\PlanterAllocation.ahk"
+#Include "%A_ScriptDir%\planters\PlanterSimulation.ahk"
+#Include "%A_ScriptDir%\planters\PlanterPlanner.ahk"
 #Include "Gdip_All.ahk"
-#Include "PlanterCharts.ahk"
+#Include "%A_ScriptDir%\planters\PlanterCharts.ahk"
 
 SetWorkingDir A_ScriptDir "\.."
 PS_Fields := Map("Comforting", ComfortingFields, "Motivating", MotivatingFields,

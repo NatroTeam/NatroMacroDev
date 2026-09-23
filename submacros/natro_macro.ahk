@@ -29,12 +29,12 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
-#Include "PlanterGrowth.ahk"
-#Include "PlanterNectarMath.ahk"
-#Include "PlanterPolicy.ahk"
-#Include "PlanterAllocation.ahk"
-#Include "PlanterSimulation.ahk"
-#Include "PlanterPlanner.ahk"
+#Include "%A_ScriptDir%\planters\PlanterGrowth.ahk"
+#Include "%A_ScriptDir%\planters\PlanterNectarMath.ahk"
+#Include "%A_ScriptDir%\planters\PlanterPolicy.ahk"
+#Include "%A_ScriptDir%\planters\PlanterAllocation.ahk"
+#Include "%A_ScriptDir%\planters\PlanterSimulation.ahk"
+#Include "%A_ScriptDir%\planters\PlanterPlanner.ahk"
 #Include "ErrorHandling.ahk"
 #Include "HashFile.ahk"
 
@@ -979,7 +979,7 @@ planternames:=["PlasticPlanter", "CandyPlanter", "BlueClayPlanter", "RedClayPlan
 fieldnames:=["dandelion", "sunflower", "mushroom", "blueflower", "clover", "strawberry", "spider", "bamboo", "pineapple", "stump", "cactus", "pumpkin", "pinetree", "rose", "mountaintop", "pepper", "coconut"]
 
 
-#Include "PlanterData.ahk"
+#Include "data\PlanterData.ahk"
 
 ;quest data
 QuestBarGapSize := 10
