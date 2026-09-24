@@ -22853,7 +22853,7 @@ autoclicker(*){
 		toggle := !toggle
 		if !toggle {
 			held := 0
-			sendinput "{click up}"
+			sendinput "{Blind}{click up}"
 			return
 		}
 		for var, default in Map("ClickDuration", 50, "ClickDelay", 10)
@@ -22869,7 +22869,7 @@ autoclicker(*){
 			if !toggle
 				return
 			if held {
-				sendinput "{click up}"
+				sendinput "{Blind}{click up}"
 				held := 0
 				if (!ClickMode && count >= ClickCount) {
 					toggle := 0
@@ -22880,14 +22880,14 @@ autoclicker(*){
 					toggle := 0
 					return
 				}
-				sendinput "{click down}"
+				sendinput "{Blind}{click down}"
 				held := 1
 				count++
 			}
 			SetTimer Tick, -Max(1, Round(held ? ClickDuration : ClickDelay))
 		} catch {
 			toggle := held := 0
-			sendinput "{click up}"
+			sendinput "{Blind}{click up}"
 			throw
 		} finally Critical "Off"
 	}
