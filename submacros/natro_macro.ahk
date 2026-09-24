@@ -12825,14 +12825,16 @@ nm_MemoryMatch(MemoryMatchGame) {
 	if !(%MemoryMatchGame%MemoryMatchCheck && (nowUnix()-Last%MemoryMatchGame%MemoryMatch)>MemoryMatchGames[MemoryMatchGame].cooldown) || nm_AmuletPrompt()
 		return
 
-	success := deaths := 0
 	loop 2 {
+		success := 0
 		nm_reset(MemoryMatchGame = "Night" ? 0 : 1, 0, 0)
 		nm_SetStatus("Traveling", MemoryMatchGame " Memory Match" ((A_Index > 1) ? " (Attempt 2)" : "" ))
 		nm_GoToCollect(MemoryMatchGame "mm", 0)
 		loop 720 { ; 3 min timeout
 			Sleep 250
-			if ((!GetKeyState("F14") && success := 1) || (youDied && ++deaths))
+			if youDied
+				break
+			if (!GetKeyState("F14") && success := 1)
 				break
 		}
 		nm_endWalk()
@@ -12842,16 +12844,23 @@ nm_MemoryMatch(MemoryMatchGame) {
 			sendinput "{" SC_E " down}"
 			Sleep 100
 			sendinput "{" SC_E " up}"
-			UpdateConfig()
 			sleep 1500
-			Break
-		} else if (A_Index = 2) {
+			Loop 20 {
+				if youDied
+					break
+				if nm_MemoryMatchBoard() {
+					UpdateConfig()
+					nm_SolveMemoryMatch(MemoryMatchGame)
+					return
+				}
+				Sleep 250
+			}
+		}
+		if (A_Index = 2) {
 			(MemoryMatchGame != "Night") && UpdateConfig()
 			return
 		}
 	} ;  close Try twice to find MM
-
-	nm_SolveMemoryMatch(MemoryMatchGame)
 
 	UpdateConfig() {
 		IniWrite Last%MemoryMatchGame%MemoryMatch:=nowUnix(), "settings\nm_config.ini", "Collect", "Last" MemoryMatchGame "MemoryMatch"
@@ -12864,25 +12873,11 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 	middleX := windowX+(windowWidth//2)
 	middleY := windowY+(windowHeight//2)
 
-	switch MemoryMatchGame {
-		case "Extreme","Winter":
-		Xoffset := 40, Tiles := 20
-
-		case "Normal","Mega","Night":
-		Xoffset := 0, Tiles := 16
-
-		default:
-		pBMScreen := Gdip_BitmapFromScreen(middleX-250 "|" middleY-210 "|500|50")
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitleWide"], , , , , , 8) = 1)
-			Xoffset := 40, Tiles := 20
-		else if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitle"], , , , , , 8) = 1)
-			Xoffset := 0, Tiles := 16
-		else {
-			Gdip_DisposeImage(pBMScreen)
-			return
-		}
-		Gdip_DisposeImage(pBMScreen)
-	}
+	Tiles := nm_MemoryMatchBoard()
+	boardBounds := [windowX, windowY, windowWidth, windowHeight]
+	if !Tiles
+		return
+	Xoffset := (Tiles = 20) ? 40 : 0
 
 	StoreItemOAC := [], StoreItemOAC.Default := "", StoreItemOAC.Length := 20
 	IgnoreItemOAC := [], IgnoreItemOAC.Default := 0, IgnoreItemOAC.Length := 20
@@ -12909,8 +12904,13 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 	ClickNum:=0
 	Chances:=8
 	LastChance:=0
+	stopped := false
 
 	Loop 10 { ; Numer of available Chances.
+		if (youDied || nm_MemoryMatchBoard(boardBounds) != Tiles) {
+			stopped := true
+			break
+		}
 		if(Chances=2) {
 			Loop 1000 {
 				pBMScreen := Gdip_BitmapFromScreen(middleX-275-Xoffset "|" middleY-146 "|100|100") ; Detect Number of Chances
@@ -12924,6 +12924,10 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 			}
 		}
 		loop 2 { ;Click tile, store item and compare
+			if (youDied || nm_MemoryMatchBoard(boardBounds) != Tiles) {
+				stopped := true
+				break 2
+			}
 			if(A_Index=1) {
 				; Compare Tiles before Click 1
 				loop Tiles {
@@ -12968,7 +12972,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 							continue ; Skip self-comparison
 
 						; Check if either variable is Null or Ignored
-						if(StoreitemOAC[i] = 0 || StoreitemOAC[j] = 0 || (IgnoreitemOAC[i] = 1 && LastChance!=1) || StoreitemOAC[i] = "" || StoreitemOAC[j] = "")
+						if(StoreitemOAC[i] = 0 || StoreitemOAC[j] = 0 || ((IgnoreitemOAC[i] = 1 || IgnoreitemOAC[j] = 1) && LastChance!=1) || StoreitemOAC[i] = "" || StoreitemOAC[j] = "")
 							continue ; Skip the comparison if either Item is Null or Not Priority
 
 						; Check if Items are the same.
@@ -12993,11 +12997,9 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 			}
 
 			if(!MatchFoundOAC && !PairFoundOAC) {
-				Loop 20 {
-					Tile := Random(1, Tiles)
-					If(StoreItemOAC[Tile]="")
-						break
-				}
+				Tile := nm_MemoryMatchNextTile(StoreItemOAC, IgnoreItemOAC, Tiles, A_Index = 2 ? Click1Tile : 0)
+				if !Tile
+					break 2
 			}
 			;tile:=1
 			TileXCordOAC:=GridOAC[Tile][1]-Xoffset ; Determine click coordinates
@@ -13020,7 +13022,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 				pBMScreen := Gdip_BitmapFromScreen(TileXCordOAC-35 "|" TileYCordOAC-20 "|45|30") ; Detect Clicked Item
 				;Gdip_SaveBitmapToFile(pBMScreen, "empty" A_index ".png")
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["MMBorder"], , , , 8, 20, 1, , 2) = 1) {
-					if (Gdip_ImageSearch(pBMScreen, bitmaps["MMEmptyTile"], , 25, 10, , , 1, , 2) != 1) {
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["MMEmptyTile"], , 25, 10, , , 1, , 2) = 0) {
 						MMItemOAC := 1
 						Gdip_DisposeImage(pBMScreen)
 						break
@@ -13032,8 +13034,14 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 			Sleep 300
 
 			if(MMItemOAC=1 && PairFoundOAC!=1 && (A_Index=1 || (A_Index=2 && MatchFoundOAC!=1))) {
+				if IsInteger(StoreItemOAC[Tile]) && StoreItemOAC[Tile] > 0
+					Gdip_DisposeImage(StoreItemOAC[Tile])
 				StoreItemOAC[Tile] := Gdip_BitmapFromScreen(TileXCordOAC-25 "|" TileYCordOAC-25 "|50|50") ; Detect Clicked Item
 				;nm_CreateFolder(path := A_WorkingDir "\MMScreenshots"), Gdip_SaveBitmapToFile(StoreItemOAC[Tile], path "\image" Tile ".png") ; comment out this line for public release
+				if StoreItemOAC[Tile] <= 0 {
+					StoreItemOAC[Tile] := "", stopped := true
+					break 2
+				}
 				for item, data in MemoryMatch {
   					if ((MemoryMatchGame && (%item%MatchIgnore & MemoryMatchGames[MemoryMatchGame].bit)) || (!MemoryMatchGame && (%item%MatchIgnore = data.games))) {
 						loop 2 {
@@ -13060,7 +13068,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 					Tile:=MMTempTile2OAC
 				}
 			} else {
-				if((Gdip_ImageSearch(StoreitemOAC[Click1Tile], StoreitemOAC[Tile], , , , , , 10, , 2) = 1) && PairFoundOAC!=1 && MatchFoundOAC!=1) {
+				if(IsInteger(StoreItemOAC[Click1Tile]) && StoreItemOAC[Click1Tile] > 0 && IsInteger(StoreItemOAC[Tile]) && StoreItemOAC[Tile] > 0 && (Gdip_ImageSearch(StoreitemOAC[Click1Tile], StoreitemOAC[Tile], , , , , , 10, , 2) = 1) && PairFoundOAC!=1 && MatchFoundOAC!=1) {
 					Gdip_DisposeImage(StoreitemOAC[Click1Tile]), StoreitemOAC[Click1Tile]:=0 ;"claimed"
 					Gdip_DisposeImage(StoreitemOAC[Tile]), StoreitemOAC[Tile]:=0 ;"claimed"
 					Continue
@@ -13085,18 +13093,49 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 
 	MouseMove windowX+350, windowY+GetYOffset()+100
 	Sleep 1200
+	if stopped {
+		nm_setStatus("Ended", "Memory Match board or tile was not readable")
+		return
+	}
 	nm_setStatus("Collected", (MemoryMatchGame ? (MemoryMatchGame " ") : "") "Memory Match")
 
 	; wait for window to close
 	Loop 50 {
-		pBMScreen := Gdip_BitmapFromScreen(middleX-250 "|" middleY-210 "|500|50")
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitle"], , , , , , 8) = 0) {
-			Gdip_DisposeImage(pBMScreen)
+		if !nm_MemoryMatchBoard()
 			break
-		}
-		Gdip_DisposeImage(pBMScreen)
 		Sleep 250
 	}
+}
+nm_MemoryMatchBoard(bounds := 0) {
+	GetRobloxClientPos()
+	if IsObject(bounds) && (windowX != bounds[1] || windowY != bounds[2] || windowWidth != bounds[3] || windowHeight != bounds[4])
+		return 0
+	if (windowWidth < 500 || windowHeight < 420)
+		return 0
+	pBM := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-210 "|500|50")
+	if pBM <= 0
+		return 0
+	try {
+		if (Gdip_ImageSearch(pBM, bitmaps["MMTitleWide"],,,,,,8) = 1)
+			return 20
+		if (Gdip_ImageSearch(pBM, bitmaps["MMTitle"],,,,,,8) = 1)
+			return 16
+		return 0
+	} finally Gdip_DisposeImage(pBM)
+}
+nm_MemoryMatchNextTile(items, ignored, count, first := 0) {
+	unseen := [], known := [], other := []
+	Loop count {
+		i := A_Index
+		if (i = first)
+			continue
+		if (items[i] = "")
+			unseen.Push(i)
+		else if IsInteger(items[i]) && items[i] > 0
+			(ignored[i] ? other : known).Push(i)
+	}
+	choices := unseen.Length ? unseen : known.Length ? known : other
+	return choices.Length ? choices[Random(1, choices.Length)] : 0
 }
 nm_Honeystorm(fromSnowMachine:=0){
 	global HoneystormCheck, LastHoneyStorm
@@ -18614,15 +18653,17 @@ nm_VBCheck() {
 	}
 
 	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth - 8 - (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" windowY+offsetY+40 "|" (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" (windowHeight>=1156 ? 334 : windowHeight/3.464))
-    
+	if pBMScreen <= 0
+		return { result: 0 }
+
 	for , bitmap in bitmaps["viciousbee"]["dead"] {
-        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
+        if (Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) = 1) {
             Gdip_DisposeImage(pBMScreen)
             return { result: VBResults.dead }
         }
     }
     for , bitmap in bitmaps["viciousbee"]["found"] {
-        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
+        if (Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) = 1) {
             Gdip_DisposeImage(pBMScreen)
             return { result: VBResults.found }
         }
