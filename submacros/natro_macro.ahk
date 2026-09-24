@@ -8733,7 +8733,7 @@ nm_AutoClickerButton(*)
 nm_ClickMode(*){
 	global
 	IniWrite (ClickMode := AutoClickerGui["ClickMode"].Value), "settings\nm_config.ini", "Settings", "ClickMode"
-	AutoClickerGui["ClickCount"].Enabled := AutoClickerGui["ClickCountEdit"].Enabled := ClickMode
+	AutoClickerGui["ClickCount"].Enabled := AutoClickerGui["ClickCountEdit"].Enabled := !ClickMode
 }
 nm_saveKeyDelay(*){
 	global
@@ -22782,20 +22782,51 @@ nm_Pause(*){
 ;AUTOCLICKER
 autoclicker(*){
 	global ClickDuration, ClickDelay
-	static toggle:=0
-	toggle := !toggle
+	static toggle:=0, held:=0, count:=0
+	Critical
+	try {
+		SetTimer Tick, 0
+		toggle := !toggle
+		if !toggle {
+			held := 0
+			sendinput "{click up}"
+			return
+		}
+		for var, default in Map("ClickDuration", 50, "ClickDelay", 10)
+			if !IsNumber(%var%)
+				%var% := default
+		held := count := 0
+		Tick()
+	} finally Critical "Off"
 
-	for var, default in Map("ClickDuration", 50, "ClickDelay", 10)
-		if !IsNumber(%var%)
-			%var% := default
-
-	while ((ClickMode || (A_Index <= ClickCount)) && toggle) {
-		sendinput "{click down}"
-		sleep ClickDuration
-		sendinput "{click up}"
-		sleep ClickDelay
+	Tick() {
+		Critical
+		try {
+			if !toggle
+				return
+			if held {
+				sendinput "{click up}"
+				held := 0
+				if (!ClickMode && count >= ClickCount) {
+					toggle := 0
+					return
+				}
+			} else {
+				if (!ClickMode && count >= ClickCount) {
+					toggle := 0
+					return
+				}
+				sendinput "{click down}"
+				held := 1
+				count++
+			}
+			SetTimer Tick, -Max(1, Round(held ? ClickDuration : ClickDelay))
+		} catch {
+			toggle := held := 0
+			sendinput "{click up}"
+			throw
+		} finally Critical "Off"
 	}
-	toggle := 0
 }
 ;TIMERS
 timers(*) => ba_showPlanterTimers()
