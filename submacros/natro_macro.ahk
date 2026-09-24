@@ -13193,6 +13193,36 @@ nm_HoneyLB(){ ;Daily Honey LB
 		}
 	}
 }
+nm_HidePrinterTimers() {
+	hidden := [], previous := A_DetectHiddenWindows
+	DetectHiddenWindows 1
+	try {
+		timerPath := A_WorkingDir "\submacros\PlanterTimers.ahk"
+		Loop Files timerPath
+			timerPath := A_LoopFileFullPath
+		if !(script := WinExist(timerPath " ahk_class AutoHotkey"))
+			return hidden
+		pid := WinGetPID("ahk_id " script)
+		for timer in WinGetList("ahk_class AutoHotkeyGUI ahk_pid " pid) {
+			try {
+				if !DllCall("IsWindowVisible", "Ptr", timer)
+					continue
+				WinGetPos &x, &y, &w, &h, "ahk_id " timer
+				if (x < windowX+windowWidth//2+300 && x+w > windowX+windowWidth//2-300
+					&& y < windowY+Max(4*windowHeight//10+240, windowHeight//2+100)
+					&& y+h > windowY+Min(4*windowHeight//10-60, windowHeight//2-52)) {
+					WinHide "ahk_id " timer
+					hidden.Push(timer)
+				}
+			} catch TargetError {
+				continue
+			}
+		}
+	} catch TargetError {
+		return hidden
+	} finally DetectHiddenWindows previous
+	return hidden
+}
 nm_StickerPrinter(){
 	global StickerPrinterCheck, LastStickerPrinter, StickerPrinterEgg
 
@@ -13209,59 +13239,66 @@ nm_StickerPrinter(){
 			nm_gotoCollect("stickerprinter")
 			searchRet := nm_imgSearch("e_button.png",30,"high")
 			If (searchRet[1] = 0) {
-				sendinput "{" SC_E " down}"
-				Sleep 100
-				sendinput "{" SC_E " up}"
-				Sleep 500 ;//todo: wait for GUI with timeout instead of fixed time
 				GetRobloxClientPos()
-				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
-				if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterCD"], , , , , , 10) = 1) {
-					Gdip_DisposeImage(pBMScreen)
-					nm_setStatus("Detected", "Sticker Printer on Cooldown")
-					Sleep 500
+				hiddenTimers := nm_HidePrinterTimers()
+				try {
 					sendinput "{" SC_E " down}"
 					Sleep 100
 					sendinput "{" SC_E " up}"
-					break
-				}
-				Gdip_DisposeImage(pBMScreen)
-				pos := Map("basic",-95, "silver",-40, "gold",15, "diamond",70, "mythic",125)
-				MouseMove windowX+windowWidth//2+pos[StrLower(StickerPrinterEgg)], windowY+4*windowHeight//10-20
-				Sleep 200
-				Click
-				Sleep 200
-				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
-				if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterConfirm"], , , , , , 10) != 1) {
-					Gdip_DisposeImage(pBMScreen)
-					nm_setStatus("Error", "No Eggs left in inventory!`nSticker Printer has been disabled.")
-					StickerPrinterCheck := 0
-					Sleep 500
-					sendinput "{" SC_E " down}"
-					Sleep 100
-					sendinput "{" SC_E " up}"
-					break
-				}
-				Gdip_DisposeImage(pBMScreen)
-				MouseMove windowX+windowWidth//2+225, windowY+4*windowHeight//10+195
-				Sleep 200
-				Click
-				i := 0
-				loop 16 {
-					sleep 250
-					pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-52 "|500|150")
-					if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1) {
-						MouseMove windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1)-50, windowY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1)
-						sleep 150
-						Click
-						sleep 100
-						i++
-					} else if (i > 0) {
+					Sleep 500 ;//todo: wait for GUI with timeout instead of fixed time
+					GetRobloxClientPos()
+					pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterCD"], , , , , , 10) = 1) {
 						Gdip_DisposeImage(pBMScreen)
+						nm_setStatus("Detected", "Sticker Printer on Cooldown")
+						Sleep 500
+						sendinput "{" SC_E " down}"
+						Sleep 100
+						sendinput "{" SC_E " up}"
 						break
 					}
 					Gdip_DisposeImage(pBMScreen)
-					if (A_Index = 16)
+					pos := Map("basic",-95, "silver",-40, "gold",15, "diamond",70, "mythic",125)
+					MouseMove windowX+windowWidth//2+pos[StrLower(StickerPrinterEgg)], windowY+4*windowHeight//10-20
+					Sleep 200
+					Click
+					Sleep 200
+					pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterConfirm"], , , , , , 10) != 1) {
+						Gdip_DisposeImage(pBMScreen)
+						nm_setStatus("Error", "No Eggs left in inventory!`nSticker Printer has been disabled.")
+						StickerPrinterCheck := 0
+						Sleep 500
+						sendinput "{" SC_E " down}"
+						Sleep 100
+						sendinput "{" SC_E " up}"
 						break
+					}
+					Gdip_DisposeImage(pBMScreen)
+					MouseMove windowX+windowWidth//2+225, windowY+4*windowHeight//10+195
+					Sleep 200
+					Click
+					i := 0
+					loop 16 {
+						sleep 250
+						pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-52 "|500|150")
+						if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1) {
+							MouseMove windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1)-50, windowY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1)
+							sleep 150
+							Click
+							sleep 100
+							i++
+						} else if (i > 0) {
+							Gdip_DisposeImage(pBMScreen)
+							break
+						}
+						Gdip_DisposeImage(pBMScreen)
+						if (A_Index = 16)
+							break
+					}
+				} finally {
+					for timer in hiddenTimers
+						try WinShow "ahk_id " timer
 				}
 				Sleep 8000 ; wait for printer to print
 				nm_setStatus("Collected", "Sticker Printer (" StickerPrinterEgg " Egg)")
