@@ -39,7 +39,11 @@ PG_SaveModel(slot, stats, field) {
 }
 
 PG_EffectiveStats(slot, name, field) {
+    stats := ba_GetPlanterStats(name, field)
     parts := StrSplit(IniRead("settings\nm_config.ini", "Planters", "PlanterModel" slot, ""), "|")
+    if (parts.Length = 5 && name = "PlanterOfPlenty" && stats[3] = 2.25
+        && parts[4] = 1.5 && parts[5] = 10.67)
+        return stats
     if (parts.Length = 5 && parts[1] = name && parts[2] = field
         && IsNumber(parts[3]) && IsNumber(parts[4]) && IsNumber(parts[5])
         && parts[3] > 0 && parts[4] > 0 && parts[5] > 0)
@@ -79,12 +83,12 @@ PG_Observe(slot, name, field, progress, at) {
     if (factor < 0.5 || factor > 2)
         return false
     key := name "_" StrReplace(field, " ")
-    learned := StrSplit(IniRead("settings\nm_config.ini", "PlanterCalibration", key, ""), "|")
-    mean := 1, count := 0
-    if (learned.Length = 3 && IsNumber(learned[1]) && IsNumber(learned[2]) && IsNumber(learned[3]) && at >= learned[3] && at-learned[3] <= 604800)
-        mean := Min(2, Max(0.5, Number(learned[1]))), count := Max(0, Number(learned[2]))
+    record := IniRead("settings\nm_config.ini", "PlanterCalibration", key, "")
+    learned := StrSplit(record, "|")
+    model := PG_CalibratedModel(stats, record, at, 1)
+    mean := model.stats[3]/stats[3], count := model.trusted ? Number(learned[2]) : 0
     mean := count ? 0.75*mean+0.25*factor : factor
-    IniWrite mean "|" Min(100, count+1) "|" at, "settings\nm_config.ini", "PlanterCalibration", key
+    IniWrite mean "|" Min(100, count+1) "|" at "|" stats[4], "settings\nm_config.ini", "PlanterCalibration", key
     return true
 }
 

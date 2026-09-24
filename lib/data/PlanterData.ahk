@@ -60,7 +60,7 @@ CloverPlanters:=[["HeatTreatedPlanter", 1.4, 1.17, 10.26] ; 1.638
 	, ["PaperPlanter", .75, 1, 1] ; 0.75
 	, ["TicketPlanter", 2, 1, 2]] ; 2
 
-CoconutPlanters:=[["PlanterOfPlenty", 1.5, 1.5, 10.67] ; 2.25
+CoconutPlanters:=[["PlanterOfPlenty", 1.5, 2.25, 16/2.25] ; 3.375
 	, ["CandyPlanter", 1, 1.5, 2.67] ; 1.5
 	, ["PetalPlanter", 1, 1.447, 9.68] ; 1.447
 	, ["HydroponicPlanter", 1.4, 1.023, 11.74] ; 1.4322
@@ -86,7 +86,7 @@ DandelionPlanters:=[["PetalPlanter", 1.5, 1.4235, 9.84] ; 2.13525
 	, ["PaperPlanter", .75, 1, 1] ; 0.75
 	, ["TicketPlanter", 2, 1, 2]] ; 2
 
-MountainTopPlanters:=[["PlanterOfPlenty", 1.5, 1.5, 10.67] ; 2.25
+MountainTopPlanters:=[["PlanterOfPlenty", 1.5, 2.25, 16/2.25] ; 3.375
 	, ["HeatTreatedPlanter", 1.4, 1.25, 9.6] ; 1.75
 	, ["RedClayPlanter", 1.2, 1.125, 5.34] ; 1.35
 	, ["HydroponicPlanter", 1, 1.25, 9.6] ; 1.25
@@ -112,7 +112,7 @@ MushroomPlanters:=[["HeatTreatedPlanter", 1.4, 1.3425, 8.94] ; 1.8795
 	, ["PaperPlanter", .75, 1, 1] ; 0.75
 	, ["TicketPlanter", 2, 1, 2]] ; 1
 
-PepperPlanters:=[["PlanterOfPlenty", 1.5, 1.5, 10.67] ; 2.25
+PepperPlanters:=[["PlanterOfPlenty", 1.5, 2.25, 16/2.25] ; 3.375
 	, ["HeatTreatedPlanter", 1.4, 1.46, 8.22] ; 2.044
 	, ["RedClayPlanter", 1.2, 1.23, 4.88] ; 1.476
 	, ["PetalPlanter", 1, 1.04, 13.47] ; 1.04
@@ -203,7 +203,7 @@ StrawberryPlanters:=[["PesticidePlanter", 1, 1.6, 6.25] ; 1.6
 	, ["PaperPlanter", .75, 1, 1] ; 0.75
 	, ["TicketPlanter", 2, 1, 2]] ; 2
 
-StumpPlanters:=[["PlanterOfPlenty", 1.5, 1.5, 10.67] ; 2.25
+StumpPlanters:=[["PlanterOfPlenty", 1.5, 2.25, 16/2.25] ; 3.375
 	, ["HeatTreatedPlanter", 1.4, 1.03, 11.65] ; 1.442
 	, ["HydroponicPlanter", 1, 1.375, 8.73] ; 1.375
 	, ["PesticidePlanter", 1.3, 1, 10] ; 1.3

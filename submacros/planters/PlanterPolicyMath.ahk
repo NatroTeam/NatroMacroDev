@@ -52,11 +52,14 @@ PN_ServiceQueue(active, clock := 0) {
     return ordered
 }
 
-PG_CalibratedModel(stats, record, now) {
+PG_CalibratedModel(stats, record, now, minimumSamples := 2) {
     parts := StrSplit(record, "|")
-    if (parts.Length != 3 || !IsNumber(parts[1]) || !IsNumber(parts[2]) || !IsNumber(parts[3])
-        || parts[2] < 2 || now < parts[3] || now-parts[3] > 604800)
+    if ((parts.Length != 3 && parts.Length != 4) || !IsNumber(parts[1]) || !IsNumber(parts[2]) || !IsNumber(parts[3])
+        || parts[2] < minimumSamples || now < parts[3] || now-parts[3] > 604800
+        || (parts.Length = 4 && (!IsNumber(parts[4]) || parts[4] <= 0)))
         return {stats: stats.Clone(), trusted: false}
-    factor := Min(2, Max(0.5, Number(parts[1])))
+    baseHours := parts.Length = 4 ? Number(parts[4])
+        : stats[1] = "PlanterOfPlenty" && stats[3] = 2.25 ? 10.67 : stats[4]
+    factor := Min(2, Max(0.5, Number(parts[1])*stats[4]/baseHours))
     return {stats: [stats[1], stats[2], stats[3]*factor, stats[4]/factor], trusted: true}
 }
