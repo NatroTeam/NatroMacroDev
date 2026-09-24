@@ -93,6 +93,16 @@ CloseScripts(hb:=0) {
 }
 DetectHiddenWindows 1
 CloseScripts(1)
+if FileExist(A_WorkingDir "\reset-settings.pending") {
+	try {
+		if DirExist(A_WorkingDir "\settings")
+			DirDelete A_WorkingDir "\settings", 1
+		FileDelete A_WorkingDir "\reset-settings.pending"
+	} catch as err {
+		MsgBox "Settings could not be reset.`n`n" err.Message, "Reset Settings", 0x10
+		ExitApp
+	}
+}
 if !WinExist("Heartbeat.ahk ahk_class AutoHotkey")
 	run '"' exe_path32 '" /script "' A_WorkingDir '\submacros\Heartbeat.ahk"'
 DetectHiddenWindows 0
@@ -7723,7 +7733,11 @@ nm_ResetConfig(*){
 	If you want to proceed, click 'Yes'. Backup your 'settings' folder if you're unsure.
 	)", "Reset Settings", 0x40034 " Owner" MainGui.Hwnd) = "Yes")
 	{
-		DirDelete A_WorkingDir "\settings"
+		try FileOpen(A_WorkingDir "\reset-settings.pending", "w").Close()
+		catch as err {
+			MsgBox "Settings could not be reset.`n`n" err.Message, "Reset Settings", 0x10 " Owner" MainGui.Hwnd
+			return
+		}
 		return stop()
 	}
 }
@@ -7797,6 +7811,7 @@ nm_ResetFieldDefault(GuiCtrl, *){
 				FieldDefault[k]["drift"]:=v["drift"]
 				for i,j in FieldDefault[k]
 					IniWrite j, "settings\field_config.ini", k, i
+				nm_RefreshFieldDefaults(k)
 				MsgBox "Changed " k " field defaults back to their standard settings!", "Reset Field Defaults", 0x40040 " Owner" MainGui.Hwnd
 			}
 
@@ -7824,9 +7839,15 @@ nm_ResetAllFieldDefaults(*){
 
 			file := FileOpen(A_WorkingDir "\settings\field_config.ini", "w-d"), file.Write(ini), file.Close()
 
+			nm_RefreshFieldDefaults()
 			MsgBox "Changed all field defaults back to their standard settings!", "Reset Field Defaults", 0x40040 " Owner" MainGui.Hwnd
 		}
 	}
+}
+nm_RefreshFieldDefaults(field := "") {
+	Loop 3
+		if (MainGui["FieldName" A_Index].Text != "None" && (field = "" || MainGui["FieldName" A_Index].Text = field))
+			nm_FieldDefaults(A_Index)
 }
 nm_testReconnect(*){
 	CloseRoblox()
