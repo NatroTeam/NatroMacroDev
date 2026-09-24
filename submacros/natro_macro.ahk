@@ -13764,32 +13764,31 @@ nm_AutoFieldBoost(fieldName){
 		return
 	}
 }
-nm_fieldBoostCheck(fieldName, variant:=0){
-
+nm_fieldBoostCheck(fieldName, variant:=0, &readable:=false){
+	readable := false
 	GetRobloxClientPos(hwnd:=GetRobloxHWND())
-	pBMScreen:=Gdip_BitmapFromScreen(windowX "|" windowY + GetYOffset(hwnd) + 36 "|" windowWidth "|" 38)
-	loop Floor(windowWidth/38) ; flooring because you won't have half of an icon
-	{ 
-		ico:=(A_Index-1)*38
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],,ico,,ico+38,,(variant=1 || variant=0) ? 35 : 50) = 1)
-		{ ; check with original 30 not 35
-			p:=Gdip_GetPixel(pBMScreen, ico, 37) & 0xFFFFFF
-			if ((p & 0xFF0000 >= 0xa60000) && (p & 0xFF0000 <= 0xcf0000)) ; a6b2b8-blackBG|cfdbe1-whiteBG
-			&& ((p & 0x00FF00 >= 0x00b200) && (p & 0x00FF00 <= 0x00db00))
-			&& ((p & 0x0000FF >= 0x0000b8) && (p & 0x0000FF <= 0x0000e1))
-				continue ; winds: keep searching, winds and booster may both have boosted the field
-			else if ((p & 0xFF0000 >= 0xb80000) && (p & 0xFF0000 <= 0xe10000)) ; b8a43a-blackBG|e1cd63-whiteBG
-				&& ((p & 0x00FF00 >= 0x00a400) && (p & 0x00FF00 <= 0x00cd00))
-				&& ((p & 0x0000FF >= 0x00003a) && (p & 0x0000FF <= 0x000063)) 
-				{
-					Gdip_DisposeImage(pBMScreen)
-					return 1 ; booster
-				}	
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + GetYOffset(hwnd) + 36 "|" windowWidth "|38")
+	if !pBMScreen
+		return 0
+	try {
+		loop Floor(windowWidth/38) {
+			ico := (A_Index-1)*38
+			result := Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],
+				, ico, , ico+38, , (variant=1 || variant=0) ? 35 : 50)
+			if (result < 0)
+				return 0
+			if (result != 1)
+				continue
+			color := Gdip_GetPixel(pBMScreen, ico, 37) & 0xFFFFFF
+			red := (color >> 16) & 255, green := (color >> 8) & 255, blue := color & 255
+			if (red >= 0xb8 && red <= 0xe1 && green >= 0xa4 && green <= 0xcd && blue >= 0x3a && blue <= 0x63) {
+				readable := true
+				return 1
+			}
 		}
-	}
-	Gdip_DisposeImage(pBMScreen)
-	return 0
-
+		readable := true
+		return 0
+	} finally Gdip_DisposeImage(pBMScreen)
 }
 nm_fieldBoostBooster(){
 	global CurrentField, FieldBooster, AFBuseBooster, FieldLastBoosted, FieldBoostStacks, FieldLastBoostedBy, FieldNextBoostedBy, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, FieldBoostStacks
@@ -13851,7 +13850,10 @@ nm_fieldBoostDice(){
 		, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, AFBDiceHotbar, MainGui, AFBGui, AutoFieldBoostActive
 	if (HiveConfirmed || state = "Converting" || !AutoFieldBoostActive || !AFBDiceEnable)
 		return
-	if(not nm_fieldBoostCheck(CurrentField)) {
+	boosted := nm_fieldBoostCheck(CurrentField, 0, &readable)
+	if !readable
+		return
+	if !boosted {
 		send "{sc00" AFBDiceHotbar+1 "}"
 		AFBdiceUsed:=AFBdiceUsed+1
 		IniWrite AFBdiceUsed, "settings\nm_config.ini", "Boost", "AFBdiceUsed"
@@ -16162,13 +16164,14 @@ nm_Bugrun(){
 		}
 	}
 }
-nm_Mondo(){
+nm_Mondo(retry := false){
 	global youDied, ConvertGatherFlag
 	;mondo buff
 	global MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter
 	if nm_NightInterrupt()
 		return
-	if nm_MondoInterrupt(){
+	if (nm_MondoInterrupt() || retry){
+		spawnHour := FormatTime(A_NowUTC, "yyyyMMddHH")
 		mondobuff := nm_imgSearch("mondobuff.png",50,"buff")
 		If (mondobuff[1] = 0) {
 			LastMondoBuff:=nowUnix()
@@ -16362,6 +16365,10 @@ nm_Mondo(){
 				PMondoGuidComplete := 1
 			ConvertGatherFlag := 1
 			nm_Reset(0, 2000, 1)
+			if (!retry && MondoAction = "Kill" && MondoBuffCheck && HiveConfirmed
+				&& FormatTime(A_NowUTC, "yyyyMMddHH") = spawnHour && FormatTime(A_NowUTC, "m") < 14
+				&& !nm_NightInterrupt() && !AFBrollingDice && !AFBuseGlitter && !AFBuseBooster)
+				nm_Mondo(true)
 		}
 	}
 }
