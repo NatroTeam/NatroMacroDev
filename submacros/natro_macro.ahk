@@ -25,6 +25,8 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "%A_ScriptDir%\..\lib"
 #Include "Gdip_All.ahk"
 #Include "Gdip_ImageSearch.ahk"
+#Include "WindowsOCR.ahk"
+#Include "ViciousDetection.ahk"
 #Include "JSON.ahk"
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
@@ -18544,7 +18546,7 @@ VBEnd(vic){
  * Create a movement with vicious bee detection. Used in both find and attack VB
  * @returns {{result: found/dead/retry/0, reason?: youDied/inactivehoney}}
  */
-WalkwithVBCheck(movement, search:=true){
+WalkwithVBCheck(movement, search:=true, field:=""){
     local inactiveHoney := 0
     nm_OpenChat() ; just to ensure that chat is open 😭
     start := nowUnix()
@@ -18552,7 +18554,11 @@ WalkwithVBCheck(movement, search:=true){
     KeyWait "F14", "D T5 L"
     while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
     {
-        vic := nm_VBCheck()
+        vic := nm_VBCheck(field, search)
+		if youDied {
+			nm_endWalk()
+			return {result:VBResults.retry, reason:VBReasons.youDied}
+		}
 		switch {
 			case vic.result:
 				if (!search && vic.result = VBResults.found) ; we dont care if VB is detected during atk phase
@@ -18565,9 +18571,6 @@ WalkwithVBCheck(movement, search:=true){
 					nm_endWalk()
 					return {result: VBResults.retry, reason: VBReasons.inactivehoney}
             	}
-			case youDied: ; retry field
-				nm_endWalk()
-            	return {result: VBResults.retry, reason: VBReasons.youDied}
 		}
     }
     nm_endWalk()
@@ -18580,7 +18583,7 @@ WalkwithVBCheck(movement, search:=true){
  */
 SearchforVB(movement, field){
 	static inactiveHoney := 0
-	vic := WalkwithVBCheck(movement)
+	vic := WalkwithVBCheck(movement, true, field)
 	switch vic.result {
 		case VBResults.found: ; VB found bitmap found
 			return nm_killVB(field)
@@ -18621,7 +18624,7 @@ nm_killVB(field) {
 	)
 
 	while nowUnix()-VBfieldStart <= 300 { ; 5 minute timeout
-		switch (vic := WalkwithVBCheck(battlepattern, false)).result {
+		switch (vic := WalkwithVBCheck(battlepattern, false, field)).result {
 			case VBResults.retry:
 				nm_setStatus("Retrying", "Vicious Bee (" field ")")
 				return vic
@@ -18639,7 +18642,7 @@ nm_killVB(field) {
  * Vicious bee detection using chat
  * @returns {{result: found/dead/0}}
  */
-nm_VBCheck() {
+nm_VBCheck(field:="", search:=true) {
 	static LastRan := 0
 	GetRobloxClientPos()
 	offsetY := GetYOffset()
@@ -18656,20 +18659,25 @@ nm_VBCheck() {
 	if pBMScreen <= 0
 		return { result: 0 }
 
-	for , bitmap in bitmaps["viciousbee"]["dead"] {
-        if (Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) = 1) {
-            Gdip_DisposeImage(pBMScreen)
-            return { result: VBResults.dead }
-        }
-    }
-    for , bitmap in bitmaps["viciousbee"]["found"] {
-        if (Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) = 1) {
-            Gdip_DisposeImage(pBMScreen)
-            return { result: VBResults.found }
-        }
-    }
-    Gdip_DisposeImage(pBMScreen)
-    return { result: 0 }
+	try {
+		for , bitmap in bitmaps["viciousbee"]["dead"]
+			if (Gdip_ImageSearch(pBMScreen, bitmap,,,,,,5) = 1)
+				return {result:VBResults.dead}
+		if search {
+			candidates := []
+			for , bitmap in bitmaps["viciousbee"]["found"] {
+				if (Gdip_ImageSearch(pBMScreen, bitmap, &locations,,,,,5,,1,0) <= 0)
+					continue
+				Loop Parse locations, "`n" {
+					point := StrSplit(A_LoopField, ",")
+					candidates.Push({x:Integer(point[1]), y:Integer(point[2]), h:Gdip_GetImageHeight(bitmap)})
+				}
+			}
+			if candidates.Length && nm_VBConfirmAnnouncement(pBMScreen, candidates, field)
+				return {result:VBResults.found}
+		}
+		return {result:0}
+	} finally Gdip_DisposeImage(pBMScreen)
 }
 ;//todo: make it work if someone has chat disabled
 ; open roblox chat
