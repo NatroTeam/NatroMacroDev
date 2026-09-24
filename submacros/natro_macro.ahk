@@ -28,6 +28,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "JSON.ahk"
 #Include "Roblox.ahk"
 #Include "BloomPattern.ahk"
+#Include "QuestReader.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
 #Include "ErrorHandling.ahk"
@@ -16298,8 +16299,10 @@ nm_PetalRun(){
 		nm_GoGather()
 	} finally {
 		PetalPatternOverride := prevPetalPatternOverride
-		QuestGatherField := prevQuestGatherField
-		QuestGatherFieldSlot := prevQuestGatherFieldSlot
+		if (QuestGatherField = targetField && QuestGatherFieldSlot = 0) {
+			QuestGatherField := prevQuestGatherField
+			QuestGatherFieldSlot := prevQuestGatherFieldSlot
+		}
 	}
 }
 nm_getPetalPatternScript() {
@@ -16916,12 +16919,17 @@ nm_GoGather(){
 			if (Mod(A_Index, 100) = 1) { ; every 5s
 				;quest interrupts
 				if ((fieldOverrideReason="Quest") && IsSet(RotateQuest) && (%RotateQuest%QuestCheck = 1)) {
-					nm_%RotateQuest%QuestProg()
+					if (RotateQuest = "Polar" || RotateQuest = "Bucko" || RotateQuest = "Riley")
+						questRead := nm_%RotateQuest%QuestProg()
+					else {
+						nm_%RotateQuest%QuestProg()
+						questRead := 1
+					}
 					if(FieldPatternShift) {
 						nm_setShiftLock(1)
 					}
 					;interrupt if
-					if (%RotateQuest%QuestComplete || (PetalPatternOverride ? !nm_PetalTaskMatches(thisfield, activePetalColor) : thisfield!=QuestGatherField)){ ;change fields or this field is complete
+					if (questRead && (%RotateQuest%QuestComplete || (PetalPatternOverride ? !nm_PetalTaskMatches(thisfield, activePetalColor) : thisfield!=QuestGatherField))){ ;change fields or this field is complete
 						interruptReason := "Next Quest Step"
 						break
 					}
@@ -19062,213 +19070,95 @@ nm_PolarQuestProg(){
 	global PolarQuestCheck
 	global PolarBear
 	global PolarQuest
-	global PolarStart
 	global PolarQuestProgress
-	global QuestPetal:="None"
-	global QuestPetalField:="None"
-	global QuestGatherField:="None"
-	global QuestGatherFieldSlot:=0
-	global PolarQuestComplete:=1
+	global QuestPetal
+	global QuestPetalField
+	global QuestGatherField
+	global QuestGatherFieldSlot
+	global PolarQuestComplete
 	global QuestLadybugs
 	global QuestRhinoBeetles
 	global QuestSpider
 	global QuestMantis
 	global QuestScorpions
 	global QuestWerewolf
-	global QuestBarSize
-	global QuestBarGapSize
-	global QuestBarInset
-	global state, bitmaps
 	if(!PolarQuestCheck)
 		return
-	nm_setShiftLock(0)
-	nm_OpenMenu("questlog")
-
-	hwnd := GetRobloxHWND()
-	offsetY := GetYOffset(hwnd)
-	;search for polar quest
-	Loop 70
-	{
-		Qfound:=nm_imgSearch("polar_bear.png",50,"quest")
-		if (Qfound[1]=0) {
-			if (A_Index > 1)
-				Gdip_DisposeImage(pBMLog)
-			break
-		}
-
-		Qfound:=nm_imgSearch("polar_bear2.png",50,"quest")
-		if (Qfound[1]=0) {
-			if (A_Index > 1)
-				Gdip_DisposeImage(pBMLog)
-			break
-		}
-
-		Qfound:=nm_imgSearch("polar_bear3.png",50,"quest")
-		if (Qfound[1]=0) {
-			if (A_Index > 1)
-				Gdip_DisposeImage(pBMLog)
-			break
-		}
-
-		ActivateRoblox()
-		switch A_Index
-		{
-			case 1:
-			GetRobloxClientPos(hwnd)
-			MouseMove windowX+30, windowY+offsetY+200, 5
-			Loop 50 ; scroll all the way up
-			{
-				MouseMove windowX+30, windowY+offsetY+200, 5
-				sendinput "{WheelUp}"
-				Sleep 50
+	read := nm_ReadQuest("Polar", PolarBear)
+	if (read.state = "unreadable")
+		return 0
+	QuestPetal:="None"
+	QuestPetalField:="None"
+	QuestGatherField:="None"
+	QuestGatherFieldSlot:=0
+	PolarQuestComplete:=1
+	QuestLadybugs:=0
+	QuestRhinoBeetles:=0
+	QuestSpider:=0
+	QuestMantis:=0
+	QuestScorpions:=0
+	QuestWerewolf:=0
+	if (read.state = "absent")
+		return -1
+	PolarQuest := read.title
+	;Update Polar quest progress in GUI
+	;also set next steps
+	newLine:="|"
+	polarProgress:=""
+	num:=PolarBear[PolarQuest].Length
+	loop num {
+		action:=PolarBear[PolarQuest][A_Index][2]
+		where:=PolarBear[PolarQuest][A_Index][3]
+		pcolor := action = "Petal" ? PolarBear[PolarQuest][A_Index][4] : "None"
+		if (read.rows[A_Index] = "incomplete") {
+			PolarQuestComplete:=0
+			completeness:="Incomplete"
+			if(action="kill"){
+				Quest%where%:=1
 			}
-			pBMLog := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
-
-			default:
-			GetRobloxClientPos(hwnd)
-			MouseMove windowX+30, windowY+offsetY+200, 5
-			sendinput "{WheelDown}"
-			Sleep 500 ; wait for scroll to finish
-			pBMScreen := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
-			if (Gdip_ImageSearch(pBMScreen, pBMLog, , , , , , 50) = 1) { ; end of quest log
-				Gdip_DisposeImage(pBMLog), Gdip_DisposeImage(pBMScreen)
-				break
+			else if (action="collect" && QuestGatherField="none") {
+				QuestGatherField:=where
+				QuestGatherFieldSlot:=PolarBear[PolarQuest][A_Index][1]
 			}
-			Gdip_DisposeImage(pBMLog), pBMLog := Gdip_CloneBitmap(pBMScreen), Gdip_DisposeImage(pBMScreen)
+			else if(action="Petal" && QuestPetalField="None"){ ; Blooms
+				QuestPetal:=pcolor
+				QuestPetalField:=where
+				QuestGatherField:=where
+				QuestGatherFieldSlot:=PolarBear[PolarQuest][A_Index][1]
+			}
 		}
+		else {
+			completeness:="Complete"
+			if(action="kill")
+				Quest%where%:=0
+		}
+		if(A_Index=1)
+			polarProgress:=(PolarQuest . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
+		else
+			polarProgress:=(polarProgress . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
 	}
-	Sleep 500
-
-	if(Qfound[1]=0){
-		;locate exact bottom of quest title bar coordinates
-		;titlebar = 30 pixels high
-		;quest objective bar spacing = 10 pixels
-		;quest objective bar height = 40 pixels
-		GetRobloxClientPos(hwnd)
-		MouseMove windowX+350, windowY+offsetY+100
-		xi := windowX
-		yi := windowY+Qfound[3]
-		ww := windowX+306
-		wh := windowY+windowHeight
-		fileName:="questbargap.png"
-		if DirExist(A_WorkingDir "\nm_image_assets")
-		{
-			try result := ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*5 " A_WorkingDir "\nm_image_assets\" fileName)
-			catch {
-				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
-				Sleep 5000
-				ProcessClose DllCall("GetCurrentProcessId")
-			}
-		} else {
-			MsgBox "Folder location cannot be found:`n" A_WorkingDir "\nm_image_assets\"
-		}
-		PolarStart:=(result = 1) ? [0, FoundX-windowX, FoundY-windowY] : [1, 0, 0]
-		;determine Quest name
-		xi := windowX
-		yi := windowY+PolarStart[3]-30
-		ww := windowX+306
-		wh := windowY+PolarStart[3]
-		for key, value in PolarBear {
-			filename:=(key . ".png")
-			try
-				result := ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*10 nm_image_assets\" fileName)
-			catch
-				result := 0
-			if(result = 1) {
-				PolarQuest:=key
-				questSteps:=PolarBear[key].Length
-				;make sure full quest is visible
-				loop 5 {
-					found:=0
-					NextY:=windowY+PolarStart[3]
-					loop questSteps {
-						try
-							result := ImageSearch(&FoundX, &FoundY, windowX+QuestBarInset, NextY, windowX+QuestBarInset+300, NextY+QuestBarGapSize, "*5 nm_image_assets\questbargap.png")
-						catch
-							result := 0
-						if(result = 1) {
-							NextY:=NextY+QuestBarSize
-							found:=found+1
-						} else {
-							break
-						}
-					}
-					if(found<questSteps) {
-						MouseMove windowX+30, windowY+offsetY+225
-						Sleep 50
-						Send "{WheelDown 1}"
-						Sleep 50
-						PolarStart[3]-=150
-						Sleep 500
-					} else {
-						break 2
-					}
-				}
-				break
-			}
-		}
-		;Update Polar quest progress in GUI
-		;also set next steps
-		QuestGatherField:="None"
-		QuestGatherFieldSlot:=0
-		newLine:="|"
-		polarProgress:=""
-		num:=PolarBear[PolarQuest].Length
-		loop num {
-			action:=PolarBear[PolarQuest][A_Index][2]
-			where:=PolarBear[PolarQuest][A_Index][3]
-			pcolor := action = "Petal" ? PolarBear[PolarQuest][A_Index][4] : "None"
-			questbarColor := PixelGetColor(windowX+QuestBarInset+10, windowY+QuestBarSize*(PolarBear[PolarQuest][A_Index][1]-1)+PolarStart[3]+QuestBarGapSize+5)
-			if((questbarColor=0xF46C55) || (questbarColor=0x6EFF60)) {
-				PolarQuestComplete:=0
-				completeness:="Incomplete"
-				if(action="kill"){
-					Quest%where%:=1
-				}
-				else if (action="collect" && QuestGatherField="none") {
-					QuestGatherField:=where
-					QuestGatherFieldSlot:=PolarBear[PolarQuest][A_Index][1]
-				}
-				else if(action="Petal" && QuestPetalField="None"){ ; Blooms
-					QuestPetal:=pcolor
-					QuestPetalField:=where
-					QuestGatherField:=where
-					QuestGatherFieldSlot:=PolarBear[PolarQuest][A_Index][1]
-				}
-			}
-			;border color, white (titlebar), black (text)
-			else if((questbarColor!=0x96C3DE) && (questbarColor!=0xE5F0F7) && (questbarColor!=0x1B2A35)) {
-				completeness:="Complete"
-				if(action="kill"){
-					Quest%where%:=0
-				}
-			} else {
-				completeness:="Unknown"
-			}
-			if(A_Index=1)
-				polarProgress:=(PolarQuest . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
-			else
-				polarProgress:=(polarProgress . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
-		}
-		IniWrite polarProgress, "settings\nm_config.ini", "Quests", "PolarQuestProgress"
-		MainGui["PolarQuestProgress"].Text := StrReplace(polarProgress, "|", "`n")
-		if(QuestLadybugs=0 && QuestRhinoBeetles=0 && QuestSpider=0 && QuestMantis=0 && QuestScorpions=0 && QuestWerewolf=0 && QuestGatherField="None" && QuestPetalField="None"){
-			PolarQuestComplete:=1
-		}
+	IniWrite polarProgress, "settings\nm_config.ini", "Quests", "PolarQuestProgress"
+	MainGui["PolarQuestProgress"].Text := StrReplace(polarProgress, "|", "`n")
+	if (!read.incomplete) {
+		PolarQuestComplete:=1
 	}
+	return 1
 }
 nm_PolarQuest(){
 	global PolarQuestCheck, PolarQuest, PolarQuestComplete, QuestGatherField, QuestLadybugs, QuestRhinoBeetles, QuestSpider, QuestMantis, QuestScorpions, QuestWerewolf, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, MonsterRespawnTime, RotateQuest, TotalQuestsComplete, SessionQuestsComplete
 	if(!PolarQuestCheck)
 		return
 	nm_setShiftLock(0)
+	if !(questRead := nm_PolarQuestProg())
+		return
 	RotateQuest:="Polar"
-	nm_PolarQuestProg()
 	if(PolarQuestComplete = 1) {
 		nm_updateAction("Quest")
+		hadQuest := questRead = 1
 		nm_gotoQuestgiver("Polar")
-		nm_PolarQuestProg()
-		if(!PolarQuestComplete){
+		if nm_PolarQuestProg() != 1
+			return
+		if(hadQuest && !PolarQuestComplete){
 			nm_setStatus("Starting", "Polar Quest: " . PolarQuest)
 			TotalQuestsComplete:=TotalQuestsComplete+1
 			SessionQuestsComplete:=SessionQuestsComplete+1
@@ -19287,12 +19177,15 @@ nm_PolarQuest(){
 		if(QuestPetal!="none") {
 			nm_PetalRun()
 		}
-		nm_PolarQuestProg()
+		if !(questRead := nm_PolarQuestProg())
+			return
 		if(PolarQuestComplete) {
 			nm_updateAction("Quest")
+			hadQuest := questRead = 1
 			nm_gotoQuestgiver("Polar")
-			nm_PolarQuestProg()
-			if(!PolarQuestComplete){
+			if nm_PolarQuestProg() != 1
+				return
+			if(hadQuest && !PolarQuestComplete){
 				nm_setStatus("Starting", "Polar Quest: " . PolarQuest)
 				TotalQuestsComplete:=TotalQuestsComplete+1
 				SessionQuestsComplete:=SessionQuestsComplete+1
@@ -19304,253 +19197,141 @@ nm_PolarQuest(){
 	}
 }
 nm_RileyQuestProg(){
-	global RileyQuestCheck, RileyBee, RileyQuest, RileyStart, HiveBees, FieldName1, LastAntPass, LastRedBoost, RileyLadybugs, RileyScorpions, RileyAll
-	global QuestPetal:="None"
-	global QuestPetalField:="None"
-	global QuestGatherField:="None"
-	global QuestGatherFieldSlot:=0
-	global RileyQuestComplete:=1
+	global RileyQuestCheck, RileyBee, RileyQuest, HiveBees, LastAntPass, LastRedBoost, RileyLadybugs, RileyScorpions, RileyAll
+	global QuestPetal
+	global QuestPetalField
+	global QuestGatherField
+	global QuestGatherFieldSlot
+	global RileyQuestComplete
 	global RileyQuestProgress
-	global QuestAnt:=0
-	global QuestRedBoost:=0
-	global QuestFeed:="None"
-	global QuestBarSize
-	global QuestBarGapSize
-	global QuestBarInset
-	global state
-	global LastBugrunLadybugs, MonsterRespawnTime, LastBugrunScorpions, bitmaps
+	global QuestAnt
+	global QuestRedBoost
+	global QuestFeed
+	global LastBugrunLadybugs, MonsterRespawnTime, LastBugrunScorpions
 	if(!RileyQuestCheck)
 		return
-	nm_setShiftLock(0)
-	nm_OpenMenu("questlog")
-
-	hwnd := GetRobloxHWND()
-	offsetY := GetYOffset(hwnd)
-	;search for riley quest
-	Loop 70
-	{
-		Qfound:=nm_imgSearch("riley.png",50,"quest")
-		if (Qfound[1]=0) {
-			if (A_Index > 1)
-				Gdip_DisposeImage(pBMLog)
-			break
-		}
-
-		Qfound:=nm_imgSearch("riley2.png",50,"quest")
-		if (Qfound[1]=0) {
-			if (A_Index > 1)
-				Gdip_DisposeImage(pBMLog)
-			break
-		}
-
-		ActivateRoblox()
-		switch A_Index
-		{
-			case 1:
-			GetRobloxClientPos(hwnd)
-			MouseMove windowX+30, windowY+offsetY+200, 5
-			Loop 50 ; scroll all the way up
-			{
-				MouseMove windowX+30, windowY+offsetY+200, 5
-				sendinput "{WheelUp}"
-				Sleep 50
+	read := nm_ReadQuest("Riley", RileyBee)
+	if (read.state = "unreadable")
+		return 0
+	QuestPetal:="None"
+	QuestPetalField:="None"
+	QuestGatherField:="None"
+	QuestGatherFieldSlot:=0
+	RileyQuestComplete:=1
+	QuestAnt:=0
+	QuestRedBoost:=0
+	QuestFeed:="None"
+	QuestRedAnyField:=0
+	RileyLadybugs:=0
+	RileyScorpions:=0
+	RileyAll:=0
+	if (read.state = "absent")
+		return -1
+	RileyQuest := read.title
+	;Update Riley quest progress in GUI
+	;also set next steps
+	newLine:="|"
+	rileyProgress:=""
+	num:=RileyBee[RileyQuest].Length
+	loop num {
+		action:=RileyBee[RileyQuest][A_Index][2]
+		where:=RileyBee[RileyQuest][A_Index][3]
+		pcolor := action = "Petal" ? RileyBee[RileyQuest][A_Index][4] : "None"
+		if (read.rows[A_Index] = "incomplete") {
+			RileyQuestComplete:=0
+			completeness:="Incomplete"
+			if(action="kill"){
+				Riley%where%:=1
 			}
-			pBMLog := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
-
-			default:
-			GetRobloxClientPos(hwnd)
-			MouseMove windowX+30, windowY+offsetY+200, 5
-			sendinput "{WheelDown}"
-			Sleep 500 ; wait for scroll to finish
-			pBMScreen := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
-			if (Gdip_ImageSearch(pBMScreen, pBMLog, , , , , , 50) = 1) { ; end of quest log
-				Gdip_DisposeImage(pBMLog), Gdip_DisposeImage(pBMScreen)
-				break
-			}
-			Gdip_DisposeImage(pBMLog), pBMLog := Gdip_CloneBitmap(pBMScreen), Gdip_DisposeImage(pBMScreen)
-		}
-	}
-	Sleep 500
-
-	if(Qfound[1]=0){
-		;locate exact bottom of quest title bar coordinates
-		;titlebar = 30 pixels high
-		;quest objective bar spacing = 10 pixels
-		;quest objective bar height = 40 pixels
-		GetRobloxClientPos(hwnd)
-		MouseMove windowX+350, windowY+offsetY+100
-		xi := windowX
-		yi := windowY+Qfound[3]
-		ww := windowX+306
-		wh := windowY+windowHeight
-		fileName:="questbargap.png"
-		if DirExist(A_WorkingDir "\nm_image_assets")
-		{
-			try result := ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*5 " A_WorkingDir "\nm_image_assets\" fileName)
-			catch {
-				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
-				Sleep 5000
-				ProcessClose DllCall("GetCurrentProcessId")
-			}
-		} else {
-			MsgBox "Folder location cannot be found:`n" A_WorkingDir "\nm_image_assets\"
-		}
-		RileyStart:=(result = 1) ? [0, FoundX-windowX, FoundY-windowY] : [1, 0, 0]
-		;determine Quest name
-		xi := windowX
-		yi := windowY+RileyStart[3]-30
-		ww := windowX+306
-		wh := windowY+RileyStart[3]
-		for key, value in RileyBee {
-			filename:=(key . ".png")
-			try
-				result := ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*100 nm_image_assets\" fileName)
-			catch
-				result := 0
-			if(result = 1) {
-				RileyQuest:=key
-				questSteps:=RileyBee[key].Length
-				;make sure full quest is visible
-				loop 5 {
-					found:=0
-					NextY:=windowY+RileyStart[3]
-					loop questSteps {
-						try
-							result := ImageSearch(&FoundX, &FoundY, windowX+QuestBarInset, NextY, windowX+QuestBarInset+300, NextY+QuestBarGapSize, "*5 nm_image_assets\questbargap.png")
-						catch
-							result := 0
-						if(result = 1) {
-							NextY:=NextY+QuestBarSize
-							found:=found+1
-						} else {
-							break
-						}
-					}
-					if(found<questSteps) {
-						MouseMove windowX+30, windowY+offsetY+225
-						Sleep 50
-						Send "{WheelDown 1}"
-						Sleep 50
-						RileyStart[3]-=150
-						Sleep 500
+			else if (action="collect" && QuestGatherField="none") {
+				;red, blue, white, any
+				if(where="red"){
+					if(HiveBees>=35){
+						where:="Pepper"
+					} else if(HiveBees>=15){
+						where:="Rose"
+					} else if (HiveBees>=5) {
+						where:="Strawberry"
 					} else {
-						break 2
+						where:="Mushroom"
 					}
+				} else if (where="blue") {
+					if(HiveBees>=15){
+						where:="Pine Tree"
+					} else if (HiveBees>=5) {
+						where:="Bamboo"
+					} else {
+						where:="Blue Flower"
+					}
+				} else if (where="white") {
+					if (HiveBees>=10) {
+						where:="Pineapple"
+					} else if (HiveBees>=5) {
+						where:="Spider"
+					} else {
+						where:="Sunflower"
+					}
+				} else if (where="any") {
+					;where:=FieldName1
+					where:="None"
+					QuestRedAnyField:=1
 				}
-				break
+				QuestGatherField:=where
+				QuestGatherFieldSlot:=RileyBee[RileyQuest][A_Index][1]
+			}
+			else if(action="get"){ ;Ant, RedBoost
+				if(where="ant") {
+					QuestAnt:=1
+				}
+				else if(where="RedBoost"){
+					QuestRedBoost:=1
+				}
+			}
+			else if(action="feed"){ ;Strawberries
+				QuestFeed:=where
+			}
+			else if(action="Petal" && QuestPetalField="None"){ ; Blooms
+				QuestPetal:=pcolor
+				QuestPetalField:=where
+				QuestGatherField:=where
+				QuestGatherFieldSlot:=RileyBee[RileyQuest][A_Index][1]
 			}
 		}
-		;Update Riley quest progress in GUI
-		;also set next steps
-		QuestGatherField:="None"
-		QuestGatherFieldSlot:=0
-		QuestRedAnyField:=0
-		RileyLadybugs:=0
-		RileyScorpions:=0
-		RileyAll:=0
-		newLine:="|"
-		rileyProgress:=""
-		num:=RileyBee[RileyQuest].Length
-		loop num {
-			action:=RileyBee[RileyQuest][A_Index][2]
-			where:=RileyBee[RileyQuest][A_Index][3]
-			pcolor := action = "Petal" ? RileyBee[RileyQuest][A_Index][4] : "None"
-			questbarColor := PixelGetColor(windowX+QuestBarInset+10, windowY+QuestBarSize*(RileyBee[RileyQuest][A_Index][1]-1)+RileyStart[3]+QuestBarGapSize+5)
-			if((questbarColor=0xF46C55) || (questbarColor=0x6EFF60)) {
-				RileyQuestComplete:=0
-				completeness:="Incomplete"
-				if(action="kill"){
-					Riley%where%:=1
-				}
-				else if (action="collect" && QuestGatherField="none") {
-					;red, blue, white, any
-					if(where="red"){
-						if(HiveBees>=35){
-							where:="Pepper"
-						} else if(HiveBees>=15){
-							where:="Rose"
-						} else if (HiveBees>=5) {
-							where:="Strawberry"
-						} else {
-							where:="Mushroom"
-						}
-					} else if (where="blue") {
-						if(HiveBees>=15){
-							where:="Pine Tree"
-						} else if (HiveBees>=5) {
-							where:="Bamboo"
-						} else {
-							where:="Blue Flower"
-						}
-					} else if (where="white") {
-						if (HiveBees>=10) {
-							where:="Pineapple"
-						} else if (HiveBees>=5) {
-							where:="Spider"
-						} else {
-							where:="Sunflower"
-						}
-					} else if (where="any") {
-						;where:=FieldName1
-						where:="None"
-						QuestRedAnyField:=1
-					}
-					QuestGatherField:=where
-					QuestGatherFieldSlot:=RileyBee[RileyQuest][A_Index][1]
-				}
-				else if(action="get"){ ;Ant, RedBoost
-					if(where="ant") {
-						QuestAnt:=1
-					}
-					else if(where="RedBoost"){
-						QuestRedBoost:=1
-					}
-				}
-				else if(action="feed"){ ;Strawberries
-					QuestFeed:=where
-				}
-				else if(action="Petal" && QuestPetalField="None"){ ; Blooms
-					QuestPetal:=pcolor
-					QuestPetalField:=where
-					QuestGatherField:=where
-					QuestGatherFieldSlot:=RileyBee[RileyQuest][A_Index][1]
-				}
-			}
-			;border color, white (titlebar), black (text)
-			else if((questbarColor!=0x96C3DE) && (questbarColor!=0xE5F0F7) && (questbarColor!=0x1B2A35)) {
-				completeness:="Complete"
-			} else {
-				completeness:="Unknown"
-			}
-			if(A_Index=1)
-				rileyProgress:=(RileyQuest . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
-			else
-				rileyProgress:=(rileyProgress . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
+		else {
+			completeness:="Complete"
 		}
-		IniWrite rileyProgress, "settings\nm_config.ini", "Quests", "RileyQuestProgress"
-		MainGui["RileyQuestProgress"].Text := StrReplace(rileyProgress, "|", "`n")
-		if(RileyLadybugs=0 && RileyScorpions=0 && RileyAll=0 && QuestGatherField="None" && QuestPetalField="None" && QuestAnt=0 && QuestRedBoost=0 && QuestFeed="None" && QuestRedAnyField=0){
-			RileyQuestComplete:=1
-		} else { ;check if all doable things are done and everything else is on cooldown
-			if(QuestGatherField!="None" || QuestPetalField!="None" || (QuestAnt && (nowUnix()-LastAntPass)<7200) || (RileyLadybugs && (nowUnix()-LastBugrunLadybugs)<floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (RileyScorpions && (nowUnix()-LastBugrunScorpions)<floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) { ;there is at least one thing no longer on cooldown
-				RileyQuestComplete:=0
-			} else {
-				RileyQuestComplete:=2
-			}
+		if(A_Index=1)
+			rileyProgress:=(RileyQuest . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
+		else
+			rileyProgress:=(rileyProgress . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
+	}
+	IniWrite rileyProgress, "settings\nm_config.ini", "Quests", "RileyQuestProgress"
+	MainGui["RileyQuestProgress"].Text := StrReplace(rileyProgress, "|", "`n")
+	if (!read.incomplete) {
+		RileyQuestComplete:=1
+	} else { ;check if all doable things are done and everything else is on cooldown
+		if(QuestGatherField!="None" || QuestPetalField!="None" || (QuestAnt && (nowUnix()-LastAntPass)<7200) || (RileyLadybugs && (nowUnix()-LastBugrunLadybugs)<floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (RileyScorpions && (nowUnix()-LastBugrunScorpions)<floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) { ;there is at least one thing no longer on cooldown
+			RileyQuestComplete:=0
+		} else {
+			RileyQuestComplete:=2
 		}
 	}
+	return 1
 }
 nm_RileyQuest(){
 	global RileyQuestCheck, RileyQuestComplete, RileyQuest, RotateQuest, QuestGatherField, QuestAnt, QuestRedBoost, QuestFeed, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, MonsterRespawnTime, RileyLadybugs, RileyScorpions, TotalQuestsComplete, SessionQuestsComplete
 	if(!RileyQuestCheck)
 		return
+	if !(questRead := nm_RileyQuestProg())
+		return
 	RotateQuest:="Riley"
-	nm_RileyQuestProg()
 	if(RileyQuestComplete=1) {
 		nm_updateAction("Quest")
+		hadQuest := questRead = 1
 		nm_gotoQuestgiver("Riley")
-		nm_RileyQuestProg()
-		if(RileyQuestComplete!=1){
+		if nm_RileyQuestProg() != 1
+			return
+		if(hadQuest && RileyQuestComplete!=1){
 			nm_setStatus("Starting", "Riley Quest: " . RileyQuest)
 			TotalQuestsComplete:=TotalQuestsComplete+1
 			SessionQuestsComplete:=SessionQuestsComplete+1
@@ -19576,11 +19357,14 @@ nm_RileyQuest(){
 		if(QuestPetal!="none") {
 			nm_PetalRun()
 		}
-		nm_RileyQuestProg()
+		if !(questRead := nm_RileyQuestProg())
+			return
 		if(RileyQuestComplete=1) {
+			hadQuest := questRead = 1
 			nm_gotoQuestgiver("Riley")
-			nm_RileyQuestProg()
-			if(!RileyQuestComplete){
+			if nm_RileyQuestProg() != 1
+				return
+			if(hadQuest && !RileyQuestComplete){
 				nm_setStatus("Starting", "Riley Quest: " . RileyQuest)
 				TotalQuestsComplete:=TotalQuestsComplete+1
 				SessionQuestsComplete:=SessionQuestsComplete+1
@@ -19592,253 +19376,140 @@ nm_RileyQuest(){
 	}
 }
 nm_BuckoQuestProg(){
-	global BuckoQuestCheck, BuckoBee, BuckoQuest, BuckoStart, HiveBees, FieldName1, LastAntPass, LastBlueBoost, BuckoRhinoBeetles, BuckoMantis
-	global QuestPetal:="None"
-	global QuestPetalField:="None"
-	global QuestGatherField:="None"
-	global QuestGatherFieldSlot:=0
-	global BuckoQuestComplete:=1
+	global BuckoQuestCheck, BuckoBee, BuckoQuest, HiveBees, LastAntPass, LastBlueBoost, BuckoRhinoBeetles, BuckoMantis
+	global QuestPetal
+	global QuestPetalField
+	global QuestGatherField
+	global QuestGatherFieldSlot
+	global BuckoQuestComplete
 	global BuckoQuestProgress
-	global QuestAnt:=0
-	global QuestBlueBoost:=0
-	global QuestFeed:="None"
-	global QuestBarSize
-	global QuestBarGapSize
-	global QuestBarInset
-	global state
-	global MonsterRespawnTime, LastBugrunRhinoBeetles, LastBugrunMantis, bitmaps
+	global QuestAnt
+	global QuestBlueBoost
+	global QuestFeed
+	global MonsterRespawnTime, LastBugrunRhinoBeetles, LastBugrunMantis
 	if(!BuckoQuestCheck)
 		return
-	nm_setShiftLock(0)
-	nm_OpenMenu("questlog")
-
-	hwnd := GetRobloxHWND()
-	offsetY := GetYOffset(hwnd)
-	;search for bucko quest
-	Loop 70
-	{
-		Qfound:=nm_imgSearch("bucko.png",50,"quest")
-		if (Qfound[1]=0) {
-			if (A_Index > 1)
-				Gdip_DisposeImage(pBMLog)
-			break
-		}
-
-		Qfound:=nm_imgSearch("bucko2.png",50,"quest")
-		if (Qfound[1]=0) {
-			if (A_Index > 1)
-				Gdip_DisposeImage(pBMLog)
-			break
-		}
-
-		ActivateRoblox()
-		switch A_Index
-		{
-			case 1:
-			GetRobloxClientPos(hwnd)
-			MouseMove windowX+30, windowY+offsetY+200, 5
-			Loop 50 ; scroll all the way up
-			{
-				MouseMove windowX+30, windowY+offsetY+200, 5
-				sendinput "{WheelUp}"
-				Sleep 50
+	read := nm_ReadQuest("Bucko", BuckoBee)
+	if (read.state = "unreadable")
+		return 0
+	QuestPetal:="None"
+	QuestPetalField:="None"
+	QuestGatherField:="None"
+	QuestGatherFieldSlot:=0
+	BuckoQuestComplete:=1
+	QuestAnt:=0
+	QuestBlueBoost:=0
+	QuestFeed:="None"
+	QuestBlueAnyField:=0
+	BuckoRhinoBeetles:=0
+	BuckoMantis:=0
+	if (read.state = "absent")
+		return -1
+	BuckoQuest := read.title
+	;Update Bucko quest progress in GUI
+	;also set next steps
+	newLine:="|"
+	buckoProgress:=""
+	num:=BuckoBee[BuckoQuest].Length
+	loop num {
+		action:=BuckoBee[BuckoQuest][A_Index][2]
+		where:=BuckoBee[BuckoQuest][A_Index][3]
+		pcolor := action = "Petal" ? BuckoBee[BuckoQuest][A_Index][4] : "None"
+		if (read.rows[A_Index] = "incomplete") {
+			BuckoQuestComplete:=0
+			completeness:="Incomplete"
+			if(action="kill"){
+				Bucko%where%:=1
 			}
-			pBMLog := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
-
-			default:
-			GetRobloxClientPos(hwnd)
-			MouseMove windowX+30, windowY+offsetY+200, 5
-			sendinput "{WheelDown}"
-			Sleep 500 ; wait for scroll to finish
-			pBMScreen := Gdip_BitmapFromScreen(windowX+30 "|" windowY+offsetY+180 "|30|400")
-			if (Gdip_ImageSearch(pBMScreen, pBMLog, , , , , , 50) = 1) { ; end of quest log
-				Gdip_DisposeImage(pBMLog), Gdip_DisposeImage(pBMScreen)
-				break
-			}
-			Gdip_DisposeImage(pBMLog), pBMLog := Gdip_CloneBitmap(pBMScreen), Gdip_DisposeImage(pBMScreen)
-		}
-	}
-	Sleep 500
-
-	if(Qfound[1]=0){
-		;locate exact bottom of quest title bar coordinates
-		;titlebar = 30 pixels high
-		;quest objective bar spacing = 10 pixels
-		;quest objective bar height = 40 pixels
-		GetRobloxClientPos(hwnd)
-		MouseMove windowX+350, windowY+offsetY+100
-		xi := windowX
-		yi := windowY+Qfound[3]
-		ww := windowX+306
-		wh := windowY+windowHeight
-		fileName:="questbargap.png"
-		if DirExist(A_WorkingDir "\nm_image_assets")
-		{
-			try result := ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*5 " A_WorkingDir "\nm_image_assets\" fileName)
-			catch {
-				nm_setStatus("Error", "Image file " filename " was not found in:`n" A_WorkingDir "\nm_image_assets\" fileName)
-				Sleep 5000
-				ProcessClose DllCall("GetCurrentProcessId")
-			}
-		} else {
-			MsgBox "Folder location cannot be found:`n" A_WorkingDir "\nm_image_assets\"
-		}
-		BuckoStart:=(result = 1) ? [0, FoundX-windowX, FoundY-windowY] : [1, 0, 0]
-		;determine Quest name
-		xi := windowX
-		yi := windowY+BuckoStart[3]-30
-		ww := windowX+306
-		wh := windowY+BuckoStart[3]
-		for key, value in BuckoBee {
-			filename:=(key . ".png")
-			try
-				result := ImageSearch(&FoundX, &FoundY, xi, yi, ww, wh, "*100 nm_image_assets\" fileName)
-			catch
-				result := 0
-			if(result = 1) {
-				BuckoQuest:=key
-				questSteps:=BuckoBee[key].Length
-				;make sure full quest is visible
-				loop 5 {
-					found:=0
-					NextY:=windowY+BuckoStart[3]
-					loop questSteps {
-						try
-							result := ImageSearch(&FoundX, &FoundY, windowX+QuestBarInset, NextY, windowX+QuestBarInset+300, NextY+QuestBarGapSize, "*5 nm_image_assets\questbargap.png")
-						catch
-							result := 0
-						if(result = 1) {
-							NextY:=NextY+QuestBarSize
-							found:=found+1
-						} else {
-							break
-						}
-					}
-					if(found<questSteps) {
-						MouseMove windowX+30, windowY+offsetY+225
-						Sleep 50
-						Send "{WheelDown 1}"
-						Sleep 50
-						BuckoStart[3]-=150
-						Sleep 500
+			else if (action="collect" && QuestGatherField="none") {
+				;red, blue, white, any
+				if(where="red"){
+					if(HiveBees>=35){
+						where:="Pepper"
+					} else if(HiveBees>=15){
+						where:="Rose"
+					} else if (HiveBees>=5) {
+						where:="Strawberry"
 					} else {
-						break 2
+						where:="Mushroom"
 					}
+				} else if (where="blue") {
+					if(HiveBees>=15){
+						where:="Pine Tree"
+					} else if (HiveBees>=5) {
+						where:="Bamboo"
+					} else {
+						where:="Blue Flower"
+					}
+				} else if (where="white") {
+					if (HiveBees>=10) {
+						where:="Pineapple"
+					} else if (HiveBees>=5) {
+						where:="Spider"
+					} else {
+						where:="Sunflower"
+					}
+				} else if (where="any") {
+					;where:=FieldName1
+					where:="None"
+					QuestBlueAnyField:=1
 				}
-				break
+				QuestGatherField:=where
+				QuestGatherFieldSlot:=BuckoBee[BuckoQuest][A_Index][1]
+			}
+			else if(action="get"){ ;Ant, BlueBoost
+				if(where="ant") {
+					QuestAnt:=1
+				}
+				else if(where="BlueBoost"){
+					QuestBlueBoost:=1
+				}
+			}
+			else if(action="feed"){ ;Blueberries
+				QuestFeed:=where
+			}
+			else if(action="Petal" && QuestPetalField="None"){ ; Blooms
+				QuestPetal:=pcolor
+				QuestPetalField:=where
+				QuestGatherField:=where
+				QuestGatherFieldSlot:=BuckoBee[BuckoQuest][A_Index][1]
 			}
 		}
-		;Update Bucko quest progress in GUI
-		;also set next steps
-		BuckoRhinoBeetles:=0
-		BuckoMantis:=0
-		QuestGatherField:="None"
-		QuestGatherFieldSlot:=0
-		QuestBlueAnyField:=0
-		QuestAnt:=0
-		newLine:="|"
-		buckoProgress:=""
-		num:=BuckoBee[BuckoQuest].Length
-		loop num {
-			action:=BuckoBee[BuckoQuest][A_Index][2]
-			where:=BuckoBee[BuckoQuest][A_Index][3]
-			pcolor := action = "Petal" ? BuckoBee[BuckoQuest][A_Index][4] : "None"
-			questbarColor := PixelGetColor(windowX+QuestBarInset+10, windowY+QuestBarSize*(BuckoBee[BuckoQuest][A_Index][1]-1)+BuckoStart[3]+QuestBarGapSize+5)
-			if((questbarColor=0xF46C55) || (questbarColor=0x6EFF60)) {
-				BuckoQuestComplete:=0
-				completeness:="Incomplete"
-				if(action="kill"){
-					Bucko%where%:=1
-				}
-				else if (action="collect" && QuestGatherField="none") {
-					;red, blue, white, any
-					if(where="red"){
-						if(HiveBees>=35){
-							where:="Pepper"
-						} else if(HiveBees>=15){
-							where:="Rose"
-						} else if (HiveBees>=5) {
-							where:="Strawberry"
-						} else {
-							where:="Mushroom"
-						}
-					} else if (where="blue") {
-						if(HiveBees>=15){
-							where:="Pine Tree"
-						} else if (HiveBees>=5) {
-							where:="Bamboo"
-						} else {
-							where:="Blue Flower"
-						}
-					} else if (where="white") {
-						if (HiveBees>=10) {
-							where:="Pineapple"
-						} else if (HiveBees>=5) {
-							where:="Spider"
-						} else {
-							where:="Sunflower"
-						}
-					} else if (where="any") {
-						;where:=FieldName1
-						where:="None"
-						QuestBlueAnyField:=1
-					}
-					QuestGatherField:=where
-					QuestGatherFieldSlot:=BuckoBee[BuckoQuest][A_Index][1]
-				}
-				else if(action="get"){ ;Ant, BlueBoost
-					if(where="ant") {
-						QuestAnt:=1
-					}
-					else if(where="BlueBoost"){
-						QuestBlueBoost:=1
-					}
-				}
-				else if(action="feed"){ ;Blueberries
-					QuestFeed:=where
-				}
-				else if(action="Petal" && QuestPetalField="None"){ ; Blooms
-					QuestPetal:=pcolor
-					QuestPetalField:=where
-					QuestGatherField:=where
-					QuestGatherFieldSlot:=BuckoBee[BuckoQuest][A_Index][1]
-				}
-			}
-			;border color, white (titlebar), black (text)
-			else if((questbarColor!=0x96C3DE) && (questbarColor!=0xE5F0F7) && (questbarColor!=0x1B2A35)) {
-				completeness:="Complete"
-			} else {
-				completeness:="Unknown"
-			}
-			if(A_Index=1)
-				buckoProgress:=(BuckoQuest . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
-			else
-				buckoProgress:=(buckoProgress . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
+		else {
+			completeness:="Complete"
 		}
-		IniWrite buckoProgress, "settings\nm_config.ini", "Quests", "BuckoQuestProgress"
-		MainGui["BuckoQuestProgress"].Text := StrReplace(buckoProgress, "|", "`n")
-		if(BuckoRhinoBeetles=0 && BuckoMantis=0 && QuestGatherField="None" && QuestPetalField="None" && QuestAnt=0 && QuestBlueBoost=0 && QuestFeed="None" && QuestBlueAnyField=0) {
-				BuckoQuestComplete:=1
-			} else { ;check if all doable things are done and everything else is on cooldown
-				if(QuestGatherField!="None" || QuestPetalField!="None" || (QuestAnt && (nowUnix()-LastAntPass)<7200) || (BuckoRhinoBeetles && (nowUnix()-LastBugrunRhinoBeetles)<floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (BuckoMantis && (nowUnix()-LastBugrunMantis)<floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) { ;there is at least one thing no longer on cooldown
-					BuckoQuestComplete:=0
-				} else {
-					BuckoQuestComplete:=2
-				}
-			}
+		if(A_Index=1)
+			buckoProgress:=(BuckoQuest . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
+		else
+			buckoProgress:=(buckoProgress . newline . action . " " . (where = "None" ? "Any" : where) . ": " . completeness)
 	}
+	IniWrite buckoProgress, "settings\nm_config.ini", "Quests", "BuckoQuestProgress"
+	MainGui["BuckoQuestProgress"].Text := StrReplace(buckoProgress, "|", "`n")
+	if (!read.incomplete) {
+			BuckoQuestComplete:=1
+		} else { ;check if all doable things are done and everything else is on cooldown
+			if(QuestGatherField!="None" || QuestPetalField!="None" || (QuestAnt && (nowUnix()-LastAntPass)<7200) || (BuckoRhinoBeetles && (nowUnix()-LastBugrunRhinoBeetles)<floor(330*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01))) || (BuckoMantis && (nowUnix()-LastBugrunMantis)<floor(1230*(1-(MonsterRespawnTime?MonsterRespawnTime:0)*0.01)))) { ;there is at least one thing no longer on cooldown
+				BuckoQuestComplete:=0
+			} else {
+				BuckoQuestComplete:=2
+			}
+		}
+	return 1
 }
 nm_BuckoQuest(){
 	global BuckoQuestCheck, BuckoQuestComplete, BuckoQuest, RotateQuest, QuestGatherField, QuestAnt, QuestBlueBoost, QuestFeed, LastBugrunLadybugs, LastBugrunRhinoBeetles, LastBugrunSpider, LastBugrunMantis, LastBugrunScorpions, LastBugrunWerewolf, MonsterRespawnTime, BuckoRhinoBeetles, BuckoMantis, TotalQuestsComplete, SessionQuestsComplete, QuestPetal, QuestPetalField
 	if(!BuckoQuestCheck)
 		return
+	if !(questRead := nm_BuckoQuestProg())
+		return
 	RotateQuest:="Bucko"
-	nm_BuckoQuestProg()
 	if(BuckoQuestComplete=1) {
 		nm_updateAction("Quest")
+		hadQuest := questRead = 1
 		nm_gotoQuestgiver("Bucko")
-		nm_BuckoQuestProg()
-		if(BuckoQuestComplete!=1){
+		if nm_BuckoQuestProg() != 1
+			return
+		if(hadQuest && BuckoQuestComplete!=1){
 			nm_setStatus("Starting", "Bucko Quest: " . BuckoQuest)
 			TotalQuestsComplete:=TotalQuestsComplete+1
 			SessionQuestsComplete:=SessionQuestsComplete+1
@@ -19864,11 +19535,14 @@ nm_BuckoQuest(){
 		if(QuestPetal!="none") {
 			nm_PetalRun()
 		}
-		nm_BuckoQuestProg()
+		if !(questRead := nm_BuckoQuestProg())
+			return
 		if(BuckoQuestComplete=1) {
+			hadQuest := questRead = 1
 			nm_gotoQuestgiver("Bucko")
-			nm_BuckoQuestProg()
-			if(!BuckoQuestComplete){
+			if nm_BuckoQuestProg() != 1
+				return
+			if(hadQuest && !BuckoQuestComplete){
 				nm_setStatus("Starting", "Bucko Quest: " . BuckoQuest)
 				TotalQuestsComplete:=TotalQuestsComplete+1
 				SessionQuestsComplete:=SessionQuestsComplete+1
@@ -22808,6 +22482,9 @@ start(*){
 	global CurrentField
 	global RecentFBoost:="None"
 	global QuestGatherField:="None"
+	global QuestGatherFieldSlot:=0
+	global QuestPetal:="None", QuestPetalField:="None"
+	global PolarQuestComplete:=2, BuckoQuestComplete:=2, RileyQuestComplete:=2
 	global BugDeathCheckLockout:=0
 	global AFBrollingDice:=0
 	global AFBuseGlitter:=0
