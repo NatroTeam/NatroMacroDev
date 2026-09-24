@@ -6,7 +6,7 @@ nm_ReadQuest(giver, quests) {
         reader := QuestReader(giver, quests)
         result := reader.Read()
         if result.state = "unreadable"
-            nm_setStatus("Quest", giver " quest could not be read; keeping the last result")
+            nm_setStatus("Quest", giver " quest could not be read")
         return result
     } catch as err {
         nm_setStatus("Quest", giver " quest could not be read: " err.Message)
@@ -157,17 +157,19 @@ class QuestReader {
     }
 
     Scroll(direction) {
-        before := Gdip_CloneBitmapArea(this.bitmap, 0, this.top, 306, this.bottom - this.top)
+        global QuestBarInset, QuestBarGapSize, QuestBarSize
+        gap := this.Find("questbargap", this.top, this.bottom - QuestBarSize)
+        if !gap {
+            this.ScrollInput(direction)
+            return true
+        }
+        y := gap.y + QuestBarGapSize, height := QuestBarSize - QuestBarGapSize
+        before := Gdip_CloneBitmapArea(this.bitmap, QuestBarInset, y, 288, height)
         if !before
             throw Error("Quest scroll capture failed")
         try {
-            GetRobloxClientPos(this.hwnd)
-            MouseMove windowX + 30, windowY + this.top + 50
-            Sleep 50
-            SendEvent "{Wheel" direction "}"
-            Sleep 200
-            this.Capture()
-            after := Gdip_CloneBitmapArea(this.bitmap, 0, this.top, 306, this.bottom - this.top)
+            this.ScrollInput(direction)
+            after := Gdip_CloneBitmapArea(this.bitmap, QuestBarInset, y, 288, height)
             if !after
                 throw Error("Quest scroll capture failed")
             try result := Gdip_ImageSearch(after, before)
@@ -176,6 +178,15 @@ class QuestReader {
                 throw Error("Quest scroll comparison failed")
             return result != 1
         } finally Gdip_DisposeImage(before)
+    }
+
+    ScrollInput(direction) {
+        GetRobloxClientPos(this.hwnd)
+        MouseMove windowX + 30, windowY + this.top + 50
+        Sleep 50
+        SendEvent "{Wheel" direction "}"
+        Sleep 200
+        this.Capture()
     }
 
     Read() {
@@ -196,11 +207,16 @@ class QuestReader {
         stable := 0
         Loop 100 {
             stable := this.Scroll("Up") ? 0 : stable + 1
+            result := this.ReadPage()
+            if result.state = "ready" {
+                confirmed := this.Confirm(result)
+                if confirmed.state = "ready"
+                    return confirmed
+            }
             if stable >= 2
                 break
         }
-        if stable < 2
-            return {state: "unreadable"}
+        reachedTop := stable >= 2
         stable := 0, sawQuest := false
         Loop 150 {
             result := this.ReadPage()
@@ -211,7 +227,7 @@ class QuestReader {
                     return confirmed
             }
             if stable >= 2
-                return {state: sawQuest ? "unreadable" : "absent"}
+                return {state: sawQuest || !reachedTop ? "unreadable" : "absent"}
             stable := this.Scroll("Down") ? 0 : stable + 1
         }
         return {state: "unreadable"}

@@ -18932,7 +18932,9 @@ nm_QuestRotate(){
 	if (nm_NightInterrupt() || nm_MondoInterrupt() || nm_GatherBoostInterrupt())
 		return
 
-	;open quest log
+	global QuestGatherFieldSlot, QuestPetal, QuestPetalField
+	QuestGatherField := "None", QuestGatherFieldSlot := 0
+	QuestPetal := "None", QuestPetalField := "None"
 	nm_OpenMenu("questlog")
 
 	;polar bear quest
