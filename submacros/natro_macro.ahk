@@ -10604,7 +10604,7 @@ nm_MondoInterrupt() => (utc_min := FormatTime(A_NowUTC, "m"), now := nowUnix(),
 	((MondoBuffCheck = 1) && ((utc_min<14 && (now-LastMondoBuff)>960 && MondoAction="Kill")
 		|| (!nm_GatherBoostInterrupt()
 			&& ((utc_min<14 && (now-LastMondoBuff)>960 && MondoAction="Buff")
-			|| (utc_min<12 && (now-LastGuid)<60 && PMondoGuid && MondoAction="Guid")
+			|| (utc_min<12 && (now-LastGuid)<60 && PMondoGuid && !PMondoGuidComplete && MondoAction="Guid")
 			|| (utc_min<=8 && (now-LastMondoBuff)>960 && PMondoGuid && MondoAction="Tag")))
 		)
 	)
@@ -16163,7 +16163,7 @@ nm_Bugrun(){
 	}
 }
 nm_Mondo(){
-	global youDied
+	global youDied, ConvertGatherFlag
 	;mondo buff
 	global MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter
 	if nm_NightInterrupt()
@@ -16187,7 +16187,7 @@ nm_Mondo(){
 		global MondoSecs, MondoLootDirection
 		nm_updateAction("Mondo")
 		MoveSpeedFactor:=round(18/MoveSpeedNum, 2)
-		while(repeat){
+		while(repeat && FormatTime(A_NowUTC, "m") < 15){
 			nm_Reset(0, 2000, 0)
 			nm_setStatus("Traveling", ("Mondo (" . MondoAction . ")"))
 			nm_gotoPlanter("mountain top")
@@ -16195,6 +16195,8 @@ nm_Mondo(){
 			KeyWait "F14", "D T5 L"
 			KeyWait "F14", "T30 L"
 			nm_endWalk()
+			if youDied
+				break
 			;;; (+) new conditions probably
 			found := 0
 			mondoChick := 0
@@ -16250,6 +16252,7 @@ nm_Mondo(){
 					else if(MondoAction="Guid" && PMondoGuid=1 && PMondoGuidComplete=0){
 						repeat:=0
 						PMondoGuidComplete:=1
+						utc_min := FormatTime(A_NowUTC, "m")
 						while ((nowUnix()-LastGuid)<=210 && utc_min<15 && A_Index<210) { ;3.5 mins since guid
 							if(youDied)
 								break
@@ -16265,6 +16268,8 @@ nm_Mondo(){
 						repeat:=1
 						success:=count:=0
 						loop 3600 { ;15 mins
+							if youDied
+								break
 							mondoDead:=nm_HealthDetection()
 							if ((mondoDead.Length = 0) || (mondoDead.Length = 1 && mondoDead[1] = 100.00)) {
 								if (++count >= 60) { ; Changed from 5 seconds to 15 seconds for when mondo goes off screen
@@ -16276,11 +16281,11 @@ nm_Mondo(){
 								count := 0
 							if(Mod(A_Index, 4)=0) { ; 1 second
 								nm_autoFieldBoost(CurrentField)
+								if(youDied)
+									break
 								if(nm_NightInterrupt() || AFBrollingDice || AFBuseGlitter || AFBuseBooster) {
 									return
 								}
-								if(youDied)
-									break
 								if(FormatTime(A_NowUTC, "m")>14) {
 									repeat:=0
 									break
@@ -16300,7 +16305,7 @@ nm_Mondo(){
 							}
 							sleep 250
 						}
-						if (success = 1) {
+						if (success = 1 && !youDied) {
 							nm_setStatus("Defeated", "Mondo")
 							repeat := 0
 							if !(MondoLootDirection = "Ignore") {
@@ -16331,7 +16336,7 @@ nm_Mondo(){
 									click "down"
 								DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
 								n := s, f := s+450000000 ; 45 seconds loot timeout
-								while ((n < f) && (A_Index <= 12)) {
+								while ((n < f) && (A_Index <= 12) && !youDied) {
 									nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
 									DllCall("GetSystemTimeAsFileTime","int64p",&n)
 								}
@@ -16346,9 +16351,18 @@ nm_Mondo(){
 				Break
 			}
 
+			if (youDied || !mondoChick)
+				break
 		}
 		LastMondoBuff:=nowUnix()
 		IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
+		if youDied {
+			nm_setStatus("Aborting", "Mondo - Died")
+			if (MondoAction = "Guid")
+				PMondoGuidComplete := 1
+			ConvertGatherFlag := 1
+			nm_Reset(0, 2000, 1)
+		}
 	}
 }
 nm_GoGather(){
