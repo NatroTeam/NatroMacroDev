@@ -774,36 +774,83 @@ nm_status(status)
 
 nm_honey()
 {
-	static id := ""
-	if !HoneyUpdateSSCheck
-		return id := ""
-	if HoneyUpdate
-	{
-		payload_json := '{"embeds": [{"description": "[' A_Hour ':' A_Min ':' A_Sec '] Current Honey/Pollen", "color": "' HoneyUpdate '", "image": {"url": "attachment://honey.png"}}], "attachments": []}'
-		discord.CreateFormData(&postdata, &contentType
-			, [Map("name","payload_json", "content-type","application/json", "content",payload_json)
-			, Map("name","files[0]", "filename","honey.png", "content-type","image/png", "pBitmap",pBM:=CreateHoneyBitmap())])
-		if pBM <= 0
-			return
-		Gdip_DisposeImage(pBM)
-		try id ? discord.EditMessageAPI(id, postdata, contentType) : ((message := JSON.parse(discord.SendMessageAPI(postdata, contentType))).Has("id") && (id := message["id"]))
+	static id := "", retryAt := 0, failures := 0, target := ""
+	if (!discordCheck || !ssCheck || !HoneyUpdateSSCheck || !HoneyUpdate || (discordMode = 1 && !MainChannelCheck)) {
+		id := "", retryAt := failures := 0
+		return
 	}
-	else if id
-		id := ""
+	destination := discordMode ":" ((discordMode = 0) ? webhook : MainChannelID)
+	if !(destination == target) {
+		target := destination, id := "", retryAt := failures := 0
+	}
+	if (DllCall("GetTickCount64", "UInt64") < retryAt)
+		return
+	try {
+		pBM := CreateHoneyBitmap()
+		if pBM <= 0 {
+			retryAt := DllCall("GetTickCount64", "UInt64")+2000
+			return
+		}
+		try {
+			payload_json := '{"embeds": [{"description": "[' A_Hour ':' A_Min ':' A_Sec '] Current Honey/Pollen", "color": "' HoneyUpdate '", "image": {"url": "attachment://honey.png"}}], "attachments": []}'
+			discord.CreateFormData(&postdata, &contentType
+				, [Map("name","payload_json", "content-type","application/json", "content",payload_json)
+				, Map("name","files[0]", "filename","honey.png", "content-type","image/png", "pBitmap",pBM)])
+		} finally Gdip_DisposeImage(pBM)
+		message := JSON.parse(id ? discord.EditMessageAPI(id, postdata, contentType) : discord.SendMessageAPI(postdata, contentType))
+		if (message is Map) {
+			if message.Has("id") && message["id"] {
+				id := message["id"], failures := 0, retryAt := 0
+				return
+			}
+			if message.Has("retry_after") && IsNumber(message["retry_after"]) {
+				retryAt := DllCall("GetTickCount64", "UInt64")+Max(1000, Ceil(1000*message["retry_after"]))
+				return
+			}
+			if message.Has("code") && message["code"] = 10008
+				id := ""
+		}
+	}
+	failures := Min(failures+1, 5)
+	retryAt := DllCall("GetTickCount64", "UInt64")+1000*Min(30, 2**failures)
 }
 
 CreateHoneyBitmap(honey := 1, backpack := 1)
 {
 	if (!honey && !backpack)
-		return -1
-	hwnd := GetRobloxHWND(), GetRobloxClientPos(hwnd), offsetY := GetYOffset(hwnd)
+		return 0
+	hwnd := GetRobloxHWND()
+	if !hwnd
+		return 0
+	GetRobloxClientPos(hwnd), offsetY := GetYOffset(hwnd)
 	if (windowWidth <= 500)
-		return -2
-	pBM := Gdip_CreateBitmap(294, (!!honey)*36 + (!!backpack)*35), G := Gdip_GraphicsFromImage(pBM)
-	(honey) && (pBMHoney := Gdip_BitmapFromScreen(windowX + windowWidth//2 - 300 "|" windowY + offsetY "|294|36"), Gdip_DrawImage(G, pBMHoney), Gdip_DisposeImage(pBMHoney))
-	(backpack) && (pBMBackpack := Gdip_BitmapFromScreen(windowX + windowWidth//2 "|" windowY + offsetY "|294|35"), Gdip_DrawImage(G, pBMBackpack, , (!!honey)*36), Gdip_DisposeImage(pBMBackpack))
-	Gdip_DeleteGraphics(G)
-	return pBM
+		return 0
+	pBM := Gdip_CreateBitmap(294, (!!honey)*36 + (!!backpack)*35)
+	if pBM <= 0
+		return 0
+	G := result := 0
+	try {
+		G := Gdip_GraphicsFromImage(pBM)
+		if !G
+			return 0
+		for region in [{enabled:honey, x:-300, y:0, height:36}, {enabled:backpack, x:0, y:(!!honey)*36, height:35}] {
+			if !region.enabled
+				continue
+			capture := Gdip_BitmapFromScreen(windowX+windowWidth//2+region.x "|" windowY+offsetY "|294|" region.height)
+			if capture <= 0
+				return 0
+			try {
+				if Gdip_DrawImage(G, capture, 0, region.y) != 0
+					return 0
+			} finally Gdip_DisposeImage(capture)
+		}
+		return result := pBM
+	} finally {
+		if G
+			Gdip_DeleteGraphics(G)
+		if !result
+			Gdip_DisposeImage(pBM)
+	}
 }
 
 

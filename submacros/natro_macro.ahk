@@ -25,6 +25,8 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "%A_ScriptDir%\..\lib"
 #Include "Gdip_All.ahk"
 #Include "Gdip_ImageSearch.ahk"
+#Include "WindowsOCR.ahk"
+#Include "ViciousDetection.ahk"
 #Include "JSON.ahk"
 #Include "Roblox.ahk"
 #Include "DurationFromSeconds.ahk"
@@ -93,6 +95,16 @@ CloseScripts(hb:=0) {
 }
 DetectHiddenWindows 1
 CloseScripts(1)
+if FileExist(A_WorkingDir "\reset-settings.pending") {
+	try {
+		if DirExist(A_WorkingDir "\settings")
+			DirDelete A_WorkingDir "\settings", 1
+		FileDelete A_WorkingDir "\reset-settings.pending"
+	} catch as err {
+		MsgBox "Settings could not be reset.`n`n" err.Message, "Reset Settings", 0x10
+		ExitApp
+	}
+}
 if !WinExist("Heartbeat.ahk ahk_class AutoHotkey")
 	run '"' exe_path32 '" /script "' A_WorkingDir '\submacros\Heartbeat.ahk"'
 DetectHiddenWindows 0
@@ -7723,7 +7735,11 @@ nm_ResetConfig(*){
 	If you want to proceed, click 'Yes'. Backup your 'settings' folder if you're unsure.
 	)", "Reset Settings", 0x40034 " Owner" MainGui.Hwnd) = "Yes")
 	{
-		DirDelete A_WorkingDir "\settings"
+		try FileOpen(A_WorkingDir "\reset-settings.pending", "w").Close()
+		catch as err {
+			MsgBox "Settings could not be reset.`n`n" err.Message, "Reset Settings", 0x10 " Owner" MainGui.Hwnd
+			return
+		}
 		return stop()
 	}
 }
@@ -7797,6 +7813,7 @@ nm_ResetFieldDefault(GuiCtrl, *){
 				FieldDefault[k]["drift"]:=v["drift"]
 				for i,j in FieldDefault[k]
 					IniWrite j, "settings\field_config.ini", k, i
+				nm_RefreshFieldDefaults(k)
 				MsgBox "Changed " k " field defaults back to their standard settings!", "Reset Field Defaults", 0x40040 " Owner" MainGui.Hwnd
 			}
 
@@ -7824,9 +7841,15 @@ nm_ResetAllFieldDefaults(*){
 
 			file := FileOpen(A_WorkingDir "\settings\field_config.ini", "w-d"), file.Write(ini), file.Close()
 
+			nm_RefreshFieldDefaults()
 			MsgBox "Changed all field defaults back to their standard settings!", "Reset Field Defaults", 0x40040 " Owner" MainGui.Hwnd
 		}
 	}
+}
+nm_RefreshFieldDefaults(field := "") {
+	Loop 3
+		if (MainGui["FieldName" A_Index].Text != "None" && (field = "" || MainGui["FieldName" A_Index].Text = field))
+			nm_FieldDefaults(A_Index)
 }
 nm_testReconnect(*){
 	CloseRoblox()
@@ -8712,7 +8735,7 @@ nm_AutoClickerButton(*)
 nm_ClickMode(*){
 	global
 	IniWrite (ClickMode := AutoClickerGui["ClickMode"].Value), "settings\nm_config.ini", "Settings", "ClickMode"
-	AutoClickerGui["ClickCount"].Enabled := AutoClickerGui["ClickCountEdit"].Enabled := ClickMode
+	AutoClickerGui["ClickCount"].Enabled := AutoClickerGui["ClickCountEdit"].Enabled := !ClickMode
 }
 nm_saveKeyDelay(*){
 	global
@@ -10583,7 +10606,7 @@ nm_MondoInterrupt() => (utc_min := FormatTime(A_NowUTC, "m"), now := nowUnix(),
 	((MondoBuffCheck = 1) && ((utc_min<14 && (now-LastMondoBuff)>960 && MondoAction="Kill")
 		|| (!nm_GatherBoostInterrupt()
 			&& ((utc_min<14 && (now-LastMondoBuff)>960 && MondoAction="Buff")
-			|| (utc_min<12 && (now-LastGuid)<60 && PMondoGuid && MondoAction="Guid")
+			|| (utc_min<12 && (now-LastGuid)<60 && PMondoGuid && !PMondoGuidComplete && MondoAction="Guid")
 			|| (utc_min<=8 && (now-LastMondoBuff)>960 && PMondoGuid && MondoAction="Tag")))
 		)
 	)
@@ -11061,10 +11084,8 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	nm_AutoFieldBoost(currentField) ; start rolling dice in background() if needed
 
 	; High priority interrupts. Will interrupt any reset not marked with the checkAll flag. Added to avoid infinite recursion
-	if checkAll {
-		nm_fieldBoostBooster()
+	if checkAll
 		nm_Night()
-	}
 	if(force=1) {
 		HiveConfirmed:=0
 	}
@@ -11214,6 +11235,11 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	}
 	;convert
 	(convert=1) && nm_convert()
+	if checkAll {
+		nm_fieldBoostBooster()
+		if !HiveConfirmed
+			return nm_Reset(0, wait, 0)
+	}
 	;ensure minimum delay has been met
 	if((nowUnix()-resetTime)<wait) {
 		remaining:=floor((wait-(nowUnix()-resetTime))/1000) ;seconds
@@ -12801,14 +12827,16 @@ nm_MemoryMatch(MemoryMatchGame) {
 	if !(%MemoryMatchGame%MemoryMatchCheck && (nowUnix()-Last%MemoryMatchGame%MemoryMatch)>MemoryMatchGames[MemoryMatchGame].cooldown) || nm_AmuletPrompt()
 		return
 
-	success := deaths := 0
 	loop 2 {
+		success := 0
 		nm_reset(MemoryMatchGame = "Night" ? 0 : 1, 0, 0)
 		nm_SetStatus("Traveling", MemoryMatchGame " Memory Match" ((A_Index > 1) ? " (Attempt 2)" : "" ))
 		nm_GoToCollect(MemoryMatchGame "mm", 0)
 		loop 720 { ; 3 min timeout
 			Sleep 250
-			if ((!GetKeyState("F14") && success := 1) || (youDied && ++deaths))
+			if youDied
+				break
+			if (!GetKeyState("F14") && success := 1)
 				break
 		}
 		nm_endWalk()
@@ -12818,16 +12846,23 @@ nm_MemoryMatch(MemoryMatchGame) {
 			sendinput "{" SC_E " down}"
 			Sleep 100
 			sendinput "{" SC_E " up}"
-			UpdateConfig()
 			sleep 1500
-			Break
-		} else if (A_Index = 2) {
+			Loop 20 {
+				if youDied
+					break
+				if nm_MemoryMatchBoard() {
+					UpdateConfig()
+					nm_SolveMemoryMatch(MemoryMatchGame)
+					return
+				}
+				Sleep 250
+			}
+		}
+		if (A_Index = 2) {
 			(MemoryMatchGame != "Night") && UpdateConfig()
 			return
 		}
 	} ;  close Try twice to find MM
-
-	nm_SolveMemoryMatch(MemoryMatchGame)
 
 	UpdateConfig() {
 		IniWrite Last%MemoryMatchGame%MemoryMatch:=nowUnix(), "settings\nm_config.ini", "Collect", "Last" MemoryMatchGame "MemoryMatch"
@@ -12840,25 +12875,11 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 	middleX := windowX+(windowWidth//2)
 	middleY := windowY+(windowHeight//2)
 
-	switch MemoryMatchGame {
-		case "Extreme","Winter":
-		Xoffset := 40, Tiles := 20
-
-		case "Normal","Mega","Night":
-		Xoffset := 0, Tiles := 16
-
-		default:
-		pBMScreen := Gdip_BitmapFromScreen(middleX-250 "|" middleY-210 "|500|50")
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitleWide"], , , , , , 8) = 1)
-			Xoffset := 40, Tiles := 20
-		else if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitle"], , , , , , 8) = 1)
-			Xoffset := 0, Tiles := 16
-		else {
-			Gdip_DisposeImage(pBMScreen)
-			return
-		}
-		Gdip_DisposeImage(pBMScreen)
-	}
+	Tiles := nm_MemoryMatchBoard()
+	boardBounds := [windowX, windowY, windowWidth, windowHeight]
+	if !Tiles
+		return
+	Xoffset := (Tiles = 20) ? 40 : 0
 
 	StoreItemOAC := [], StoreItemOAC.Default := "", StoreItemOAC.Length := 20
 	IgnoreItemOAC := [], IgnoreItemOAC.Default := 0, IgnoreItemOAC.Length := 20
@@ -12885,8 +12906,13 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 	ClickNum:=0
 	Chances:=8
 	LastChance:=0
+	stopped := false
 
 	Loop 10 { ; Numer of available Chances.
+		if (youDied || nm_MemoryMatchBoard(boardBounds) != Tiles) {
+			stopped := true
+			break
+		}
 		if(Chances=2) {
 			Loop 1000 {
 				pBMScreen := Gdip_BitmapFromScreen(middleX-275-Xoffset "|" middleY-146 "|100|100") ; Detect Number of Chances
@@ -12900,6 +12926,10 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 			}
 		}
 		loop 2 { ;Click tile, store item and compare
+			if (youDied || nm_MemoryMatchBoard(boardBounds) != Tiles) {
+				stopped := true
+				break 2
+			}
 			if(A_Index=1) {
 				; Compare Tiles before Click 1
 				loop Tiles {
@@ -12944,7 +12974,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 							continue ; Skip self-comparison
 
 						; Check if either variable is Null or Ignored
-						if(StoreitemOAC[i] = 0 || StoreitemOAC[j] = 0 || (IgnoreitemOAC[i] = 1 && LastChance!=1) || StoreitemOAC[i] = "" || StoreitemOAC[j] = "")
+						if(StoreitemOAC[i] = 0 || StoreitemOAC[j] = 0 || ((IgnoreitemOAC[i] = 1 || IgnoreitemOAC[j] = 1) && LastChance!=1) || StoreitemOAC[i] = "" || StoreitemOAC[j] = "")
 							continue ; Skip the comparison if either Item is Null or Not Priority
 
 						; Check if Items are the same.
@@ -12969,11 +12999,9 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 			}
 
 			if(!MatchFoundOAC && !PairFoundOAC) {
-				Loop 20 {
-					Tile := Random(1, Tiles)
-					If(StoreItemOAC[Tile]="")
-						break
-				}
+				Tile := nm_MemoryMatchNextTile(StoreItemOAC, IgnoreItemOAC, Tiles, A_Index = 2 ? Click1Tile : 0)
+				if !Tile
+					break 2
 			}
 			;tile:=1
 			TileXCordOAC:=GridOAC[Tile][1]-Xoffset ; Determine click coordinates
@@ -12996,7 +13024,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 				pBMScreen := Gdip_BitmapFromScreen(TileXCordOAC-35 "|" TileYCordOAC-20 "|45|30") ; Detect Clicked Item
 				;Gdip_SaveBitmapToFile(pBMScreen, "empty" A_index ".png")
 				if (Gdip_ImageSearch(pBMScreen, bitmaps["MMBorder"], , , , 8, 20, 1, , 2) = 1) {
-					if (Gdip_ImageSearch(pBMScreen, bitmaps["MMEmptyTile"], , 25, 10, , , 1, , 2) != 1) {
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["MMEmptyTile"], , 25, 10, , , 1, , 2) = 0) {
 						MMItemOAC := 1
 						Gdip_DisposeImage(pBMScreen)
 						break
@@ -13008,8 +13036,14 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 			Sleep 300
 
 			if(MMItemOAC=1 && PairFoundOAC!=1 && (A_Index=1 || (A_Index=2 && MatchFoundOAC!=1))) {
+				if IsInteger(StoreItemOAC[Tile]) && StoreItemOAC[Tile] > 0
+					Gdip_DisposeImage(StoreItemOAC[Tile])
 				StoreItemOAC[Tile] := Gdip_BitmapFromScreen(TileXCordOAC-25 "|" TileYCordOAC-25 "|50|50") ; Detect Clicked Item
 				;nm_CreateFolder(path := A_WorkingDir "\MMScreenshots"), Gdip_SaveBitmapToFile(StoreItemOAC[Tile], path "\image" Tile ".png") ; comment out this line for public release
+				if StoreItemOAC[Tile] <= 0 {
+					StoreItemOAC[Tile] := "", stopped := true
+					break 2
+				}
 				for item, data in MemoryMatch {
   					if ((MemoryMatchGame && (%item%MatchIgnore & MemoryMatchGames[MemoryMatchGame].bit)) || (!MemoryMatchGame && (%item%MatchIgnore = data.games))) {
 						loop 2 {
@@ -13036,7 +13070,7 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 					Tile:=MMTempTile2OAC
 				}
 			} else {
-				if((Gdip_ImageSearch(StoreitemOAC[Click1Tile], StoreitemOAC[Tile], , , , , , 10, , 2) = 1) && PairFoundOAC!=1 && MatchFoundOAC!=1) {
+				if(IsInteger(StoreItemOAC[Click1Tile]) && StoreItemOAC[Click1Tile] > 0 && IsInteger(StoreItemOAC[Tile]) && StoreItemOAC[Tile] > 0 && (Gdip_ImageSearch(StoreitemOAC[Click1Tile], StoreitemOAC[Tile], , , , , , 10, , 2) = 1) && PairFoundOAC!=1 && MatchFoundOAC!=1) {
 					Gdip_DisposeImage(StoreitemOAC[Click1Tile]), StoreitemOAC[Click1Tile]:=0 ;"claimed"
 					Gdip_DisposeImage(StoreitemOAC[Tile]), StoreitemOAC[Tile]:=0 ;"claimed"
 					Continue
@@ -13061,18 +13095,49 @@ nm_SolveMemoryMatch(MemoryMatchGame:="") {
 
 	MouseMove windowX+350, windowY+GetYOffset()+100
 	Sleep 1200
+	if stopped {
+		nm_setStatus("Ended", "Memory Match board or tile was not readable")
+		return
+	}
 	nm_setStatus("Collected", (MemoryMatchGame ? (MemoryMatchGame " ") : "") "Memory Match")
 
 	; wait for window to close
 	Loop 50 {
-		pBMScreen := Gdip_BitmapFromScreen(middleX-250 "|" middleY-210 "|500|50")
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["MMTitle"], , , , , , 8) = 0) {
-			Gdip_DisposeImage(pBMScreen)
+		if !nm_MemoryMatchBoard()
 			break
-		}
-		Gdip_DisposeImage(pBMScreen)
 		Sleep 250
 	}
+}
+nm_MemoryMatchBoard(bounds := 0) {
+	GetRobloxClientPos()
+	if IsObject(bounds) && (windowX != bounds[1] || windowY != bounds[2] || windowWidth != bounds[3] || windowHeight != bounds[4])
+		return 0
+	if (windowWidth < 500 || windowHeight < 420)
+		return 0
+	pBM := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-210 "|500|50")
+	if pBM <= 0
+		return 0
+	try {
+		if (Gdip_ImageSearch(pBM, bitmaps["MMTitleWide"],,,,,,8) = 1)
+			return 20
+		if (Gdip_ImageSearch(pBM, bitmaps["MMTitle"],,,,,,8) = 1)
+			return 16
+		return 0
+	} finally Gdip_DisposeImage(pBM)
+}
+nm_MemoryMatchNextTile(items, ignored, count, first := 0) {
+	unseen := [], known := [], other := []
+	Loop count {
+		i := A_Index
+		if (i = first)
+			continue
+		if (items[i] = "")
+			unseen.Push(i)
+		else if IsInteger(items[i]) && items[i] > 0
+			(ignored[i] ? other : known).Push(i)
+	}
+	choices := unseen.Length ? unseen : known.Length ? known : other
+	return choices.Length ? choices[Random(1, choices.Length)] : 0
 }
 nm_Honeystorm(fromSnowMachine:=0){
 	global HoneystormCheck, LastHoneyStorm
@@ -13172,6 +13237,36 @@ nm_HoneyLB(){ ;Daily Honey LB
 		}
 	}
 }
+nm_HidePrinterTimers() {
+	hidden := [], previous := A_DetectHiddenWindows
+	DetectHiddenWindows 1
+	try {
+		timerPath := A_WorkingDir "\submacros\PlanterTimers.ahk"
+		Loop Files timerPath
+			timerPath := A_LoopFileFullPath
+		if !(script := WinExist(timerPath " ahk_class AutoHotkey"))
+			return hidden
+		pid := WinGetPID("ahk_id " script)
+		for timer in WinGetList("ahk_class AutoHotkeyGUI ahk_pid " pid) {
+			try {
+				if !DllCall("IsWindowVisible", "Ptr", timer)
+					continue
+				WinGetPos &x, &y, &w, &h, "ahk_id " timer
+				if (x < windowX+windowWidth//2+300 && x+w > windowX+windowWidth//2-300
+					&& y < windowY+Max(4*windowHeight//10+240, windowHeight//2+100)
+					&& y+h > windowY+Min(4*windowHeight//10-60, windowHeight//2-52)) {
+					WinHide "ahk_id " timer
+					hidden.Push(timer)
+				}
+			} catch TargetError {
+				continue
+			}
+		}
+	} catch TargetError {
+		return hidden
+	} finally DetectHiddenWindows previous
+	return hidden
+}
 nm_StickerPrinter(){
 	global StickerPrinterCheck, LastStickerPrinter, StickerPrinterEgg
 
@@ -13188,59 +13283,66 @@ nm_StickerPrinter(){
 			nm_gotoCollect("stickerprinter")
 			searchRet := nm_imgSearch("e_button.png",30,"high")
 			If (searchRet[1] = 0) {
-				sendinput "{" SC_E " down}"
-				Sleep 100
-				sendinput "{" SC_E " up}"
-				Sleep 500 ;//todo: wait for GUI with timeout instead of fixed time
 				GetRobloxClientPos()
-				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
-				if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterCD"], , , , , , 10) = 1) {
-					Gdip_DisposeImage(pBMScreen)
-					nm_setStatus("Detected", "Sticker Printer on Cooldown")
-					Sleep 500
+				hiddenTimers := nm_HidePrinterTimers()
+				try {
 					sendinput "{" SC_E " down}"
 					Sleep 100
 					sendinput "{" SC_E " up}"
-					break
-				}
-				Gdip_DisposeImage(pBMScreen)
-				pos := Map("basic",-95, "silver",-40, "gold",15, "diamond",70, "mythic",125)
-				MouseMove windowX+windowWidth//2+pos[StrLower(StickerPrinterEgg)], windowY+4*windowHeight//10-20
-				Sleep 200
-				Click
-				Sleep 200
-				pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
-				if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterConfirm"], , , , , , 10) != 1) {
-					Gdip_DisposeImage(pBMScreen)
-					nm_setStatus("Error", "No Eggs left in inventory!`nSticker Printer has been disabled.")
-					StickerPrinterCheck := 0
-					Sleep 500
-					sendinput "{" SC_E " down}"
-					Sleep 100
-					sendinput "{" SC_E " up}"
-					break
-				}
-				Gdip_DisposeImage(pBMScreen)
-				MouseMove windowX+windowWidth//2+225, windowY+4*windowHeight//10+195
-				Sleep 200
-				Click
-				i := 0
-				loop 16 {
-					sleep 250
-					pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-52 "|500|150")
-					if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1) {
-						MouseMove windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1)-50, windowY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1)
-						sleep 150
-						Click
-						sleep 100
-						i++
-					} else if (i > 0) {
+					Sleep 500 ;//todo: wait for GUI with timeout instead of fixed time
+					GetRobloxClientPos()
+					pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterCD"], , , , , , 10) = 1) {
 						Gdip_DisposeImage(pBMScreen)
+						nm_setStatus("Detected", "Sticker Printer on Cooldown")
+						Sleep 500
+						sendinput "{" SC_E " down}"
+						Sleep 100
+						sendinput "{" SC_E " up}"
 						break
 					}
 					Gdip_DisposeImage(pBMScreen)
-					if (A_Index = 16)
+					pos := Map("basic",-95, "silver",-40, "gold",15, "diamond",70, "mythic",125)
+					MouseMove windowX+windowWidth//2+pos[StrLower(StickerPrinterEgg)], windowY+4*windowHeight//10-20
+					Sleep 200
+					Click
+					Sleep 200
+					pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2+150 "|" windowY+4*windowHeight//10+160 "|100|60")
+					if (Gdip_ImageSearch(pBMScreen, bitmaps["stickerprinterConfirm"], , , , , , 10) != 1) {
+						Gdip_DisposeImage(pBMScreen)
+						nm_setStatus("Error", "No Eggs left in inventory!`nSticker Printer has been disabled.")
+						StickerPrinterCheck := 0
+						Sleep 500
+						sendinput "{" SC_E " down}"
+						Sleep 100
+						sendinput "{" SC_E " up}"
 						break
+					}
+					Gdip_DisposeImage(pBMScreen)
+					MouseMove windowX+windowWidth//2+225, windowY+4*windowHeight//10+195
+					Sleep 200
+					Click
+					i := 0
+					loop 16 {
+						sleep 250
+						pBMScreen := Gdip_BitmapFromScreen(windowX+windowWidth//2-250 "|" windowY+windowHeight//2-52 "|500|150")
+						if (Gdip_ImageSearch(pBMScreen, bitmaps["yes"], &pos, , , , , 2, , 2) = 1) {
+							MouseMove windowX+windowWidth//2-250+SubStr(pos, 1, InStr(pos, ",")-1)-50, windowY+windowHeight//2-52+SubStr(pos, InStr(pos, ",")+1)
+							sleep 150
+							Click
+							sleep 100
+							i++
+						} else if (i > 0) {
+							Gdip_DisposeImage(pBMScreen)
+							break
+						}
+						Gdip_DisposeImage(pBMScreen)
+						if (A_Index = 16)
+							break
+					}
+				} finally {
+					for timer in hiddenTimers
+						try WinShow "ahk_id " timer
 				}
 				Sleep 8000 ; wait for printer to print
 				nm_setStatus("Collected", "Sticker Printer (" StickerPrinterEgg " Egg)")
@@ -13656,12 +13758,15 @@ nm_AutoFieldBoost(fieldName){
 		, AFBHoursLimit, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, MainGui, AFBGui
 		, LastBlueBoost, LastRedBoost, LastMountainBoost
 
-	if(not AutoFieldBoostActive)
+	if(not AutoFieldBoostActive) {
+		AFBrollingDice := AFBuseGlitter := AFBuseBooster := 0
 		return
+	}
 	if(AFBHoursLimitEnable && (nowUnix()-serverStart)>(AFBHoursLimit*60*60)){
 		MainGui["AutoFieldBoostButton"].Text := "Auto Field Boost`n[OFF]"
 		try AFBGui["AutoFieldBoostActive"].Value := 0
 		IniWrite AutoFieldBoostActive := 0, "settings\nm_config.ini", "Boost", "AutoFieldBoostActive"
+		AFBrollingDice := AFBuseGlitter := AFBuseBooster := 0
 		return
 	}
 
@@ -13671,6 +13776,7 @@ nm_AutoFieldBoost(fieldName){
 			IniWrite FieldBoostStacks:=0, "settings\nm_config.ini", "Boost", "FieldBoostStacks"
 			IniWrite FieldLastBoostedBy:="None", "settings\nm_config.ini", "Boost", "FieldLastBoostedBy"
 		}
+		AFBuseBooster:=0
 		;free booster first
 		if(AFBFieldEnable){
 			;determine which booster applies
@@ -13678,6 +13784,8 @@ nm_AutoFieldBoost(fieldName){
 				boosterTimer := Last%booster%Boost
 				if (nowUnix() - boosterTimer > 2700){
 					AFBuseBooster:=1
+					AFBuseGlitter:=0
+					return
 				}
 			}
 		}
@@ -13697,40 +13805,43 @@ nm_AutoFieldBoost(fieldName){
 		return
 	}
 }
-nm_fieldBoostCheck(fieldName, variant:=0){
-
+nm_fieldBoostCheck(fieldName, variant:=0, &readable:=false){
+	readable := false
 	GetRobloxClientPos(hwnd:=GetRobloxHWND())
-	pBMScreen:=Gdip_BitmapFromScreen(windowX "|" windowY + GetYOffset(hwnd) + 36 "|" windowWidth "|" 38)
-	loop Floor(windowWidth/38) ; flooring because you won't have half of an icon
-	{ 
-		ico:=(A_Index-1)*38
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],,ico,,ico+38,,(variant=1 || variant=0) ? 35 : 50)) ; testing tighter variation
-		{ ; check with original 30 not 35
-			p:=PixelGetColor(ico+windowX, windowY+GetYOffset(hwnd)+73)
-			if ((p & 0xFF0000 >= 0xa60000) && (p & 0xFF0000 <= 0xcf0000)) ; a6b2b8-blackBG|cfdbe1-whiteBG
-			&& ((p & 0x00FF00 >= 0x00b200) && (p & 0x00FF00 <= 0x00db00))
-			&& ((p & 0x0000FF >= 0x0000b8) && (p & 0x0000FF <= 0x0000e1))
-				continue ; winds: keep searching, winds and booster may both have boosted the field
-			else if ((p & 0xFF0000 >= 0xb80000) && (p & 0xFF0000 <= 0xe10000)) ; b8a43a-blackBG|e1cd63-whiteBG
-				&& ((p & 0x00FF00 >= 0x00a400) && (p & 0x00FF00 <= 0x00cd00))
-				&& ((p & 0x0000FF >= 0x00003a) && (p & 0x0000FF <= 0x000063)) 
-				{
-					Gdip_DisposeImage(pBMScreen)
-					return 1 ; booster
-				}	
+	pBMScreen := Gdip_BitmapFromScreen(windowX "|" windowY + GetYOffset(hwnd) + 36 "|" windowWidth "|38")
+	if !pBMScreen
+		return 0
+	try {
+		loop Floor(windowWidth/38) {
+			ico := (A_Index-1)*38
+			result := Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],
+				, ico, , ico+38, , (variant=1 || variant=0) ? 35 : 50)
+			if (result < 0)
+				return 0
+			if (result != 1)
+				continue
+			color := Gdip_GetPixel(pBMScreen, ico, 37) & 0xFFFFFF
+			red := (color >> 16) & 255, green := (color >> 8) & 255, blue := color & 255
+			if (red >= 0xb8 && red <= 0xe1 && green >= 0xa4 && green <= 0xcd && blue >= 0x3a && blue <= 0x63) {
+				readable := true
+				return 1
+			}
 		}
-	}
-	Gdip_DisposeImage(pBMScreen)
-	return 0
-
+		readable := true
+		return 0
+	} finally Gdip_DisposeImage(pBMScreen)
 }
 nm_fieldBoostBooster(){
 	global CurrentField, FieldBooster, AFBuseBooster, FieldLastBoosted, FieldBoostStacks, FieldLastBoostedBy, FieldNextBoostedBy, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, FieldBoostStacks
 	if (!AFBuseBooster)
 		return
 	AFBuseBooster:=0
-	nm_setStatus(0, "Boosting Field: Booster")
+	if (!AutoFieldBoostActive || !AFBFieldEnable)
+		return
 	booster := FieldBooster[StrLower(CurrentField)].booster
+	if (booster = "none" || nowUnix()-Last%booster%Boost <= 2700)
+		return
+	nm_setStatus(0, "Boosting Field: Booster")
 	if(booster="blue") {
 		boosterName:="bbooster"
 		nm_toBooster("blue")
@@ -13743,6 +13854,7 @@ nm_fieldBoostBooster(){
 		boosterName:="mbooster"
 		nm_toBooster("mountain")
 	}
+	AFBuseBooster:=0
 	Sleep 5000
 	;check if gathering field was boosted
 	if(nm_fieldBoostCheck(CurrentField)) {
@@ -13776,8 +13888,13 @@ nm_fieldBoostBooster(){
 nm_fieldBoostDice(){
 	global AFBrollingDice, AFBdiceUsed, AFBDiceLimit, AFBDiceLimitEnable, CurrentField, FieldBooster, boostTimer
 		, FieldLastBoosted, FieldLastBoostedBy, FieldNextBoostedBy, FieldBoostStacks, AutoFieldBoostRefresh
-		, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, AFBDiceHotbar, MainGui, AFBGui
-	if(not nm_fieldBoostCheck(CurrentField)) {
+		, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, AFBDiceHotbar, MainGui, AFBGui, AutoFieldBoostActive
+	if (HiveConfirmed || state = "Converting" || !AutoFieldBoostActive || !AFBDiceEnable)
+		return
+	boosted := nm_fieldBoostCheck(CurrentField, 0, &readable)
+	if !readable
+		return
+	if !boosted {
 		send "{sc00" AFBDiceHotbar+1 "}"
 		AFBdiceUsed:=AFBdiceUsed+1
 		IniWrite AFBdiceUsed, "settings\nm_config.ini", "Boost", "AFBdiceUsed"
@@ -16088,13 +16205,14 @@ nm_Bugrun(){
 		}
 	}
 }
-nm_Mondo(){
-	global youDied
+nm_Mondo(retry := false){
+	global youDied, ConvertGatherFlag
 	;mondo buff
 	global MondoBuffCheck, PMondoGuid, LastGuid, MondoAction, LastMondoBuff, PMondoGuidComplete, GatherFieldBoostedStart, LastGlitter
 	if nm_NightInterrupt()
 		return
-	if nm_MondoInterrupt(){
+	if (nm_MondoInterrupt() || retry){
+		spawnHour := FormatTime(A_NowUTC, "yyyyMMddHH")
 		mondobuff := nm_imgSearch("mondobuff.png",50,"buff")
 		If (mondobuff[1] = 0) {
 			LastMondoBuff:=nowUnix()
@@ -16113,7 +16231,7 @@ nm_Mondo(){
 		global MondoSecs, MondoLootDirection
 		nm_updateAction("Mondo")
 		MoveSpeedFactor:=round(18/MoveSpeedNum, 2)
-		while(repeat){
+		while(repeat && FormatTime(A_NowUTC, "m") < 15){
 			nm_Reset(0, 2000, 0)
 			nm_setStatus("Traveling", ("Mondo (" . MondoAction . ")"))
 			nm_gotoPlanter("mountain top")
@@ -16121,6 +16239,8 @@ nm_Mondo(){
 			KeyWait "F14", "D T5 L"
 			KeyWait "F14", "T30 L"
 			nm_endWalk()
+			if youDied
+				break
 			;;; (+) new conditions probably
 			found := 0
 			mondoChick := 0
@@ -16176,6 +16296,7 @@ nm_Mondo(){
 					else if(MondoAction="Guid" && PMondoGuid=1 && PMondoGuidComplete=0){
 						repeat:=0
 						PMondoGuidComplete:=1
+						utc_min := FormatTime(A_NowUTC, "m")
 						while ((nowUnix()-LastGuid)<=210 && utc_min<15 && A_Index<210) { ;3.5 mins since guid
 							if(youDied)
 								break
@@ -16191,6 +16312,8 @@ nm_Mondo(){
 						repeat:=1
 						success:=count:=0
 						loop 3600 { ;15 mins
+							if youDied
+								break
 							mondoDead:=nm_HealthDetection()
 							if ((mondoDead.Length = 0) || (mondoDead.Length = 1 && mondoDead[1] = 100.00)) {
 								if (++count >= 60) { ; Changed from 5 seconds to 15 seconds for when mondo goes off screen
@@ -16202,11 +16325,11 @@ nm_Mondo(){
 								count := 0
 							if(Mod(A_Index, 4)=0) { ; 1 second
 								nm_autoFieldBoost(CurrentField)
+								if(youDied)
+									break
 								if(nm_NightInterrupt() || AFBrollingDice || AFBuseGlitter || AFBuseBooster) {
 									return
 								}
-								if(youDied)
-									break
 								if(FormatTime(A_NowUTC, "m")>14) {
 									repeat:=0
 									break
@@ -16226,7 +16349,7 @@ nm_Mondo(){
 							}
 							sleep 250
 						}
-						if (success = 1) {
+						if (success = 1 && !youDied) {
 							nm_setStatus("Defeated", "Mondo")
 							repeat := 0
 							if !(MondoLootDirection = "Ignore") {
@@ -16257,7 +16380,7 @@ nm_Mondo(){
 									click "down"
 								DllCall("GetSystemTimeAsFileTime","int64p",&s:=0)
 								n := s, f := s+450000000 ; 45 seconds loot timeout
-								while ((n < f) && (A_Index <= 12)) {
+								while ((n < f) && (A_Index <= 12) && !youDied) {
 									nm_loot(16, 5, Mod(A_Index, 2) = 1 ? afc : tc)
 									DllCall("GetSystemTimeAsFileTime","int64p",&n)
 								}
@@ -16272,9 +16395,22 @@ nm_Mondo(){
 				Break
 			}
 
+			if (youDied || !mondoChick)
+				break
 		}
 		LastMondoBuff:=nowUnix()
 		IniWrite LastMondoBuff, "settings\nm_config.ini", "Collect", "LastMondoBuff"
+		if youDied {
+			nm_setStatus("Aborting", "Mondo - Died")
+			if (MondoAction = "Guid")
+				PMondoGuidComplete := 1
+			ConvertGatherFlag := 1
+			nm_Reset(0, 2000, 1)
+			if (!retry && MondoAction = "Kill" && MondoBuffCheck && HiveConfirmed
+				&& FormatTime(A_NowUTC, "yyyyMMddHH") = spawnHour && FormatTime(A_NowUTC, "m") < 14
+				&& !nm_NightInterrupt() && !AFBrollingDice && !AFBuseGlitter && !AFBuseBooster)
+				nm_Mondo(true)
+		}
 	}
 }
 nm_GoGather(){
@@ -17140,11 +17276,6 @@ nm_convert(){
 		nm_setStatus("Converting", "Backpack")
 		while (((BackpackConvertTime := nowUnix()-ConvertStartTime)<300) && (BackpackPercentFiltered>0)) { ;5 mins
 			Sleep 1000
-			nm_AutoFieldBoost(currentField)
-			if(AFBuseGlitter || AFBuseBooster) {
-				nm_setStatus("Interrupted", "AFB")
-				return
-			}
 			if (disconnectcheck()) {
 				return
 			}
@@ -17201,11 +17332,6 @@ nm_convert(){
 			inactiveHoney:=0
 			nm_setStatus("Converting", "Balloon")
 			while((BalloonConvertTime := nowUnix()-BalloonStartTime)<600) { ;10 mins
-				nm_AutoFieldBoost(currentField)
-				if(AFBuseGlitter || AFBuseBooster) {
-					nm_setStatus("Interrupted", "AFB")
-					return
-				}
 				inactiveHoney := (nm_activeHoney() = 0) ? inactiveHoney + 1 : 0
 				if(((EnzymesKey!="none") && (!PFieldBoosted || (PFieldBoosted && GatherFieldBoosted))) && (nowUnix()-LastEnzymes)>600 && (inactiveHoney = 0)) {
 					Send "{" EnzymesKey "}"
@@ -18420,7 +18546,7 @@ VBEnd(vic){
  * Create a movement with vicious bee detection. Used in both find and attack VB
  * @returns {{result: found/dead/retry/0, reason?: youDied/inactivehoney}}
  */
-WalkwithVBCheck(movement, search:=true){
+WalkwithVBCheck(movement, search:=true, field:=""){
     local inactiveHoney := 0
     nm_OpenChat() ; just to ensure that chat is open 😭
     start := nowUnix()
@@ -18428,7 +18554,11 @@ WalkwithVBCheck(movement, search:=true){
     KeyWait "F14", "D T5 L"
     while (GetKeyState("F14") && nowUnix()-start <= 20) ;20sec timeout
     {
-        vic := nm_VBCheck()
+        vic := nm_VBCheck(field, search)
+		if youDied {
+			nm_endWalk()
+			return {result:VBResults.retry, reason:VBReasons.youDied}
+		}
 		switch {
 			case vic.result:
 				if (!search && vic.result = VBResults.found) ; we dont care if VB is detected during atk phase
@@ -18441,9 +18571,6 @@ WalkwithVBCheck(movement, search:=true){
 					nm_endWalk()
 					return {result: VBResults.retry, reason: VBReasons.inactivehoney}
             	}
-			case youDied: ; retry field
-				nm_endWalk()
-            	return {result: VBResults.retry, reason: VBReasons.youDied}
 		}
     }
     nm_endWalk()
@@ -18456,7 +18583,7 @@ WalkwithVBCheck(movement, search:=true){
  */
 SearchforVB(movement, field){
 	static inactiveHoney := 0
-	vic := WalkwithVBCheck(movement)
+	vic := WalkwithVBCheck(movement, true, field)
 	switch vic.result {
 		case VBResults.found: ; VB found bitmap found
 			return nm_killVB(field)
@@ -18497,7 +18624,7 @@ nm_killVB(field) {
 	)
 
 	while nowUnix()-VBfieldStart <= 300 { ; 5 minute timeout
-		switch (vic := WalkwithVBCheck(battlepattern, false)).result {
+		switch (vic := WalkwithVBCheck(battlepattern, false, field)).result {
 			case VBResults.retry:
 				nm_setStatus("Retrying", "Vicious Bee (" field ")")
 				return vic
@@ -18515,7 +18642,7 @@ nm_killVB(field) {
  * Vicious bee detection using chat
  * @returns {{result: found/dead/0}}
  */
-nm_VBCheck() {
+nm_VBCheck(field:="", search:=true) {
 	static LastRan := 0
 	GetRobloxClientPos()
 	offsetY := GetYOffset()
@@ -18529,21 +18656,28 @@ nm_VBCheck() {
 	}
 
 	pBMScreen := Gdip_BitmapFromScreen(windowX + windowWidth - 8 - (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" windowY+offsetY+40 "|" (windowWidth>=1195 ? 475 : windowWidth/2.5) "|" (windowHeight>=1156 ? 334 : windowHeight/3.464))
-    
-	for , bitmap in bitmaps["viciousbee"]["dead"] {
-        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
-            Gdip_DisposeImage(pBMScreen)
-            return { result: VBResults.dead }
-        }
-    }
-    for , bitmap in bitmaps["viciousbee"]["found"] {
-        if Gdip_ImageSearch(pBMScreen, bitmap,,,,,, 5) {
-            Gdip_DisposeImage(pBMScreen)
-            return { result: VBResults.found }
-        }
-    }
-    Gdip_DisposeImage(pBMScreen)
-    return { result: 0 }
+	if pBMScreen <= 0
+		return { result: 0 }
+
+	try {
+		for , bitmap in bitmaps["viciousbee"]["dead"]
+			if (Gdip_ImageSearch(pBMScreen, bitmap,,,,,,5) = 1)
+				return {result:VBResults.dead}
+		if search {
+			candidates := []
+			for , bitmap in bitmaps["viciousbee"]["found"] {
+				if (Gdip_ImageSearch(pBMScreen, bitmap, &locations,,,,,5,,1,0) <= 0)
+					continue
+				Loop Parse locations, "`n" {
+					point := StrSplit(A_LoopField, ",")
+					candidates.Push({x:Integer(point[1]), y:Integer(point[2]), h:Gdip_GetImageHeight(bitmap)})
+				}
+			}
+			if candidates.Length && nm_VBConfirmAnnouncement(pBMScreen, candidates, field)
+				return {result:VBResults.found}
+		}
+		return {result:0}
+	} finally Gdip_DisposeImage(pBMScreen)
 }
 ;//todo: make it work if someone has chat disabled
 ; open roblox chat
@@ -22761,20 +22895,51 @@ nm_Pause(*){
 ;AUTOCLICKER
 autoclicker(*){
 	global ClickDuration, ClickDelay
-	static toggle:=0
-	toggle := !toggle
+	static toggle:=0, held:=0, count:=0
+	Critical
+	try {
+		SetTimer Tick, 0
+		toggle := !toggle
+		if !toggle {
+			held := 0
+			sendinput "{Blind}{click up}"
+			return
+		}
+		for var, default in Map("ClickDuration", 50, "ClickDelay", 10)
+			if !IsNumber(%var%)
+				%var% := default
+		held := count := 0
+		Tick()
+	} finally Critical "Off"
 
-	for var, default in Map("ClickDuration", 50, "ClickDelay", 10)
-		if !IsNumber(%var%)
-			%var% := default
-
-	while ((ClickMode || (A_Index <= ClickCount)) && toggle) {
-		sendinput "{click down}"
-		sleep ClickDuration
-		sendinput "{click up}"
-		sleep ClickDelay
+	Tick() {
+		Critical
+		try {
+			if !toggle
+				return
+			if held {
+				sendinput "{Blind}{click up}"
+				held := 0
+				if (!ClickMode && count >= ClickCount) {
+					toggle := 0
+					return
+				}
+			} else {
+				if (!ClickMode && count >= ClickCount) {
+					toggle := 0
+					return
+				}
+				sendinput "{Blind}{click down}"
+				held := 1
+				count++
+			}
+			SetTimer Tick, -Max(1, Round(held ? ClickDuration : ClickDelay))
+		} catch {
+			toggle := held := 0
+			sendinput "{Blind}{click up}"
+			throw
+		} finally Critical "Off"
 	}
-	toggle := 0
 }
 ;TIMERS
 timers(*) => ba_showPlanterTimers()
