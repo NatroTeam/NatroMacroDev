@@ -11082,10 +11082,8 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	nm_AutoFieldBoost(currentField) ; start rolling dice in background() if needed
 
 	; High priority interrupts. Will interrupt any reset not marked with the checkAll flag. Added to avoid infinite recursion
-	if checkAll {
-		nm_fieldBoostBooster()
+	if checkAll
 		nm_Night()
-	}
 	if(force=1) {
 		HiveConfirmed:=0
 	}
@@ -11235,6 +11233,11 @@ nm_Reset(checkAll:=1, wait:=2000, convert:=1, force:=0){
 	}
 	;convert
 	(convert=1) && nm_convert()
+	if checkAll {
+		nm_fieldBoostBooster()
+		if !HiveConfirmed
+			return nm_Reset(0, wait, 0)
+	}
 	;ensure minimum delay has been met
 	if((nowUnix()-resetTime)<wait) {
 		remaining:=floor((wait-(nowUnix()-resetTime))/1000) ;seconds
@@ -13714,12 +13717,15 @@ nm_AutoFieldBoost(fieldName){
 		, AFBHoursLimit, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, MainGui, AFBGui
 		, LastBlueBoost, LastRedBoost, LastMountainBoost
 
-	if(not AutoFieldBoostActive)
+	if(not AutoFieldBoostActive) {
+		AFBrollingDice := AFBuseGlitter := AFBuseBooster := 0
 		return
+	}
 	if(AFBHoursLimitEnable && (nowUnix()-serverStart)>(AFBHoursLimit*60*60)){
 		MainGui["AutoFieldBoostButton"].Text := "Auto Field Boost`n[OFF]"
 		try AFBGui["AutoFieldBoostActive"].Value := 0
 		IniWrite AutoFieldBoostActive := 0, "settings\nm_config.ini", "Boost", "AutoFieldBoostActive"
+		AFBrollingDice := AFBuseGlitter := AFBuseBooster := 0
 		return
 	}
 
@@ -13729,6 +13735,7 @@ nm_AutoFieldBoost(fieldName){
 			IniWrite FieldBoostStacks:=0, "settings\nm_config.ini", "Boost", "FieldBoostStacks"
 			IniWrite FieldLastBoostedBy:="None", "settings\nm_config.ini", "Boost", "FieldLastBoostedBy"
 		}
+		AFBuseBooster:=0
 		;free booster first
 		if(AFBFieldEnable){
 			;determine which booster applies
@@ -13736,6 +13743,8 @@ nm_AutoFieldBoost(fieldName){
 				boosterTimer := Last%booster%Boost
 				if (nowUnix() - boosterTimer > 2700){
 					AFBuseBooster:=1
+					AFBuseGlitter:=0
+					return
 				}
 			}
 		}
@@ -13762,9 +13771,9 @@ nm_fieldBoostCheck(fieldName, variant:=0){
 	loop Floor(windowWidth/38) ; flooring because you won't have half of an icon
 	{ 
 		ico:=(A_Index-1)*38
-		if (Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],,ico,,ico+38,,(variant=1 || variant=0) ? 35 : 50)) ; testing tighter variation
+		if (Gdip_ImageSearch(pBMScreen, bitmaps["boost"][StrReplace(fieldName, " ") variant],,ico,,ico+38,,(variant=1 || variant=0) ? 35 : 50) = 1)
 		{ ; check with original 30 not 35
-			p:=PixelGetColor(ico+windowX, windowY+GetYOffset(hwnd)+73)
+			p:=Gdip_GetPixel(pBMScreen, ico, 37) & 0xFFFFFF
 			if ((p & 0xFF0000 >= 0xa60000) && (p & 0xFF0000 <= 0xcf0000)) ; a6b2b8-blackBG|cfdbe1-whiteBG
 			&& ((p & 0x00FF00 >= 0x00b200) && (p & 0x00FF00 <= 0x00db00))
 			&& ((p & 0x0000FF >= 0x0000b8) && (p & 0x0000FF <= 0x0000e1))
@@ -13787,8 +13796,12 @@ nm_fieldBoostBooster(){
 	if (!AFBuseBooster)
 		return
 	AFBuseBooster:=0
-	nm_setStatus(0, "Boosting Field: Booster")
+	if (!AutoFieldBoostActive || !AFBFieldEnable)
+		return
 	booster := FieldBooster[StrLower(CurrentField)].booster
+	if (booster = "none" || nowUnix()-Last%booster%Boost <= 2700)
+		return
+	nm_setStatus(0, "Boosting Field: Booster")
 	if(booster="blue") {
 		boosterName:="bbooster"
 		nm_toBooster("blue")
@@ -13801,6 +13814,7 @@ nm_fieldBoostBooster(){
 		boosterName:="mbooster"
 		nm_toBooster("mountain")
 	}
+	AFBuseBooster:=0
 	Sleep 5000
 	;check if gathering field was boosted
 	if(nm_fieldBoostCheck(CurrentField)) {
@@ -13834,7 +13848,9 @@ nm_fieldBoostBooster(){
 nm_fieldBoostDice(){
 	global AFBrollingDice, AFBdiceUsed, AFBDiceLimit, AFBDiceLimitEnable, CurrentField, FieldBooster, boostTimer
 		, FieldLastBoosted, FieldLastBoostedBy, FieldNextBoostedBy, FieldBoostStacks, AutoFieldBoostRefresh
-		, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, AFBDiceHotbar, MainGui, AFBGui
+		, AFBFieldEnable, AFBDiceEnable, AFBGlitterEnable, AFBDiceHotbar, MainGui, AFBGui, AutoFieldBoostActive
+	if (HiveConfirmed || state = "Converting" || !AutoFieldBoostActive || !AFBDiceEnable)
+		return
 	if(not nm_fieldBoostCheck(CurrentField)) {
 		send "{sc00" AFBDiceHotbar+1 "}"
 		AFBdiceUsed:=AFBdiceUsed+1
@@ -17198,11 +17214,6 @@ nm_convert(){
 		nm_setStatus("Converting", "Backpack")
 		while (((BackpackConvertTime := nowUnix()-ConvertStartTime)<300) && (BackpackPercentFiltered>0)) { ;5 mins
 			Sleep 1000
-			nm_AutoFieldBoost(currentField)
-			if(AFBuseGlitter || AFBuseBooster) {
-				nm_setStatus("Interrupted", "AFB")
-				return
-			}
 			if (disconnectcheck()) {
 				return
 			}
@@ -17259,11 +17270,6 @@ nm_convert(){
 			inactiveHoney:=0
 			nm_setStatus("Converting", "Balloon")
 			while((BalloonConvertTime := nowUnix()-BalloonStartTime)<600) { ;10 mins
-				nm_AutoFieldBoost(currentField)
-				if(AFBuseGlitter || AFBuseBooster) {
-					nm_setStatus("Interrupted", "AFB")
-					return
-				}
 				inactiveHoney := (nm_activeHoney() = 0) ? inactiveHoney + 1 : 0
 				if(((EnzymesKey!="none") && (!PFieldBoosted || (PFieldBoosted && GatherFieldBoosted))) && (nowUnix()-LastEnzymes)>600 && (inactiveHoney = 0)) {
 					Send "{" EnzymesKey "}"
