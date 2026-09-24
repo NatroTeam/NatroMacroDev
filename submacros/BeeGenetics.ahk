@@ -773,8 +773,11 @@ blc_Feed(item, amount, beeX, beeY) {
 	Click x+140, y+5
 	blc_Wait(100)
 	SendEvent "^a"
-	SendText amount
 	blc_Wait(100)
+	Loop Parse amount {
+		SendEvent "{Text}" A_LoopField
+		blc_Wait(100)
+	}
 	Click x, y
 	MouseMove windowX+windowWidth-30, windowY+windowHeight-30
 	deadline := A_TickCount + 2500
