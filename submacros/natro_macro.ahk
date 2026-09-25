@@ -9208,6 +9208,7 @@ blc_mutations(*) {
 		"BeeAbilityRateCheck", "BeeAbilityRateMin",
 		"BeeGatherPollenCheck", "BeeGatherPollenMin")
 	getConfig()
+	SSA_NormalizeSidePassives()
 	SSA_MigrateStatMins()
 	SSA_NormalizeStatChecks()
 	SSA_EnforceStatMax()
@@ -9477,6 +9478,8 @@ blc_mutations(*) {
 				if (ssaIconMap.Has(j.text) && bitmaps.Has(ssaIconMap[j.text]))
 					Gdip_DrawImage(G, bitmaps[ssaIconMap[j.text]], ssaSideX + ssaIconOffset, y+1, ssaIconSize, ssaIconSize)
 				Gdip_TextToGraphics(G, j.text, "s13 x" ssaSideX+ssaLabelOffset " y" y " vCenter c" (brush := Gdip_BrushCreateSolid("0xFFFEC6DF")), "Comic Sans MS", ssaLabelWidth, 20), Gdip_DeleteBrush(brush)
+				if (!DoublePassiveCheck || j.text = mainPassive)
+					Gdip_FillRectangle(G, brush:=Gdip_BrushCreateSolid("0xB0131416"), ssaSideX-2, y-2, ssaLabelOffset+ssaLabelWidth+2, ssaToggleH+4), Gdip_DeleteBrush(brush)
 			}
 			for i, j in ssaStats {
 				y := ssaStartY + (A_Index-1) * ssaRowH
@@ -9726,6 +9729,15 @@ UpdateHoneyGui() {
 			}
 		}
 	}
+	SSA_NormalizeSidePassives() {
+		global mainPassive, ssaSidePassives, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck, StarShowerCheck
+		for passive in ssaSidePassives {
+			if (passive.text = mainPassive && %passive.name%) {
+				%passive.name% := 0
+				IniWrite(0, ".\settings\mutations.ini", "ssa", passive.name)
+			}
+		}
+	}
 	SSA_ShowStatLimitTip(message := "Max 5 stats allowed.") {
 		ToolTip(message)
 		SetTimer(SSA_ClearStatLimitTip, -1500)
@@ -9748,7 +9760,7 @@ UpdateHoneyGui() {
 		, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
 		, StarShowerCheck, WhitePollenCheck, RedPollenCheck, BluePollenCheck, ConvertRateCheck
 		, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
-		, DoublePassiveCheck, PollenCheck, ssaMainLookup, ssaAdvanced, ssaStatsInputs, ssaStatMinLookup, ssaSafety
+		, DoublePassiveCheck, PollenCheck, ssaMainLookup, ssaSidePassives, ssaAdvanced, ssaStatsInputs, ssaStatMinLookup, ssaSafety
 		MouseGetPos(,,,&ctrl,2)
 		if !ctrl
 			return
@@ -9771,7 +9783,7 @@ UpdateHoneyGui() {
 			case "help":
 				ReplaceSystemCursors()
 				if (guiMode = "ssa")
-					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Stand at the Supreme Star Amulet generator with its E prompt visible, or leave an SSA result open``n- Select your main passive and side passives``n- Select up to 5 stats in the Stats column (Advanced: set Min %; 0 = ignore)``n``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nSafety: Enable the Safety toggle to stop the roller if OCR can`'t verify a full roll before timeout.``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
+					Msgbox("This feature lets you roll Supreme Star Amulets until the stats and passives you want are found.``n``nTo use:``n- Stand at the Supreme Star Amulet generator with its E prompt visible, or leave an SSA result open``n- Select your main passive (side passives apply only with Double Passive enabled)``n- Select up to 5 stats in the Stats column (Advanced: set Min %; 0 = ignore)``n``n- Choose if you want Double Passive (500b)``n- Click Roll and let it run``n``nTo stop:``n- Press the escape key``n``nSafety: Enable the Safety toggle to stop the roller if OCR can`'t verify a full roll before timeout.``n``nNote: the macro stops when it finds a match so you can choose to keep it in-game.", "SSA Roller Help", "0x40040")
 				else
 					Msgbox("This feature allows you to roll royal jellies until you obtain your specified bees and/or mutations!``n``nTo use:``n- Select the bees and mutations you want``n- Make sure your in-game Auto-Jelly settings are right``n- Put a neonberry on the bee you want to change (if trying ``n  to obtain a mutated bee) ``n- Use one royal jelly on the bee and click Yes``n- Click on Roll.``n``nTo stop: ``n- Press the escape key``n``nAdditional options:``n- Stop on Gifteds stops on any gifted bee, ``n  ignoring the mutation and your bee selection``n- Stop on Mythics stops on any mythic bee, ``n  ignoring the mutation and your bee selection", "Auto-Jelly Help", "0x40040")
 			case "mode":
@@ -9803,8 +9815,15 @@ UpdateHoneyGui() {
 					return
 				mainPassive := ssaMainLookup[mgui[ctrl].name]
 				IniWrite(mainPassive, ".\settings\mutations.ini", "ssa", "mainPassive")
-			case "PopStarCheck", "ScorchStarCheck", "GummyStarCheck", "GuidingStarCheck", "StarSawCheck", "StarShowerCheck"
-				, "DoublePassiveCheck":
+				SSA_NormalizeSidePassives()
+			case "PopStarCheck", "ScorchStarCheck", "GummyStarCheck", "GuidingStarCheck", "StarSawCheck", "StarShowerCheck":
+				if (guiMode != "ssa" || !DoublePassiveCheck)
+					return
+				for passive in ssaSidePassives
+					if (passive.name = mgui[ctrl].name && passive.text = mainPassive)
+						return
+				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "ssa", mgui[ctrl].name)
+			case "DoublePassiveCheck":
 				if (guiMode != "ssa")
 					return
 				IniWrite(%mgui[ctrl].name% ^= 1, ".\settings\mutations.ini", "ssa", mgui[ctrl].name)
@@ -10225,8 +10244,8 @@ UpdateHoneyGui() {
 		mainPassiveKey := StrReplace(StrReplace(StrLower(mainPassive), "star", ""), " ", "")
 		requiredStats := (selectedCount > 5) ? 5 : selectedCount
 		selectedSide := 0
-		for k, v in sidePassives
-			if (k != mainPassiveKey)
+		if doublePassive
+			for k, v in sidePassives
 				selectedSide += v
 		presentStats := Map(), foundStats := Map(), foundSide := Map(), parsedStats := Map()
 		mainPassiveFound := 0
@@ -10249,7 +10268,7 @@ UpdateHoneyGui() {
 			if (!mainPassiveFound && SSA_SidePassiveMatch(mainPassiveKey, tokens))
 				mainPassiveFound := 1
 			for i, j in sidePassives
-				if j && i != mainPassiveKey && !foundSide.Has(i) && SSA_SidePassiveMatch(i, tokens)
+				if doublePassive && j && !foundSide.Has(i) && SSA_SidePassiveMatch(i, tokens)
 					foundSide[i] := 1
 			sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
 			statCount := ssaAdvanced ? foundStats.Count : presentStats.Count
