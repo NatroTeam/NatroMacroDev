@@ -10011,77 +10011,85 @@ UpdateHoneyGui() {
 	blc_ssa_start() {
 		global stopping, ocr_enabled, ocr_language, HoneyLimit, HoneyLimitBase, HoneyLimitRemainingB, ssaSafety
 		stopping := false
-		hotkey "~*esc", stopToggle, "On"
-		ocr_enabled := 1
-		ocr_language := ""
-		for k,v in Map("Windows.Globalization.Language","{9B0252AC-0C27-44F8-B792-9793FB66C63E}", "Windows.Graphics.Imaging.BitmapDecoder","{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", "Windows.Media.Ocr.OcrEngine","{5BFFA85A-3384-3540-9940-699120D428A8}") {
-			CreateHString(k, &hString)
-			GUID := Buffer(16), DllCall("ole32\CLSIDFromString", "WStr", v, "Ptr", GUID)
-			result := DllCall("Combase.dll\RoGetActivationFactory", "Ptr", hString, "Ptr", GUID, "PtrP", &pClass:=0)
-			DeleteHString(hString)
-			if (result != 0)
-			{
-				ocr_enabled := 0
-				break
+		try {
+			hotkey "~*esc", stopToggle, "On"
+			ocr_enabled := 1
+			ocr_language := ""
+			for k,v in Map("Windows.Globalization.Language","{9B0252AC-0C27-44F8-B792-9793FB66C63E}", "Windows.Graphics.Imaging.BitmapDecoder","{438CCB26-BCEF-4E95-BAD6-23A822E58D01}", "Windows.Media.Ocr.OcrEngine","{5BFFA85A-3384-3540-9940-699120D428A8}") {
+				CreateHString(k, &hString)
+				GUID := Buffer(16), DllCall("ole32\CLSIDFromString", "WStr", v, "Ptr", GUID)
+				result := DllCall("Combase.dll\RoGetActivationFactory", "Ptr", hString, "Ptr", GUID, "PtrP", &pClass:=0)
+				DeleteHString(hString)
+				if (result != 0)
+				{
+					ocr_enabled := 0
+					break
+				}
+			}
+			if !(ocr_enabled) {
+				SSA_Log("OCR disabled (SSA).")
+				return msgbox("OCR is disabled. This means the macro will not be able to detect SSA stats.",, 0x40010)
+			}
+			list := ocr("ShowAvailableLanguages")
+			lang:="en-"
+			Loop Parse list, "``n", "``r" {
+				if (InStr(A_LoopField, lang) = 1) {
+					ocr_language := A_LoopField
+					break
+				}
+			}
+			if (ocr_language = "")
+				if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
+					return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
+			SSA_Log("OCR enabled (SSA). Language: " ocr_language)
+			selectedStats := SSA_CountSelectedStats()
+			if (selectedStats > 5)
+				return msgbox("Select up to 5 stats in the Stats column to use the SSA roller.", "SSA Roller", 0x40030)
+			if (!HoneyLimit || HoneyLimit = "0")
+				if msgbox("Honey Limit is 0. Do you want to continue without a limit?", "SSA Roller", 0x40034) = "No"
+					return
+			if (HoneyLimit && HoneyLimit != "0") {
+				HoneyLimitBase := HoneyLimit
+				HoneyLimitRemainingB := HoneyLimit * 1000
+			}
+			if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
+				return msgbox("You must have Bee Swarm Simulator open to use this!", "SSA Roller", 0x40030)
+			yOffset := GetYOffset(hwndRoblox, &fail)
+			if fail
+				MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
+			if mgui is Gui {
+				mgui.hide()
+				try honeyGui.Hide()
+				HideSSAStatInputs()
+			}
+			ActivateRoblox()
+			SSA(true)
+			While !stopping {
+				result := SSA()
+				if (result = 1) {
+					msgbox "Found a match!``nChoose Keep/Replace in-game.", "SSA Roller", 0x40040
+					break
+				} else if (result = -3) {
+					msgbox "Safety stop: Unable to verify a full SSA roll before timeout.``nCheck the SSA menu and try again.", "SSA Roller", 0x40030
+					break
+				} else if (result = -2) {
+					msgbox "Honey limit reached. SSA roller stopped.", "SSA Roller", 0x40040
+					break
+				} else if (result < 0) {
+					msgbox "Unable to confirm the SSA menu. Stand at the Supreme Star Amulet generator with its E prompt visible, or leave an SSA result open and unobstructed.", "SSA Roller", 0x40030
+					break
+				}
+			}
+		} catch as err {
+			SSA_Log("SSA stopped: " err.Message)
+			msgbox "SSA stopped: " err.Message, "SSA Roller", 0x40030
+		} finally {
+			try hotkey "~*esc", stopToggle, "Off"
+			if mgui is Gui {
+				mgui.show()
+				UpdateHoneyGui()
 			}
 		}
-		if !(ocr_enabled) {
-			SSA_Log("OCR disabled (SSA).")
-			return msgbox("OCR is disabled. This means the macro will not be able to detect SSA stats.",, 0x40010)
-		}
-		list := ocr("ShowAvailableLanguages")
-		lang:="en-"
-		Loop Parse list, "``n", "``r" {
-			if (InStr(A_LoopField, lang) = 1) {
-				ocr_language := A_LoopField
-				break
-			}
-		}
-		if (ocr_language = "")
-			if ((ocr_language := SubStr(list, 1, InStr(list, "``n")-1)) = "")
-				return msgbox("No OCR supporting languages are installed on your system! Please follow the Knowledge Base guide to install a supported language as a secondary language on Windows.", "WARNING!!", 0x1030)
-		SSA_Log("OCR enabled (SSA). Language: " ocr_language)
-		selectedStats := SSA_CountSelectedStats()
-		if (selectedStats > 5)
-			return msgbox("Select up to 5 stats in the Stats column to use the SSA roller.", "SSA Roller", 0x40030)
-		if (!HoneyLimit || HoneyLimit = "0")
-			if msgbox("Honey Limit is 0. Do you want to continue without a limit?", "SSA Roller", 0x40034) = "No"
-				return
-		if (HoneyLimit && HoneyLimit != "0") {
-			HoneyLimitBase := HoneyLimit
-			HoneyLimitRemainingB := HoneyLimit * 1000
-		}
-		if !(hwndRoblox:=GetRobloxHWND()) || !(GetRobloxClientPos(), windowWidth)
-			return msgbox("You must have Bee Swarm Simulator open to use this!", "SSA Roller", 0x40030)
-		yOffset := GetYOffset(hwndRoblox, &fail)
-		if fail	
-			MsgBox("Unable to detect in-game GUI offset!``nThis means the macro will NOT work correctly!``n``nThere are a few reasons why this can happen:``n- Incorrect graphics settings (check Troubleshooting Guide!)``n- Your Experience Language is not set to English``n- Something is covering the top of your Roblox window``n``nJoin our Discord server for support!", "WARNING!!", 0x1030 " T60")
-		if mgui is Gui {
-			mgui.hide()
-			try honeyGui.Hide()
-			HideSSAStatInputs()
-		}
-		ActivateRoblox()
-		SSA(true)
-		While !stopping {
-			result := SSA()
-			if (result = 1) {
-				msgbox "Found a match!``nChoose Keep/Replace in-game.", "SSA Roller", 0x40040
-				break
-			} else if (result = -3) {
-				msgbox "Safety stop: Unable to verify a full SSA roll before timeout.``nCheck the SSA menu and try again.", "SSA Roller", 0x40030
-				break
-			} else if (result = -2) {
-				msgbox "Honey limit reached. SSA roller stopped.", "SSA Roller", 0x40040
-				break
-			} else if (result < 0) {
-				msgbox "Unable to confirm the SSA menu. Stand at the Supreme Star Amulet generator with its E prompt visible, or leave an SSA result open and unobstructed.", "SSA Roller", 0x40030
-				break
-			}
-		}
-		hotkey "~*esc", stopToggle, "Off"
-		mgui.show()
-		UpdateHoneyGui()
 	}
 	SSA(reset := false) {
 		global mainPassive, PopStarCheck, ScorchStarCheck, GummyStarCheck, GuidingStarCheck, StarSawCheck
@@ -10218,7 +10226,8 @@ UpdateHoneyGui() {
 		requiredStats := (selectedCount > 5) ? 5 : selectedCount
 		selectedSide := 0
 		for k, v in sidePassives
-			selectedSide += v
+			if (k != mainPassiveKey)
+				selectedSide += v
 		presentStats := Map(), foundStats := Map(), foundSide := Map(), parsedStats := Map()
 		mainPassiveFound := 0
 		matched := false
@@ -10240,7 +10249,7 @@ UpdateHoneyGui() {
 			if (!mainPassiveFound && SSA_SidePassiveMatch(mainPassiveKey, tokens))
 				mainPassiveFound := 1
 			for i, j in sidePassives
-				if j && !foundSide.Has(i) && SSA_SidePassiveMatch(i, tokens)
+				if j && i != mainPassiveKey && !foundSide.Has(i) && SSA_SidePassiveMatch(i, tokens)
 					foundSide[i] := 1
 			sideMatch := (selectedSide = 0) ? true : (foundSide.Count > 0)
 			statCount := ssaAdvanced ? foundStats.Count : presentStats.Count

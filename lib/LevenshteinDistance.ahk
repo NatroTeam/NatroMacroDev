@@ -1,6 +1,6 @@
 /************************************************************************
  * @description Distance between two given strings
- * @author Dully176
+ * @author Ninju
  * @function LevenshteinDistance()
  * @version 1.0.0
  ***********************************************************************/
