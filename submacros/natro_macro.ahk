@@ -9762,7 +9762,7 @@ UpdateHoneyGui() {
 		, CriticalChanceCheck, InstantConversionCheck, BeeAbilityRateCheck, BeeGatherPollenCheck
 		, DoublePassiveCheck, PollenCheck, ssaMainLookup, ssaSidePassives, ssaAdvanced, ssaStatsInputs, ssaStatMinLookup, ssaSafety
 		MouseGetPos(,,,&ctrl,2)
-		if !ctrl
+		if !ctrl || !DllCall("IsChild", "Ptr", mgui.hwnd, "Ptr", ctrl)
 			return
 		switch mgui[ctrl].name, 0 {
 			case "move":
@@ -9869,7 +9869,7 @@ UpdateHoneyGui() {
 		global
 		local ctrl, hover_ctrl, tt := 0
 		MouseGetPos(,,,&ctrl,2)
-		if !ctrl || mgui["move"].hwnd = ctrl || mgui["close"].hwnd = ctrl
+		if !ctrl || !DllCall("IsChild", "Ptr", mgui.hwnd, "Ptr", ctrl) || mgui["move"].hwnd = ctrl || mgui["close"].hwnd = ctrl
 			return
 		ReplaceSystemCursors("IDC_HAND")
 		hovercontrol := mgui[ctrl].name
