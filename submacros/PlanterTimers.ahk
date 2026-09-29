@@ -18,6 +18,10 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "Gdip_All.ahk"
 #Include "DurationFromSeconds.ahk"
 #Include "nowUnix.ahk"
+#Include "data\PlanterData.ahk"
+#Include "%A_ScriptDir%\planters\PlanterGrowth.ahk"
+#Include "%A_ScriptDir%\planters\PlanterNectarMath.ahk"
+#Include "%A_ScriptDir%\planters\PlanterPolicy.ahk"
 #Include "ErrorHandling.ahk"
 
 DetectHiddenWindows 1
@@ -327,12 +331,22 @@ setTimerGuiTransparency(GuiCtrl?, *) {
 		IniWrite TimerGuiTransparency := GuiCtrl.Value, "settings\nm_config.ini", "Planters", "TimerGuiTransparency"
 	WinSetTransparent 255 - floor(TimerGuiTransparency * 2.55), TimersGui
 }
+ba_updatePlanterDeadline(slot, deadline) {
+    estimate := PG_TimerYield(slot, deadline, nowUnix())
+    name := IniRead("settings\nm_config.ini", "Planters", "PlanterName" slot, "None")
+    field := IniRead("settings\nm_config.ini", "Planters", "PlanterField" slot, "None")
+    PG_Intent(slot, name, field, "Manual", false)
+    UpdateStr("PlanterHarvestFull" slot, "")
+    UpdateInt("PlanterHarvestTime" slot, deadline)
+    UpdateInt("PlanterEstPercent" slot, estimate)
+}
+
 ba_resetPlanterTimer(GuiCtrl, *) {
 	global PlanterName1, PlanterName2, PlanterName3, PlanterHarvestTime1, PlanterHarvestTime2, PlanterHarvestTime3
 	i := SubStr(GuiCtrl.Name, -1)
 	PlanterName%i% := IniRead("settings\nm_config.ini", "Planters", "PlanterName" i)
 	if (PlanterName%i% != "None") {
-		UpdateInt("PlanterHarvestTime" i, nowUnix() - 1)
+		ba_updatePlanterDeadline(i, nowUnix() - 1)
 	}
 }
 ba_setPlanterTimer(GuiCtrl, *) {
@@ -341,8 +355,8 @@ ba_setPlanterTimer(GuiCtrl, *) {
 	PlanterName%i% := IniRead("settings\nm_config.ini", "Planters", "PlanterName" i)
 	if (PlanterName%i% != "None") {
 		PlanterHarvestTime%i% := IniRead("settings\nm_config.ini", "Planters", "PlanterHarvestTime" i)
-		UpdateInt("PlanterHarvestTime" i, PlanterHarvestTime%i% := (c = "Sub") ? Max(nowUnix(), Integer(PlanterHarvestTime%i%-3600)) : Max(nowUnix(), Integer(PlanterHarvestTime%i%)) + 3600)
-		UpdateInt("PlanterEstPercent" i, Min(Max((Integer(PlanterHarvestTime%i%) - nowUnix()) // 864, 0), 100))
+		deadline := (c = "Sub") ? Max(nowUnix(), Integer(PlanterHarvestTime%i%-3600)) : Max(nowUnix(), Integer(PlanterHarvestTime%i%)) + 3600
+		ba_updatePlanterDeadline(i, deadline)
 	}
 }
 ba_setPlanterData(GuiCtrl, *) {
@@ -352,6 +366,7 @@ ba_setPlanterData(GuiCtrl, *) {
 	if (PlanterName%i% = "None") {
 		ba_addPlanterData(i)
 	} else {
+		IniDelete "settings\nm_config.ini", "Planters", "PlanterGrowth" i
 		UpdateStr("PlanterName" i, "None")
 		UpdateStr("PlanterField" i, "None")
 		UpdateStr("PlanterNectar" i, "None")
@@ -456,8 +471,12 @@ ba_AddPlanter(GuiCtrl?, *) {
 	UpdateStr("PlanterField" addindex, addfield)
 	UpdateStr("PlanterNectar" addindex, addnectar)
 	UpdateStr("PlanterHarvestFull" addindex, "")
-	UpdateInt("PlanterHarvestTime" addindex, nowUnix() + (addharvesttime := values.AddHours * 3600 + values.AddMins * 60 + values.AddSecs))
-	UpdateInt("PlanterEstPercent" addindex, Min(addharvesttime // 864, 100))
+	growthNow := nowUnix()
+	PG_Save(addindex, addplanter, addfield, growthNow, "user-added-age-unknown")
+	PG_Intent(addindex, addplanter, addfield, "Manual", false)
+	addharvesttime := values.AddHours * 3600 + values.AddMins * 60 + values.AddSecs
+	UpdateInt("PlanterHarvestTime" addindex, growthNow + addharvesttime)
+	UpdateInt("PlanterEstPercent" addindex, Round(PG_Yield(ba_GetPlanterStats(addplanter, addfield), growthNow, growthNow+addharvesttime), 1))
 	UpdateInt("PlanterGlitter" addindex, 0)
 	UpdateInt("PlanterGlitterC" addindex, 0)
 	UpdateInt("MPlanterHold" addindex, 0)
