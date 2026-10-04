@@ -31,6 +31,7 @@ You should have received a copy of the license along with Natro Macro. If not, p
 #Include "nowUnix.ahk"
 #Include "ErrorHandling.ahk"
 #Include "HashFile.ahk"
+#Include "ReadIni.ahk"
 
 #Warn VarUnset, Off
 
@@ -405,6 +406,7 @@ nm_importConfig()
 		, "HideErrors", 1
 		, "DebugHotkey", "F6"
 		, "ReleaseChannel", "Stable"
+		, "ManualHotbarHotkey", "F7"
 	)
 
 	config["Status"] := Map("StatusLogReverse", 0
@@ -926,27 +928,6 @@ nm_importConfig()
 	file.Write(ini), file.Close()
 }
 nm_importConfig()
-
-nm_ReadIni(path)
-{
-	global
-	local ini, str, c, p, k, v
-
-	ini := FileOpen(path, "r"), str := ini.Read(), ini.Close()
-	Loop Parse str, "`n", "`r" A_Space A_Tab
-	{
-		switch (c := SubStr(A_LoopField, 1, 1))
-		{
-			; ignore comments and section names
-			case "[",";":
-			continue
-
-			default:
-			if (p := InStr(A_LoopField, "="))
-				try k := SubStr(A_LoopField, 1, p-1), %k% := IsInteger(v := SubStr(A_LoopField, p+1)) ? Integer(v) : v
-		}
-	}
-}
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; GAME DATA
@@ -3257,6 +3238,8 @@ Loop 6
 }
 nm_HotbarWhile()
 MainGui.Add("Button", "x200 y34 w90 h30 vAutoFieldBoostButton Disabled", (AutoFieldBoostActive ? "Auto Field Boost`n[ON]" : "Auto Field Boost`n[OFF]")).OnEvent("Click", nm_autoFieldBoostGui)
+; manual hotbar
+MainGui.Add("Button", "x195 y103 w100 h18 vManualHotbarOpen Disabled", "Manual Hotbar (" ManualHotbarHotkey ")").OnEvent("Click", nm_OpenManualHotbar)
 MainGui.SetFont("w700")
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 
@@ -3562,6 +3545,7 @@ try {
 	Hotkey AutoClickerHotkey, autoclicker, "On T2"
 	Hotkey TimersHotkey, timers, "On"
 	Hotkey DebugHotkey, nm_copyDebugLog, "On"
+	Hotkey ManualHotbarHotkey, nm_OpenManualHotbar, "On"
 }
 
 SetTimer Background, 2000
@@ -3594,14 +3578,13 @@ nm_StopButton(GuiCtrl, *){
 
 ;save GUI position (on exit)
 nm_saveGUIPos(){
-	global GuiX, GuiY
-	wp := Buffer(44)
-	DllCall("GetWindowPlacement", "UInt", MainGui.Hwnd, "Ptr", wp)
-	x := NumGet(wp, 28, "Int"), y := NumGet(wp, 32, "Int")
-	if (x > 0)
-		try IniWrite x, "settings\nm_config.ini", "Settings", "GuiX"
-	if (y > 0)
-		try IniWrite y, "settings\nm_config.ini", "Settings", "GuiY"
+	try {
+		WinGetPos(&x, &y, , , "ahk_id" MainGui.hwnd)
+		if (x > 0)
+			IniWrite x, "settings\nm_config.ini", "Settings", "GuiX"
+		if (y > 0)
+			IniWrite y, "settings\nm_config.ini", "Settings", "GuiY"
+	}
 }
 
 ;tab (un)lock
@@ -3998,6 +3981,7 @@ nm_TabBoostLock(){
 	MainGui["FieldBoosterMinsUpDown"].Enabled := 0
 	MainGui["BoostChaserCheck"].Enabled := 0
 	MainGui["AutoFieldBoostButton"].Enabled := 0
+	MainGui["ManualHotbarOpen"].Enabled := 0
 	MainGui["BoostedFieldSelectButton"].Enabled := 0
 	MainGui["HotbarWhile2"].Enabled := 0
 	MainGui["HotbarWhile3"].Enabled := 0
@@ -4049,6 +4033,7 @@ nm_TabBoostUnLock(){
 	MainGui["FieldBoosterMinsUpDown"].Enabled := 1
 	MainGui["BoostChaserCheck"].Enabled := 1
 	MainGui["AutoFieldBoostButton"].Enabled := 1
+	MainGui["ManualHotbarOpen"].Enabled := 1
 	MainGui["BoostedFieldSelectButton"].Enabled := 1
 	MainGui["HotbarWhile2"].Enabled := 1
 	MainGui["HotbarWhile3"].Enabled := 1
@@ -6048,6 +6033,7 @@ nm_autoFieldBoostGui(*){
 	;AFBGui.Add("Text", "x5 y123 +BackgroundTrans", "________________________________________________________")
 	AFBGui.Show("w360 h170")
 }
+nm_OpenManualHotbar(*) => Run('"' exe_path32 '" /script "' A_WorkingDir '\submacros\ManualHotbar.ahk"')
 nm_AFBHelpButton(*){
 	MsgBox "
 	(
@@ -8730,28 +8716,30 @@ nm_HotkeyGUI(*){
 	HotkeyGui := Gui("+AlwaysOnTop -MinimizeBox +Owner" MainGui.Hwnd, "Hotkeys")
 	HotkeyGui.OnEvent("Close", GuiClose)
 	HotkeyGui.SetFont("s8 cDefault Bold", "Tahoma")
-	HotkeyGui.Add("GroupBox", "x5 y2 w190 h144", "Change Hotkeys")
+	HotkeyGui.Add("GroupBox", "x5 y2 w210 h156", "Change Hotkeys")
 	HotkeyGui.SetFont("Norm")
-	HotkeyGui.Add("Text", "x10 y23 w60 +BackgroundTrans", "Start:")
-	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Pause:")
-	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Stop:")
-	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "AutoClicker:")
-	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Timers:")
-	HotkeyGui.Add("Text", "x10 yp+19 w60 +BackgroundTrans", "Debug Report:")
-	HotkeyGui.Add("Hotkey", "x70 y20 w120 h18 vStartHotkeyEdit", StartHotkey).OnEvent("Change", nm_saveHotkey)
-	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vPauseHotkeyEdit", PauseHotkey).OnEvent("Change", nm_saveHotkey)
-	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vStopHotkeyEdit", StopHotkey).OnEvent("Change", nm_saveHotkey)
-	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vAutoClickerHotkeyEdit", AutoClickerHotkey).OnEvent("Change", nm_saveHotkey)
-	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vTimersHotkeyEdit", TimersHotkey).OnEvent("Change", nm_saveHotkey)
-	HotkeyGui.Add("Hotkey", "x70 yp+19 w120 h18 vDebugHotkeyEdit", DebugHotkey).OnEvent("Change", nm_saveHotkey)
-	HotkeyGui.Add("Button", "x30 yp+20 w140 h20", "Restore Defaults").OnEvent("Click", nm_ResetHotkeys)
+	HotkeyGui.Add("Text", "x10 y23 w80 +BackgroundTrans", "Start:")
+	HotkeyGui.Add("Text", "x10 yp+19 w80 +BackgroundTrans", "Pause:")
+	HotkeyGui.Add("Text", "x10 yp+19 w80 +BackgroundTrans", "Stop:")
+	HotkeyGui.Add("Text", "x10 yp+19 w80 +BackgroundTrans", "AutoClicker:")
+	HotkeyGui.Add("Text", "x10 yp+19 w80 +BackgroundTrans", "Timers:")
+	HotkeyGui.Add("Text", "x10 yp+19 w80 +BackgroundTrans", "Debug Report:")
+	HotkeyGui.Add("Text", "x10 yp+19 w80 +BackgroundTrans", "Manual Hotbar:")
+	HotkeyGui.Add("Hotkey", "xp+80 y20 w120 h18 vStartHotkeyEdit", StartHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Hotkey", "xp yp+19 w120 h18 vPauseHotkeyEdit", PauseHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Hotkey", "xp yp+19 w120 h18 vStopHotkeyEdit", StopHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Hotkey", "xp yp+19 w120 h18 vAutoClickerHotkeyEdit", AutoClickerHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Hotkey", "xp yp+19 w120 h18 vTimersHotkeyEdit", TimersHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Hotkey", "xp yp+19 w120 h18 vDebugHotkeyEdit", DebugHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Hotkey", "xp yp+19 w120 h18 vManualHotbarHotkeyEdit", ManualHotbarHotkey).OnEvent("Change", nm_saveHotkey)
+	HotkeyGui.Add("Button", "x30 yp+30 w160 h20", "Restore Defaults").OnEvent("Click", nm_ResetHotkeys)
 
 	HotkeyGui.SetFont("s8 cDefault Bold", "Tahoma")
-	HotkeyGui.Add("GroupBox", "x5 yp+22 w190 h34", "Settings")
+	HotkeyGui.Add("GroupBox", "x5 yp+22 w210 h34", "Settings")
 	HotkeyGui.SetFont("Norm")
 	(GuiCtrl := HotkeyGui.Add("CheckBox", "x10 yp+16 vShowOnPause Checked" ShowOnPause, "Show Natro on Pause")).Section := "Settings", GuiCtrl.OnEvent("Click", nm_saveConfig)
 
-	HotkeyGui.Show("w190 h190")
+	HotkeyGui.Show("w210 h215")
 }
 nm_ResetHotkeys(*){
 	global
@@ -8762,6 +8750,7 @@ nm_ResetHotkeys(*){
 		Hotkey AutoClickerHotkey, autoclicker, "Off"
 		Hotkey TimersHotkey, timers, "Off"
 		Hotkey DebugHotkey, nm_copyDebugLog, "Off"
+		Hotkey ManualHotbarHotkey, nm_OpenManualHotbar, "Off"
 	}
 	IniWrite (StartHotkey := "F1"), "settings\nm_config.ini", "Settings", "StartHotkey"
 	IniWrite (PauseHotkey := "F2"), "settings\nm_config.ini", "Settings", "PauseHotkey"
@@ -8769,17 +8758,20 @@ nm_ResetHotkeys(*){
 	IniWrite (AutoClickerHotkey := "F4"), "settings\nm_config.ini", "Settings", "AutoClickerHotkey"
 	IniWrite (TimersHotkey := "F5"), "settings\nm_config.ini", "Settings", "TimersHotkey"
 	IniWrite (DebugHotkey := "F6"), "settings\nm_config.ini", "Settings", "DebugHotkey"
+	IniWrite (ManualHotbarHotkey := "F6"), "settings\nm_config.ini", "Settings", "ManualHotbarHotkey"
 	HotkeyGui["StartHotkeyEdit"].Value := "F1"
 	HotkeyGui["PauseHotkeyEdit"].Value := "F2"
 	HotkeyGui["StopHotkeyEdit"].Value := "F3"
 	HotkeyGui["AutoClickerHotkeyEdit"].Value := "F4"
 	HotkeyGui["TimersHotkeyEdit"].Value := "F5"
 	HotkeyGui["DebugHotkeyEdit"].Value := "F6"
+	HotkeyGui["ManualHotbarHotkeyEdit"].Value := "F7"
 	MainGui["StartButton"].Text := " Start (F1)"
 	MainGui["PauseButton"].Text := " Pause (F2)"
 	MainGui["StopButton"].Text := " Stop (F3)"
 	MainGui["AutoClickerButton"].Text := "AutoClicker (F4)"
 	MainGui["TimersButton"].Text := " Show Timers (F5)"
+	MainGui["ManualHotbarOpen"].Text := "Manual Hotbar (F7)"
 	try {
 		Hotkey StartHotkey, start, "On"
 		Hotkey PauseHotkey, nm_pause, "On"
@@ -8787,11 +8779,12 @@ nm_ResetHotkeys(*){
 		Hotkey AutoClickerHotkey, autoclicker, "On T2"
 		Hotkey TimersHotkey, timers, "On"
 		Hotkey DebugHotkey, nm_copyDebugLog, "On"
+		Hotkey ManualHotbarHotkey, nm_OpenManualHotbar, "On"
 	}
 }
 nm_saveHotkey(GuiCtrl, *){
 	global
-	local k, v, l, NewHotkey, StartHotkeyEdit, PauseHotkeyEdit, StopHotkeyEdit, TimersHotkeyEdit, AutoClickerHotkeyEdit, DebugHotkeyEdit
+	local k, v, l, NewHotkey, StartHotkeyEdit, PauseHotkeyEdit, StopHotkeyEdit, TimersHotkeyEdit, AutoClickerHotkeyEdit, DebugHotkeyEdit, ManualHotbarHotkeyEdit
 	k := GuiCtrl.Name, %k% := GuiCtrl.Value
 
 	v := StrReplace(k, "Edit")
@@ -8811,7 +8804,7 @@ nm_saveHotkey(GuiCtrl, *){
 			return
 		}
 
-		if ((StrLen(%k%) = 0) || (%k% = StartHotkey) || (%k% = PauseHotkey) || (%k% = StopHotkey) || (%k% = AutoClickerHotkey) || (%k% = TimersHotkey) || (%k% = DebugHotkey)) ; do not allow empty or already used hotkey (not necessary in most cases)
+		if ((StrLen(%k%) = 0) || (%k% = StartHotkey) || (%k% = PauseHotkey) || (%k% = StopHotkey) || (%k% = AutoClickerHotkey) || (%k% = TimersHotkey) || (%k% = DebugHotkey)) || (%k% = ManualHotbarHotkey) ; do not allow empty or already used hotkey (not necessary in most cases)
 			GuiCtrl.Value := %v%
 		else ; update the hotkey
 		{
@@ -8820,7 +8813,7 @@ nm_saveHotkey(GuiCtrl, *){
 			IniWrite (%v% := %k%), "settings\nm_config.ini", "Settings", v
 			if l != "Debug"
 				MainGui[l "Button"].Text := ((l = "Timers") ? " Show " : (l = "AutoClicker") ? "" : " ") l " (" %v% ")"
-			try Hotkey %v%, (l = "Pause") ? nm_Pause : (l = "Debug") ? nm_copyDebugLog : %l%, (v = "AutoClickerHotkey") ? "On T2" : "On"
+			try Hotkey %v%, (l = "Pause") ? nm_Pause : (l = "Debug") ? nm_copyDebugLog : (l = "ManualHotbar") ? nm_OpenManualHotbar : %l%, (v = "AutoClickerHotkey") ? "On T2" : "On"
 		}
 	}
 }
