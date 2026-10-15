@@ -52,7 +52,8 @@ RunWith32() {
 		ExitApp
 	}
 }
-RunWith32()
+if (IniRead("settings\nm_config.ini", "Settings", "GuiTheme", "") != "Win32")
+	RunWith32()
 
 ReloadScript(ahkpath) {
 	static cmd := DllCall("GetCommandLine", "Str"), params := DllCall("shlwapi\PathGetArgs","Str",cmd,"Str")
@@ -2204,10 +2205,13 @@ A_TrayMenu.Default := "Start Macro"
 ; GUI SKINNING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;https://www.autohotkey.com/boards/viewtopic.php?f=6&t=5841&hilit=gui+skin
-DllCall(DllCall("GetProcAddress"
-		, "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
-		, "AStr","USkinInit", "Ptr")
-	, "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
+if(GuiTheme != "Win32")
+{
+	DllCall(DllCall("GetProcAddress"
+			, "Ptr",DllCall("LoadLibrary", "Str",A_WorkingDir "\nm_image_assets\Styles\USkin.dll")
+			, "AStr","USkinInit", "Ptr")
+		, "Int",0, "Int",0, "AStr",A_WorkingDir "\nm_image_assets\styles\" GuiTheme ".msstyles")
+}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DEFAULT ROBLOX TYPE/PATH DETECTION
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2559,7 +2563,7 @@ nm_MajorUpdateHelp(*)
 OnExit(GetOut)
 MainGui := Gui((AlwaysOnTop ? "+AlwaysOnTop " : "") "+Border +OwnDialogs", "Natro Macro (Loading 0%)")
 WinSetTransparent 255-floor(GuiTransparency*2.55), MainGui
-MainGui.Show("x" GuiX " y" GuiY " w490 h275")
+MainGui.Show("x" GuiX " y" GuiY (GuiTheme = "Win32" ? " w500 h285" : " w490 h275"))
 SetLoadingProgress(percent) => MainGui.Title := "Natro Macro (Loading " Round(percent) "%)"
 MainGui.OnEvent("Close", (*) => ExitApp())
 MainGui.SetFont("s8 cDefault Norm", "Tahoma")
@@ -2595,7 +2599,7 @@ for k,v in ["PMondoGuid","PMondoGuidComplete","PFieldBoosted","PFieldGuidExtend"
 
 ; add tabs
 TabArr := ["Gather","Collect/Kill","Boost","Quests","Planters","Status","Settings","Misc","Credits"], (BuffDetectReset = 1) && TabArr.Push("Advanced")
-(TabCtrl := MainGui.Add("Tab", "x0 y-1 w500 h240 -Wrap", TabArr)).OnEvent("Change", (*) => TabCtrl.Focus())
+(TabCtrl := MainGui.Add("Tab3", "x0 y-1 w500 h240 -Wrap", TabArr)).OnEvent("Change", (*) => TabCtrl.Focus())
 SendMessage 0x1331, 0, 20, , TabCtrl ; set minimum tab width
 ; check for update
 try AsyncHttpRequest("GET", "https://api.github.com/repos/NatroTeam/NatroMacro/releases", nm_AutoUpdateHandler
@@ -2861,7 +2865,7 @@ MainGui.SetFont("s8 cDefault Norm", "Tahoma")
 ;gui settings
 MainGui.Add("CheckBox", "x10 y73 Disabled vAlwaysOnTop Checked" AlwaysOnTop, "Always On Top").OnEvent("Click", nm_AlwaysOnTop)
 MainGui.Add("Text", "x10 y40 w70 +BackgroundTrans", "GUI Theme:")
-StylesList := []
+StylesList := ["Win32"]
 Loop Files A_WorkingDir "\nm_image_assets\Styles\*.msstyles"
 	StylesList.Push(StrReplace(A_LoopFileName, ".msstyles"))
 (GuiCtrl := MainGui.Add("DropDownList", "x75 y34 w72 h100 vGuiTheme Disabled", StylesList)).Text := GuiTheme, GuiCtrl.OnEvent("Change", nm_guiThemeSelect)
@@ -23542,7 +23546,8 @@ getout(*){
 	try IniWrite !!WinExist("PlanterTimers.ahk ahk_class AutoHotkey"), "settings\nm_config.ini", "Planters", "TimersOpen"
 	CloseScripts()
 	try Gdip_Shutdown(pToken)
-	DllCall(A_WorkingDir "\nm_image_assets\Styles\USkin.dll\USkinExit")
+	if (GuiTheme != "Win32")
+		DllCall(A_WorkingDir "\nm_image_assets\Styles\USkin.dll\USkinExit")
 }
 
 Background(){
