@@ -3891,3 +3891,69 @@ WinGetRect( hwnd, &x:="", &y:="", &w:="", &h:="" ) {
 	w := NumGet(winRect,  8, "UInt") - x
 	h := NumGet(winRect, 12, "UInt") - y
 }
+
+; =============================================================
+; Written by @prodbyichigo 24/06/2026 | 20:50 [GMT]
+; Get an average color from a pBitmap accumulating all pixels.
+; =============================================================
+AverageColorFromImage(bitmap)
+{
+    Gdip_GetImageDimensions(bitmap, &width, &height)
+    Gdip_LockBits(bitmap, 0, 0, width, height, &stride, &Scan0, &bitmapData)
+
+    r := g := b := 0
+    rowAddr := Scan0
+
+    Loop height
+    {
+        pixelAddress := rowAddr
+
+        Loop width
+        {
+            color := NumGet(pixelAddress, "UInt")
+            r += (color >> 16) & 255
+            g += (color >> 8) & 255
+            b += color & 255
+            pixelAddress += 4
+        }
+
+        rowAddr += stride
+    }
+
+    Gdip_UnlockBits(bitmap, bitmapData)
+    pixelCount := width * height
+    return 0xFF000000 | (Round(r / pixelCount) << 16) | (Round(g / pixelCount) << 8) | Round(b / pixelCount)
+}
+; ===================================================
+; Written by @prodbyichigo 24/06/2026 | 20:50 [GMT]
+; Convert ARGB format parameter c to HSV format.
+; ===================================================
+ARGBToHSV(color)
+{
+    r := ((color >> 16) & 255) / 255
+    g := ((color >> 8) & 255) / 255
+    b := (color & 255) / 255
+
+    maxValue := Max(r, g, b)
+    minValue := Min(r, g, b)
+    delta := maxValue - minValue
+    hue := 0
+
+    if delta
+    {
+        switch maxValue
+        {
+            case r: hue := 60 * Mod((g - b) / delta, 6)
+            case g: hue := 60 * ((b - r) / delta + 2)
+            default: hue := 60 * ((r - g) / delta + 4)
+        }
+    }
+
+    if (hue < 0)
+        hue += 360
+
+    saturation := maxValue ? delta / maxValue * 100 : 0
+    value := maxValue * 100
+
+    return {h: hue, s: saturation, v: value}
+}
