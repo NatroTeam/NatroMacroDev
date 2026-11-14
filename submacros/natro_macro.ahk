@@ -1,4 +1,4 @@
-﻿/*
+/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -11135,7 +11135,7 @@ nm_Reset(checkAll := 1, wait:=2000, convert := 1, force := 0)
 		; 		break
 		; }
 		
-		if nm_ConfirmAtHive() && nm_SetHiveCameraDirection() > 0
+		if nm_ConfirmAtHive() || nm_SetHiveCameraDirection() > 0
 		{
 			HiveConfirmed := 1
 			break
@@ -11351,7 +11351,7 @@ nm_SetHiveCameraDirection() {
             Send "{" RotRight "}"
             Sleep 125
         }
-
+c
         if CheckHoneycomb() > 0
 		{
             HiveConfirmed := 1
