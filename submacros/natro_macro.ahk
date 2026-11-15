@@ -1,4 +1,4 @@
-/*
+﻿/*
 Natro Macro (https://github.com/NatroTeam/NatroMacro)
 Copyright © Natro Team (https://github.com/NatroTeam)
 
@@ -182,7 +182,7 @@ nm_importPatterns()
 	if FileExist("settings\imported\patterns.ahk")
 		file := FileOpen("settings\imported\patterns.ahk", "r"), imported := file.Read(), file.Close()
 	else
-		imported := "", hashDefaults()
+		imported := ""
 
 	if FileExist("settings\imported\patternHashes.ahk")
 		getHashes()
@@ -11040,7 +11040,7 @@ PostSubmacroMessage(submacro, args*){
 		try PostMessage(args*)
 	DetectHiddenWindows 0
 }
-nm_Reset(checkAll := 1, wait:=2000, convert := 1, force := 0)
+nm_Reset(checkAll := 1, wait := 2000, convert := 1, force := 0)
 {
 	global resetTime, youDied, KeyDelay, SC_E, SC_Esc, SC_R, SC_Enter, RotRight, RotLeft, RotUp, RotDown, ZoomOut, objective, AFBrollingDice, AFBuseGlitter, AFBuseBooster, currentField, HiveConfirmed, GameFrozenCounter, bitmaps
 	static hivedown := 0
@@ -11206,8 +11206,10 @@ ClearResidualPrompts()
 			Sleep(30)
 
 			if k.spamClick
-				Loop 50
+			{
+				loop 50
 					Click()
+			}
 			else
 				Click()
 		}

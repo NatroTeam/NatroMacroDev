@@ -3926,7 +3926,7 @@ AverageColorFromImage(bitmap)
 }
 ; ===================================================
 ; Written by @prodbyichigo 24/06/2026 | 20:50 [GMT]
-; Convert ARGB format parameter c to HSV format.
+; Convert ARGB format parameter "color" to HSV format.
 ; ===================================================
 ARGBToHSV(color)
 {
