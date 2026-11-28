@@ -33,6 +33,54 @@ PT_DispatchLead(field) {
     return PT_TravelDispatch(PT_TravelEstimate(field))
 }
 
+PG_FieldKey(field) {
+    return StrReplace(field, " ") "_Degradation"
+}
+
+PG_FieldLevel(field, now) {
+    return PG_DecayedLevel(IniRead("settings\nm_config.ini", "PlanterDegradation", PG_FieldKey(field), ""), now)
+}
+
+PG_FieldPlanted(field, now) {
+    level := PG_FieldLevel(field, now)
+    IniWrite Round(level, 4) "|" Round(now) "|busy|0", "settings\nm_config.ini", "PlanterDegradation", PG_FieldKey(field)
+    return level
+}
+
+PG_FieldHarvested(field, now) {
+    PG_FieldTick(field, now)
+    record := IniRead("settings\nm_config.ini", "PlanterDegradation", PG_FieldKey(field), "")
+    level := PG_HarvestLevel(PG_DecayedLevel(record, now), PG_AccruedOf(record))
+    IniWrite Round(level, 4) "|" Round(now) "|empty|0", "settings\nm_config.ini", "PlanterDegradation", PG_FieldKey(field)
+    return level
+}
+
+PG_FieldCleared(field, now) {
+    IniWrite Round(PG_FieldLevel(field, now), 4) "|" Round(now) "|empty|0", "settings\nm_config.ini", "PlanterDegradation", PG_FieldKey(field)
+}
+
+PG_FieldTick(field, now) {
+    record := IniRead("settings\nm_config.ini", "PlanterDegradation", PG_FieldKey(field), "")
+    parts := StrSplit(record, "|")
+    if (parts.Length < 3 || parts[3] != "busy" || !IsNumber(parts[1]) || !IsNumber(parts[2]))
+        return
+    accrued := PG_AccruedOf(record)+Min(Max(0, now-Number(parts[2])), 150)
+    IniWrite parts[1] "|" Round(now) "|busy|" Round(accrued), "settings\nm_config.ini", "PlanterDegradation", PG_FieldKey(field)
+}
+
+PG_TickFields() {
+    if !GetRobloxHWND()
+        return
+    now := nowUnix(), seen := Map()
+    Loop 3 {
+        field := IniRead("settings\nm_config.ini", "Planters", "PlanterField" A_Index, "None")
+        if (field = "None" || field = "" || seen.Has(field))
+            continue
+        seen[field] := 1
+        PG_FieldTick(field, now)
+    }
+}
+
 PG_SaveModel(slot, stats, field) {
     IniWrite stats[1] "|" field "|" stats[2] "|" stats[3] "|" stats[4],
         "settings\nm_config.ini", "Planters", "PlanterModel" slot
@@ -56,8 +104,12 @@ PG_AdaptiveStats(stats, field) {
 }
 
 PG_AdaptiveModel(stats, field) {
+    now := nowUnix()
     record := IniRead("settings\nm_config.ini", "PlanterCalibration", stats[1] "_" StrReplace(field, " "), "")
-    return PG_CalibratedModel(stats, record, nowUnix())
+    model := PG_CalibratedModel(stats, record, now)
+    phi := PG_Degradation(PG_FieldLevel(field, now))
+    model.stats := [model.stats[1], model.stats[2], model.stats[3]*phi, model.stats[4]/phi]
+    return model
 }
 
 PG_Observe(slot, name, field, progress, at) {
@@ -79,7 +131,7 @@ PG_Observe(slot, name, field, progress, at) {
     }
     IniWrite sample, "settings\nm_config.ini", "Planters", key
     stats := ba_GetPlanterStats(name, field)
-    factor := stats[4]*3600*change/elapsed
+    factor := stats[4]*3600*change/elapsed/PG_Degradation(PG_FieldLevel(field, at))
     if (factor < 0.5 || factor > 2)
         return false
     key := name "_" StrReplace(field, " ")

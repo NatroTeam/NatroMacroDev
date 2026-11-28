@@ -3358,6 +3358,7 @@ try {
 }
 
 SetTimer Background, 2000
+SetTimer PG_TickFields, 60000
 if (A_Args.Has(1) && (A_Args[1] = 1)){
 	ForceStart := 1
 	SetTimer start, -1000
@@ -21095,6 +21096,7 @@ ba_harvestPlanter(planterNum){
 			IniWrite 0, "settings\nm_config.ini", "Planters", "PlanterEstPercent" planterNum
 			IniWrite PlanterGlitter%planterNum%, "settings\nm_config.ini", "Planters", "PlanterGlitter" planterNum
 			IniWrite PlanterGlitterC%planterNum%, "settings\nm_config.ini", "Planters", "PlanterGlitterC" planterNum
+			PG_FieldCleared(fieldName, nowUnix())
 			return 1
 		}
 		else
@@ -21155,6 +21157,7 @@ ba_harvestPlanter(planterNum){
 		PlanterHarvestNow%planterNum% := 0
 		IniWrite 0, "settings\nm_config.ini", "Planters", "PlanterHarvestNow" planterNum
 		ba_PlanterAccepted(planterNum)
+		PG_FieldHarvested(fieldName, nowUnix())
 		;reset values
 		PlanterName%planterNum% := "None"
 		PlanterField%planterNum% := "None"
@@ -21266,6 +21269,7 @@ ba_SavePlacedPlanter(fieldName, planter, planterNum, nectar, buildToFull := fals
     Last%nectar%Field := fieldName
     PG_Save(planterNum, planter[1], fieldName, now)
     PG_SaveModel(planterNum, planter, fieldName)
+    PG_FieldPlanted(fieldName, now)
     PG_Intent(planterNum, planter[1], fieldName, phase = "" ? (buildToFull ? "Build" : "Maintain") : phase,
         interval >= Round(planter[4]*3600))
     IniWrite planter[1] "|" fieldName "|" now "|0", "settings\nm_config.ini", "Planters", "PlanterObservation" planterNum
@@ -21603,6 +21607,7 @@ mp_PlantPlanter(PlanterIndex) {
 	}
 
 	PG_Save(PlanterIndex, PlanterName%PlanterIndex%, PlanterField%PlanterIndex%, nowUnix())
+	PG_FieldPlanted(PlanterField%PlanterIndex%, nowUnix())
 	PlanterEstPercent%PlanterIndex% := Round(PG_Yield(ba_GetPlanterStats(PlanterName%PlanterIndex%, PlanterField%PlanterIndex%), nowUnix(), PlanterHarvestTime%PlanterIndex%), 1)
 	IniWrite PlanterEstPercent%PlanterIndex%, "settings\nm_config.ini", "Planters", "PlanterEstPercent" PlanterIndex
 	IniWrite PlanterName%PlanterIndex%, "settings\nm_config.ini", "Planters", "PlanterName" PlanterIndex
@@ -21749,6 +21754,7 @@ mp_HarvestPlanter(PlanterIndex) {
 				mp_UpdateCycles()
 			}
 
+			PG_FieldHarvested(MFieldName, nowUnix())
 			PlanterName%PlanterIndex% := "None"
 			PlanterField%PlanterIndex% := "None"
 			PlanterNectar%PlanterIndex% := "None"
@@ -21854,6 +21860,7 @@ mp_HarvestPlanter(PlanterIndex) {
 			mp_UpdateCycles()
 		}
 
+		PG_FieldHarvested(MFieldName, nowUnix())
 		PlanterName%PlanterIndex% := "None"
 		PlanterField%PlanterIndex% := "None"
 		PlanterNectar%PlanterIndex% := "None"
