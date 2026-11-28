@@ -63,3 +63,26 @@ PG_CalibratedModel(stats, record, now, minimumSamples := 2) {
     factor := Min(2, Max(0.5, Number(parts[1])*stats[4]/baseHours))
     return {stats: [stats[1], stats[2], stats[3]*factor, stats[4]/factor], trusted: true}
 }
+
+PG_Degradation(level) {
+    return 48/(48+Min(48, Max(0, level)))
+}
+
+PG_DecayedLevel(record, now) {
+    parts := StrSplit(record, "|")
+    if (parts.Length < 3 || !IsNumber(parts[1]) || !IsNumber(parts[2]))
+        return 0
+    level := Min(48, Max(0, Number(parts[1])))
+    if (parts[3] != "empty" || now <= Number(parts[2]))
+        return level
+    return Max(0, level-(now-Number(parts[2]))/3600)
+}
+
+PG_HarvestLevel(level, elapsed, surcharge := 1) {
+    return Min(48, Max(0, level)+Max(0, elapsed)/3600+surcharge)
+}
+
+PG_AccruedOf(record) {
+    parts := StrSplit(record, "|")
+    return (parts.Length >= 4 && IsNumber(parts[4])) ? Max(0, Number(parts[4])) : 0
+}

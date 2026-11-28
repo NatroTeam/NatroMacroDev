@@ -7,7 +7,7 @@ InvigoratingFields:=["Pepper", "Mountain Top", "Clover", "Cactus"]
 ;field planters ordered from best to worst (will always try to pick the best planter for the field)
 ;planters that provide no bonuses at all are ordered by worst to best so it can preserve the "better" planters for other nectar types
 ;planters array: [1] planter name, [2] nectar bonus, [3] speed bonus, [4] hours to complete growth (no field degradation is assumed) (rounded up 2 d.p.)
-;assumed: hydroponic 40% faster near blue flowers, heat-treated 40% faster near red flowers
+;assumed: hydroponic 50% faster near blue flowers, heat-treated 50% faster near red flowers
 BambooPlanters:=[["HydroponicPlanter", 1.4, 1.375, 8.73] ; 1.925
 	, ["PetalPlanter", 1.5, 1.125, 12.45] ; 1.6875
 	, ["PesticidePlanter", 1, 1.6, 6.25] ; 1.6
@@ -51,7 +51,7 @@ CloverPlanters:=[["HeatTreatedPlanter", 1.4, 1.17, 10.26] ; 1.638
 	, ["TackyPlanter", 1, 1.5, 5.34] ; 1.5
 	, ["PlanterOfPlenty", 1.5, 1, 16] ; 1.5
 	, ["RedClayPlanter", 1.2, 1.085, 5.53] ; 1.302
-	, ["HydroponicPlanter", 1, 1.17, 10.57] ; 1.17
+	, ["HydroponicPlanter", 1, 1.17, 10.26] ; 1.17
 	, ["PetalPlanter", 1, 1.16, 12.07] ; 1.16
 	, ["BlueClayPlanter", 1, 1.085, 5.53] ; 1.085
 	, ["PlasticPlanter", 1, 1, 2] ; 1
